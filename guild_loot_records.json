@@ -1,0 +1,29 @@
+{
+  "rotmg-ppe-bot": {
+    "ppes": [
+      {
+        "id": 1,
+        "name": "PPE #1",
+        "points": 20.0,
+        "items": []
+      }
+    ],
+    "active_ppe": 1,
+    "is_member": true
+  },
+  "logicvoid": {
+    "ppes": [
+      {
+        "id": 1,
+        "name": "PPE #1",
+        "points": 2,
+        "items": [
+          "annihilation armor",
+          "ring of transcendent attack"
+        ]
+      }
+    ],
+    "active_ppe": 1,
+    "is_member": true
+  }
+}

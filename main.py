@@ -35,46 +35,52 @@ def save_player_records(records):
     with open(PLAYER_RECORD_FILE, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=2)
 
-# --- Compute points for detected loot ---
 def calculate_loot_points(player_name, detected_items):
     loot_points = load_loot_points()
     records = load_player_records()
+    key = player_name.lower()
 
-    player_key = player_name.lower()
-    if player_key not in records:
-        records[player_key] = {"items": [], "total_points": 0}
+    if key not in records or not records[key].get("is_member", False):
+        raise ValueError(f"{player_name} is not a contest member.")
 
-    player_data = records[player_key]
+    player_data = records[key]
+    active_id = player_data.get("active_ppe")
+    if not active_id:
+        raise ValueError(f"{player_name} has no active PPE.")
+
+    # --- get active PPE object ---
+    active_ppe = next((p for p in player_data["ppes"] if p["id"] == active_id), None)
+    if not active_ppe:
+        raise ValueError(f"Active PPE (#{active_id}) not found for {player_name}.")
+
     results = []
 
     for item in detected_items:
         item_name = item["item"].lower()
         base_points = loot_points.get(item_name, 0)
 
-        # Always 1 point for top-tier T14/T7
-        if "t14" in item_name or "t7" in item_name:
-            base_points = 1
-
-        # Skip completely if item not worth any points
+        # Skip items with no point value
         if base_points <= 0:
             continue
 
-        if base_points != 1: # tops can be duplicates
+        if base_points != 1:
 
-            # Check duplicate
-            is_duplicate = item_name in [i.lower() for i in player_data["items"]]
+            # --- check duplicate inside this PPE's item list ---
+            existing_items = [i.lower() for i in active_ppe.get("items", [])]
+            is_duplicate = item_name in existing_items
             final_points = base_points / 2 if is_duplicate else base_points
 
-            # --- NEW: round down to nearest 0.5 ---
+            # --- round down to nearest 0.5 ---
+            import math
             final_points = math.floor(final_points * 2) / 2
         else:
             is_duplicate = False
-            final_points = base_points
+            final_points = 1
 
-        # Update player data
+        # --- update PPE items + points ---
         if not is_duplicate:
-            player_data["items"].append(item_name)
-        player_data["total_points"] += final_points
+            active_ppe.setdefault("items", []).append(item_name)
+        active_ppe["points"] = active_ppe.get("points", 0) + final_points
 
         results.append({
             "item": item["item"],
@@ -82,11 +88,9 @@ def calculate_loot_points(player_name, detected_items):
             "duplicate": is_duplicate
         })
 
-    # Save updated record
-    records[player_key] = player_data
     save_player_records(records)
+    return results, active_ppe["points"]
 
-    return results, player_data["total_points"]
 
 def find_items_in_image(
     screenshot_path,
@@ -324,20 +328,33 @@ async def on_ready():
         """)
         await db.commit()
 
-@bot.command(name="newppe", help="Create a new PPE and make it your active one.")
+@bot.command(name="newppe", help="Create a new PPE (max 10) and make it your active one.")
 async def newppe(ctx: commands.Context):
     records = load_player_records()
-    key = ensure_player_exists(records, ctx.author.display_name)
+    key = ctx.author.display_name.lower()
+
+    # Check membership first
+    if key not in records or not records[key].get("is_member", False):
+        return await ctx.reply("❌ You’re not part of the PPE contest. Ask a mod to add you with `!addplayer @you`.")
 
     player_data = records[key]
-    next_id = max([ppe["id"] for ppe in player_data["ppes"]], default=0) + 1
 
+    # --- PPE limit check ---
+    ppe_count = len(player_data.get("ppes", []))
+    if ppe_count >= 10:
+        return await ctx.reply("⚠️ You’ve reached the limit of **10 PPEs**. Delete or reuse an existing one before making a new one.")
+
+    # --- Create new PPE ---
+    next_id = max([ppe["id"] for ppe in player_data["ppes"]], default=0) + 1
     new_ppe = {"id": next_id, "name": f"PPE #{next_id}", "points": 0, "items": []}
+
     player_data["ppes"].append(new_ppe)
     player_data["active_ppe"] = next_id
-
     save_player_records(records)
-    await ctx.reply(f"✅ Created **PPE #{next_id}** and set it as your active PPE.")
+
+    await ctx.reply(f"✅ Created **PPE #{next_id}** and set it as your active PPE.\n"
+                    f"You now have {ppe_count + 1}/10 PPEs.")
+
 
 @bot.command(name="setactiveppe", help="Set which PPE is active for point tracking.")
 async def setactiveppe(ctx: commands.Context, ppe_id: int):
@@ -359,6 +376,12 @@ async def setactiveppe(ctx: commands.Context, ppe_id: int):
 async def on_message(message: discord.Message):
     if message.author == bot.user:
         return
+    
+    # --- Only allow in registered PPE channels ---
+    allowed_channels = load_ppe_channels()
+    if message.channel.id not in allowed_channels:
+        # Still allow normal commands to run elsewhere
+        return await bot.process_commands(message)
 
     for attachment in message.attachments:
         if attachment.filename.lower().endswith((".png", ".jpg", ".jpeg")):
@@ -380,63 +403,272 @@ async def on_message(message: discord.Message):
 
     await bot.process_commands(message)
 
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def removeplayer(ctx, member: discord.Member):
-    """Removes a player completely from the points list."""
-    async with aiosqlite.connect("data.db") as db:
-        await db.execute("DELETE FROM points WHERE user_id = ?", (member.id,))
-        await db.commit()
-    await ctx.send(f"🗑️ Removed {member.display_name} from the leaderboard.")
+# @bot.command()
+# @commands.has_permissions(administrator=True)
+# async def removeplayer(ctx, member: discord.Member):
+#     """Removes a player completely from the points list."""
+#     async with aiosqlite.connect("data.db") as db:
+#         await db.execute("DELETE FROM points WHERE user_id = ?", (member.id,))
+#         await db.commit()
+#     await ctx.send(f"🗑️ Removed {member.display_name} from the leaderboard.")
     
-@bot.command()
-async def addpointsfor(ctx, member: discord.Member, amount: int):
-    """Adds points to the specified member."""
-    user = member
-    display_name = user.display_name  # use server display name
-    async with aiosqlite.connect("data.db") as db:
-        await db.execute("""
-            INSERT INTO points (user_id, username, points)
-            VALUES (?, ?, ?)
-            ON CONFLICT(user_id)
-            DO UPDATE SET 
-                username = excluded.username,
-                points = points + excluded.points;
-        """, (user.id, display_name, amount))
-        await db.commit()
-    await ctx.send(f"✅ {user.mention} gained **{amount} points!**")
+@bot.command(name="addpointsfor", help="Add points to another player's active PPE.")
+@commands.has_permissions(manage_guild=True)
+async def addpointsfor(ctx: commands.Context, member: discord.Member, amount: float):
+    records = load_player_records()
+    key = member.display_name.lower()
 
-@bot.command()
-async def addpoints(ctx, amount: int):
-    """Adds points to whoever called the command."""
-    user = ctx.author
-    display_name = user.display_name  # use server display name
-    async with aiosqlite.connect("data.db") as db:
-        await db.execute("""
-            INSERT INTO points (user_id, username, points)
-            VALUES (?, ?, ?)
-            ON CONFLICT(user_id)
-            DO UPDATE SET 
-                username = excluded.username,
-                points = points + excluded.points;
-        """, (user.id, display_name, amount))
-        await db.commit()
-    await ctx.send(f"✅ {user.mention} gained **{amount} points!**")
+    if key not in records or not records[key].get("is_member", False):
+        return await ctx.reply(f"❌ {member.display_name} is not part of the PPE contest.")
 
-@bot.command()
-async def leaderboard(ctx):
-    """Shows the top 10 players by display name."""
-    async with aiosqlite.connect("data.db") as db:
-        async with db.execute("SELECT username, points FROM points ORDER BY points DESC LIMIT 10") as cursor:
-            rows = await cursor.fetchall()
+    player_data = records[key]
+    active_id = player_data.get("active_ppe")
+    if not active_id:
+        return await ctx.reply(f"❌ {member.display_name} does not have an active PPE.")
 
-    if not rows:
-        await ctx.send("No points have been added yet!")
-        return
+    active_ppe = next((p for p in player_data["ppes"] if p["id"] == active_id), None)
+    if not active_ppe:
+        return await ctx.reply(f"❌ Could not find {member.display_name}'s active PPE record.")
 
-    leaderboard_text = "\n".join([
-        f"{i+1}. **{name}** — {pts} pts"
-        for i, (name, pts) in enumerate(rows)
-    ])
-    await ctx.send(f"🏆 **Leaderboard** 🏆\n{leaderboard_text}")
+    import math
+    amount = math.floor(amount * 2) / 2
+    active_ppe["points"] += amount
+    save_player_records(records)
+
+    await ctx.reply(f"✅ Added **{amount:.1f}** points to **{member.display_name}**’s active PPE (PPE #{active_id}).\n"
+                    f"**New total:** {active_ppe['points']:.1f} points.")
+
+
+@bot.command(name="addpoints", help="Add points to your active PPE.")
+async def addpoints(ctx: commands.Context, amount: float):
+    records = load_player_records()
+    key = ctx.author.display_name.lower()
+
+    # Must be a contest member
+    if key not in records or not records[key].get("is_member", False):
+        return await ctx.reply("❌ You’re not part of the PPE contest. Ask a mod to add you with `!addplayer @you`.")
+
+    player_data = records[key]
+    active_id = player_data.get("active_ppe")
+    if not active_id:
+        return await ctx.reply("❌ You don’t have an active PPE. Use `!newppe` to create one first.")
+
+    # Find the active PPE
+    active_ppe = next((p for p in player_data["ppes"] if p["id"] == active_id), None)
+    if not active_ppe:
+        return await ctx.reply("❌ Could not find your active PPE record. Try creating a new one with `!newppe`.")
+
+    # Add points (rounded down to nearest 0.5)
+    import math
+    amount = math.floor(amount * 2) / 2
+    active_ppe["points"] += amount
+    save_player_records(records)
+
+    await ctx.reply(f"✅ Added **{amount:.1f}** points to your active PPE (PPE #{active_id}).\n"
+                    f"**New total:** {active_ppe['points']:.1f} points.")
+
+
+@bot.command(name="listplayers", help="Show all current participants in the PPE contest.")
+@commands.has_permissions(manage_guild=True)
+async def listplayers(ctx: commands.Context):
+    records = load_player_records()
+
+    # Get all members who are marked as PPE participants
+    members = [(name, data) for name, data in records.items() if data.get("is_member", False)]
+
+    if not members:
+        return await ctx.reply("❌ No one has been added to the PPE contest yet.")
+
+    lines = ["**🏆 Current PPE Contest Participants 🏆**"]
+    for name, data in members:
+        ppe_count = len(data.get("ppes", []))
+        active_id = data.get("active_ppe")
+        lines.append(f"• **{name.title()}** — {ppe_count} PPE(s), Active: PPE #{active_id}")
+
+    await ctx.reply("\n".join(lines))
+
+
+@bot.command(name="addplayer", help="Add a player to the PPE contest and create their first active PPE.")
+@commands.has_permissions(manage_guild=True)
+async def addplayer(ctx: commands.Context, member: discord.Member):
+    """
+    Adds a new member to the PPE contest.
+    - Creates their first PPE (PPE #1)
+    - Sets it active
+    - Gives them access to all PPE commands
+    """
+    records = load_player_records()
+    key = member.display_name.lower()
+
+    if key in records:
+        return await ctx.reply(f"⚠️ {member.display_name} is already in the PPE contest.")
+
+    # Create player entry
+    records[key] = {
+        "ppes": [
+            {"id": 1, "name": "PPE #1", "points": 0, "items": []}
+        ],
+        "active_ppe": 1,
+        "is_member": True  # mark as officially added
+    }
+
+    save_player_records(records)
+    await ctx.reply(f"✅ Added **{member.display_name}** to the PPE contest and created **PPE #1** as their active PPE.")
+
+@bot.command(name="removeplayer", help="Remove a player and all their PPE data from the contest.")
+@commands.has_permissions(manage_guild=True)
+async def removeplayer(ctx: commands.Context, member: discord.Member):
+    records = load_player_records()
+    key = member.display_name.lower()
+
+    if key not in records or not records[key].get("is_member", False):
+        return await ctx.reply(f"❌ {member.display_name} is not in the PPE contest.")
+
+    # Confirm removal
+    del records[key]
+    save_player_records(records)
+
+    await ctx.reply(f"🗑️ Removed **{member.display_name}** and all their PPE data from the contest.")
+
+
+
+@bot.command(name="myppe", help="Show all your PPEs and which one is active.")
+async def myppe(ctx: commands.Context):
+    records = load_player_records()
+    key = ctx.author.display_name.lower()
+
+    if key not in records or not records[key]["ppes"]:
+        return await ctx.reply("❌ You don’t have any PPEs yet. Use `!newppe` to create one!")
+
+    player_data = records[key]
+    active_id = player_data.get("active_ppe")
+
+    lines = [f"**{ctx.author.display_name}'s PPEs:**"]
+    for ppe in sorted(player_data["ppes"], key=lambda x: x["id"]):
+        id_ = ppe["id"]
+        pts = ppe.get("points", 0)
+        marker = "✅ (Active)" if id_ == active_id else ""
+        lines.append(f"• PPE #{id_}: {pts:.1f} points {marker}")
+
+    await ctx.reply("\n".join(lines))
+
+
+@bot.command(name="leaderboard", help="Show the best PPE from each player.")
+async def leaderboard(ctx: commands.Context):
+    records = load_player_records()
+
+    leaderboard_data = []
+    for player, data in records.items():
+        if not data["ppes"]:
+            continue
+        best_ppe = max(data["ppes"], key=lambda p: p["points"])
+        leaderboard_data.append((player, best_ppe["id"], best_ppe["points"]))
+
+    leaderboard_data.sort(key=lambda x: x[2], reverse=True)
+
+    lines = ["🏆 **Best PPE Leaderboard** 🏆"]
+    for rank, (player, ppe_id, pts) in enumerate(leaderboard_data, start=1):
+        lines.append(f"{rank}. **{player.title()}** — PPE #{ppe_id}: {pts:.1f} points")
+
+    await ctx.reply("\n".join(lines))
+
+
+import json, os
+
+PPE_CHANNEL_FILE = "./ppe_channels.json"
+
+def load_ppe_channels():
+    if os.path.exists(PPE_CHANNEL_FILE):
+        with open(PPE_CHANNEL_FILE, "r", encoding="utf-8") as f:
+            try:
+                data = json.load(f)
+                return data.get("ppe_channels", [])
+            except json.JSONDecodeError:
+                return []
+    return []
+
+def save_ppe_channels(channel_ids):
+    with open(PPE_CHANNEL_FILE, "w", encoding="utf-8") as f:
+        json.dump({"ppe_channels": channel_ids}, f, indent=2)
+
+@bot.command(name="setppechannel", help="Mark this channel as a PPE channel.")
+@commands.has_permissions(manage_guild=True)
+async def set_ppe_channel(ctx: commands.Context):
+    channel_id = ctx.channel.id
+    channels = load_ppe_channels()
+    if channel_id in channels:
+        return await ctx.reply("⚠️ This channel is already set as a PPE channel.")
+
+    channels.append(channel_id)
+    save_ppe_channels(channels)
+    await ctx.reply(f"✅ Added **#{ctx.channel.name}** as a PPE channel.")
+
+
+@bot.command(name="unsetppechannel", help="Remove this channel from PPE channels.")
+@commands.has_permissions(manage_guild=True)
+async def unset_ppe_channel(ctx: commands.Context):
+    channel_id = ctx.channel.id
+    channels = load_ppe_channels()
+    if channel_id not in channels:
+        return await ctx.reply("⚠️ This channel is not currently a PPE channel.")
+
+    channels.remove(channel_id)
+    save_ppe_channels(channels)
+    await ctx.reply(f"🗑️ Removed **#{ctx.channel.name}** from the PPE channel list.")
+
+
+@bot.command(name="listppechannels", help="Show all channels marked as PPE channels.")
+@commands.has_permissions(manage_guild=True)
+async def list_ppe_channels(ctx: commands.Context):
+    channels = load_ppe_channels()
+    if not channels:
+        return await ctx.reply("❌ No PPE channels have been set yet. Use `!setppechannel` in one.")
+    lines = ["**📜 PPE Channels:**"]
+    for cid in channels:
+        channel = ctx.guild.get_channel(cid)
+        if channel:
+            lines.append(f"• #{channel.name} ({cid})")
+        else:
+            lines.append(f"• (deleted channel) {cid}")
+    await ctx.reply("\n".join(lines))
+
+
+@bot.command(name="ppehelp", help="Show all PPE contest commands and descriptions.")
+async def ppehelp(ctx: commands.Context):
+    lines = [
+        "📘 **PPE Contest Commands**",
+        "",
+        "__**🎮 Player Commands**__",
+        "`!addpoints <amount>` — Add points to your active PPE.",
+        "`!myppe` — View all your PPEs and see which one is active.",
+        "`!newppe` — Create a new PPE (up to 10 total) and make it active.",
+        "`!setactiveppe <id>` — Set one of your PPEs as the active one.",
+        "`!leaderboard` — Show the best PPE from each player.",
+        "",
+        "__**🏆 Contest Participation**__",
+        "`!addplayer @user` — Add a player to the contest and give them their first PPE.",
+        "`!listplayers` — Show all contest participants and their active PPEs.",
+        "`!removeplayer @user` — Remove a player and all of their PPE data.",
+        "",
+        "__**💰 Points Management**__",
+        "`!addpointsfor @user <amount>` — Add points to another player's active PPE (mod only).",
+        # "`!resetloot @user` — Reset a player's loot and points. [DEPRECATED]",
+        "",
+        "__**💬 Channel Setup**__",
+        "`!setppechannel` — Mark this channel as a PPE screenshot channel.",
+        "`!unsetppechannel` — Unmark this channel as a PPE screenshot channel.",
+        "`!listppechannels` — Show all registered PPE screenshot channels.",
+        "",
+        "__**ℹ️ General Info**__",
+        "`!ppehelp` — Show this help message.",
+        "",
+        "_💡 Only images posted in registered PPE channels will be processed._",
+        "_🧮 Points are automatically rounded down to the nearest 0.5._"
+    ]
+    await ctx.reply("\n".join(lines))
+
+
+
+
+
 bot.run(DISCORD_TOKEN)
