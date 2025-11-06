@@ -1,3 +1,4 @@
+import math
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -5,15 +6,92 @@ import aiosqlite
 import os
 import cv2
 import numpy as np
+import csv
+import json
 
-import cv2
-import numpy as np
-import os
+LOOT_POINTS_CSV = "./rotmg_loot_drops.csv"
+PLAYER_RECORD_FILE = "./guild_loot_records.json"
+
+# --- Load points table from CSV ---
+def load_loot_points():
+    loot_points = {}
+    with open(LOOT_POINTS_CSV, newline='', encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            name = row["Item Name"].strip().lower()
+            points = float(row["Points"])
+            loot_points[name] = points
+    return loot_points
+
+# --- Load existing guild member records ---
+def load_player_records():
+    if os.path.exists(PLAYER_RECORD_FILE):
+        with open(PLAYER_RECORD_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+# --- Save updated records ---
+def save_player_records(records):
+    with open(PLAYER_RECORD_FILE, "w", encoding="utf-8") as f:
+        json.dump(records, f, indent=2)
+
+# --- Compute points for detected loot ---
+def calculate_loot_points(player_name, detected_items):
+    loot_points = load_loot_points()
+    records = load_player_records()
+
+    player_key = player_name.lower()
+    if player_key not in records:
+        records[player_key] = {"items": [], "total_points": 0}
+
+    player_data = records[player_key]
+    results = []
+
+    for item in detected_items:
+        item_name = item["item"].lower()
+        base_points = loot_points.get(item_name, 0)
+
+        # Always 1 point for top-tier T14/T7
+        if "t14" in item_name or "t7" in item_name:
+            base_points = 1
+
+        # Skip completely if item not worth any points
+        if base_points <= 0:
+            continue
+
+        if base_points != 1: # tops can be duplicates
+
+            # Check duplicate
+            is_duplicate = item_name in [i.lower() for i in player_data["items"]]
+            final_points = base_points / 2 if is_duplicate else base_points
+
+            # --- NEW: round down to nearest 0.5 ---
+            final_points = math.floor(final_points * 2) / 2
+        else:
+            is_duplicate = False
+            final_points = base_points
+
+        # Update player data
+        if not is_duplicate:
+            player_data["items"].append(item_name)
+        player_data["total_points"] += final_points
+
+        results.append({
+            "item": item["item"],
+            "points": final_points,
+            "duplicate": is_duplicate
+        })
+
+    # Save updated record
+    records[player_key] = player_data
+    save_player_records(records)
+
+    return results, player_data["total_points"]
 
 def find_items_in_image(
     screenshot_path,
     templates_folder="./sprites/",
-    threshold=0.9,
+    threshold=0.85,
     debug_output="./debug/"
 ):
     """
@@ -91,30 +169,54 @@ def find_items_in_image(
 
         # --- Loop through templates ---
         for item_name, bgr, alpha in templates:
-            # --- Ensure template and mask are exactly 40x40 ---
-            if bgr.shape[0] != 40 or bgr.shape[1] != 40:
+            # --- Ensure both are 40x40 (from earlier safety block) ---
+            if bgr.shape[:2] != (40, 40):
                 bgr = cv2.resize(bgr, (40, 40), interpolation=cv2.INTER_AREA)
-
-            if alpha.shape[0] != 40 or alpha.shape[1] != 40:
+            if alpha.shape[:2] != (40, 40):
                 alpha = cv2.resize(alpha, (40, 40), interpolation=cv2.INTER_NEAREST)
 
-            # --- Optional sanity check ---
-            if slot_img.shape[0] < bgr.shape[0] or slot_img.shape[1] < bgr.shape[1]:
-                print(f"⚠️ Skipping {item_name}: template {bgr.shape[:2]} > slot {slot_img.shape[:2]}")
-                continue
+            crop_h = int(40 * (2/3))  # ≈ 26–27 pixels
+            slot_crop_top = slot_img[:crop_h, :, :]
+            tpl_crop_top  = bgr[:crop_h, :, :]
+            mask_crop_top = alpha[:crop_h, :]
 
-            # --- Apply light blur for better aliasing tolerance ---
-            slot_blur = cv2.GaussianBlur(slot_img, (3,3), 0.6)
-            tpl_blur  = cv2.GaussianBlur(bgr, (3,3), 0.6)
+            # --- Structural similarity (template match on top 2/3) ---
+            slot_blur = cv2.GaussianBlur(slot_crop_top, (3,3), 0.6)
+            tpl_blur  = cv2.GaussianBlur(tpl_crop_top, (3,3), 0.6)
 
+            # --- Before doing matchTemplate() ---
+            # Check variance of the slot — if it's basically flat gray, skip it
+            slot_var = np.var(slot_img)
+            if slot_var < 5:  # tweak threshold (typical empty gray variance ≈ 0–2)
+                print(f"[DEBUG] Slot {i}: Empty or flat background detected (variance={slot_var:.3f}) — skipping.")
+                break
 
-            # Match using alpha mask
-            res = cv2.matchTemplate(slot_blur, tpl_blur, cv2.TM_CCOEFF_NORMED, mask=alpha)
-            _, max_val, _, _ = cv2.minMaxLoc(res)
+            res = cv2.matchTemplate(slot_blur, tpl_blur, cv2.TM_CCOEFF_NORMED, mask=mask_crop_top)
+            _, structural_val, _, _ = cv2.minMaxLoc(res)
 
-            if max_val > best_val:
-                best_val = max_val
+            # --- Color similarity weighting (HSV hue on top 2/3 only) ---
+            slot_hsv = cv2.cvtColor(slot_crop_top, cv2.COLOR_BGR2HSV)
+            tpl_hsv  = cv2.cvtColor(tpl_crop_top,  cv2.COLOR_BGR2HSV)
+
+            mask_bool = mask_crop_top > 10
+            slot_hue = slot_hsv[..., 0][mask_bool]
+            tpl_hue  = tpl_hsv[..., 0][mask_bool]
+
+            if len(slot_hue) and len(tpl_hue):
+                hue_diff = np.mean(np.abs(slot_hue.astype(np.float32) - tpl_hue.astype(np.float32)))
+                hue_diff = np.minimum(hue_diff, 180 - hue_diff)  # handle wraparound (OpenCV hue 0–180)
+                color_score = 1.0 - min(hue_diff / 90.0, 1.0)
+            else:
+                color_score = 0.5  # neutral fallback
+
+            # --- Combine structure + color weighting ---
+            final_val = 0.9 * structural_val + 0.1 * color_score
+
+            # --- Update best match if higher confidence ---
+            if final_val > best_val:
+                best_val = final_val
                 best_item = item_name
+
 
         # --- Record if above threshold ---
         if best_item and best_val >= threshold:
@@ -167,6 +269,39 @@ def save_slot_debug_image(loot_gui, slots, output_path="./debug_slots/"):
     cv2.imwrite(out_path, debug_img)
     print(f"🖼️ Saved slot debug overlay: {out_path}")
 
+import json, os
+
+PLAYER_RECORD_FILE = "./guild_loot_records.json"
+
+def load_player_records():
+    if os.path.exists(PLAYER_RECORD_FILE):
+        with open(PLAYER_RECORD_FILE, "r", encoding="utf-8") as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                return {}
+    return {}
+
+def save_player_records(records):
+    with open(PLAYER_RECORD_FILE, "w", encoding="utf-8") as f:
+        json.dump(records, f, indent=2)
+
+def ensure_player_exists(records, player_name):
+    """Ensure a player entry exists with at least one PPE."""
+    key = player_name.lower()
+    if key not in records:
+        records[key] = {"ppes": [], "active_ppe": None}
+    return key
+
+def get_active_ppe(player_data):
+    """Return the active PPE dict, or None."""
+    active_id = player_data.get("active_ppe")
+    for ppe in player_data.get("ppes", []):
+        if ppe["id"] == active_id:
+            return ppe
+    return None
+
+
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
@@ -189,6 +324,36 @@ async def on_ready():
         """)
         await db.commit()
 
+@bot.command(name="newppe", help="Create a new PPE and make it your active one.")
+async def newppe(ctx: commands.Context):
+    records = load_player_records()
+    key = ensure_player_exists(records, ctx.author.display_name)
+
+    player_data = records[key]
+    next_id = max([ppe["id"] for ppe in player_data["ppes"]], default=0) + 1
+
+    new_ppe = {"id": next_id, "name": f"PPE #{next_id}", "points": 0, "items": []}
+    player_data["ppes"].append(new_ppe)
+    player_data["active_ppe"] = next_id
+
+    save_player_records(records)
+    await ctx.reply(f"✅ Created **PPE #{next_id}** and set it as your active PPE.")
+
+@bot.command(name="setactiveppe", help="Set which PPE is active for point tracking.")
+async def setactiveppe(ctx: commands.Context, ppe_id: int):
+    records = load_player_records()
+    key = ensure_player_exists(records, ctx.author.display_name)
+    player_data = records[key]
+
+    ppe_ids = [ppe["id"] for ppe in player_data["ppes"]]
+    if ppe_id not in ppe_ids:
+        return await ctx.reply(f"❌ You don’t have a PPE #{ppe_id}. Use !newppe to create one.")
+
+    player_data["active_ppe"] = ppe_id
+    save_player_records(records)
+    await ctx.reply(f"✅ Set **PPE #{ppe_id}** as your active PPE.")
+
+
         
 @bot.event
 async def on_message(message: discord.Message):
@@ -202,12 +367,16 @@ async def on_message(message: discord.Message):
 
             found_items = find_items_in_image(file_path)
             if found_items:
-                msg = "💎 **Detected loot:**\n" + "\n".join(
-                    [f"Slot {d['slot']}: {d['item']} ({d['confidence']:.2f})" for d in found_items]
-                )
-            else:
-                msg = "🤔 No loot detected."
-            await message.channel.send(msg)
+                player_name = str(message.author.display_name)
+                loot_results, total = calculate_loot_points(player_name, found_items)
+
+                msg_lines = [f"**{player_name}'s Loot Summary:**"]
+                for loot in loot_results:
+                    dup_tag = " (Duplicate ⚠️)" if loot["duplicate"] else ""
+                    msg_lines.append(f"- {loot['item']}: +{loot['points']} points{dup_tag}")
+                msg_lines.append(f"**Total Points:** {total:.1f}")
+
+                await message.channel.send("\n".join(msg_lines))
 
     await bot.process_commands(message)
 
