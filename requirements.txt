@@ -3,4 +3,3 @@ python-dotenv
 aiosqlite
 opencv-python
 numpy
-Flask
