@@ -385,6 +385,9 @@ async def on_message(message: discord.Message):
 
     for attachment in message.attachments:
         if attachment.filename.lower().endswith((".png", ".jpg", ".jpeg")):
+            # --- Prepare download directory ---
+            download_dir = "./downloads"
+            os.makedirs(download_dir, exist_ok=True)
             file_path = f"./downloads/{attachment.filename}"
             await attachment.save(file_path)
 
