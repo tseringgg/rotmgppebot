@@ -387,6 +387,15 @@ async def on_message(message: discord.Message):
         # Still allow normal commands to run elsewhere
         return await bot.process_commands(message)
 
+    # --- Only allow PPE Players or PPE Admins ---
+    has_ppe_player = discord.utils.get(message.author.roles, name="PPE Player")
+    has_ppe_admin = discord.utils.get(message.author.roles, name="PPE Admin")
+
+    if not (has_ppe_player or has_ppe_admin):
+        # Optional: politely ignore or respond
+        print(f"🚫 Ignored message from {message.author} (no PPE role).")
+        return
+    
     for attachment in message.attachments:
         if attachment.filename.lower().endswith((".png", ".jpg", ".jpeg")):
             # --- Prepare download directory ---
@@ -650,14 +659,18 @@ async def list_ppe_channels(ctx: commands.Context):
 
 @bot.command(name="ppehelp", help="Show available PPE commands for players and admins.")
 async def ppehelp(ctx):
+
+    # --- Commands for everyone ---
+    everyone_cmds = {
+        "leaderboard": "Show the current PPE leaderboard.",
+        "ppehelp": "Show this help message.",
+        "listroles": "List all roles in this server.",
+    }
     # --- Player Commands ---
     player_cmds = {
         "myppe": "View your current PPE stats or progress.",
         "newppe": "Start a new PPE run and track your progress.",
         "setactiveppe": "Set which of your PPE characters is currently active.",
-        "leaderboard": "Show the current PPE leaderboard.",
-        "ppehelp": "Show this help message.",
-        "listroles": "List all roles in this server.",
     }
 
     # --- Admin Commands ---
@@ -685,6 +698,10 @@ async def ppehelp(ctx):
         ),
         color=discord.Color.blurple()
     )
+
+    # --- Format everyone commands ---
+    everyone_text = "\n".join([f"• `!{cmd}` — {desc}" for cmd, desc in everyone_cmds.items()])
+    embed.add_field(name="⚪ Everyone Commands", value=everyone_text or "None available", inline=False)
 
     # --- Format player commands ---
     player_text = "\n".join([f"• `!{cmd}` — {desc}" for cmd, desc in player_cmds.items()])
