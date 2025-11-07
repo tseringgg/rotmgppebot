@@ -653,18 +653,26 @@ async def ppehelp(ctx):
         "myppe": "View your current PPE stats or progress.",
         "newppe": "Start a new PPE run and track your progress.",
         "setactiveppe": "Set which of your PPE characters is currently active.",
-        "leaderboard": "Show the current PPE leaderboard."
+        "leaderboard": "Show the current PPE leaderboard.",
+        "ppehelp": "Show this help message.",
+        "listroles": "List all roles in this server.",
     }
 
     # --- Admin Commands ---
     admin_cmds = {
-        "resetloot": "Reset a player's loot and points.",
-        "giveppeadminrole": "Give the PPE Admin role to a member.",
+        "listppechannels": "List all channels marked as PPE channels.",
+        "setppechannel": "Mark this channel as a PPE channel.",
+        "unsetppechannel": "Remove this channel from PPE channels.",
+        "addplayer": "Add a member to the PPE contest.",
+        "removeplayer": "Remove a member from the PPE contest.",
+        "listplayers": "List all current participants in the PPE contest.",
+        "addpointsfor": "Add points to another player's active PPE.",
         "giveppeplayerrole": "Give the PPE Player role to a member.",
-        "removeppeadminrole": "Remove the PPE Admin role from a member.",
         "removeppeplayerrole": "Remove the PPE Player role from a member.",
-        "listroles": "List all roles in this server.",
-        "ppehelp": "Show this help message.",
+    }
+    owner_cmds = {
+        "giveppeadminrole": "Give the PPE Admin role to a member.",
+        "removeppeadminrole": "Remove the PPE Admin role from a member.",
     }
 
     # --- Create help embed ---
@@ -685,6 +693,10 @@ async def ppehelp(ctx):
     # --- Format admin commands ---
     admin_text = "\n".join([f"• `!{cmd}` — {desc}" for cmd, desc in admin_cmds.items()])
     embed.add_field(name="🔴 Admin Commands", value=admin_text or "None available", inline=False)
+    
+    # --- Format owner commands ---
+    owner_text = "\n".join([f"• `!{cmd}` — {desc}" for cmd, desc in owner_cmds.items()])
+    embed.add_field(name="🔒 Owner Commands", value=owner_text or "None available", inline=False)
 
     # --- Footer ---
     embed.set_footer(text="PPE Bot by LogicVoid — use !ppehelp anytime for command info")
@@ -758,7 +770,6 @@ async def remove_ppe_player_role(ctx, member: discord.Member):
 
 # --- Command: list roles ---
 @bot.command(name="listroles", help="List all roles in this server.")
-@commands.has_permissions(manage_roles=True)
 async def list_roles(ctx):
     roles = [r.name for r in ctx.guild.roles if r.name != "@everyone"]
     await ctx.send("🎭 Available roles:\n" + "\n".join(f"- {r}" for r in roles))
