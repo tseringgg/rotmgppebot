@@ -9,6 +9,20 @@ import numpy as np
 import csv
 import json
 
+import threading, Flask
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
+
+# Start Flask server in a separate thread
+threading.Thread(target=run_web).start()
+
 LOOT_POINTS_CSV = "./rotmg_loot_drops.csv"
 PLAYER_RECORD_FILE = "./guild_loot_records.json"
 
