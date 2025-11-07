@@ -648,7 +648,7 @@ async def list_ppe_channels(ctx: commands.Context):
 
 @bot.command(name="ppehelp", help="Show available PPE commands for players and admins.")
 async def ppehelp(ctx):
-    # --- Define command categories ---
+    # --- Player Commands ---
     player_cmds = {
         "myppe": "View your current PPE stats or progress.",
         "newppe": "Start a new PPE run and track your progress.",
@@ -656,36 +656,38 @@ async def ppehelp(ctx):
         "leaderboard": "Show the current PPE leaderboard."
     }
 
+    # --- Admin Commands ---
     admin_cmds = {
         "resetloot": "Reset a player's loot and points.",
-        "giverole": "Give a role to a player (PPE Admin only).",
-        "removerole": "Remove a role from a player (PPE Admin only).",
-        "listroles": "List all server roles.",
+        "giveppeadminrole": "Give the PPE Admin role to a member.",
+        "giveppeplayerrole": "Give the PPE Player role to a member.",
+        "removeppeadminrole": "Remove the PPE Admin role from a member.",
+        "removeppeplayerrole": "Remove the PPE Player role from a member.",
+        "listroles": "List all roles in this server.",
         "ppehelp": "Show this help message.",
-        # Add any other admin commands here:
-        # "resetppe": "Reset an entire PPE run.",
-        # "setpoints": "Manually set points for a player."
     }
 
-    # --- Create embed for better formatting ---
+    # --- Create help embed ---
     embed = discord.Embed(
         title="🧙 PPE Bot Help",
-        description="Here’s a list of all available commands.\n"
-                    "🟢 **Player Commands** are for everyone with the PPE Player role.\n"
-                    "🔴 **Admin Commands** are for those with the PPE Admin role.",
+        description=(
+            "Welcome to the PPE competition bot!\n\n"
+            "🟢 **Player Commands** — for everyone with the **PPE Player** role.\n"
+            "🔴 **Admin Commands** — for members with the **PPE Admin** role or 'Manage Roles' permission."
+        ),
         color=discord.Color.blurple()
     )
 
-    # --- Player Commands ---
+    # --- Format player commands ---
     player_text = "\n".join([f"• `!{cmd}` — {desc}" for cmd, desc in player_cmds.items()])
     embed.add_field(name="🟢 Player Commands", value=player_text or "None available", inline=False)
 
-    # --- Admin Commands ---
+    # --- Format admin commands ---
     admin_text = "\n".join([f"• `!{cmd}` — {desc}" for cmd, desc in admin_cmds.items()])
     embed.add_field(name="🔴 Admin Commands", value=admin_text or "None available", inline=False)
 
     # --- Footer ---
-    embed.set_footer(text="PPE Bot by Jorjei — use !ppehelp anytime")
+    embed.set_footer(text="PPE Bot by LogicVoid — use !ppehelp anytime for command info")
 
     await ctx.send(embed=embed)
 
@@ -693,35 +695,66 @@ async def ppehelp(ctx):
 #### ROLES ####
 ###############
 
-# --- Command: give role ---
-@bot.command(name="giverole", help="Give a role to a member. Admin only.")
+# --- Give PPE Admin role ---
+@bot.command(name="giveppeadminrole", help="Give the PPE Admin role to a member. Admin only.")
 @commands.has_permissions(manage_roles=True)
-async def give_role(ctx, member: discord.Member, *, role_name: str):
-    role = discord.utils.get(ctx.guild.roles, name=role_name)
+async def give_ppe_admin_role(ctx, member: discord.Member):
+    role = discord.utils.get(ctx.guild.roles, name="PPE Admin")
     if not role:
-        await ctx.send(f"❌ Role `{role_name}` not found.")
+        await ctx.send("❌ PPE Admin role not found. Create it first.")
         return
 
     try:
         await member.add_roles(role)
-        await ctx.send(f"✅ Gave **{role.name}** to **{member.display_name}**.")
+        await ctx.send(f"✅ Gave **PPE Admin** role to **{member.display_name}**.")
     except discord.Forbidden:
-        await ctx.send("❌ I don't have permission to manage that role. Move my role higher in the list.")
+        await ctx.send("❌ I don't have permission to manage that role. Move my bot role higher in the hierarchy.")
 
-# --- Command: remove role ---
-@bot.command(name="removerole", help="Remove a role from a member. Admin only.")
-@commands.has_permissions(manage_roles=True)
-async def remove_role(ctx, member: discord.Member, *, role_name: str):
-    role = discord.utils.get(ctx.guild.roles, name=role_name)
+# --- Give PPE Player role ---
+@bot.command(name="giveppeplayerrole", help="Give the PPE Player role to a member. Admin only.")
+@commands.has_role("PPE Admin")
+async def give_ppe_player_role(ctx, member: discord.Member):
+    role = discord.utils.get(ctx.guild.roles, name="PPE Player")
     if not role:
-        await ctx.send(f"❌ Role `{role_name}` not found.")
+        await ctx.send("❌ PPE Player role not found. Create it first.")
+        return
+
+    try:
+        await member.add_roles(role)
+        await ctx.send(f"✅ Gave **PPE Player** role to **{member.display_name}**.")
+    except discord.Forbidden:
+        await ctx.send("❌ I don't have permission to manage that role. Move my bot role higher in the hierarchy.")
+
+# --- Remove PPE Admin role ---
+@bot.command(name="removeppeadminrole", help="Remove the PPE Admin role from a member. Admin only.")
+@commands.has_permissions(manage_roles=True)
+async def remove_ppe_admin_role(ctx, member: discord.Member):
+    role = discord.utils.get(ctx.guild.roles, name="PPE Admin")
+    if not role:
+        await ctx.send("❌ PPE Admin role not found.")
         return
 
     try:
         await member.remove_roles(role)
-        await ctx.send(f"✅ Removed **{role.name}** from **{member.display_name}**.")
+        await ctx.send(f"✅ Removed **PPE Admin** role from **{member.display_name}**.")
     except discord.Forbidden:
-        await ctx.send("❌ I don't have permission to manage that role. Move my role higher in the list.")
+        await ctx.send("❌ I don't have permission to manage that role. Move my bot role higher in the hierarchy.")
+
+
+# --- Remove PPE Player role ---
+@bot.command(name="removeppeplayerrole", help="Remove the PPE Player role from a member. Admin only.")
+@commands.has_role("PPE Admin")
+async def remove_ppe_player_role(ctx, member: discord.Member):
+    role = discord.utils.get(ctx.guild.roles, name="PPE Player")
+    if not role:
+        await ctx.send("❌ PPE Player role not found.")
+        return
+
+    try:
+        await member.remove_roles(role)
+        await ctx.send(f"✅ Removed **PPE Player** role from **{member.display_name}**.")
+    except discord.Forbidden:
+        await ctx.send("❌ I don't have permission to manage that role. Move my bot role higher in the hierarchy.")
 
 # --- Command: list roles ---
 @bot.command(name="listroles", help="List all roles in this server.")
