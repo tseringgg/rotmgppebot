@@ -499,6 +499,7 @@ async def listplayers(ctx: commands.Context):
 @bot.command(name="addplayer", help="Add a player to the PPE contest and create their first active PPE.")
 @commands.has_role("PPE Admin")
 async def addplayer(ctx: commands.Context, member: discord.Member):
+    give_ppe_player_role(ctx, member)
     """
     Adds a new member to the PPE contest.
     - Creates their first PPE (PPE #1)
@@ -526,6 +527,7 @@ async def addplayer(ctx: commands.Context, member: discord.Member):
 @bot.command(name="removeplayer", help="Remove a player and all their PPE data from the contest.")
 @commands.has_role("PPE Admin")
 async def removeplayer(ctx: commands.Context, member: discord.Member):
+    remove_ppe_player_role(ctx, member)
     records = load_player_records()
     key = member.display_name.lower()
 
@@ -667,8 +669,6 @@ async def ppehelp(ctx):
         "removeplayer": "Remove a member from the PPE contest.",
         "listplayers": "List all current participants in the PPE contest.",
         "addpointsfor": "Add points to another player's active PPE.",
-        "giveppeplayerrole": "Give the PPE Player role to a member.",
-        "removeppeplayerrole": "Remove the PPE Player role from a member.",
     }
     owner_cmds = {
         "giveppeadminrole": "Give the PPE Admin role to a member.",
@@ -693,7 +693,7 @@ async def ppehelp(ctx):
     # --- Format admin commands ---
     admin_text = "\n".join([f"• `!{cmd}` — {desc}" for cmd, desc in admin_cmds.items()])
     embed.add_field(name="🔴 Admin Commands", value=admin_text or "None available", inline=False)
-    
+
     # --- Format owner commands ---
     owner_text = "\n".join([f"• `!{cmd}` — {desc}" for cmd, desc in owner_cmds.items()])
     embed.add_field(name="🔒 Owner Commands", value=owner_text or "None available", inline=False)
@@ -723,8 +723,8 @@ async def give_ppe_admin_role(ctx, member: discord.Member):
         await ctx.send("❌ I don't have permission to manage that role. Move my bot role higher in the hierarchy.")
 
 # --- Give PPE Player role ---
-@bot.command(name="giveppeplayerrole", help="Give the PPE Player role to a member. Admin only.")
-@commands.has_role("PPE Admin")
+# @bot.command(name="giveppeplayerrole", help="Give the PPE Player role to a member. Admin only.")
+# @commands.has_role("PPE Admin")
 async def give_ppe_player_role(ctx, member: discord.Member):
     role = discord.utils.get(ctx.guild.roles, name="PPE Player")
     if not role:
@@ -754,8 +754,8 @@ async def remove_ppe_admin_role(ctx, member: discord.Member):
 
 
 # --- Remove PPE Player role ---
-@bot.command(name="removeppeplayerrole", help="Remove the PPE Player role from a member. Admin only.")
-@commands.has_role("PPE Admin")
+# @bot.command(name="removeppeplayerrole", help="Remove the PPE Player role from a member. Admin only.")
+# @commands.has_role("PPE Admin")
 async def remove_ppe_player_role(ctx, member: discord.Member):
     role = discord.utils.get(ctx.guild.roles, name="PPE Player")
     if not role:
