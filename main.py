@@ -134,6 +134,8 @@ def find_items_in_image(
             sy = row * (cell_h + 0)
             slots.append((sx, sy, cell_w, cell_h))
 
+    slots = slots[:4]   # ✅ Only check the first 4 slots for speed
+
     # --- 4. Load templates (with transparency) ---
     templates = []
     for file in os.listdir(templates_folder):
@@ -329,6 +331,7 @@ async def on_ready():
         await db.commit()
 
 @bot.command(name="newppe", help="Create a new PPE (max 10) and make it your active one.")
+@commands.has_role("PPE Admin")
 async def newppe(ctx: commands.Context):
     records = load_player_records()
     key = ctx.author.display_name.lower()
@@ -357,6 +360,7 @@ async def newppe(ctx: commands.Context):
 
 
 @bot.command(name="setactiveppe", help="Set which PPE is active for point tracking.")
+@commands.has_role("PPE Player")
 async def setactiveppe(ctx: commands.Context, ppe_id: int):
     records = load_player_records()
     key = ensure_player_exists(records, ctx.author.display_name)
@@ -416,7 +420,7 @@ async def on_message(message: discord.Message):
 #     await ctx.send(f"🗑️ Removed {member.display_name} from the leaderboard.")
     
 @bot.command(name="addpointsfor", help="Add points to another player's active PPE.")
-@commands.has_permissions(manage_guild=True)
+@commands.has_role("PPE Admin")  # both can use
 async def addpointsfor(ctx: commands.Context, member: discord.Member, amount: float):
     records = load_player_records()
     key = member.display_name.lower()
@@ -442,37 +446,38 @@ async def addpointsfor(ctx: commands.Context, member: discord.Member, amount: fl
                     f"**New total:** {active_ppe['points']:.1f} points.")
 
 
-@bot.command(name="addpoints", help="Add points to your active PPE.")
-async def addpoints(ctx: commands.Context, amount: float):
-    records = load_player_records()
-    key = ctx.author.display_name.lower()
+# @bot.command(name="addpoints", help="Add points to your active PPE.")
+# @commands.has_role("PPE Admin")
+# async def addpoints(ctx: commands.Context, amount: float):
+#     records = load_player_records()
+#     key = ctx.author.display_name.lower()
 
-    # Must be a contest member
-    if key not in records or not records[key].get("is_member", False):
-        return await ctx.reply("❌ You’re not part of the PPE contest. Ask a mod to add you with `!addplayer @you`.")
+#     # Must be a contest member
+#     if key not in records or not records[key].get("is_member", False):
+#         return await ctx.reply("❌ You’re not part of the PPE contest. Ask a mod to add you with `!addplayer @you`.")
 
-    player_data = records[key]
-    active_id = player_data.get("active_ppe")
-    if not active_id:
-        return await ctx.reply("❌ You don’t have an active PPE. Use `!newppe` to create one first.")
+#     player_data = records[key]
+#     active_id = player_data.get("active_ppe")
+#     if not active_id:
+#         return await ctx.reply("❌ You don’t have an active PPE. Use `!newppe` to create one first.")
 
-    # Find the active PPE
-    active_ppe = next((p for p in player_data["ppes"] if p["id"] == active_id), None)
-    if not active_ppe:
-        return await ctx.reply("❌ Could not find your active PPE record. Try creating a new one with `!newppe`.")
+#     # Find the active PPE
+#     active_ppe = next((p for p in player_data["ppes"] if p["id"] == active_id), None)
+#     if not active_ppe:
+#         return await ctx.reply("❌ Could not find your active PPE record. Try creating a new one with `!newppe`.")
 
-    # Add points (rounded down to nearest 0.5)
-    import math
-    amount = math.floor(amount * 2) / 2
-    active_ppe["points"] += amount
-    save_player_records(records)
+#     # Add points (rounded down to nearest 0.5)
+#     import math
+#     amount = math.floor(amount * 2) / 2
+#     active_ppe["points"] += amount
+#     save_player_records(records)
 
-    await ctx.reply(f"✅ Added **{amount:.1f}** points to your active PPE (PPE #{active_id}).\n"
-                    f"**New total:** {active_ppe['points']:.1f} points.")
+#     await ctx.reply(f"✅ Added **{amount:.1f}** points to your active PPE (PPE #{active_id}).\n"
+#                     f"**New total:** {active_ppe['points']:.1f} points.")
 
 
 @bot.command(name="listplayers", help="Show all current participants in the PPE contest.")
-@commands.has_permissions(manage_guild=True)
+@commands.has_role("PPE Admin")
 async def listplayers(ctx: commands.Context):
     records = load_player_records()
 
@@ -492,7 +497,7 @@ async def listplayers(ctx: commands.Context):
 
 
 @bot.command(name="addplayer", help="Add a player to the PPE contest and create their first active PPE.")
-@commands.has_permissions(manage_guild=True)
+@commands.has_role("PPE Admin")
 async def addplayer(ctx: commands.Context, member: discord.Member):
     """
     Adds a new member to the PPE contest.
@@ -519,7 +524,7 @@ async def addplayer(ctx: commands.Context, member: discord.Member):
     await ctx.reply(f"✅ Added **{member.display_name}** to the PPE contest and created **PPE #1** as their active PPE.")
 
 @bot.command(name="removeplayer", help="Remove a player and all their PPE data from the contest.")
-@commands.has_permissions(manage_guild=True)
+@commands.has_role("PPE Admin")
 async def removeplayer(ctx: commands.Context, member: discord.Member):
     records = load_player_records()
     key = member.display_name.lower()
@@ -536,6 +541,7 @@ async def removeplayer(ctx: commands.Context, member: discord.Member):
 
 
 @bot.command(name="myppe", help="Show all your PPEs and which one is active.")
+@commands.has_role("PPE Player")
 async def myppe(ctx: commands.Context):
     records = load_player_records()
     key = ctx.author.display_name.lower()
@@ -578,6 +584,10 @@ async def leaderboard(ctx: commands.Context):
 
 import json, os
 
+######################
+#### PPE CHANNELS ####
+######################
+
 PPE_CHANNEL_FILE = "./ppe_channels.json"
 
 def load_ppe_channels():
@@ -595,7 +605,7 @@ def save_ppe_channels(channel_ids):
         json.dump({"ppe_channels": channel_ids}, f, indent=2)
 
 @bot.command(name="setppechannel", help="Mark this channel as a PPE channel.")
-@commands.has_permissions(manage_guild=True)
+@commands.has_role("PPE Admin")
 async def set_ppe_channel(ctx: commands.Context):
     channel_id = ctx.channel.id
     channels = load_ppe_channels()
@@ -608,7 +618,7 @@ async def set_ppe_channel(ctx: commands.Context):
 
 
 @bot.command(name="unsetppechannel", help="Remove this channel from PPE channels.")
-@commands.has_permissions(manage_guild=True)
+@commands.has_role("PPE Admin")
 async def unset_ppe_channel(ctx: commands.Context):
     channel_id = ctx.channel.id
     channels = load_ppe_channels()
@@ -621,7 +631,7 @@ async def unset_ppe_channel(ctx: commands.Context):
 
 
 @bot.command(name="listppechannels", help="Show all channels marked as PPE channels.")
-@commands.has_permissions(manage_guild=True)
+@commands.has_role("PPE Admin")
 async def list_ppe_channels(ctx: commands.Context):
     channels = load_ppe_channels()
     if not channels:
@@ -636,40 +646,89 @@ async def list_ppe_channels(ctx: commands.Context):
     await ctx.reply("\n".join(lines))
 
 
-@bot.command(name="ppehelp", help="Show all PPE contest commands and descriptions.")
-async def ppehelp(ctx: commands.Context):
-    lines = [
-        "📘 **PPE Contest Commands**",
-        "",
-        "__**🎮 Player Commands**__",
-        "`!addpoints <amount>` — Add points to your active PPE.",
-        "`!myppe` — View all your PPEs and see which one is active.",
-        "`!newppe` — Create a new PPE (up to 10 total) and make it active.",
-        "`!setactiveppe <id>` — Set one of your PPEs as the active one.",
-        "`!leaderboard` — Show the best PPE from each player.",
-        "",
-        "__**🏆 Contest Participation**__",
-        "`!addplayer @user` — Add a player to the contest and give them their first PPE.",
-        "`!listplayers` — Show all contest participants and their active PPEs.",
-        "`!removeplayer @user` — Remove a player and all of their PPE data.",
-        "",
-        "__**💰 Points Management**__",
-        "`!addpointsfor @user <amount>` — Add points to another player's active PPE (mod only).",
-        # "`!resetloot @user` — Reset a player's loot and points. [DEPRECATED]",
-        "",
-        "__**💬 Channel Setup**__",
-        "`!setppechannel` — Mark this channel as a PPE screenshot channel.",
-        "`!unsetppechannel` — Unmark this channel as a PPE screenshot channel.",
-        "`!listppechannels` — Show all registered PPE screenshot channels.",
-        "",
-        "__**ℹ️ General Info**__",
-        "`!ppehelp` — Show this help message.",
-        "",
-        "_💡 Only images posted in registered PPE channels will be processed._",
-        "_🧮 Points are automatically rounded down to the nearest 0.5._"
-    ]
-    await ctx.reply("\n".join(lines))
+@bot.command(name="ppehelp", help="Show available PPE commands for players and admins.")
+async def ppehelp(ctx):
+    # --- Define command categories ---
+    player_cmds = {
+        "myppe": "View your current PPE stats or progress.",
+        "newppe": "Start a new PPE run and track your progress.",
+        "setactiveppe": "Set which of your PPE characters is currently active.",
+        "leaderboard": "Show the current PPE leaderboard."
+    }
 
+    admin_cmds = {
+        "resetloot": "Reset a player's loot and points.",
+        "giverole": "Give a role to a player (PPE Admin only).",
+        "removerole": "Remove a role from a player (PPE Admin only).",
+        "listroles": "List all server roles.",
+        "ppehelp": "Show this help message.",
+        # Add any other admin commands here:
+        # "resetppe": "Reset an entire PPE run.",
+        # "setpoints": "Manually set points for a player."
+    }
+
+    # --- Create embed for better formatting ---
+    embed = discord.Embed(
+        title="🧙 PPE Bot Help",
+        description="Here’s a list of all available commands.\n"
+                    "🟢 **Player Commands** are for everyone with the PPE Player role.\n"
+                    "🔴 **Admin Commands** are for those with the PPE Admin role.",
+        color=discord.Color.blurple()
+    )
+
+    # --- Player Commands ---
+    player_text = "\n".join([f"• `!{cmd}` — {desc}" for cmd, desc in player_cmds.items()])
+    embed.add_field(name="🟢 Player Commands", value=player_text or "None available", inline=False)
+
+    # --- Admin Commands ---
+    admin_text = "\n".join([f"• `!{cmd}` — {desc}" for cmd, desc in admin_cmds.items()])
+    embed.add_field(name="🔴 Admin Commands", value=admin_text or "None available", inline=False)
+
+    # --- Footer ---
+    embed.set_footer(text="PPE Bot by Jorjei — use !ppehelp anytime")
+
+    await ctx.send(embed=embed)
+
+###############
+#### ROLES ####
+###############
+
+# --- Command: give role ---
+@bot.command(name="giverole", help="Give a role to a member. Admin only.")
+@commands.has_permissions(manage_roles=True)
+async def give_role(ctx, member: discord.Member, *, role_name: str):
+    role = discord.utils.get(ctx.guild.roles, name=role_name)
+    if not role:
+        await ctx.send(f"❌ Role `{role_name}` not found.")
+        return
+
+    try:
+        await member.add_roles(role)
+        await ctx.send(f"✅ Gave **{role.name}** to **{member.display_name}**.")
+    except discord.Forbidden:
+        await ctx.send("❌ I don't have permission to manage that role. Move my role higher in the list.")
+
+# --- Command: remove role ---
+@bot.command(name="removerole", help="Remove a role from a member. Admin only.")
+@commands.has_permissions(manage_roles=True)
+async def remove_role(ctx, member: discord.Member, *, role_name: str):
+    role = discord.utils.get(ctx.guild.roles, name=role_name)
+    if not role:
+        await ctx.send(f"❌ Role `{role_name}` not found.")
+        return
+
+    try:
+        await member.remove_roles(role)
+        await ctx.send(f"✅ Removed **{role.name}** from **{member.display_name}**.")
+    except discord.Forbidden:
+        await ctx.send("❌ I don't have permission to manage that role. Move my role higher in the list.")
+
+# --- Command: list roles ---
+@bot.command(name="listroles", help="List all roles in this server.")
+@commands.has_permissions(manage_roles=True)
+async def list_roles(ctx):
+    roles = [r.name for r in ctx.guild.roles if r.name != "@everyone"]
+    await ctx.send("🎭 Available roles:\n" + "\n".join(f"- {r}" for r in roles))
 
 
 
