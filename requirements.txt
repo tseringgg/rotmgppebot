@@ -1,5 +1,5 @@
 discord.py
 python-dotenv
 aiosqlite
-opencv-python
+opencv-python-headless
 numpy
