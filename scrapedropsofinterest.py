@@ -38,7 +38,7 @@ def main():
     loot_df = pd.read_csv(LOOT_TABLE_FILE)
 
     # Ensure Points column exists and initialize all to 10
-    loot_df["Points"] = 10.0
+    # loot_df["Points"] = 10.0
     loot_df["Item Name Lower"] = loot_df["Item Name"].str.lower().str.strip()
 
     # === Load dungeon difficulties (no header in your file) ===
@@ -69,16 +69,27 @@ def main():
             print(f"[!] No drops found for {file}")
             continue
 
-        matched = 0
+        added = 0
         for drop in drops:
-            drop_clean = drop.lower().strip()
-            loot_match = loot_df["Item Name Lower"] == drop_clean
-            if loot_match.any():
-                loot_df.loc[loot_match, "Points"] = difficulty  # Update points to dungeon difficulty, NOT add
-                matched += 1
+            drop_clean = drop.strip()
 
-        total_updated += matched
-        print(f"[✓] {file}: matched {matched} drops (+{difficulty} points each)")
+            # Skip unwanted items
+            if any(keyword in drop_clean for keyword in ["Potion", "Mark of", " Rune", "Tier "]):
+                continue
+
+            # Append new loot entry directly
+            new_entry = {
+                "Loot Type": "White or ST",
+                "Item Name": drop_clean,
+                "Points": difficulty
+            }
+
+            loot_df.loc[len(loot_df)] = new_entry
+            added += 1
+
+        total_updated += added
+        print(f"[✓] {file}: added {added} new drops (+{difficulty} points each)")
+
 
     # === Save updates ===
     loot_df.drop(columns=["Item Name Lower"], inplace=True)

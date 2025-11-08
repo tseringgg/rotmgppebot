@@ -1,0 +1,50 @@
+2025/11/07-16:01:41.096 5f4 Reusing MANIFEST C:\Users\jorje\rotmgppebot\chrome_profile\Default\IndexedDB\https_imgur.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/11/07-16:01:41.096 5f4 Recovering log #4
+2025/11/07-16:01:41.096 5f4 Reusing old log C:\Users\jorje\rotmgppebot\chrome_profile\Default\IndexedDB\https_imgur.com_0.indexeddb.leveldb/000004.log 
+2025/11/07-16:01:41.137 cd8 Level-0 table #8: started
+2025/11/07-16:01:41.142 cd8 Level-0 table #8: 4232 bytes OK
+2025/11/07-16:01:41.145 cd8 Delete type=0 #4
+2025/11/07-16:01:41.145 cd8 Manual compaction at level-0 from '\x00\x06\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x07\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/11/07-16:01:46.510 cd8 Level-0 table #10: started
+2025/11/07-16:01:46.513 cd8 Level-0 table #10: 2974 bytes OK
+2025/11/07-16:01:46.517 cd8 Delete type=0 #7
+2025/11/07-16:01:46.517 5f4 Manual compaction at level-0 from '\x00\x07\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x08\x00\x00\x00' @ 0 : 0; will stop at '\x00\x07\x00\x00\x05' @ 331 : 1
+2025/11/07-16:01:46.517 5f4 Compacting 1@0 + 1@1 files
+2025/11/07-16:01:46.520 5f4 Generated table #11@0: 116 keys, 2551 bytes
+2025/11/07-16:01:46.520 5f4 Compacted 1@0 + 1@1 files => 2551 bytes
+2025/11/07-16:01:46.522 5f4 compacted to: files[ 0 1 1 0 0 0 0 ]
+2025/11/07-16:01:46.523 5f4 Delete type=2 #10
+2025/11/07-16:01:46.523 5f4 Manual compaction at level-0 from '\x00\x07\x00\x00\x05' @ 331 : 1 .. '\x00\x08\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/11/07-16:01:50.984 cd8 Level-0 table #13: started
+2025/11/07-16:01:50.988 cd8 Level-0 table #13: 2057 bytes OK
+2025/11/07-16:01:50.996 cd8 Delete type=2 #8
+2025/11/07-16:01:50.997 cd8 Delete type=0 #9
+2025/11/07-16:01:50.997 5f4 Manual compaction at level-0 from '\x00\x08\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x09\x00\x00\x00' @ 0 : 0; will stop at '\x00\x08\x00\x00\x05' @ 374 : 1
+2025/11/07-16:01:50.997 5f4 Compacting 1@0 + 1@1 files
+2025/11/07-16:01:50.999 5f4 Generated table #14@0: 128 keys, 2640 bytes
+2025/11/07-16:01:50.999 5f4 Compacted 1@0 + 1@1 files => 2640 bytes
+2025/11/07-16:01:51.002 5f4 compacted to: files[ 0 1 1 0 0 0 0 ]
+2025/11/07-16:01:51.002 5f4 Delete type=2 #13
+2025/11/07-16:01:51.002 5f4 Manual compaction at level-0 from '\x00\x08\x00\x00\x05' @ 374 : 1 .. '\x00\x09\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/11/07-16:01:55.455 cd8 Level-0 table #16: started
+2025/11/07-16:01:55.458 cd8 Level-0 table #16: 2054 bytes OK
+2025/11/07-16:01:55.461 cd8 Delete type=2 #11
+2025/11/07-16:01:55.462 cd8 Delete type=0 #12
+2025/11/07-16:01:55.462 5f4 Manual compaction at level-0 from '\x00\x09\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x0a\x00\x00\x00' @ 0 : 0; will stop at '\x00\x09\x00\x00\x05' @ 417 : 1
+2025/11/07-16:01:55.462 5f4 Compacting 1@0 + 1@1 files
+2025/11/07-16:01:55.464 5f4 Generated table #17@0: 140 keys, 2761 bytes
+2025/11/07-16:01:55.464 5f4 Compacted 1@0 + 1@1 files => 2761 bytes
+2025/11/07-16:01:55.467 5f4 compacted to: files[ 0 1 1 0 0 0 0 ]
+2025/11/07-16:01:55.467 5f4 Delete type=2 #16
+2025/11/07-16:01:55.467 5f4 Manual compaction at level-0 from '\x00\x09\x00\x00\x05' @ 417 : 1 .. '\x00\x0a\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/11/07-16:01:59.972 cd8 Level-0 table #19: started
+2025/11/07-16:01:59.975 cd8 Level-0 table #19: 2055 bytes OK
+2025/11/07-16:01:59.979 cd8 Delete type=2 #14
+2025/11/07-16:01:59.979 cd8 Delete type=0 #15
+2025/11/07-16:01:59.979 5f4 Manual compaction at level-0 from '\x00\x0a\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x0b\x00\x00\x00' @ 0 : 0; will stop at '\x00\x0a\x00\x00\x05' @ 460 : 1
+2025/11/07-16:01:59.979 5f4 Compacting 1@0 + 1@1 files
+2025/11/07-16:01:59.981 5f4 Generated table #20@0: 152 keys, 2944 bytes
+2025/11/07-16:01:59.981 5f4 Compacted 1@0 + 1@1 files => 2944 bytes
+2025/11/07-16:01:59.983 5f4 compacted to: files[ 0 1 1 0 0 0 0 ]
+2025/11/07-16:01:59.983 5f4 Delete type=2 #19
+2025/11/07-16:01:59.983 5f4 Manual compaction at level-0 from '\x00\x0a\x00\x00\x05' @ 460 : 1 .. '\x00\x0b\x00\x00\x00' @ 0 : 0; will stop at (end)

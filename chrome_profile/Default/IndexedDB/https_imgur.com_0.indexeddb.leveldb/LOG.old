@@ -1,0 +1,6 @@
+2025/11/07-15:54:09.244 1dac Creating DB C:\Users\jorje\rotmgppebot\chrome_profile\Default\IndexedDB\https_imgur.com_0.indexeddb.leveldb since it was missing.
+2025/11/07-15:54:09.252 1dac Reusing MANIFEST C:\Users\jorje\rotmgppebot\chrome_profile\Default\IndexedDB\https_imgur.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/11/07-15:54:09.366 517c Level-0 table #5: started
+2025/11/07-15:54:09.372 517c Level-0 table #5: 1607 bytes OK
+2025/11/07-15:54:09.376 517c Delete type=0 #3
+2025/11/07-15:54:09.377 1dac Manual compaction at level-0 from '\x00\x02\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x03\x00\x00\x00' @ 0 : 0; will stop at (end)

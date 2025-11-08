@@ -1,0 +1,6 @@
+2025/11/07-16:01:38.659 6910 Reusing MANIFEST C:\Users\jorje\rotmgppebot\chrome_profile\Default\Local Storage\leveldb/MANIFEST-000001
+2025/11/07-16:01:38.663 6910 Recovering log #3
+2025/11/07-16:01:38.665 6910 Reusing old log C:\Users\jorje\rotmgppebot\chrome_profile\Default\Local Storage\leveldb/000003.log 
+2025/11/07-16:01:58.161 d80 Level-0 table #5: started
+2025/11/07-16:01:58.167 d80 Level-0 table #5: 21993 bytes OK
+2025/11/07-16:01:58.170 d80 Delete type=0 #3

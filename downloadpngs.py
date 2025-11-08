@@ -10,7 +10,7 @@ from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 
 # === CONFIGURATION ===
-url = "https://www.realmeye.com/wiki/loot-containers"
+url = "https://www.realmeye.com/wiki/rings"
 output_dir = "downloaded_pngs"
 
 # === SETUP SELENIUM (Headless Chrome) ===

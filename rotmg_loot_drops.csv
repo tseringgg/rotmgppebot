@@ -1,644 +1,742 @@
 Loot Type,Item Name,Points
-Tier 13 Armor,Dominion Armor,0
-Tier 14 Weapon,Dagger of Dire Hatred,1
-Tier 14 Weapon,Bow of Deep Enchantment,1
-Tier 14 Weapon,Staff of the Fundamental Core,1
-Tier 14 Weapon,Wand of Retribution,1
-Tier 14 Weapon,Sword of Majesty,1
-Tier 14 Weapon,Kusanagi,1
-Tier 14 Weapon,Soulforged Blades,1
-Tier 14 Weapon,Longbow of the Midnight Diamond,1
-Tier 14 Weapon,Spellblade of the Everlasting Death,1
-Tier 14 Weapon,Morning Star of Reckoning,1
-Tier 14 Weapon,Gravelord's Flail,1
-Tier 14 Weapon,Godslayer Tachi,1
-Tier 7 Ability,Cloak of Nightmares,1
-Tier 7 Ability,Quiver of the Autumn King,1
-Tier 7 Ability,Burning Retribution Spell,1
-Tier 7 Ability,Tome of Hallowed Language,1
-Tier 7 Ability,Helm of the Tribune,1
-Tier 7 Ability,Shield of Orcish Regalia,1
-Tier 7 Ability,Seal of Invocation,1
-Tier 7 Ability,Necrofish Poison,1
-Tier 7 Ability,Mindwaster Skull,1
-Tier 7 Ability,Depthchaser Trap,1
-Tier 7 Ability,Dimensiongate Orb,1
-Tier 7 Ability,Prism of Reveries,1
-Tier 7 Ability,Scepter of the Firmament,1
-Tier 7 Ability,Dynastic Star,1
-Tier 7 Ability,Virtuous Wakizashi,1
-Tier 7 Ability,Nebular Lute,1
-Tier 7 Ability,Grandmaster Mace,1
-Tier 7 Ability,Sonic Wave Sheath,1
-Tier 14 Armor,Leviathan Armor,1
-Tier 14 Armor,Robe of the Ancient Intellect,1
-Tier 14 Armor,Annihilation Armor,1
-Tier 7 Ring,Ring of Transcendent Health,1
-Tier 7 Ring,Ring of Transcendent Magic,1
-Tier 7 Ring,Ring of Transcendent Attack,1
-Tier 7 Ring,Ring of Transcendent Defense,1
-Tier 7 Ring,Ring of Transcendent Speed,1
-Tier 7 Ring,Ring of Transcendent Dexterity,1
-Tier 7 Ring,Ring of Transcendent Vitality,1
-Tier 7 Ring,Ring of Transcendent Wisdom,1
-Set-Tiered (Orange Bag),Etherite Dagger,4.5
-Set-Tiered (Orange Bag),Ghastly Drape,4.5
-Set-Tiered (Orange Bag),Mantle of Skuld,4.5
-Set-Tiered (Orange Bag),Spectral Ring of Horrors,4.5
-Set-Tiered (Orange Bag),Soulcursed Scythe,4.0
-Set-Tiered (Orange Bag),Vampiric Cape,4.0
-Set-Tiered (Orange Bag),Hallowed Hide,4.0
-Set-Tiered (Orange Bag),Ruthven's Rosary,4.0
-Set-Tiered (Orange Bag),Deathless Crossbow,4.0
-Set-Tiered (Orange Bag),Quiver of Shrieking Specters,4.0
-Set-Tiered (Orange Bag),Wraith's Brigandine,4.0
-Set-Tiered (Orange Bag),Revenant Ring,4.0
-Set-Tiered (Orange Bag),Resplendent Bow,3.0
-Set-Tiered (Orange Bag),Embellished Quiver,3.0
-Set-Tiered (Orange Bag),Ornate Armor,2.5
-Set-Tiered (Orange Bag),Aquamarine Amulet,3.0
-Set-Tiered (Orange Bag),Brilliance Bow,4.5
-Set-Tiered (Orange Bag),Quintessential Quiver,10.0
-Set-Tiered (Orange Bag),Luxurious Leather,4.5
-Set-Tiered (Orange Bag),Regal Ring,4.5
-Set-Tiered (Orange Bag),Corruption Tether,10.0
-Set-Tiered (Orange Bag),Ancient Eminence,10.0
-Set-Tiered (Orange Bag),Twilight Shroud,10.0
-Set-Tiered (Orange Bag),Defiled Equilibrium,10.0
-Set-Tiered (Orange Bag),Tideturner Trident,5.0
-Set-Tiered (Orange Bag),Slurpian Sea Scroll,5.0
-Set-Tiered (Orange Bag),Oceanic Apparel,5.0
-Set-Tiered (Orange Bag),Imperial Keepsake,5.0
-Set-Tiered (Orange Bag),Supernatural Staff,10.0
-Set-Tiered (Orange Bag),Spectral Spell,10.0
-Set-Tiered (Orange Bag),Immortal Mantle,10.0
-Set-Tiered (Orange Bag),Phantom Pendant,10.0
-Set-Tiered (Orange Bag),Wand of Geb,6.0
-Set-Tiered (Orange Bag),Book of Geb,6.0
-Set-Tiered (Orange Bag),Shendyt of Geb,6.0
-Set-Tiered (Orange Bag),Geb's Ring of Wisdom,6.0
-Set-Tiered (Orange Bag),Theurgy Wand,4.5
-Set-Tiered (Orange Bag),Ceremonial Merlot,4.5
-Set-Tiered (Orange Bag),Anointed Robe,10.0
-Set-Tiered (Orange Bag),Ring of Pagan Favor,10.0
-Set-Tiered (Orange Bag),Indomptable,6.0
-Set-Tiered (Orange Bag),Helm of Draconic Dominance,6.0
-Set-Tiered (Orange Bag),Zaarvox's Heart,6.0
-Set-Tiered (Orange Bag),Amulet of Drakefyre,6.0
-Set-Tiered (Orange Bag),Swashbuckler's Sickle,5.5
-Set-Tiered (Orange Bag),Tricorne of the High Seas,5.5
-Set-Tiered (Orange Bag),Naval Uniform,5.5
-Set-Tiered (Orange Bag),First Mate's Hook,5.5
-Set-Tiered (Orange Bag),Oryx's Greatsword,6.0
-Set-Tiered (Orange Bag),Champion's Bastion,6.0
-Set-Tiered (Orange Bag),Mercy's Bane,6.0
-Set-Tiered (Orange Bag),Bloodstone Ring,6.0
-Set-Tiered (Orange Bag),Dalvar's Battle Axe,7.0
-Set-Tiered (Orange Bag),Sunken Buckler,7.0
-Set-Tiered (Orange Bag),Chainmail Body Armor,7.0
-Set-Tiered (Orange Bag),Gjallarhorn,7.0
-Set-Tiered (Orange Bag),Pixie-Enchanted Sword,3.5
-Set-Tiered (Orange Bag),Seal of the Enchanted Forest,3.5
-Set-Tiered (Orange Bag),Fairy Plate,3.5
-Set-Tiered (Orange Bag),Ring of Pure Wishes,3.5
-Set-Tiered (Orange Bag),Fallen One's Blade,10.0
-Set-Tiered (Orange Bag),Abyssal Insignia,10.0
-Set-Tiered (Orange Bag),Vortex Plating,10.0
-Set-Tiered (Orange Bag),Eye of the Void,10.0
-Set-Tiered (Orange Bag),Symbiotic Ripper,5.5
-Set-Tiered (Orange Bag),Parasitic Concoction,5.5
-Set-Tiered (Orange Bag),Rags of the Host,5.5
-Set-Tiered (Orange Bag),Hivemind Circlet,5.5
-Set-Tiered (Orange Bag),Toxin Tooth,4.0
-Set-Tiered (Orange Bag),Virulent Venom,4.0
-Set-Tiered (Orange Bag),Acidic Armor,4.0
-Set-Tiered (Orange Bag),Pernicious Peridot,4.0
-Set-Tiered (Orange Bag),Edictum Praetoris,3.5
-Set-Tiered (Orange Bag),Memento Mori,10.0
-Set-Tiered (Orange Bag),Toga Picta,3.5
-Set-Tiered (Orange Bag),Interregnum,10.0
-Set-Tiered (Orange Bag),Squaroid Staff,6.0
-Set-Tiered (Orange Bag),Cubic Frame,6.0
-Set-Tiered (Orange Bag),Polygonal Garbs,6.0
-Set-Tiered (Orange Bag),Cuband,6.0
-Set-Tiered (Orange Bag),Gravekeeper's Scythe,10.0
-Set-Tiered (Orange Bag),Hooded Skull,10.0
-Set-Tiered (Orange Bag),Executioner's Garb,10.0
-Set-Tiered (Orange Bag),Grim Goblet,10.0
-Set-Tiered (Orange Bag),Nectar Crossfire,7.0
-Set-Tiered (Orange Bag),Honeytomb Snare,7.0
-Set-Tiered (Orange Bag),Apiary Armor,7.0
-Set-Tiered (Orange Bag),Honey Circlet,7.0
-Set-Tiered (Orange Bag),Bergenia Bow,3.0
-Set-Tiered (Orange Bag),Lifebringing Lotus,3.0
-Set-Tiered (Orange Bag),Hollyhock Hide,3.0
-Set-Tiered (Orange Bag),Chrysanthemum Corsage,10.0
-Set-Tiered (Orange Bag),The Phylactery,10.0
-Set-Tiered (Orange Bag),Soul of the Bearer,10.0
-Set-Tiered (Orange Bag),Soulless Robe,10.0
-Set-Tiered (Orange Bag),Ring of the Covetous Heart,10.0
-Set-Tiered (Orange Bag),Staff of Eruption,4.0
-Set-Tiered (Orange Bag),Scorchium Stone,4.0
-Set-Tiered (Orange Bag),Molten Mantle,4.0
-Set-Tiered (Orange Bag),Ring of the Inferno,4.0
-Set-Tiered (Orange Bag),Stygian Torch,10.0
-Set-Tiered (Orange Bag),Orb of the Sabbath,10.0
-Set-Tiered (Orange Bag),Robe of the Enchantress,10.0
-Set-Tiered (Orange Bag),Witch's Brooch,10.0
-Set-Tiered (Orange Bag),Carved Golem Remains,8.0
-Set-Tiered (Orange Bag),Brain of the Golem,8.0
-Set-Tiered (Orange Bag),Golem Garments,8.0
-Set-Tiered (Orange Bag),Rusty Cuffs,8.0
-Set-Tiered (Orange Bag),Archangel's Judgement,10.0
-Set-Tiered (Orange Bag),Daevite Progenitor,10.0
-Set-Tiered (Orange Bag),Seraphim's Guard,10.0
-Set-Tiered (Orange Bag),Flames of Genesis,10.0
-Set-Tiered (Orange Bag),Abomination's Wrath,4.0
-Set-Tiered (Orange Bag),Grotesque Scepter,4.0
-Set-Tiered (Orange Bag),Garment of the Beast,4.0
-Set-Tiered (Orange Bag),Horrific Claws,4.0
-Set-Tiered (Orange Bag),Magic Wand,4.0
-Set-Tiered (Orange Bag),Lightshow Scepter,4.0
-Set-Tiered (Orange Bag),Magician's Robe,4.0
-Set-Tiered (Orange Bag),Performer's Hat,4.0
-Set-Tiered (Orange Bag),Reikoku,6.5
-Set-Tiered (Orange Bag),Daybreak Chakram,6.5
-Set-Tiered (Orange Bag),Hirejou Tenne,6.5
-Set-Tiered (Orange Bag),Heavenly Magatama,10.0
-Set-Tiered (Orange Bag),Quartz Cutter,7.5
-Set-Tiered (Orange Bag),Crystalline Kunai,7.5
-Set-Tiered (Orange Bag),Luminous Armor,7.5
-Set-Tiered (Orange Bag),Radiant Heart,7.5
-Set-Tiered (Orange Bag),Kazekiri,6.0
-Set-Tiered (Orange Bag),Ryu's Blade,6.0
-Set-Tiered (Orange Bag),Kamishimo,6.0
-Set-Tiered (Orange Bag),Akuma's Tear,6.0
-Set-Tiered (Orange Bag),Kiritsukeru,10.0
-Set-Tiered (Orange Bag),Watarimono,10.0
-Set-Tiered (Orange Bag),Reinforced Root Armor,10.0
-Set-Tiered (Orange Bag),Traveler's Trinket,10.0
-Set-Tiered (Orange Bag),Harmonious Harp,9.5
-Set-Tiered (Orange Bag),Angel's Fanfare,9.5
-Set-Tiered (Orange Bag),Wings of Sanctity,9.5
-Set-Tiered (Orange Bag),Heavenly Halo,9.5
-Set-Tiered (Orange Bag),Hailstorm,6.0
-Set-Tiered (Orange Bag),Thundering Chorus,6.0
-Set-Tiered (Orange Bag),Wind Dancer Robe,6.0
-Set-Tiered (Orange Bag),Augur of the Tempest,6.0
-Set-Tiered (Orange Bag),Electric Guitar,10.0
-Set-Tiered (Orange Bag),Inferno Pick,10.0
-Set-Tiered (Orange Bag),Wings of the Fallen,10.0
-Set-Tiered (Orange Bag),Pointy Tail,10.0
-Set-Tiered (Orange Bag),C.L.A.W.,6.5
-Set-Tiered (Orange Bag),B.O.O.M.,6.5
-Set-Tiered (Orange Bag),A.R.M.O.R.,6.5
-Set-Tiered (Orange Bag),C.O.N.T.R.O.L.L.E.R.,4.0
-Set-Tiered (Orange Bag),Earthen Ward,6.0
-Set-Tiered (Orange Bag),Stonemould Mace,6.0
-Set-Tiered (Orange Bag),Rocky Robe,6.0
-Set-Tiered (Orange Bag),Steadfast Glyph,6.0
-Set-Tiered (Orange Bag),Saif of the Deep,6.0
-Set-Tiered (Orange Bag),Loch Sheath,6.0
-Set-Tiered (Orange Bag),Barrier Reef,6.0
-Set-Tiered (Orange Bag),Alexander's Band,6.0
-Set-Tiered (Orange Bag),Fiery Katana,6.0
-Set-Tiered (Orange Bag),Pyro Sheath,6.0
-Set-Tiered (Orange Bag),Flame Guard,6.0
-Set-Tiered (Orange Bag),Firelight Necklace,6.0
-Set-Tiered (Orange Bag),Bachelor's Tuxedo,10.0
-Set-Tiered (Orange Bag),Haori of the Wind,10.0
-Set-Tiered (Orange Bag),Holy Order's Habit,10.0
-Set-Tiered (Orange Bag),Red Riding Dress,10.0
-Set-Tiered (Orange Bag),Big Bad Fursuit,10.0
-Set-Tiered (Orange Bag),Platinum Segmentata,10.0
-Set-Tiered (Orange Bag),Omni-Impotence Ring,4.5
-Set-Tiered (Orange Bag),Locked Reactor,10.0
-Set-Tiered (Orange Bag),Alien Core: Corrosion,5.0
-Set-Tiered (Orange Bag),Alien Core: Dark Matter,5.0
-Set-Tiered (Orange Bag),Alien Core: Power,5.0
-Set-Tiered (Orange Bag),Alien Core: Warp,5.0
-Set-Tiered (Orange Bag),Demon Pumpkin,10.0
-Set-Tiered (Orange Bag),Witch's Skull,10.0
-Set-Tiered (Orange Bag),Haunted Tombstone,10.0
-Set-Tiered (Orange Bag),Cursed Grimoire,10.0
-Set-Tiered (Orange Bag),Silver Urn,10.0
-Set-Tiered (Orange Bag),Eerie Music Box,10.0
-Set-Tiered (Orange Bag),Soul Collector Engraving,10.0
-White Bag,Bone Dagger,4.0
-White Bag,Mister Mango,4.5
-White Bag,Groovy Mango,4.5
-White Bag,Marionette Ravager,4.0
-White Bag,Corruption Cutter,4.0
-White Bag,The Right Hook,5.5
-White Bag,Spirit Dagger,5.0
-White Bag,Chain Dagger,8.0
-White Bag,Queen's Stinger,7.0
-White Bag,Dueling Daggers,5.0
-White Bag,Corrosion Cutter,5.0
-White Bag,Dirk of Cronus,10.0
-White Bag,Avarice,9.5
-White Bag,Sunshine Shiv,10.0
-White Bag,Prismatic Slasher,10.0
-White Bag,Chicken Leg of Doom,4.5
-White Bag,Evergreen Dagger,10.0
-White Bag,Phantasm Dirk,10.0
-White Bag,Fractal Blades,7.5
-White Bag,Pirate's Sidearms,10.0
-White Bag,Butter Bow,4.5
-White Bag,Baked Bow,4.5
-White Bag,Doom Bow,3.5
-White Bag,Leaf Bow,5.5
-White Bag,Spider Silk Bow,5.5
-White Bag,Thousand Shot,5.5
-White Bag,B.O.W.,6.5
-White Bag,Sun's Judgement,5.0
-White Bag,Blazon Bow,5.0
-White Bag,Coral Bow,5.0
-White Bag,Celestial Recurve,10.0
-White Bag,Bow of the Void,8.5
-White Bag,Warmonger,10.0
-White Bag,Makakoyumi,9.0
-White Bag,Robobow,10.0
-White Bag,Clover Bow,10.0
-White Bag,Arctic Bow,5.0
-White Bag,Bow of the Morning Star,3.5
-White Bag,Garland Bow,10.0
-White Bag,Sunny Side Bow,10.0
-White Bag,Warmonger (Rehearsal),10.0
-White Bag,Hama Yumi,10.0
-White Bag,Frangible Longbow,10.0
-White Bag,Longbow of Spirits and Shadows,10.0
-White Bag,K.I.D.D. Force,4.5
-White Bag,K.I.D.D. Force 2.0,4.5
-White Bag,Spirit Staff,3.0
-White Bag,Staff of Extreme Prejudice,2.5
-White Bag,Staff of Esben,7.0
-White Bag,Elder Heartwood Staff,5.5
-White Bag,Tezcacoatl's Tail,6.5
-White Bag,S.T.A.F.F.,6.5
-White Bag,Foramite Staff,5.0
-White Bag,Comet of Calamity,5.0
-White Bag,Bogwood Crook,6.0
-White Bag,Torrential Staff,10.0
-White Bag,Jailer's Scythe,10.0
-White Bag,Staff of Unholy Sacrifice,7.0
-White Bag,Superior,9.5
-White Bag,Steam Pipe,8.0
-White Bag,Crystallized Worm Spellblade,7.5
-White Bag,KoalaPOW,10.0
-White Bag,Anatis Staff,4.5
-White Bag,Staff of the Saint,10.0
-White Bag,Staff of Iceblast,2.5
-White Bag,Sleigh Bell Staff,10.0
-White Bag,Royal Sekhem,10.0
-White Bag,Caduceus of Current Craziness,4.5
-White Bag,Caduceus Of Enlightened Chaos,4.5
-White Bag,Crystal Wand,10.0
-White Bag,Wand of Hidden Knowledge,4.0
-White Bag,Wand of the Bulwark,2.5
-White Bag,St. Abraham's Wand,4.0
-White Bag,Wand of the Fallen,6.0
-White Bag,Conducting Wand,4.0
-White Bag,Soul's Guidance,4.5
-White Bag,Warlord Wand,5.0
-White Bag,Snowblind Wand,5.0
-White Bag,Laser Pointer,8.0
-White Bag,Dusky Catalyst,10.0
-White Bag,Lumiaire,9.5
-White Bag,Beekeeper's Flamethrower,7.0
-White Bag,Spicy Wand of Spice,10.0
-White Bag,Rainbow Rod,10.0
-White Bag,Frozen Wand,10.0
-White Bag,Eternal Snowflake Wand,2.5
-White Bag,Brass Chamberstick,10.0
-White Bag,Dusky Catalyst (Rehearsal),10.0
-White Bag,Obsidian Macuahuitl,10.0
-White Bag,MMace MMurderer,4.5
-White Bag,FFabulous FFlail,4.5
-White Bag,Crystal Sword,10.0
-White Bag,Arcane Rapier,3.0
-White Bag,Demon Blade,4.0
-White Bag,Spectral Sword,3.5
-White Bag,Ancient Stone Sword,10.0
-White Bag,Pirate King's Cutlass,5.5
-White Bag,Acidic Slasher,5.0
-White Bag,Gaseous Glaive,5.0
-White Bag,Pirate's Artillery,10.0
-White Bag,Sword of the Colossus,8.0
-White Bag,Divinity,9.5
-White Bag,Damnation,8.0
-White Bag,Barnacle Basher,10.0
-White Bag,Doctor Swordsworth,10.0
-White Bag,Sword of the Rainbow's End,10.0
-White Bag,Enchanted Ice Blade,10.0
-White Bag,Silex's Hammer,10.0
-White Bag,Sword of Illumination,4.0
-White Bag,Cheerful Chipper,10.0
-White Bag,Apocalypse Feather,4.5
-White Bag,Keychain Cutlass,10.0
-White Bag,Eternal Echo,10.0
-White Bag,Gilded Chain Scythe,10.0
-White Bag,Spooky Smasher,10.0
-White Bag,Blade of Ages,4.5
-White Bag,Blade of Blooming,4.5
-White Bag,Kyuuketsuki Hitogoroshi,4.0
-White Bag,Void Blade,4.0
-White Bag,Doku No Ken,5.5
-White Bag,Celestial Blade,6.0
-White Bag,Moonbeam Blade,5.0
-White Bag,Fire Blade,5.0
-White Bag,Bloodbath Blade,10.0
-White Bag,Ray Katana,10.0
-White Bag,Heartseeker Katana,10.0
-White Bag,Valor,10.0
-White Bag,Brambletooth Tachi,6.0
-White Bag,Burial Blades,7.0
-White Bag,Tools of the Tarnished,8.0
-White Bag,Enforcer,9.5
-White Bag,Arbiter's Wrath,10.0
-White Bag,Useless Katana,10.0
-White Bag,Katana of Good Fortune,10.0
-White Bag,Krathana,10.0
-White Bag,Candy Katana,10.0
-White Bag,Valor (Rehearsal),10.0
-White Bag,Ritual Khopesh,10.0
-White Bag,Mirror Cloak,4.5
-White Bag,Cloak of the Planewalker,2.5
-White Bag,Cloak of the Mad God,4.5
-White Bag,Cloak of Cubic Enigma,6.0
-White Bag,Cloak of Refraction,7.5
-White Bag,Cloak of the Deep,10.0
-White Bag,Cloak of Bloody Surprises,10.0
-White Bag,Cloak of Eerie Trepidation,10.0
-White Bag,Archerang,4.5
-White Bag,Double Vision Darts,5.5
-White Bag,Huntsman's Volley,10.0
-White Bag,Q.U.I.V.E.R.,6.5
-White Bag,Sinister Syringes,8.0
-White Bag,Beehemoth Quiver,10.0
-White Bag,Quiver of Thunder,10.0
-White Bag,Quiver of Shadows,8.5
-White Bag,Freezing Quiver,10.0
-White Bag,Spelling Spell,4.5
-White Bag,Wandering Souls Spell,3.5
-White Bag,Penetrating Blast Spell,6.5
-White Bag,Jade Storm,6.0
-White Bag,Sporous Spray Spell,7.5
-White Bag,Recurring Terror Spell,5.5
-White Bag,Runes of Knowledge,10.0
-White Bag,Tablet of the King's Avatar,10.0
-White Bag,Genesis Spell,9.5
-White Bag,Random Spell Extraction Device,10.0
-White Bag,Vitamine Buster,10.0
-White Bag,Cobra Serpentis Scroll,10.0
-White Bag,Tome of Moral Support,4.5
-White Bag,Necronomicon,4.0
-White Bag,Tome of Pain,5.5
-White Bag,Tome of the Mushroom Tribes,7.5
-White Bag,Tome of Purification,4.0
-White Bag,Tome of Holy Furor,6.0
-White Bag,Tome of Holy Protection,6.0
-White Bag,Evolutionary Records,10.0
-White Bag,Chaotic Scripture,9.5
-White Bag,Tome of Frigid Protection,6.0
-White Bag,Tome of the Dragon,10.0
-White Bag,Challenger Helm,4.5
-White Bag,Bubblegum Bucket,3.5
-White Bag,Tipsy Topper,5.5
-White Bag,Hivemaster Helm,7.0
-White Bag,Vanguard's Visage,10.0
-White Bag,Helm of the Juggernaut,10.0
-White Bag,Helm of the Swift Bunny,10.0
-White Bag,Vanguard's Visage (Rehearsal),10.0
-White Bag,Helm of the Jack-o'-naut,10.0
-White Bag,Shield of Pogmur,4.5
-White Bag,Spiteful Scutum,10.0
-White Bag,Shield of Flowing Clarity,3.0
-White Bag,Cavalry Lance,10.0
-White Bag,Kogbold Cower Shield,8.0
-White Bag,Crystal Shield,7.5
-White Bag,Shield of Ogmur,10.0
-White Bag,Oryx's Escutcheon,9.5
-White Bag,Dragon Slayer,10.0
-White Bag,Shield of Jawgmur,10.0
-White Bag,Seal of Eternal Life,4.5
-White Bag,Scholar's Seal,4.0
-White Bag,Seal of Cubic Conundra,6.0
-White Bag,Doom's Emblem,10.0
-White Bag,Seal of Blasphemous Prayer,10.0
-White Bag,Marble Seal,8.0
-White Bag,Lightning in a Bottle,4.5
-White Bag,Mighty Stein,10.0
-White Bag,Murky Toxin,4.0
-White Bag,Bottled Medusozoan,5.5
-White Bag,Plague Poison,4.5
-White Bag,Rusted Barrel,10.0
-White Bag,Pollen Incendiary,10.0
-White Bag,Crystallised Fang's Venom,10.0
-White Bag,Polarity Poison,10.0
-White Bag,Cursed Canopic Jar,10.0
-White Bag,Polarity Poison (Rehearsal),10.0
-White Bag,Epiphany Skull,4.5
-White Bag,Skullish Remains of Esben,7.0
-White Bag,Sealed Crystal Skull,6.5
-White Bag,Maw of Malignance,5.5
-White Bag,Perennial Cranium,10.0
-White Bag,Skull of Restless Souls,10.0
-White Bag,Skull of Endless Torment,6.0
-White Bag,Brain Cube,8.0
-White Bag,Skull of Corrupted Souls,7.0
-White Bag,Helium Trap,4.5
-White Bag,Mouse Trap,10.0
-White Bag,Sulfuric Stone,6.0
-White Bag,Deadly Keg,10.0
-White Bag,Coral Venom Trap,5.0
-White Bag,Cave Dweller Trap,7.5
-White Bag,Rain Maker,9.0
-White Bag,Ocular Entrapment,8.0
-White Bag,Mimicry Trap,10.0
-White Bag,Trap of the Vile Spirit,10.0
-White Bag,Painbow,10.0
-White Bag,Trap of the Blood Spirit,10.0
-White Bag,Karma Orb,4.5
-White Bag,Enchantment Orb,3.0
-White Bag,Orb of Aether,6.0
-White Bag,Vision of Draconis,6.0
-White Bag,Forbidden Artifact,10.0
-White Bag,Command Cornea,8.0
-White Bag,Orb of Conflict,10.0
-White Bag,Primal Arcana,10.0
-White Bag,Primal Arcana (Rehearsal),10.0
-White Bag,Orb of Terror,10.0
-White Bag,Fool's Prism,4.5
-White Bag,Prism of Dancing Swords,4.0
-White Bag,Prism of Dire Instability,5.5
-White Bag,Echoes Prism,7.5
-White Bag,Corsair's Crown Jewel,10.0
-White Bag,Ghostly Prism,5.0
-White Bag,Prismimic,10.0
-White Bag,Gambler's Fate,9.5
-White Bag,Heart of Gold Prism,10.0
-White Bag,The Heart of the Dragon,10.0
-White Bag,Honey Scepter Supreme,4.5
-White Bag,Scepter of Rust,8.0
-White Bag,Scepter of Fulmination,4.0
-White Bag,Storm Caller,10.0
-White Bag,Cnidaria Rod,5.5
-White Bag,Scepter of Devastation,5.5
-White Bag,Tezutsu Hanabi,9.0
-White Bag,Eggsponential Scepter,10.0
-White Bag,Unshuriken,4.5
-White Bag,Midnight Star,6.0
-White Bag,Igneous Starblossom,6.0
-White Bag,Hanagasaku,10.0
-White Bag,Combcutter Kunai,7.0
-White Bag,Storied Blades,10.0
-White Bag,Star of Enlightenment,7.5
-White Bag,Overwhelming Axehead,8.0
-White Bag,Kageboshi,10.0
-White Bag,Ballistic Star,9.5
-White Bag,Clover Star,10.0
-White Bag,Kagebooshi,10.0
-White Bag,NSFWakizashi,4.5
-White Bag,Shadow Serpent Sidearm,6.0
-White Bag,Wakizashi of Eastern Winds,5.5
-White Bag,Wakizashi of Crossing Fires,6.0
-White Bag,Fractured Gemstone Wakizashi,7.5
-White Bag,Kogbold Multitool,10.0
-White Bag,Sentinel's Sidearm,10.0
-White Bag,Sakura Wakizashi,10.0
-White Bag,Esben's Twisted Heart,7.0
-White Bag,Sentinel's Sidearm (Rehearsal),10.0
-White Bag,Lullaby,4.5
-White Bag,Piper's Pan Flute,10.0
-White Bag,Snake Charmer Pungi,2.5
-White Bag,Wavecrest Concertina,5.5
-White Bag,Pharaoh's Requiem,6.0
-White Bag,Taiko Drums,9.0
-White Bag,Motivational Megaphone,8.0
-White Bag,Noble Mandolin,10.0
-White Bag,Joker Timbrel,10.0
-White Bag,Noble Mandolin (Rehearsal),10.0
-White Bag,Recursion Mace,4.5
-White Bag,Mace of the Celestial Forest,2.5
-White Bag,Mace of the Depths,5.5
-White Bag,Crystal Mace,10.0
-White Bag,Hivemind Mace,7.0
-White Bag,Mace of the Pumpkin Effigy,10.0
-White Bag,Peacekeeper,10.0
-White Bag,Dragon Mace,10.0
-White Bag,Peacekeeper,10.0
-White Bag,Incubation Mace,10.0
-White Bag,Paper Machete,4.5
-White Bag,Volcanic Sheath,4.0
-White Bag,An Ancient's Embrace,10.0
-White Bag,Quartermaster Scabbard,5.0
-White Bag,Kaiken,6.0
-White Bag,Labyrinth Dweller's Sheath,5.5
-White Bag,S.H.E.A.T.H.,6.5
-White Bag,Sheath of Thunderous Rites,10.0
-White Bag,Elegant Parasol,9.0
-White Bag,Irradiance Sheath,7.5
-White Bag,Cheater Light Armor,4.5
-White Bag,Snakeskin Armor,2.5
-White Bag,Spectral Cloth Armor,5.0
-White Bag,Greaterhosen,10.0
-White Bag,Coral Silk Armor,5.0
-White Bag,Harlequin Armor,4.0
-White Bag,Leaf Dragon Hide Armor,6.0
-White Bag,Fitted Protective Matrix,10.0
-White Bag,Ethereal Happi,9.0
-White Bag,Armor of Nil,8.5
-White Bag,Cackling Straitjacket,8.0
-White Bag,Vest of Abandoned Shadows,10.0
-White Bag,Turncoat Cape,9.5
-White Bag,Centaur's Shielding,9.5
-White Bag,Light Syndicate Attire,10.0
-White Bag,Vest of Abandoned Shadows (Rehearsal),10.0
-White Bag,Cheater Robe,4.5
-White Bag,Tlatoani's Shroud,6.5
-White Bag,Woodland Robe,3.0
-White Bag,Chasuble of Holy Light,4.0
-White Bag,Robe of the Mad Scientist,4.0
-White Bag,Water Dragon Silk Robe,6.0
-White Bag,Magic Protective Matrix,10.0
-White Bag,Esben's Shaman Attire,7.0
-White Bag,Flowering Kimono,9.0
-White Bag,Ritual Robe,7.0
-White Bag,Wretched Rags,8.0
-White Bag,Mantle of the Monarchy,10.0
-White Bag,Diplomatic Robe,9.5
-White Bag,Vesture of Duality,9.5
-White Bag,Mystic Syndicate Attire,10.0
-White Bag,Mantle of the Monarchy (Rehearsal),10.0
-White Bag,Cheater Heavy Armor,4.5
-White Bag,Warped Mantle,6.0
-White Bag,Fire Dragon Battle Armor,6.0
-White Bag,Heavy Protective Matrix,10.0
-White Bag,Fungal Breastplate,7.5
-White Bag,Resurrected Warrior's Armor,4.5
-White Bag,Cask Corslet,5.5
-White Bag,Candy-Coated Armor,3.5
-White Bag,Sage's Wakibiki,9.0
-White Bag,Breastplate of New Life,8.0
-White Bag,Royal Guard's Cuirass,10.0
-White Bag,Gladiator Guard,9.5
-White Bag,Heavy Syndicate Attire,10.0
-White Bag,Royal Guard's Cuirass (Rehearsal),10.0
-White Bag,Fairy Ring,3.0
-White Bag,Adventurer's Scarf,10.0
-White Bag,Snake Eye Ring,2.5
-White Bag,Ring of Divine Faith,4.0
-White Bag,Faded Heart Scarab,10.0
-White Bag,Fractured Hannya,10.0
-White Bag,Sunken Fire Opal Ring,10.0
-White Bag,Experimental Ring,4.0
-White Bag,Esben's Wedding Ring,7.0
-White Bag,Ring of the Sphinx,6.0
-White Bag,Ring of the Nile,6.0
-White Bag,Ring of the Pyramid,6.0
-White Bag,Enchanted Ice Shard,10.0
-White Bag,Ring of the Northern Light,10.0
-White Bag,Frimarra,10.0
-White Bag,Thistleleaf Necklace,6.0
-White Bag,Brewer's Bangle,5.5
-White Bag,Ring of Skeletal Specters,3.5
-White Bag,Crystallised Mist,7.5
-White Bag,E.Y.E.,6.5
-White Bag,Token of Happiness,10.0
-White Bag,Token of Warmth,10.0
-White Bag,Overclocking Amulet,8.0
-White Bag,Coral Ring,5.0
-White Bag,Captain's Ring,5.0
-White Bag,Magical Lodestone,8.0
-White Bag,Bloodshed Ring,7.0
-White Bag,Sourcestone,8.5
-White Bag,Chancellor's Cranium,9.5
-White Bag,Collector's Monocle,9.5
-White Bag,Divine Coronation,9.5
-White Bag,Battalion Banner,9.5
-White Bag,Exalted God's Horn,9.5
-White Bag,Bracer of the Guardian,10.0
-White Bag,The Twilight Gemstone,10.0
-White Bag,The Forgotten Crown,10.0
-White Bag,Kagenohikari,9.0
-White Bag,Omnipotence Ring,8.5
-White Bag,Chrysalis of Eternity,10.0
-White Bag,Gem of Tenderness,10.0
-White Bag,Gem of Adoration,10.0
-White Bag,Soulful Affection,10.0
-White Bag,Oryxmas Ornament: Energized,10.0
-White Bag,Oryxmas Ornament: Exposed,10.0
-White Bag,Oryxmas Ornament: Weak,10.0
-White Bag,Robotic Ring of the Crucible,10.0
-White Bag,Shattered Ring of the Crucible,10.0
-White Bag,Colossal Ring of the Crucible,10.0
-White Bag,Corrupted Ring of the Crucible,10.0
-White Bag,Bracer of the Guardian (Rehearsal),10.0
-White Bag,The Twilight Gemstone (Rehearsal),10.0
-White Bag,The Forgotten Crown (Rehearsal),10.0
-White Bag,Ice Crown,10.0
-White Bag,Eden's Embrace,10.0
-White Bag,Kogbold Enhancement Core,8.0
-White Bag,Vial of Soul Extract,8.0
-White Bag,Concentrated Soul Fire,9.0
+Tier 13 Armor,Dominion Armor,0.0
+Tier 14 Weapon,Dagger of Dire Hatred,1.0
+Tier 14 Weapon,Bow of Deep Enchantment,1.0
+Tier 14 Weapon,Staff of the Fundamental Core,1.0
+Tier 14 Weapon,Wand of Retribution,1.0
+Tier 14 Weapon,Sword of Majesty,1.0
+Tier 14 Weapon,Kusanagi,1.0
+Tier 14 Weapon,Soulforged Blades,1.0
+Tier 14 Weapon,Longbow of the Midnight Diamond,1.0
+Tier 14 Weapon,Spellblade of the Everlasting Death,1.0
+Tier 14 Weapon,Morning Star of Reckoning,1.0
+Tier 14 Weapon,Gravelord's Flail,1.0
+Tier 14 Weapon,Godslayer Tachi,1.0
+Tier 7 Ability,Cloak of Nightmares,1.0
+Tier 7 Ability,Quiver of the Autumn King,1.0
+Tier 7 Ability,Burning Retribution Spell,1.0
+Tier 7 Ability,Tome of Hallowed Language,1.0
+Tier 7 Ability,Helm of the Tribune,1.0
+Tier 7 Ability,Shield of Orcish Regalia,1.0
+Tier 7 Ability,Seal of Invocation,1.0
+Tier 7 Ability,Necrofish Poison,1.0
+Tier 7 Ability,Mindwaster Skull,1.0
+Tier 7 Ability,Depthchaser Trap,1.0
+Tier 7 Ability,Dimensiongate Orb,1.0
+Tier 7 Ability,Prism of Reveries,1.0
+Tier 7 Ability,Scepter of the Firmament,1.0
+Tier 7 Ability,Dynastic Star,1.0
+Tier 7 Ability,Virtuous Wakizashi,1.0
+Tier 7 Ability,Nebular Lute,1.0
+Tier 7 Ability,Grandmaster Mace,1.0
+Tier 7 Ability,Sonic Wave Sheath,1.0
+Tier 14 Armor,Leviathan Armor,1.0
+Tier 14 Armor,Robe of the Ancient Intellect,1.0
+Tier 14 Armor,Annihilation Armor,1.0
+Tier 7 Ring,Ring of Transcendent Health,1.0
+Tier 7 Ring,Ring of Transcendent Magic,1.0
+Tier 7 Ring,Ring of Transcendent Attack,1.0
+Tier 7 Ring,Ring of Transcendent Defense,1.0
+Tier 7 Ring,Ring of Transcendent Speed,1.0
+Tier 7 Ring,Ring of Transcendent Dexterity,1.0
+Tier 7 Ring,Ring of Transcendent Vitality,1.0
+Tier 7 Ring,Ring of Transcendent Wisdom,1.0
+White or ST,Wine Cellar Incantation,4.0
+White or ST,Demon Frog Pet Skin,4.0
+White or ST,Horned Wyrm Pet Skin,4.0
+White or ST,Tarot Card Pack,4.0
+White or ST,Staff of Eruption,4.0
+White or ST,Scorchium Stone,4.0
+White or ST,Molten Mantle,4.0
+White or ST,Ring of the Inferno,4.0
+White or ST,Demon Blade,4.0
+White or ST,Volcanic Sheath,4.0
+White or ST,Sword of Illumination,4.0
+White or ST,Cactus Juice,3.0
+White or ST,Wine Cellar Incantation,3.0
+White or ST,Arcane Rapier,3.0
+White or ST,Amber Encrusted Helmet,3.0
+White or ST,Sandstone Seal,3.0
+White or ST,Resplendent Bow,3.0
+White or ST,Embellished Quiver,3.0
+White or ST,Ornate Armor,3.0
+White or ST,Aquamarine Amulet,3.0
+White or ST,Sand Wanderer Trickster Skin,3.0
+White or ST,Wine Cellar Incantation,3.5
+White or ST,Gumballs,3.5
+White or ST,Rock Candy,3.5
+White or ST,Candy Ring,3.5
+White or ST,Candy-Coated Armor,3.5
+White or ST,Bubblegum Bucket,3.5
+White or ST,Pixie-Enchanted Sword,3.5
+White or ST,Seal of the Enchanted Forest,3.5
+White or ST,Fairy Plate,3.5
+White or ST,Ring of Pure Wishes,3.5
+White or ST,Mini Desire Troll Pet Skin,3.5
+White or ST,Wine Cellar Incantation,2.5
+White or ST,Tarot Card Pack,2.5
+White or ST,Jewel Eye Katana (Shiny),2.5
+White or ST,Ornate Armor,2.5
+White or ST,Bottled Medusozoan,5.5
+White or ST,Cnidaria Rod,5.5
+White or ST,Jellyhead Trickster Skin,5.5
+White or ST,Wine Cellar Incantation,5.5
+White or ST,Crystal Cobra Pet Skin,7.5
+White or ST,Quartz Cutter,7.5
+White or ST,Crystalline Kunai,7.5
+White or ST,Luminous Armor,7.5
+White or ST,Radiant Heart,7.5
+White or ST,Ring of Decades,7.5
+White or ST,Irradiance Sheath,7.5
+White or ST,Fractal Blades,7.5
+White or ST,Cloak of Refraction,7.5
+White or ST,Echoes Prism,7.5
+White or ST,Fractured Gemstone Wakizashi,7.5
+White or ST,Star of Enlightenment,7.5
+White or ST,Crystallised Mist,7.5
+White or ST,Vial of Pure Darkness,7.0
+White or ST,Storm Shaman Set Shard,7.0
+White or ST,Mini Malus Sorcerer Skin,7.0
+White or ST,Burial Blades,7.0
+White or ST,Staff of Unholy Sacrifice,7.0
+White or ST,Skull of Corrupted Souls,7.0
+White or ST,Ritual Robe,7.0
+White or ST,Bloodshed Ring,7.0
+White or ST,Ronin's Wakizashi,4.0
+White or ST,Wine Cellar Incantation,4.0
+White or ST,Tarot Card Pack,4.0
+White or ST,Cultured Bookwyrm Pet Skin,4.0
+White or ST,Enlightened Bookwyrm Pet Skin,4.0
+White or ST,Deathless Crossbow,4.0
+White or ST,Quiver of Shrieking Specters,4.0
+White or ST,Wraith's Brigandine,4.0
+White or ST,Revenant Ring,4.0
+White or ST,Wand of Hidden Knowledge,4.0
+White or ST,Necronomicon,4.0
+White or ST,Scholar's Seal,4.0
+White or ST,Corruption Cutter,4.0
+White or ST,Ghost Pirate Rum,5.0
+White or ST,Wine Cellar Incantation,5.0
+White or ST,Spirit Pet Skin,5.0
+White or ST,Lil' Davy Pet Skin,5.0
+White or ST,Quartermaster Scabbard,5.0
+White or ST,Spirit Dagger,5.0
+White or ST,Ghostly Prism,5.0
+White or ST,Spectral Cloth Armor,5.0
+White or ST,Captain's Ring,5.0
+White or ST,Pearl Necklace,5.0
+White or ST,Golden Chalice,5.0
+White or ST,Ruby Gemstone,5.0
+White or ST,Spirit Egg,5.0
+White or ST,Wine Cellar Incantation,5.5
+White or ST,Calamity Crab Pet Skin,5.5
+White or ST,Swashbuckler's Sickle,5.5
+White or ST,Tricorne of the High Seas,5.5
+White or ST,Naval Uniform,5.5
+White or ST,First Mate's Hook,5.5
+White or ST,Pirate King's Cutlass,5.5
+White or ST,Wavecrest Concertina,5.5
+White or ST,Alien Core: Corrosion,5.0
+White or ST,Foramite Staff,5.0
+White or ST,Acidic Slasher,5.0
+White or ST,Corrosion Cutter,5.0
+White or ST,Universal Fragment,5.0
+White or ST,Forax Fragment,5.0
+White or ST,Magic Mushroom,7.5
+White or ST,Quartz Cutter,7.5
+White or ST,Crystalline Kunai,7.5
+White or ST,Luminous Armor,7.5
+White or ST,Radiant Heart,7.5
+White or ST,Ring of Decades,7.5
+White or ST,Fungal Breastplate,7.5
+White or ST,Crystallized Worm Spellblade,7.5
+White or ST,Crystal Shield,7.5
+White or ST,Sporous Spray Spell,7.5
+White or ST,Tome of the Mushroom Tribes,7.5
+White or ST,Cave Dweller Trap,7.5
+White or ST,Wine Cellar Incantation,4.5
+White or ST,Amulet of Dispersion,4.5
+White or ST,Werewolf Cub Pet Skin,4.5
+White or ST,Tarot Card Pack,4.5
+White or ST,Etherite Dagger,4.5
+White or ST,Ghastly Drape,4.5
+White or ST,Mantle of Skuld,4.5
+White or ST,Spectral Ring of Horrors,4.5
+White or ST,Soul's Guidance,4.5
+White or ST,Plague Poison,4.5
+White or ST,Resurrected Warrior's Armor,4.5
+White or ST,Tincture of Defense,6.5
+White or ST,Effusion of Defense,6.5
+White or ST,Blizzard Pet Skin,6.5
+White or ST,C.L.A.W.,6.5
+White or ST,B.O.O.M.,6.5
+White or ST,A.R.M.O.R.,6.5
+White or ST,C.O.N.T.R.O.L.L.E.R.,6.5
+White or ST,B.O.W.,6.5
+White or ST,S.T.A.F.F.,6.5
+White or ST,Q.U.I.V.E.R.,6.5
+White or ST,S.H.E.A.T.H.,6.5
+White or ST,E.Y.E.,6.5
+White or ST,Dalvar's Battle Axe,7.0
+White or ST,Sunken Buckler,7.0
+White or ST,Heartsteel Claymore,7.0
+White or ST,Hull of the Tundra,7.0
+White or ST,Symbol of the Lost,7.0
+White or ST,Frozen Heart,7.0
+White or ST,Iceborn Arsenal,7.0
+White or ST,Sublimation Sidearm,7.0
+White or ST,Retainer's Battlesuit,7.0
+White or ST,Legacy's Pendant,7.0
+White or ST,Chainmail Body Armor,7.0
+White or ST,Gjallarhorn,7.0
+White or ST,Staff of Esben,7.0
+White or ST,Skullish Remains of Esben,7.0
+White or ST,Esben's Vows,7.0
+White or ST,Ase's Echo,7.0
+White or ST,Esben's Twisted Heart,7.0
+White or ST,Esben's Shaman Attire,7.0
+White or ST,Esben's Wedding Ring,7.0
+White or ST,Alien Core: Warp,5.0
+White or ST,Warlord Wand,5.0
+White or ST,Gaseous Glaive,5.0
+White or ST,Blazon Bow,5.0
+White or ST,Universal Fragment,5.0
+White or ST,Katalund Fragment,5.0
+White or ST,Kogbold Inventor Archer Set Shard,8.0
+White or ST,Kogbold Pyrotechnician Wizard Set Shard,8.0
+White or ST,Kogbold Maid Pet Skin,8.0
+White or ST,Precision Cog,8.0
+White or ST,Overclocking Amulet,8.0
+White or ST,Steam Pipe,8.0
+White or ST,Chain Dagger,8.0
+White or ST,Laser Pointer,8.0
+White or ST,Kogbold Cower Shield,8.0
+White or ST,Scepter of Rust,8.0
+White or ST,Brain Cube,8.0
+White or ST,Kogbold Enhancement Core,8.0
+White or ST,Large Midnight Dragon Scale Cloth,6.0
+White or ST,Small Midnight Dragon Scale Cloth,6.0
+White or ST,Large Green Dragon Scale Cloth,6.0
+White or ST,Small Green Dragon Scale Cloth,6.0
+White or ST,Large Blue Dragon Scale Cloth,6.0
+White or ST,Small Blue Dragon Scale Cloth,6.0
+White or ST,Large Red Dragon Scale Cloth,6.0
+White or ST,Small Red Dragon Scale Cloth,6.0
+White or ST,Large Ivory Dragon Scale Cloth,6.0
+White or ST,Small Ivory Dragon Scale Cloth,6.0
+White or ST,Wine Cellar Incantation,6.0
+White or ST,Wicked Dragon Wizard Skin,6.0
+White or ST,Mini Nikao Pet Skin,6.0
+White or ST,Hailstorm,6.0
+White or ST,Thundering Chorus,6.0
+White or ST,Wind Dancer Robe,6.0
+White or ST,Augur of the Tempest,6.0
+White or ST,Earthen Ward,6.0
+White or ST,Stonemould Mace,6.0
+White or ST,Rocky Robe,6.0
+White or ST,Steadfast Glyph,6.0
+White or ST,Saif of the Deep,6.0
+White or ST,Loch Sheath,6.0
+White or ST,Barrier Reef,6.0
+White or ST,Alexander's Band,6.0
+White or ST,Indomptable,6.0
+White or ST,Helm of Draconic Dominance,6.0
+White or ST,Zaarvox's Heart,6.0
+White or ST,Amulet of Drakefyre,6.0
+White or ST,Ivory Heart,6.0
+White or ST,Celestial Blade,6.0
+White or ST,Leaf Dragon Hide Armor,6.0
+White or ST,Water Dragon Silk Robe,6.0
+White or ST,Fire Dragon Battle Armor,6.0
+White or ST,Midnight Star,6.0
+White or ST,Vision of Draconis,6.0
+White or ST,The World Tarot Card,6.0
+White or ST,Large Flame Cloth,6.0
+White or ST,Small Flame Cloth,6.0
+White or ST,Large Heavy Chainmail Cloth,6.0
+White or ST,Small Heavy Chainmail Cloth,6.0
+White or ST,Tincture of Vitality,6.0
+White or ST,Effusion of Vitality,6.0
+White or ST,Fiery Katana,6.0
+White or ST,Pyro Sheath,6.0
+White or ST,Flame Guard,6.0
+White or ST,Firelight Necklace,6.0
+White or ST,Skull of Endless Torment,6.0
+White or ST,Wakizashi of Crossing Fires,6.0
+White or ST,Igneous Starblossom,6.0
+White or ST,The Chariot Tarot Card,6.0
+White or ST,Gravel,8.0
+White or ST,Sword of the Colossus,8.0
+White or ST,Marble Seal,8.0
+White or ST,Breastplate of New Life,8.0
+White or ST,Magical Lodestone,8.0
+White or ST,Carved Golem Remains,8.0
+White or ST,Brain of the Golem,8.0
+White or ST,Golem Garments,8.0
+White or ST,Rusty Cuffs,8.0
+White or ST,Wine Cellar Incantation,4.0
+White or ST,Robobuddy Pet Skin,4.0
+White or ST,Abomination's Wrath,4.0
+White or ST,Grotesque Scepter,4.0
+White or ST,Garment of the Beast,4.0
+White or ST,Horrific Claws,4.0
+White or ST,Tarot Card Pack,4.0
+White or ST,Conducting Wand,4.0
+White or ST,Scepter of Fulmination,4.0
+White or ST,Robe of the Mad Scientist,4.0
+White or ST,Experimental Ring,4.0
+White or ST,Golden Nut,4.0
+White or ST,Golden Bolt,4.0
+White or ST,The Magician Tarot Card,4.0
+White or ST,Robobuddy Egg,4.0
+White or ST,C.O.N.T.R.O.L.L.E.R.,4.0
+White or ST,Fairy Dust,3.0
+White or ST,Wine Cellar Incantation,3.0
+White or ST,Tarot Card Pack,3.0
+White or ST,Fountain Child Pet Skin,3.0
+White or ST,Bergenia Bow,3.0
+White or ST,Lifebringing Lotus,3.0
+White or ST,Hollyhock Hide,3.0
+White or ST,Crysanthemum Corsage,3.0
+White or ST,Spirit Staff,3.0
+White or ST,Enchantment Orb,3.0
+White or ST,Shield of Flowing Clarity,3.0
+White or ST,Woodland Robe,3.0
+White or ST,Fairy Ring,3.0
+White or ST,Alien Core: Power,5.0
+White or ST,Sun's Judgement,5.0
+White or ST,Fire Blade,5.0
+White or ST,Comet of Calamity,5.0
+White or ST,Universal Fragment,5.0
+White or ST,Malogia Fragment,5.0
+White or ST,Holy Water,4.0
+White or ST,Bat Egg,4.0
+White or ST,Wine Cellar Incantation,4.0
+White or ST,Vampire Lord,4.0
+White or ST,Tarot Card Pack,4.0
+White or ST,Soulcursed Scythe,4.0
+White or ST,Vampiric Cape,4.0
+White or ST,Hallowed Hide,4.0
+White or ST,Ruthven's Rosary,4.0
+White or ST,Bone Dagger,4.0
+White or ST,Kyuuketsuki Hitogoroshi,4.0
+White or ST,St. Abraham's Wand,4.0
+White or ST,Tome of Purification,4.0
+White or ST,Chasuble of Holy Light,4.0
+White or ST,Ring of Divine Faith,4.0
+White or ST,Golden Candelabra,4.0
+White or ST,Holy Cross,4.0
+White or ST,Death Tarot Card,4.0
+White or ST,Sage's Wakibiki,9.0
+White or ST,Ethereal Happi,9.0
+White or ST,Flowering Kimono,9.0
+White or ST,Rain Maker,9.0
+White or ST,Taiko Drums,9.0
+White or ST,Elegant Parasol,9.0
+White or ST,Festival Enjoyer Kensei,9.0
+White or ST,Festival Enjoyer Bard,9.0
+White or ST,The Princess and the Fox: Page 1-6,9.0
+White or ST,Makakoyumi,9.0
+White or ST,Tezutsu Hanabi,9.0
+White or ST,Kagenohikari,9.0
+White or ST,Concentrated Soul Fire,9.0
+White or ST,The Night Prince: Page 1-5,9.0
+White or ST,The Night Prince Unlocker,9.0
+White or ST,Akuma Ramen,9.0
+White or ST,Barbecued Shrimp,9.0
+White or ST,Grilled Fish,9.0
+White or ST,Onigiri,9.0
+White or ST,Salmon Roe,9.0
+White or ST,Seafood Bento,9.0
+White or ST,Sizzled Tentacle,9.0
+White or ST,Steamed Clam,9.0
+White or ST,Sushi Roll,9.0
+White or ST,Takoyaki,9.0
+White or ST,Tuna Nigiri,9.0
+White or ST,Unadon,9.0
+White or ST,Mysterious Crate,9.0
+White or ST,Wine Cellar Incantation,6.0
+White or ST,Possessed Lantern Pet Skin,6.0
+White or ST,Kazekiri,6.0
+White or ST,Ryu's Blade,6.0
+White or ST,Kamishimo,6.0
+White or ST,Akuma's Tear,6.0
+White or ST,Wand of the Fallen,6.0
+White or ST,Orb of Aether,6.0
+White or ST,Jade Storm,6.0
+White or ST,Kaiken,6.0
+White or ST,Coral Juice,5.0
+White or ST,Sea Slurp Egg,5.0
+White or ST,Wine Cellar Incantation,5.0
+White or ST,Sea Slurp Skin Unlocker,5.0
+White or ST,Tideturner Trident,5.0
+White or ST,Slurpian Sea Scroll,5.0
+White or ST,Oceanic Apparel,5.0
+White or ST,Imperial Keepsake,5.0
+White or ST,Coral Bow,5.0
+White or ST,Coral Venom Trap,5.0
+White or ST,Coral Silk Armor,5.0
+White or ST,Coral Ring,5.0
+White or ST,Arctic Bow,5.0
+White or ST,Golden Cockle,5.0
+White or ST,Golden Conch,5.0
+White or ST,Golden Horn Conch,5.0
+White or ST,The Moon Tarot Card,5.0
+White or ST,Wine Cellar Incantation,4.5
+White or ST,Theurgy Wand,4.5
+White or ST,Ceremonial Merlot,4.5
+White or ST,Cloak of the Mad God,4.5
+White or ST,Chicken Leg of Doom,4.5
+White or ST,Anatis Staff,4.5
+White or ST,Apocalypse Feather,4.5
+White or ST,Tincture of Courage,9.5
+White or ST,Tincture of Fear,9.5
+White or ST,Shaman Necromancer Set Shard,9.5
+White or ST,Mad Minotaur Set Shard,9.5
+White or ST,Astral Arcanist Set Shard,9.5
+White or ST,Superior,9.5
+White or ST,Genesis Spell,9.5
+White or ST,Diplomatic Robe,9.5
+White or ST,Chancellor's Cranium,9.5
+White or ST,Avarice,9.5
+White or ST,Gambler's Fate,9.5
+White or ST,Turncoat Cape,9.5
+White or ST,Collector's Monocle,9.5
+White or ST,Lumiaire,9.5
+White or ST,Chaotic Scripture,9.5
+White or ST,Vesture of Duality,9.5
+White or ST,Divine Coronation,9.5
+White or ST,Enforcer,9.5
+White or ST,Ballistic Star,9.5
+White or ST,Centaur's Shielding,9.5
+White or ST,Battalion Banner,9.5
+White or ST,Divinity,9.5
+White or ST,Oryx's Escutcheon,9.5
+White or ST,Gladiator Guard,9.5
+White or ST,Exalted God's Horn,9.5
+White or ST,Harmonious Harp,9.5
+White or ST,Angel's Fanfare,9.5
+White or ST,Wings of Sanctity,9.5
+White or ST,Heavenly Halo,9.5
+White or ST,Wine Cellar Incantation,5.5
+White or ST,Symbiotic Ripper,5.5
+White or ST,Parasitic Concoction,5.5
+White or ST,Rags of the Host,5.5
+White or ST,Hivemind Circlet,5.5
+White or ST,Recurring Terror Spell,5.5
+White or ST,Scepter of Devastation,5.5
+White or ST,Maw of Malignance,5.5
+White or ST,Tome of Pain,5.5
+White or ST,Tincture of Wisdom,5.5
+White or ST,Effusion of Wisdom,5.5
+White or ST,Wooden Box,5.5
+White or ST,Wine Cellar Incantation,5.5
+White or ST,Jaco Pet Skin,5.5
+White or ST,Magic Wand,5.5
+White or ST,Lightshow Scepter,5.5
+White or ST,Magician's Robe,5.5
+White or ST,Performer's Hat,5.5
+White or ST,Thousand Shot,5.5
+White or ST,Prism of Dire Instability,5.5
+White or ST,Wine Cellar Incantation,4.0
+White or ST,Tarot Card Pack,4.0
+White or ST,Puppet Master Skin,4.0
+White or ST,Jester Skin,4.0
+White or ST,Magic Wand,4.0
+White or ST,Lightshow Scepter,4.0
+White or ST,Magician's Robe,4.0
+White or ST,Performer's Hat,4.0
+White or ST,Marionette Ravager,4.0
+White or ST,Prism of Dancing Swords,4.0
+White or ST,Harlequin Armor,4.0
+White or ST,Wine Cellar Incantation,6.5
+White or ST,Good Mask Spirit Pet Skin,6.5
+White or ST,Evil Mask Spirit Pet Skin,6.5
+White or ST,Tlatoani's Shroud,6.5
+White or ST,Tezcacoatl's Tail,6.5
+White or ST,Sealed Crystal Skull,6.5
+White or ST,Penetrating Blast Spell,6.5
+White or ST,Reikoku,6.5
+White or ST,Daybreak Chakram,6.5
+White or ST,Hirejou Tenne,6.5
+White or ST,Snake Oil,2.5
+White or ST,Snakeskin Shield,2.5
+White or ST,Wine Cellar Incantation,2.5
+White or ST,Mini Stheno Skin,2.5
+White or ST,Mini Flying Stheno Pet Skin,2.5
+White or ST,Tarot Card Pack,2.5
+White or ST,Wand of the Bulwark,2.5
+White or ST,Snake Charmer Pungi,2.5
+White or ST,Snakeskin Armor,2.5
+White or ST,Snake Eye Ring,2.5
+White or ST,Eternal Snowflake Wand,2.5
+White or ST,Acidic Armor,2.5
+White or ST,Pernicious Peridot,2.5
+White or ST,Plague Doctor Priest Set Shard,8.0
+White or ST,Alchemist Assassin Set Shard,8.0
+White or ST,Spellbound Soulthief Set Shard,8.0
+White or ST,Tools of the Tarnished,8.0
+White or ST,Wretched Rags,8.0
+White or ST,Sinister Syringes,8.0
+White or ST,Cackling Straitjacket,8.0
+White or ST,Command Cornea,8.0
+White or ST,Ocular Entrapment,8.0
+White or ST,Overwhelming Axehead,8.0
+White or ST,Motivational Megaphone,8.0
+White or ST,Damnation,8.0
+White or ST,Vial of Soul Extract,8.0
+White or ST,Penitent Frog Pet Skin,8.0
+White or ST,Sprite Wand,2.5
+White or ST,Wine Cellar Incantation,2.5
+White or ST,Mini Limon Pet Skin,2.5
+White or ST,Sprite Star Pet Skin,2.5
+White or ST,Celestial Forest Blueprint,2.5
+White or ST,Tarot Card Pack,2.5
+White or ST,Staff of Extreme Prejudice,2.5
+White or ST,Cloak of the Planewalker,2.5
+White or ST,Mace of the Celestial Forest,2.5
+White or ST,Staff of Iceblast,2.5
+White or ST,Swamped Panda Pet Skin,6.0
+White or ST,Bogged Panda Pet Skin,6.0
+White or ST,Bogwood Crook,6.0
+White or ST,Brambletooth Tachi,6.0
+White or ST,Sulfuric Stone,6.0
+White or ST,Warped Mantle,6.0
+White or ST,Thistleleaf Necklace,6.0
+White or ST,Healing Ichor,5.5
+White or ST,Wine Cellar Incantation,5.5
+White or ST,Spider Silk Bow,5.5
+White or ST,Doku No Ken,5.5
+White or ST,Mace of the Depths,5.5
+White or ST,Server Heart,4.5
+White or ST,Large Futurist Cloth,4.5
+White or ST,Small Futurist Cloth,4.5
+White or ST,Toaster Pet Skin,4.5
+White or ST,Mystery Stat Pot,4.5
+White or ST,Brilliance Bow,4.5
+White or ST,Luxurious Leather,4.5
+White or ST,Regal Ring,4.5
+White or ST,Mister Mango,4.5
+White or ST,Butter Bow,4.5
+White or ST,K.I.D.D. Force,4.5
+White or ST,Caduceus of Current Craziness,4.5
+White or ST,MMace MMurderer,4.5
+White or ST,Blade of Ages,4.5
+White or ST,Groovy Mango,4.5
+White or ST,Baked Bow,4.5
+White or ST,Caduceus Of Enlightened Chaos,4.5
+White or ST,K.I.D.D. Force 2.0,4.5
+White or ST,FFabulous FFlail,4.5
+White or ST,Blade of Blooming,4.5
+White or ST,Mirror Cloak,4.5
+White or ST,Archerang,4.5
+White or ST,Spelling Spell,4.5
+White or ST,Tome of Moral Support,4.5
+White or ST,Challenger Helm,4.5
+White or ST,Shield of Pogmur,4.5
+White or ST,Seal of Eternal Life,4.5
+White or ST,Lightning in a Bottle,4.5
+White or ST,Epiphany Skull,4.5
+White or ST,Helium Trap,4.5
+White or ST,Karma Orb,4.5
+White or ST,Fool's Prism,4.5
+White or ST,Honey Scepter Supreme,4.5
+White or ST,Unshuriken,4.5
+White or ST,NSFWakizashi,4.5
+White or ST,Lullaby,4.5
+White or ST,Recursion Mace,4.5
+White or ST,Paper Machete,4.5
+White or ST,Cheater Light Armor,4.5
+White or ST,Cheater Robe,4.5
+White or ST,Cheater Heavy Armor,4.5
+White or ST,Omni-Impotence Ring,4.5
+White or ST,Royal Jelly,7.0
+White or ST,Large Blue Bee Cloth,7.0
+White or ST,Small Blue Bee Cloth,7.0
+White or ST,Large Red Bee Cloth,7.0
+White or ST,Small Red Bee Cloth,7.0
+White or ST,Large Yellow Bee Cloth,7.0
+White or ST,Small Yellow Bee Cloth,7.0
+White or ST,Blue Beehemoth Armor,7.0
+White or ST,Red Beehemoth Armor,7.0
+White or ST,Yellow Beehemoth Armor,7.0
+White or ST,Killbilly Warrior Set Shard,7.0
+White or ST,Resurrected Huntress Set Shard,7.0
+White or ST,Killer Bee Queen Pet Skin,7.0
+White or ST,Nectar Crossfire,7.0
+White or ST,Honeytomb Snare,7.0
+White or ST,Apiary Armor,7.0
+White or ST,Honey Circlet,7.0
+White or ST,Amber Honeycomb,7.0
+White or ST,Queen's Stinger,7.0
+White or ST,Combcutter Kunai,7.0
+White or ST,Hivemaster Helm,7.0
+White or ST,Hivemind Mace,7.0
+White or ST,Beekeeper's Flamethrower,7.0
+White or ST,Herbal Tincture,10.0
+White or ST,The Forgotten Ring,10.0
+White or ST,Royal Guard's Cuirass,10.0
+White or ST,Valor,10.0
+White or ST,Vanguard's Visage,10.0
+White or ST,Sentinel's Sidearm,10.0
+White or ST,Bracer of the Guardian,10.0
+White or ST,Vest of Abandoned Shadows,10.0
+White or ST,Dusky Catalyst,10.0
+White or ST,Primal Arcana,10.0
+White or ST,Polarity Poison,10.0
+White or ST,The Twilight Gemstone,10.0
+White or ST,Mantle of the Monarchy,10.0
+White or ST,Warmonger,10.0
+White or ST,Peacekeeper,10.0
+White or ST,Noble Mandolin,10.0
+White or ST,The Forgotten Crown,10.0
+White or ST,Chrysalis of Eternity,10.0
+White or ST,Corruption Tether,10.0
+White or ST,Ancient Eminence,10.0
+White or ST,Twilight Shroud,10.0
+White or ST,Defiled Equilibrium,10.0
+White or ST,Archangel's Judgement,10.0
+White or ST,Daevite Progenitor,10.0
+White or ST,Seraphim's Guard,10.0
+White or ST,Flames of Genesis,10.0
+White or ST,Fallen One's Blade,10.0
+White or ST,Abyssal Insignia,10.0
+White or ST,Vortex Plating,10.0
+White or ST,Eye of the Void,10.0
+White or ST,Sentinel Watchdog Skin,10.0
+White or ST,Shadow Stormbird Pet Skin,10.0
+White or ST,Royal Void Cat Pet Skin,10.0
+White or ST,Ice Crown,10.0
+White or ST,The Tower Tarot Card,10.0
+White or ST,Wines,5.5
+White or ST,Mad God Ale,5.5
+White or ST,Oryx Stout,5.5
+White or ST,Realm-wheat Hefeweizen,5.5
+White or ST,The Right Hook,5.5
+White or ST,Tipsy Topper,5.5
+White or ST,Double Vision Darts,5.5
+White or ST,Cask Corslet,5.5
+White or ST,Brewer's Bangle,5.5
+White or ST,Large Cronus Square Cloth,6.0
+White or ST,Small Cronus Square Cloth,6.0
+White or ST,Large Hollow Square Cloth,6.0
+White or ST,Small Hollow Square Cloth,6.0
+White or ST,Large Pink Cube Cloth,6.0
+White or ST,Small Pink Cube Cloth,6.0
+White or ST,Cubic Jelly,6.0
+White or ST,Squaroid Staff,6.0
+White or ST,Cubic Frame,6.0
+White or ST,Polygonal Garbs,6.0
+White or ST,Cuband,6.0
+White or ST,Cloak of Cubic Enigma,6.0
+White or ST,Shadow Serpent Sidearm,6.0
+White or ST,Seal of Cubic Conundra,6.0
+White or ST,Bow of the Void,8.5
+White or ST,Quiver of Shadows,8.5
+White or ST,Armor of Nil,8.5
+White or ST,Sourcestone,8.5
+White or ST,Omnipotence Ring,8.5
+White or ST,Pet Eggs,6.0
+White or ST,Wine Cellar Incantation,6.0
+White or ST,Mini Nut Archer Skin,6.0
+White or ST,Mini Geb Skin,6.0
+White or ST,Bes' Artifact,6.0
+White or ST,Nut's Artifact,6.0
+White or ST,Geb's Artifact,6.0
+White or ST,Tomb Snake Skin Unlocker,6.0
+White or ST,Wand of Geb,6.0
+White or ST,Book of Geb,6.0
+White or ST,Shendyt of Geb,6.0
+White or ST,Geb's Ring of Wisdom,6.0
+White or ST,Ascension Ankh,6.0
+White or ST,Ring of the Pyramid,6.0
+White or ST,Tome of Holy Protection,6.0
+White or ST,Ring of the Sphinx,6.0
+White or ST,Pharaoh's Requiem,6.0
+White or ST,Ring of the Nile,6.0
+White or ST,Tome of Frigid Protection,6.0
+White or ST,Golden Ankh,6.0
+White or ST,Oye of Osiris,6.0
+White or ST,Pharaoh's Mask,6.0
+White or ST,Tomb Snake Egg,6.0
+White or ST,Wine Cellar Incantation,4.0
+White or ST,Power Pizza,4.0
+White or ST,Slurp Knight Skin,4.0
+White or ST,Turtle Pet Skin,4.0
+White or ST,Toxin Tooth,4.0
+White or ST,Virulent Venom,4.0
+White or ST,Acidic Armor,4.0
+White or ST,Pernicious Peridot,4.0
+White or ST,Void Blade,4.0
+White or ST,Murky Toxin,4.0
+White or ST,Turtle Egg,4.0
+White or ST,Wine Cellar Incantation,3.5
+White or ST,Tarot Card Pack,3.5
+White or ST,Possessed Staff Pet Skin,3.5
+White or ST,Edictum Praetoris,3.5
+White or ST,Toga Picta,3.5
+White or ST,Doom Bow,3.5
+White or ST,Spectral Sword,3.5
+White or ST,Wandering Souls Spell,3.5
+White or ST,Ring of Skeletal Specters,3.5
+White or ST,Bow of the Morning Star,3.5
+White or ST,Lil' Ghost Egg,3.5
+White or ST,Alien Core: Dark Matter,5.0
+White or ST,Moonbeam Blade,5.0
+White or ST,Dueling Daggers,5.0
+White or ST,Snowblind Wand,5.0
+White or ST,Universal Fragment,5.0
+White or ST,Untaris Fragment,5.0
+White or ST,Wines,6.0
+White or ST,Oryx's Greatsword,6.0
+White or ST,Champion's Bastion,6.0
+White or ST,Mercy's Bane,6.0
+White or ST,Bloodstone Ring,6.0
+White or ST,Tome of Holy Furor,6.0
+White or ST,Speed Sprout,5.5
+White or ST,Wine Cellar Incantation,5.5
+White or ST,Leaf Bow,5.5
+White or ST,Elder Heartwood Staff,5.5
+White or ST,Wakizashi of Eastern Winds,5.5
+White or ST,Labyrinth Dwelle r's Sheath,5.5
+White or ST,Woodland Huntress Skin,5.5
+White or ST,Blessed Blade Pet Skin,5.5
+White or ST,Perennial Cranium,5.5
+White or ST,Hanagasaku,5.5
+Event White,Barnacle Basher,10
+Event White,Beehemoth Quiver,10
+Event White,Cloak of Bloody Surprises,10
+Event White,Crystallised Fang’s Venom,10
+Event White,Dirk of Cronus,10
+Event White,Hama Yumi,10
+Event White,Helm of the Juggernaut,10
+Event White,Jailer’s Scythe,10
+Event White,Kageboshi,10
+Event White,Kogbold Multitool,10
+Event White,Orb of Conflict,10
+Event White,Quiver of Thunder,10
+Event White,Ray Katana,10
+Event White,Seal of Blasphemous Prayer,10
+Event White,Shield of Ogmur,10
+Event White,Tablet of the King’s Avatar,10
+Event White,Token of Warmth,10
+Event White,Token of Happiness,10
+Event White,Trap of the Vile Spirit,10
+Event White,Mighty Stein,10
+Event White,Deadly Keg,10
+Event White,Greaterhosen,10
+Biome White,Adventurer’s Scarf,10
+Biome White,Torrential Staff,10
+Biome White,Celestial Recurve,10
+Biome White,Mace of the Pumpkin Effigy,10
+Biome White,Pirate’s Artillery,10
+Biome White,Skull of Restless Souls,10
+Biome White,Doom’s Emblem,10
+Biome White,Cavalry Lance,10
+Biome White,Cloak of the Deep,10
+Biome White,Evolutionary Records,10
+Biome White,Pollen Incendiary,10
+Biome White,Bloodbath Blade,10
+Biome White,Runes of Knowledge,10
+Biome White,Incubation Mace,10
+
