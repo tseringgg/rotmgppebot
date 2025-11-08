@@ -455,34 +455,34 @@ async def addpointsfor(ctx: commands.Context, member: discord.Member, amount: fl
                     f"**New total:** {active_ppe['points']:.1f} points.")
 
 
-# @bot.command(name="addpoints", help="Add points to your active PPE.")
-# @commands.has_role("PPE Admin")
-# async def addpoints(ctx: commands.Context, amount: float):
-#     records = load_player_records()
-#     key = ctx.author.display_name.lower()
+@bot.command(name="addpoints", help="Add points to your active PPE.")
+@commands.has_role("PPE Player")
+async def addpoints(ctx: commands.Context, amount: float):
+    records = load_player_records()
+    key = ctx.author.display_name.lower()
 
-#     # Must be a contest member
-#     if key not in records or not records[key].get("is_member", False):
-#         return await ctx.reply("❌ You’re not part of the PPE contest. Ask a mod to add you with `!addplayer @you`.")
+    # Must be a contest member
+    if key not in records or not records[key].get("is_member", False):
+        return await ctx.reply("❌ You’re not part of the PPE contest. Ask a mod to add you with `!addplayer @you`.")
 
-#     player_data = records[key]
-#     active_id = player_data.get("active_ppe")
-#     if not active_id:
-#         return await ctx.reply("❌ You don’t have an active PPE. Use `!newppe` to create one first.")
+    player_data = records[key]
+    active_id = player_data.get("active_ppe")
+    if not active_id:
+        return await ctx.reply("❌ You don’t have an active PPE. Use `!newppe` to create one first.")
 
-#     # Find the active PPE
-#     active_ppe = next((p for p in player_data["ppes"] if p["id"] == active_id), None)
-#     if not active_ppe:
-#         return await ctx.reply("❌ Could not find your active PPE record. Try creating a new one with `!newppe`.")
+    # Find the active PPE
+    active_ppe = next((p for p in player_data["ppes"] if p["id"] == active_id), None)
+    if not active_ppe:
+        return await ctx.reply("❌ Could not find your active PPE record. Try creating a new one with `!newppe`.")
 
-#     # Add points (rounded down to nearest 0.5)
-#     import math
-#     amount = math.floor(amount * 2) / 2
-#     active_ppe["points"] += amount
-#     save_player_records(records)
+    # Add points (rounded down to nearest 0.5)
+    import math
+    amount = math.floor(amount * 2) / 2
+    active_ppe["points"] += amount
+    save_player_records(records)
 
-#     await ctx.reply(f"✅ Added **{amount:.1f}** points to your active PPE (PPE #{active_id}).\n"
-#                     f"**New total:** {active_ppe['points']:.1f} points.")
+    await ctx.reply(f"✅ Added **{amount:.1f}** points to your active PPE (PPE #{active_id}).\n"
+                    f"**New total:** {active_ppe['points']:.1f} points.")
 
 
 @bot.command(name="listplayers", help="Show all current participants in the PPE contest.")
@@ -671,6 +671,7 @@ async def ppehelp(ctx):
         "myppe": "View your current PPE stats or progress.",
         "newppe": "Start a new PPE run and track your progress.",
         "setactiveppe": "Set which of your PPE characters is currently active.",
+        "addpoints": "Add points to your active PPE.",
     }
 
     # --- Admin Commands ---
