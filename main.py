@@ -9,7 +9,7 @@ import numpy as np
 import csv
 import json
 
-LOOT_POINTS_CSV = "./rotmg_loot_drops.csv"
+LOOT_POINTS_CSV = "./rotmg_loot_drops_updated.csv"
 PLAYER_RECORD_FILE = "./guild_loot_records.json"
 
 # --- Load points table from CSV ---
