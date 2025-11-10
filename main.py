@@ -24,9 +24,11 @@ def load_loot_points():
     return loot_points
 
 
-def calculate_loot_points(player_name, detected_items):
+async def calculate_loot_points(ctx, player_name, detected_items):
     loot_points = load_loot_points()
-    records = load_player_records()
+    
+    guild_id = ctx.guild.id
+    records = await load_player_records(guild_id)
     key = player_name.lower()
 
     if key not in records or not records[key].get("is_member", False):
@@ -77,7 +79,8 @@ def calculate_loot_points(player_name, detected_items):
             "duplicate": is_duplicate
         })
 
-    save_player_records(records)
+    
+    await save_player_records(guild_id=guild_id, records=records)
     return results, active_ppe["points"]
 
 
@@ -387,7 +390,8 @@ async def on_ready():
 @bot.command(name="newppe", help="Create a new PPE (max 10) and make it your active one.")
 @commands.has_role("PPE Admin")
 async def newppe(ctx: commands.Context):
-    records = load_player_records()
+    guild_id = ctx.guild.id
+    records = await load_player_records(guild_id)
     key = ctx.author.display_name.lower()
 
     # Check membership first
@@ -407,7 +411,7 @@ async def newppe(ctx: commands.Context):
 
     player_data["ppes"].append(new_ppe)
     player_data["active_ppe"] = next_id
-    save_player_records(records)
+    await save_player_records(guild_id=guild_id, records=records)
 
     await ctx.reply(f"✅ Created **PPE #{next_id}** and set it as your active PPE.\n"
                     f"You now have {ppe_count + 1}/10 PPEs.")
@@ -416,7 +420,8 @@ async def newppe(ctx: commands.Context):
 @bot.command(name="setactiveppe", help="Set which PPE is active for point tracking.")
 @commands.has_role("PPE Player")
 async def setactiveppe(ctx: commands.Context, ppe_id: int):
-    records = load_player_records()
+    guild_id = ctx.guild.id
+    records = await load_player_records(guild_id)
     key = ensure_player_exists(records, ctx.author.display_name)
     player_data = records[key]
 
@@ -425,13 +430,13 @@ async def setactiveppe(ctx: commands.Context, ppe_id: int):
         return await ctx.reply(f"❌ You don’t have a PPE #{ppe_id}. Use !newppe to create one.")
 
     player_data["active_ppe"] = ppe_id
-    save_player_records(records)
+    await save_player_records(guild_id=guild_id, records=records)
     await ctx.reply(f"✅ Set **PPE #{ppe_id}** as your active PPE.")
 
 
         
 @bot.event
-async def on_message(message: discord.Message):
+async def on_message(ctx: commands.Context, message: discord.Message):
     if message.author == bot.user:
         return
     
@@ -461,7 +466,7 @@ async def on_message(message: discord.Message):
             found_items = find_items_in_image(file_path)
             if found_items:
                 player_name = str(message.author.display_name)
-                loot_results, total = calculate_loot_points(player_name, found_items)
+                loot_results, total = await calculate_loot_points(ctx, player_name, found_items)
 
                 msg_lines = [f"**{player_name}'s Loot Summary:**"]
                 for loot in loot_results:
@@ -485,7 +490,8 @@ async def on_message(message: discord.Message):
 @bot.command(name="addpointsfor", help="Add points to another player's active PPE.")
 @commands.has_role("PPE Admin")  # both can use
 async def addpointsfor(ctx: commands.Context, member: discord.Member, amount: float):
-    records = load_player_records()
+    guild_id = ctx.guild.id
+    records = await load_player_records(guild_id)
     key = member.display_name.lower()
 
     if key not in records or not records[key].get("is_member", False):
@@ -503,7 +509,7 @@ async def addpointsfor(ctx: commands.Context, member: discord.Member, amount: fl
     import math
     amount = math.floor(amount * 2) / 2
     active_ppe["points"] += amount
-    save_player_records(records)
+    await save_player_records(guild_id=guild_id, records=records)
 
     await ctx.reply(f"✅ Added **{amount:.1f}** points to **{member.display_name}**’s active PPE (PPE #{active_id}).\n"
                     f"**New total:** {active_ppe['points']:.1f} points.")
@@ -512,7 +518,8 @@ async def addpointsfor(ctx: commands.Context, member: discord.Member, amount: fl
 @bot.command(name="addpoints", help="Add points to your active PPE.")
 @commands.has_role("PPE Player")
 async def addpoints(ctx: commands.Context, amount: float):
-    records = load_player_records()
+    guild_id = ctx.guild.id
+    records = await load_player_records(guild_id)
     key = ctx.author.display_name.lower()
 
     # Must be a contest member
@@ -533,7 +540,7 @@ async def addpoints(ctx: commands.Context, amount: float):
     import math
     amount = math.floor(amount * 2) / 2
     active_ppe["points"] += amount
-    save_player_records(records)
+    await save_player_records(guild_id=guild_id, records=records)
 
     await ctx.reply(f"✅ Added **{amount:.1f}** points to your active PPE (PPE #{active_id}).\n"
                     f"**New total:** {active_ppe['points']:.1f} points.")
@@ -542,7 +549,8 @@ async def addpoints(ctx: commands.Context, amount: float):
 @bot.command(name="listplayers", help="Show all current participants in the PPE contest.")
 @commands.has_role("PPE Admin")
 async def listplayers(ctx: commands.Context):
-    records = load_player_records()
+    guild_id = ctx.guild.id
+    records = await load_player_records(guild_id)
 
     # Get all members who are marked as PPE participants
     members = [(name, data) for name, data in records.items() if data.get("is_member", False)]
@@ -569,7 +577,8 @@ async def addplayer(ctx: commands.Context, member: discord.Member):
     - Sets it active
     - Gives them access to all PPE commands
     """
-    records = load_player_records()
+    guild_id = ctx.guild.id
+    records = await load_player_records(guild_id)
     key = member.display_name.lower()
 
     if key in records:
@@ -584,14 +593,15 @@ async def addplayer(ctx: commands.Context, member: discord.Member):
         "is_member": True  # mark as officially added
     }
 
-    save_player_records(records)
+    await save_player_records(guild_id=guild_id, records=records)
     await ctx.reply(f"✅ Added **{member.display_name}** to the PPE contest and created **PPE #1** as their active PPE.")
 
 @bot.command(name="removeplayer", help="Remove a player and all their PPE data from the contest.")
 @commands.has_role("PPE Admin")
 async def removeplayer(ctx: commands.Context, member: discord.Member):
     remove_ppe_player_role(ctx, member)
-    records = load_player_records()
+    guild_id = ctx.guild.id
+    records = await load_player_records(guild_id)
     key = member.display_name.lower()
 
     if key not in records or not records[key].get("is_member", False):
@@ -599,7 +609,7 @@ async def removeplayer(ctx: commands.Context, member: discord.Member):
 
     # Confirm removal
     del records[key]
-    save_player_records(records)
+    await save_player_records(guild_id=guild_id, records=records)
 
     await ctx.reply(f"🗑️ Removed **{member.display_name}** and all their PPE data from the contest.")
 
@@ -608,7 +618,8 @@ async def removeplayer(ctx: commands.Context, member: discord.Member):
 @bot.command(name="myppe", help="Show all your PPEs and which one is active.")
 @commands.has_role("PPE Player")
 async def myppe(ctx: commands.Context):
-    records = load_player_records()
+    guild_id = ctx.guild.id
+    records = await load_player_records(guild_id)
     key = ctx.author.display_name.lower()
 
     if key not in records or not records[key]["ppes"]:
@@ -629,7 +640,8 @@ async def myppe(ctx: commands.Context):
 
 @bot.command(name="leaderboard", help="Show the best PPE from each player.")
 async def leaderboard(ctx: commands.Context):
-    records = load_player_records()
+    guild_id = ctx.guild.id
+    records = await load_player_records(guild_id)
 
     leaderboard_data = []
     for player, data in records.items():
