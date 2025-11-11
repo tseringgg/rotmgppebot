@@ -637,7 +637,7 @@ async def listplayers(ctx: commands.Context):
 # @commands.has_role("PPE Admin")
 @require_ppe_roles(admin_required=True)
 async def addplayer(ctx: commands.Context, member: discord.Member):
-    give_ppe_player_role(ctx, member)
+    await give_ppe_player_role(ctx, member)
     """
     Adds a new member to the PPE contest.
     - Creates their first PPE (PPE #1)
