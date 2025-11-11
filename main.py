@@ -24,10 +24,10 @@ def load_loot_points():
     return loot_points
 
 
-async def calculate_loot_points(ctx, player_name, detected_items):
+async def calculate_loot_points(guild_id, player_name, detected_items):
     loot_points = load_loot_points()
     
-    guild_id = ctx.guild.id
+    # guild_id = ctx.guild.id
     records = await load_player_records(guild_id)
     key = player_name.lower()
 
@@ -436,7 +436,8 @@ async def setactiveppe(ctx: commands.Context, ppe_id: int):
 
         
 @bot.event
-async def on_message(ctx: commands.Context, message: discord.Message):
+async def on_message(message: discord.Message):
+    guild_id = message.guild.id
     if message.author == bot.user:
         return
     
@@ -466,7 +467,7 @@ async def on_message(ctx: commands.Context, message: discord.Message):
             found_items = find_items_in_image(file_path)
             if found_items:
                 player_name = str(message.author.display_name)
-                loot_results, total = await calculate_loot_points(ctx, player_name, found_items)
+                loot_results, total = await calculate_loot_points(guild_id, player_name, found_items)
 
                 msg_lines = [f"**{player_name}'s Loot Summary:**"]
                 for loot in loot_results:
