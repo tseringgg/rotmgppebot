@@ -501,8 +501,8 @@ async def on_message(message: discord.Message):
         return
     
     # --- Only allow in registered PPE channels ---
-    allowed_channels = load_ppe_channels()
-    if message.channel.id not in allowed_channels:
+    ppe_channels = load_ppe_channels()
+    if message.channel.id not in ppe_channels:
         # Still allow normal commands to run elsewhere
         return await bot.process_commands(message)
 
@@ -510,31 +510,34 @@ async def on_message(message: discord.Message):
     has_ppe_player = discord.utils.get(message.author.roles, name="PPE Player")
     has_ppe_admin = discord.utils.get(message.author.roles, name="PPE Admin")
 
-    if not (has_ppe_player or has_ppe_admin):
-        # Optional: politely ignore or respond
-        print(f"🚫 Ignored message from {message.author} (no PPE role).")
-        return
+    # if not (has_ppe_player or has_ppe_admin):
+    #     # Optional: politely ignore or respond
+    #     print(f"🚫 Ignored message from {message.author} (no PPE role).")
+    #     return
     
-    for attachment in message.attachments:
-        if attachment.filename.lower().endswith((".png", ".jpg", ".jpeg")):
-            # --- Prepare download directory ---
-            download_dir = "./downloads"
-            os.makedirs(download_dir, exist_ok=True)
-            file_path = f"./downloads/{attachment.filename}"
-            await attachment.save(file_path)
+    if has_ppe_player and message.channel.id in ppe_channels:
+        # --- Process attachments for loot detection ---
+    
+        for attachment in message.attachments:
+            if attachment.filename.lower().endswith((".png", ".jpg", ".jpeg")):
+                # --- Prepare download directory ---
+                download_dir = "./downloads"
+                os.makedirs(download_dir, exist_ok=True)
+                file_path = f"./downloads/{attachment.filename}"
+                await attachment.save(file_path)
 
-            found_items = find_items_in_image(file_path)
-            if found_items:
-                player_name = str(message.author.display_name)
-                loot_results, total = await calculate_loot_points(guild_id, player_name, found_items)
+                found_items = find_items_in_image(file_path)
+                if found_items:
+                    player_name = str(message.author.display_name)
+                    loot_results, total = await calculate_loot_points(guild_id, player_name, found_items)
 
-                msg_lines = [f"**{player_name}'s Loot Summary:**"]
-                for loot in loot_results:
-                    dup_tag = " (Duplicate ⚠️)" if loot["duplicate"] else ""
-                    msg_lines.append(f"- {loot['item']}: +{loot['points']} points{dup_tag}")
-                msg_lines.append(f"**Total Points:** {total:.1f}")
+                    msg_lines = [f"**{player_name}'s Loot Summary:**"]
+                    for loot in loot_results:
+                        dup_tag = " (Duplicate ⚠️)" if loot["duplicate"] else ""
+                        msg_lines.append(f"- {loot['item']}: +{loot['points']} points{dup_tag}")
+                    msg_lines.append(f"**Total Points:** {total:.1f}")
 
-                await message.channel.send("\n".join(msg_lines))
+                    await message.channel.send("\n".join(msg_lines))
 
     await bot.process_commands(message)
 
