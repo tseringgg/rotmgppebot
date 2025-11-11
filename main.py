@@ -822,6 +822,7 @@ async def ppehelp(ctx):
     owner_cmds = {
         "giveppeadminrole": "Give the PPE Admin role to a member.",
         "removeppeadminrole": "Remove the PPE Admin role from a member.",
+        "setuproles": "Check and create required PPE roles in this server.",
     }
 
     # --- Create help embed ---

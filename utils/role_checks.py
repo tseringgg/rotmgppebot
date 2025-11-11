@@ -21,7 +21,7 @@ def require_ppe_roles(admin_required: bool = False, player_required: bool = Fals
                 "⚠️ Required roles are missing!\n"
                 "Please ensure **PPE Admin** and **PPE Player** exist before using this command.\n"
                 "You can fix this by re-inviting the bot with `Manage Roles` permission, "
-                "or by manually creating the roles."
+                "or by manually creating the roles with !setuproles."
             )
             return False
 
