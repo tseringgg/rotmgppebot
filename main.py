@@ -372,7 +372,63 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 intents = discord.Intents.default()
 intents.message_content = True
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
+
+@bot.event
+async def on_guild_join(guild: discord.Guild):
+    """Called when the bot joins a new server."""
+    required_roles = ["PPE Player", "PPE Admin"]
+    existing_roles = {role.name for role in guild.roles}
+    created_roles = []
+
+    # Try to create any missing roles
+    for role_name in required_roles:
+        if role_name not in existing_roles:
+            try:
+                new_role = await guild.create_role(
+                    name=role_name,
+                    reason="Automatically created required PPE roles."
+                )
+                created_roles.append(new_role.name)
+            except discord.Forbidden:
+                print(f"[WARN] Missing permission to create roles in {guild.name}.")
+            except Exception as e:
+                print(f"[ERROR] Failed to create role '{role_name}' in {guild.name}: {e}")
+
+    # Send setup message in system channel (or fallback)
+    setup_msg = "👋 **PPE Bot Setup Complete!**\n\n"
+    if created_roles:
+        setup_msg += f"✅ Created roles: {', '.join(created_roles)}\n"
+    else:
+        setup_msg += "ℹ️ Required roles already existed.\n"
+    setup_msg += (
+        "\n**Assign roles:**\n"
+        "- `PPE Admin`: Can manage PPEs, reset leaderboards, and configure the bot.\n"
+        "- `PPE Player`: Can register PPEs, post loot, and view leaderboards."
+    )
+
+    # Find a channel to send the message
+    channel = (
+        guild.system_channel
+        or next(
+            (c for c in guild.text_channels if c.permissions_for(guild.me).send_messages),
+            None
+        )
+    )
+    if channel:
+        try:
+            await channel.send(setup_msg)
+        except Exception as e:
+            print(f"[WARN] Could not send setup message in {guild.name}: {e}")
+    else:
+        print(f"[INFO] Joined {guild.name}, but no suitable text channel found for setup message.")
+
+@bot.command(name="setuproles", help="Check and create required PPE roles in this server.")
+@commands.is_owner()
+async def setup_roles(ctx):
+    await on_guild_join(ctx.guild)
+    await ctx.send("🔁 Setup roles check complete.")
+
 
 @bot.event
 async def on_ready():
