@@ -8,8 +8,14 @@ def require_ppe_roles(admin_required: bool = False, player_required: bool = Fals
         if guild is None:
             await ctx.send("❌ This command can only be used inside a server.")
             return False
-        # ⚙️ Skip validation entirely for the built-in help command
-        if ctx.command and ctx.command.qualified_name == "help":
+        # Detect if the help command or introspection is running
+        if (
+            ctx.command is None
+            or ctx.command.qualified_name == "help"
+            or ctx.invoked_with == "help"
+            or isinstance(ctx.command, commands.HelpCommand)
+        ):
+            # ✅ Skip all checks silently
             return True
 
         admin_role = discord.utils.get(guild.roles, name="PPE Admin")
