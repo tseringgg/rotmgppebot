@@ -667,7 +667,7 @@ async def addplayer(ctx: commands.Context, member: discord.Member):
 # @commands.has_role("PPE Admin")
 @require_ppe_roles(admin_required=True)
 async def removeplayer(ctx: commands.Context, member: discord.Member):
-    remove_ppe_player_role(ctx, member)
+    await remove_ppe_player_role(ctx, member)
     guild_id = ctx.guild.id
     records = await load_player_records(guild_id)
     key = member.display_name.lower()
