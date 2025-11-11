@@ -373,6 +373,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
+from utils.role_checks import require_ppe_roles
 
 @bot.event
 async def on_guild_join(guild: discord.Guild):
@@ -424,7 +425,7 @@ async def on_guild_join(guild: discord.Guild):
         print(f"[INFO] Joined {guild.name}, but no suitable text channel found for setup message.")
 
 @bot.command(name="setuproles", help="Check and create required PPE roles in this server.")
-@commands.is_owner()
+@commands.has_permissions(manage_roles=True)
 async def setup_roles(ctx):
     await on_guild_join(ctx.guild)
     await ctx.send("🔁 Setup roles check complete.")
@@ -444,7 +445,8 @@ async def on_ready():
         await db.commit()
 
 @bot.command(name="newppe", help="Create a new PPE (max 10) and make it your active one.")
-@commands.has_role("PPE Admin")
+# @commands.has_role("PPE Admin")
+@require_ppe_roles(player_required=True)
 async def newppe(ctx: commands.Context):
     guild_id = ctx.guild.id
     records = await load_player_records(guild_id)
@@ -474,7 +476,8 @@ async def newppe(ctx: commands.Context):
 
 
 @bot.command(name="setactiveppe", help="Set which PPE is active for point tracking.")
-@commands.has_role("PPE Player")
+# @commands.has_role("PPE Player")
+@require_ppe_roles(player_required=True)
 async def setactiveppe(ctx: commands.Context, ppe_id: int):
     guild_id = ctx.guild.id
     records = await load_player_records(guild_id)
@@ -545,7 +548,8 @@ async def on_message(message: discord.Message):
 #     await ctx.send(f"🗑️ Removed {member.display_name} from the leaderboard.")
     
 @bot.command(name="addpointsfor", help="Add points to another player's active PPE.")
-@commands.has_role("PPE Admin")  # both can use
+# @commands.has_role("PPE Admin")  # both can use
+@require_ppe_roles(admin_required=True)
 async def addpointsfor(ctx: commands.Context, member: discord.Member, amount: float):
     guild_id = ctx.guild.id
     records = await load_player_records(guild_id)
@@ -573,7 +577,8 @@ async def addpointsfor(ctx: commands.Context, member: discord.Member, amount: fl
 
 
 @bot.command(name="addpoints", help="Add points to your active PPE.")
-@commands.has_role("PPE Player")
+# @commands.has_role("PPE Player")
+@require_ppe_roles(player_required=True)
 async def addpoints(ctx: commands.Context, amount: float):
     guild_id = ctx.guild.id
     records = await load_player_records(guild_id)
@@ -604,7 +609,8 @@ async def addpoints(ctx: commands.Context, amount: float):
 
 
 @bot.command(name="listplayers", help="Show all current participants in the PPE contest.")
-@commands.has_role("PPE Admin")
+# @commands.has_role("PPE Admin")
+@require_ppe_roles(admin_required=True)
 async def listplayers(ctx: commands.Context):
     guild_id = ctx.guild.id
     records = await load_player_records(guild_id)
@@ -625,7 +631,8 @@ async def listplayers(ctx: commands.Context):
 
 
 @bot.command(name="addplayer", help="Add a player to the PPE contest and create their first active PPE.")
-@commands.has_role("PPE Admin")
+# @commands.has_role("PPE Admin")
+@require_ppe_roles(admin_required=True)
 async def addplayer(ctx: commands.Context, member: discord.Member):
     give_ppe_player_role(ctx, member)
     """
@@ -654,7 +661,8 @@ async def addplayer(ctx: commands.Context, member: discord.Member):
     await ctx.reply(f"✅ Added **{member.display_name}** to the PPE contest and created **PPE #1** as their active PPE.")
 
 @bot.command(name="removeplayer", help="Remove a player and all their PPE data from the contest.")
-@commands.has_role("PPE Admin")
+# @commands.has_role("PPE Admin")
+@require_ppe_roles(admin_required=True)
 async def removeplayer(ctx: commands.Context, member: discord.Member):
     remove_ppe_player_role(ctx, member)
     guild_id = ctx.guild.id
@@ -673,7 +681,8 @@ async def removeplayer(ctx: commands.Context, member: discord.Member):
 
 
 @bot.command(name="myppe", help="Show all your PPEs and which one is active.")
-@commands.has_role("PPE Player")
+# @commands.has_role("PPE Player")
+@require_ppe_roles(player_required=True)
 async def myppe(ctx: commands.Context):
     guild_id = ctx.guild.id
     records = await load_player_records(guild_id)
@@ -739,7 +748,8 @@ def save_ppe_channels(channel_ids):
         json.dump({"ppe_channels": channel_ids}, f, indent=2)
 
 @bot.command(name="setppechannel", help="Mark this channel as a PPE channel.")
-@commands.has_role("PPE Admin")
+# @commands.has_role("PPE Admin")
+@require_ppe_roles(admin_required=True)
 async def set_ppe_channel(ctx: commands.Context):
     channel_id = ctx.channel.id
     channels = load_ppe_channels()
@@ -752,7 +762,8 @@ async def set_ppe_channel(ctx: commands.Context):
 
 
 @bot.command(name="unsetppechannel", help="Remove this channel from PPE channels.")
-@commands.has_role("PPE Admin")
+# @commands.has_role("PPE Admin")
+@require_ppe_roles(admin_required=True)
 async def unset_ppe_channel(ctx: commands.Context):
     channel_id = ctx.channel.id
     channels = load_ppe_channels()
@@ -765,7 +776,8 @@ async def unset_ppe_channel(ctx: commands.Context):
 
 
 @bot.command(name="listppechannels", help="Show all channels marked as PPE channels.")
-@commands.has_role("PPE Admin")
+# @commands.has_role("PPE Admin")
+@require_ppe_roles(admin_required=True)
 async def list_ppe_channels(ctx: commands.Context):
     channels = load_ppe_channels()
     if not channels:
@@ -851,6 +863,7 @@ async def ppehelp(ctx):
 # --- Give PPE Admin role ---
 @bot.command(name="giveppeadminrole", help="Give the PPE Admin role to a member. Admin only.")
 @commands.has_permissions(manage_roles=True)
+@require_ppe_roles()
 async def give_ppe_admin_role(ctx, member: discord.Member):
     role = discord.utils.get(ctx.guild.roles, name="PPE Admin")
     if not role:
@@ -866,6 +879,7 @@ async def give_ppe_admin_role(ctx, member: discord.Member):
 # --- Give PPE Player role ---
 # @bot.command(name="giveppeplayerrole", help="Give the PPE Player role to a member. Admin only.")
 # @commands.has_role("PPE Admin")
+@require_ppe_roles(admin_required=True)
 async def give_ppe_player_role(ctx, member: discord.Member):
     role = discord.utils.get(ctx.guild.roles, name="PPE Player")
     if not role:
@@ -897,6 +911,7 @@ async def remove_ppe_admin_role(ctx, member: discord.Member):
 # --- Remove PPE Player role ---
 # @bot.command(name="removeppeplayerrole", help="Remove the PPE Player role from a member. Admin only.")
 # @commands.has_role("PPE Admin")
+@require_ppe_roles(admin_required=True)
 async def remove_ppe_player_role(ctx, member: discord.Member):
     role = discord.utils.get(ctx.guild.roles, name="PPE Player")
     if not role:
