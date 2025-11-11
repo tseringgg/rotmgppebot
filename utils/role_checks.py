@@ -8,6 +8,9 @@ def require_ppe_roles(admin_required: bool = False, player_required: bool = Fals
         if guild is None:
             await ctx.send("❌ This command can only be used inside a server.")
             return False
+        if not hasattr(ctx, "author") or not hasattr(ctx, "guild"): # to avoid checks during help command
+            # This means help command or internal call
+            return True
 
         admin_role = discord.utils.get(guild.roles, name="PPE Admin")
         player_role = discord.utils.get(guild.roles, name="PPE Player")
