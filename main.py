@@ -443,11 +443,16 @@ async def on_ready():
             )
         """)
         await db.commit()
+    await bot.tree.sync()
 
-@bot.command(name="newppe", help="Create a new PPE (max 10) and make it your active one.")
+from discord import app_commands
+
+@app_commands.command(name="newppe", help="Create a new PPE (max 10) and make it your active one.")
 # @commands.has_role("PPE Admin")
 @require_ppe_roles(player_required=True)
-async def newppe(ctx: commands.Context):
+async def newppe(interaction: discord.Interaction):
+# async def newppe(ctx: commands.Context):
+    ctx = interaction
     guild_id = ctx.guild.id
     records = await load_player_records(guild_id)
     key = ctx.author.display_name.lower()
