@@ -447,7 +447,7 @@ async def on_ready():
 
 from discord import app_commands
 
-@app_commands.command(name="newppe", help="Create a new PPE (max 10) and make it your active one.")
+@app_commands.command(name="newppe", description="Create a new PPE (max 10) and make it your active one.")
 # @commands.has_role("PPE Admin")
 @require_ppe_roles(player_required=True)
 async def newppe(interaction: discord.Interaction):
