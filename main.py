@@ -17,10 +17,25 @@ SERVER2_ID = 1435436110829326459 # Test Server
 load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
+class PPEBot(commands.Bot):
+    async def setup_hook(self):
+        # Print to confirm commands are loaded BEFORE syncing
+        print("Loaded commands:", [cmd.name for cmd in self.tree.get_commands()])
+
+        # Sync to guilds (FAST commands)
+        for gid in [SERVER1_ID, SERVER2_ID]:
+            print(f"Syncing commands to guild {gid}...")
+            await self.tree.sync(guild=discord.Object(id=gid))
+
+        print("Guild commands synced!")
+
 intents = discord.Intents.default()
 intents.message_content = True
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+
+
+# bot = commands.Bot(command_prefix="!", intents=intents)
+bot = PPEBot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_guild_join(guild: discord.Guild):
@@ -94,12 +109,12 @@ async def on_ready():
     # await bot.tree.sync()           # Make sure we fetch the existing global cmds
     # bot.tree.clear_commands(guild=None)       # Clear them locally
     # await bot.tree.sync()           # Push the cleared state (removes globals)
-    print("Loaded commands:", [cmd.name for cmd in bot.tree.get_commands()])
+    # print("Loaded commands:", [cmd.name for cmd in bot.tree.get_commands()])
 
-    print("Bot ready. Syncing slash commands...")
-    for gid in [SERVER1_ID, SERVER2_ID]:
-        await bot.tree.sync(guild=discord.Object(id=gid))
-    print("Slash commands synced to guilds!")
+    # print("Bot ready. Syncing slash commands...")
+    # for gid in [SERVER1_ID, SERVER2_ID]:
+    #     await bot.tree.sync(guild=discord.Object(id=gid))
+    # print("Slash commands synced to guilds!")
 
 @bot.tree.command(name="ping", description="Replies with Pong!")
 async def ping(interaction: discord.Interaction):
