@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 import aiosqlite
@@ -8,6 +9,8 @@ import json
 from utils.find_items import find_items_in_image
 from utils.calc_points import calculate_loot_points
 from utils.player_records import load_player_records, save_player_records, ensure_player_exists
+from utils.role_checks import require_ppe_roles
+
 
 
 load_dotenv()
@@ -17,7 +20,6 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
-from utils.role_checks import require_ppe_roles
 
 @bot.event
 async def on_guild_join(guild: discord.Guild):
@@ -87,7 +89,14 @@ async def on_ready():
             )
         """)
         await db.commit()
+    
+    await bot.tree.sync()
+    print("✔️ Global slash commands synced!")
 
+# Test slash command for global sync
+@bot.tree.command(name="ping", description="Replies with Pong!")
+async def ping(interaction: discord.Interaction):
+    await interaction.response.send_message("Pong!")
 
 @bot.command(name="newppe", help="Create a new PPE (max 10) and make it your active one.")
 # @commands.has_role("PPE Admin")
