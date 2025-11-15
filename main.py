@@ -90,16 +90,17 @@ async def on_ready():
             )
         """)
         await db.commit()
-    # clear global commands
-    await bot.tree.sync()           # Make sure we fetch the existing global cmds
-    bot.tree.clear_commands(guild=None)       # Clear them locally
-    await bot.tree.sync()           # Push the cleared state (removes globals)
+    # # clear global commands
+    # await bot.tree.sync()           # Make sure we fetch the existing global cmds
+    # bot.tree.clear_commands(guild=None)       # Clear them locally
+    # await bot.tree.sync()           # Push the cleared state (removes globals)
+    print("Loaded commands:", [cmd.name for cmd in bot.tree.get_commands()])
+
     print("Bot ready. Syncing slash commands...")
     for gid in [SERVER1_ID, SERVER2_ID]:
         await bot.tree.sync(guild=discord.Object(id=gid))
     print("Slash commands synced to guilds!")
 
-# Test slash command for global sync
 @bot.tree.command(name="ping", description="Replies with Pong!")
 async def ping(interaction: discord.Interaction):
     await interaction.response.send_message("Pong!")
