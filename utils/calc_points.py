@@ -2,7 +2,7 @@
 LOOT_POINTS_CSV = "./rotmg_loot_drops_updated.csv"
 import csv
 PLAYER_RECORD_FILE = "./guild_loot_records.json"
-
+from utils.player_records import load_player_records, save_player_records
 
 # --- Load points table from CSV ---
 def load_loot_points():
