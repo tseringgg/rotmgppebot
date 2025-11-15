@@ -92,7 +92,7 @@ async def on_ready():
         await db.commit()
     # clear global commands
     await bot.tree.sync()           # Make sure we fetch the existing global cmds
-    bot.tree.clear_commands()       # Clear them locally
+    bot.tree.clear_commands(guild=None)       # Clear them locally
     await bot.tree.sync()           # Push the cleared state (removes globals)
     print("Bot ready. Syncing slash commands...")
     for gid in [SERVER1_ID, SERVER2_ID]:
