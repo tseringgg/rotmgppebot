@@ -14,6 +14,8 @@ from utils.role_checks import require_ppe_roles
 SERVER1_ID = 879497062117412924 # Last Oasis
 SERVER2_ID = 1435436110829326459 # Test Server
 
+guilds = [discord.Object(id=SERVER1_ID), discord.Object(id=SERVER2_ID)]
+
 load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -23,12 +25,12 @@ class PPEBot(commands.Bot):
         print("Loaded commands:", [cmd.name for cmd in self.tree.get_commands()])
 
         # Sync to guilds (FAST commands)
-        for gid in [SERVER1_ID, SERVER2_ID]:
-            print(f"Syncing commands to guild {gid}...")
+        for guild in guilds:
+            print(f"Syncing commands to guild {guild.id}...")
             try:
-                await self.tree.sync(guild=discord.Object(id=gid))
+                await self.tree.sync(guild=guild)
             except Exception as e:
-                print(f"[ERROR] Failed to sync commands to guild {gid}: {e}")
+                print(f"[ERROR] Failed to sync commands to guild {guild.id}: {e}")
 
         print("Guild commands synced!")
 
@@ -119,7 +121,7 @@ async def on_ready():
     #     await bot.tree.sync(guild=discord.Object(id=gid))
     # print("Slash commands synced to guilds!")
 
-@bot.tree.command(name="ping", description="Replies with Pong!")
+@bot.tree.command(name="ping", description="Replies with Pong!", guilds=guilds)
 async def ping(interaction: discord.Interaction):
     await interaction.response.send_message("Pong!")
 
