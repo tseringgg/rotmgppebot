@@ -64,13 +64,13 @@ async def on_guild_join(guild: discord.Guild):
                 print(f"[ERROR] Failed to create role '{role_name}' in {guild.name}: {e}")
 
     # Send setup message in system channel (or fallback)
-    setup_msg = "👋 **PPE Bot Setup Complete!**\n\n"
+    setup_msg = "👋 `PPE Bot Setup Complete!`\n\n"
     if created_roles:
         setup_msg += f"✅ Created roles: {', '.join(created_roles)}\n"
     else:
         setup_msg += "ℹ️ Required roles already existed.\n"
     setup_msg += (
-        "\n**Assign roles:**\n"
+        "\n`Assign roles:`\n"
         "- `PPE Admin`: Can manage PPEs, reset leaderboards, and configure the bot.\n"
         "- `PPE Player`: Can register PPEs, post loot, and view leaderboards."
     )
@@ -143,7 +143,7 @@ async def newppe(interaction: discord.Interaction):
     # --- PPE limit check ---
     ppe_count = len(player_data.get("ppes", []))
     if ppe_count >= 10:
-        return await interaction.response.send_message("⚠️ You’ve reached the limit of **10 PPEs**. Delete or reuse an existing one before making a new one.")
+        return await interaction.response.send_message("⚠️ You’ve reached the limit of `10 PPEs`. Delete or reuse an existing one before making a new one.")
 
     # --- Create new PPE ---
     next_id = max([ppe["id"] for ppe in player_data["ppes"]], default=0) + 1
@@ -153,7 +153,7 @@ async def newppe(interaction: discord.Interaction):
     player_data["active_ppe"] = next_id
     await save_player_records(guild_id=guild_id, records=records)
 
-    await interaction.response.send_message(f"✅ Created **PPE #{next_id}** and set it as your active PPE.\n"
+    await interaction.response.send_message(f"✅ Created `PPE #{next_id}` and set it as your active PPE.\n"
                     f"You now have {ppe_count + 1}/10 PPEs.")
 
 
@@ -172,7 +172,7 @@ async def setactiveppe(interaction: discord.Interaction, ppe_id: int):
 
     player_data["active_ppe"] = ppe_id
     await save_player_records(guild_id=guild_id, records=records)
-    await interaction.response.send_message(f"✅ Set **PPE #{ppe_id}** as your active PPE.")
+    await interaction.response.send_message(f"✅ Set `PPE #{ppe_id}` as your active PPE.")
 
         
 @bot.event
@@ -207,11 +207,11 @@ async def on_message(message: discord.Message):
                     player_name = str(message.author.display_name)
                     loot_results, total = await calculate_loot_points(guild_id, player_name, found_items)
 
-                    msg_lines = [f"**{player_name}'s Loot Summary:**"]
+                    msg_lines = [f"`{player_name}'s Loot Summary:`"]
                     for loot in loot_results:
                         dup_tag = " (Duplicate ⚠️)" if loot["duplicate"] else ""
                         msg_lines.append(f"- {loot['item']}: +{loot['points']} points{dup_tag}")
-                    msg_lines.append(f"**Total Points:** {total:.1f}")
+                    msg_lines.append(f"`Total Points:` {total:.1f}")
 
                     await message.channel.send("\n".join(msg_lines))
 
@@ -242,8 +242,8 @@ async def addpointsfor(interaction: discord.Interaction, member: discord.Member,
     active_ppe["points"] += amount
     await save_player_records(guild_id=guild_id, records=records)
 
-    await interaction.response.send_message(f"✅ Added **{amount:.1f}** points to **{member.display_name}**’s active PPE (PPE #{active_id}).\n"
-                    f"**New total:** {active_ppe['points']:.1f} points.")
+    await interaction.response.send_message(f"✅ Added `{amount:.1f}` points to `{member.display_name}`’s active PPE (PPE #{active_id}).\n"
+                    f"`New total:` {active_ppe['points']:.1f} points.")
 
 
 @bot.tree.command(name="addpoints", description="Add points to your active PPE.", guilds=guilds)
@@ -271,8 +271,8 @@ async def addpoints(interaction: discord.Interaction, amount: float):
     active_ppe["points"] += amount
     await save_player_records(guild_id=guild_id, records=records)
 
-    await interaction.response.send_message(f"✅ Added **{amount:.1f}** points to your active PPE (PPE #{active_id}).\n"
-                    f"**New total:** {active_ppe['points']:.1f} points.")
+    await interaction.response.send_message(f"✅ Added `{amount:.1f}` points to your active PPE (PPE #{active_id}).\n"
+                    f"`New total:` {active_ppe['points']:.1f} points.")
 
 
 @bot.tree.command(name="listplayers", description="Show all current participants in the PPE contest.", guilds=guilds)
@@ -288,11 +288,11 @@ async def listplayers(interaction: discord.Interaction):
     if not members:
         return await interaction.response.send_message("❌ No one has been added to the PPE contest yet.")
 
-    lines = ["**🏆 Current PPE Contest Participants 🏆**"]
+    lines = ["`🏆 Current PPE Contest Participants 🏆`"]
     for name, data in members:
         ppe_count = len(data.get("ppes", []))
         active_id = data.get("active_ppe")
-        lines.append(f"• **{name.title()}** — {ppe_count} PPE(s), Active: PPE #{active_id}")
+        lines.append(f"• `{name.title()}` — {ppe_count} PPE(s), Active: PPE #{active_id}")
 
     await interaction.response.send_message("\n".join(lines))
 
@@ -325,7 +325,7 @@ async def addplayer(interaction: discord.Interaction, member: discord.Member):
     }
 
     await save_player_records(guild_id=guild_id, records=records)
-    await interaction.response.send_message(f"✅ Added **{member.display_name}** to the PPE contest and created **PPE #1** as their active PPE.")
+    await interaction.response.send_message(f"✅ Added `{member.display_name}` to the PPE contest and created `PPE #1` as their active PPE.")
 
 @bot.tree.command(name="removeplayer", description="Remove a player and all their PPE data from the contest.", guilds=guilds)
 # @commands.has_role("PPE Admin")
@@ -343,7 +343,7 @@ async def removeplayer(interaction: discord.Interaction, member: discord.Member)
     del records[key]
     await save_player_records(guild_id=guild_id, records=records)
 
-    await interaction.response.send_message(f"🗑️ Removed **{member.display_name}** and all their PPE data from the contest.")
+    await interaction.response.send_message(f"🗑️ Removed `{member.display_name}` and all their PPE data from the contest.")
 
 
 
@@ -361,7 +361,7 @@ async def myppe(interaction: discord.Interaction):
     player_data = records[key]
     active_id = player_data.get("active_ppe")
 
-    lines = [f"**{interaction.user.display_name}'s PPEs:**"]
+    lines = [f"`{interaction.user.display_name}'s PPEs:`"]
     for ppe in sorted(player_data["ppes"], key=lambda x: x["id"]):
         id_ = ppe["id"]
         pts = ppe.get("points", 0)
@@ -385,9 +385,9 @@ async def leaderboard(interaction: discord.Interaction):
 
     leaderboard_data.sort(key=lambda x: x[2], reverse=True)
 
-    lines = ["🏆 **Best PPE Leaderboard** 🏆"]
+    lines = ["🏆 `Best PPE Leaderboard` 🏆"]
     for rank, (player, ppe_id, pts) in enumerate(leaderboard_data, start=1):
-        lines.append(f"{rank}. **{player.title()}** — PPE #{ppe_id}: {pts:.1f} points")
+        lines.append(f"{rank}. `{player.title()}` — PPE #{ppe_id}: {pts:.1f} points")
 
     await interaction.response.send_message("\n".join(lines))
 
@@ -425,7 +425,7 @@ async def set_ppe_channel(interaction: discord.Interaction):
 
     channels.append(channel_id)
     save_ppe_channels(channels)
-    await interaction.response.send_message(f"✅ Added **#{interaction.channel.name}** as a PPE channel.")
+    await interaction.response.send_message(f"✅ Added `#{interaction.channel.name}` as a PPE channel.")
 
 @bot.tree.command(name="unsetppechannel", description="Remove this channel from PPE channels.", guilds=guilds)
 # @commands.has_role("PPE Admin")
@@ -438,7 +438,7 @@ async def unset_ppe_channel(interaction: discord.Interaction):
 
     channels.remove(channel_id)
     save_ppe_channels(channels)
-    await interaction.response.send_message(f"🗑️ Removed **#{interaction.channel.name}** from the PPE channel list.")
+    await interaction.response.send_message(f"🗑️ Removed `#{interaction.channel.name}` from the PPE channel list.")
 
 @bot.tree.command(name="listppechannels", description="Show all channels marked as PPE channels.", guilds=guilds)
 # @commands.has_role("PPE Admin")
@@ -447,7 +447,7 @@ async def list_ppe_channels(interaction: discord.Interaction):
     channels = load_ppe_channels()
     if not channels:
         return await interaction.response.send_message("❌ No PPE channels have been set yet. Use `/setppechannel` in one.")
-    lines = ["**📜 PPE Channels:**"]
+    lines = ["`📜 PPE Channels:`"]
     for cid in channels:
         channel = interaction.guild.get_channel(cid)
         if channel:
@@ -494,8 +494,8 @@ async def ppehelp(interaction: discord.Interaction):
         title="🧙 PPE Bot Help",
         description=(
             "Welcome to the PPE competition bot!\n\n"
-            "🟢 **Player Commands** — for everyone with the **PPE Player** role.\n"
-            "🔴 **Admin Commands** — for members with the **PPE Admin** role or 'Manage Roles' permission."
+            "🟢 `Player Commands` — for everyone with the `PPE Player` role.\n"
+            "🔴 `Admin Commands` — for members with the `PPE Admin` role or 'Manage Roles' permission."
         ),
         color=discord.Color.blurple()
     )
@@ -537,7 +537,7 @@ async def give_ppe_admin_role(interaction: discord.Interaction, member: discord.
 
     try:
         await member.add_roles(role)
-        await interaction.response.send_message(f"✅ Gave **PPE Admin** role to **{member.display_name}**.")
+        await interaction.response.send_message(f"✅ Gave `PPE Admin` role to `{member.display_name}`.")
     except discord.Forbidden:
         await interaction.response.send_message("❌ I don't have permission to manage that role. Move my bot role higher in the hierarchy.")
 
@@ -553,7 +553,7 @@ async def give_ppe_player_role(interaction: discord.Interaction, member: discord
 
     try:
         await member.add_roles(role)
-        await interaction.response.send_message(f"✅ Gave **PPE Player** role to **{member.display_name}**.")
+        await interaction.response.send_message(f"✅ Gave `PPE Player` role to `{member.display_name}`.")
     except discord.Forbidden:
         await interaction.response.send_message("❌ I don't have permission to manage that role. Move my bot role higher in the hierarchy.")
 
@@ -568,7 +568,7 @@ async def remove_ppe_admin_role(interaction: discord.Interaction, member: discor
 
     try:
         await member.remove_roles(role)
-        await interaction.response.send_message(f"✅ Removed **PPE Admin** role from **{member.display_name}**.")
+        await interaction.response.send_message(f"✅ Removed `PPE Admin` role from `{member.display_name}`.")
     except discord.Forbidden:
         await interaction.response.send_message("❌ I don't have permission to manage that role. Move my bot role higher in the hierarchy.")
 
@@ -585,7 +585,7 @@ async def remove_ppe_player_role(interaction: discord.Interaction, member: disco
 
     try:
         await member.remove_roles(role)
-        await interaction.response.send_message(f"✅ Removed **PPE Player** role from **{member.display_name}**.")
+        await interaction.response.send_message(f"✅ Removed `PPE Player` role from `{member.display_name}`.")
     except discord.Forbidden:
         await interaction.response.send_message("❌ I don't have permission to manage that role. Move my bot role higher in the hierarchy.")
 
