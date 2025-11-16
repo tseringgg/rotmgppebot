@@ -25,7 +25,10 @@ class PPEBot(commands.Bot):
         # Sync to guilds (FAST commands)
         for gid in [SERVER1_ID, SERVER2_ID]:
             print(f"Syncing commands to guild {gid}...")
-            await self.tree.sync(guild=discord.Object(id=gid))
+            try:
+                await self.tree.sync(guild=discord.Object(id=gid))
+            except Exception as e:
+                print(f"[ERROR] Failed to sync commands to guild {gid}: {e}")
 
         print("Guild commands synced!")
 
