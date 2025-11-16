@@ -91,7 +91,7 @@ async def on_guild_join(guild: discord.Guild):
     else:
         print(f"[INFO] Joined {guild.name}, but no suitable text channel found for setup message.")
 
-@bot.tree.command(name="setuproles", description="Check and create required PPE roles in this server.")
+@bot.tree.command(name="setuproles", description="Check and create required PPE roles in this server.", guilds=guilds)
 @commands.has_permissions(manage_roles=True)
 async def setup_roles(interaction: discord.Interaction):
     await on_guild_join(interaction.guild)
@@ -125,7 +125,7 @@ async def on_ready():
 async def ping(interaction: discord.Interaction):
     await interaction.response.send_message("Pong!")
 
-@bot.tree.command(name="newppe", description="Create a new PPE (max 10) and make it your active one.")
+@bot.tree.command(name="newppe", description="Create a new PPE (max 10) and make it your active one.", guilds=guilds)
 # @commands.has_role("PPE Admin")
 @require_ppe_roles(player_required=True)
 # async def newppe(interaction: discord.Interaction):
@@ -157,7 +157,7 @@ async def newppe(interaction: discord.Interaction):
                     f"You now have {ppe_count + 1}/10 PPEs.")
 
 
-@bot.tree.command(name="setactiveppe", description="Set which PPE is active for point tracking.")
+@bot.tree.command(name="setactiveppe", description="Set which PPE is active for point tracking.", guilds=guilds)
 # @commands.has_role("PPE Player")
 @require_ppe_roles(player_required=True)
 async def setactiveppe(interaction: discord.Interaction, ppe_id: int):
@@ -218,7 +218,7 @@ async def on_message(message: discord.Message):
     await bot.process_commands(message)
 
     
-@bot.tree.command(name="addpointsfor", description="Add points to another player's active PPE.")
+@bot.tree.command(name="addpointsfor", description="Add points to another player's active PPE.", guilds=guilds)
 # @commands.has_role("PPE Admin")  # both can use
 @require_ppe_roles(admin_required=True)
 async def addpointsfor(interaction: discord.Interaction, member: discord.Member, amount: float):
@@ -246,7 +246,7 @@ async def addpointsfor(interaction: discord.Interaction, member: discord.Member,
                     f"**New total:** {active_ppe['points']:.1f} points.")
 
 
-@bot.tree.command(name="addpoints", description="Add points to your active PPE.")
+@bot.tree.command(name="addpoints", description="Add points to your active PPE.", guilds=guilds)
 # @commands.has_role("PPE Player")
 @require_ppe_roles(player_required=True)
 async def addpoints(interaction: discord.Interaction, amount: float):
@@ -275,7 +275,7 @@ async def addpoints(interaction: discord.Interaction, amount: float):
                     f"**New total:** {active_ppe['points']:.1f} points.")
 
 
-@bot.tree.command(name="listplayers", description="Show all current participants in the PPE contest.")
+@bot.tree.command(name="listplayers", description="Show all current participants in the PPE contest.", guilds=guilds)
 # @commands.has_role("PPE Admin")
 @require_ppe_roles(admin_required=True)
 async def listplayers(interaction: discord.Interaction):
@@ -297,7 +297,7 @@ async def listplayers(interaction: discord.Interaction):
     await interaction.response.send_message("\n".join(lines))
 
 
-@bot.tree.command(name="addplayer", description="Add a player to the PPE contest and create their first active PPE.")
+@bot.tree.command(name="addplayer", description="Add a player to the PPE contest and create their first active PPE.", guilds=guilds)
 # @commands.has_role("PPE Admin")
 @require_ppe_roles(admin_required=True)
 async def addplayer(interaction: discord.Interaction, member: discord.Member):
@@ -327,7 +327,7 @@ async def addplayer(interaction: discord.Interaction, member: discord.Member):
     await save_player_records(guild_id=guild_id, records=records)
     await interaction.response.send_message(f"✅ Added **{member.display_name}** to the PPE contest and created **PPE #1** as their active PPE.")
 
-@bot.tree.command(name="removeplayer", description="Remove a player and all their PPE data from the contest.")
+@bot.tree.command(name="removeplayer", description="Remove a player and all their PPE data from the contest.", guilds=guilds)
 # @commands.has_role("PPE Admin")
 @require_ppe_roles(admin_required=True)
 async def removeplayer(interaction: discord.Interaction, member: discord.Member):
@@ -347,7 +347,7 @@ async def removeplayer(interaction: discord.Interaction, member: discord.Member)
 
 
 
-@bot.tree.command(name="myppe", description="Show all your PPEs and which one is active.")
+@bot.tree.command(name="myppe", description="Show all your PPEs and which one is active.", guilds=guilds)
 # @commands.has_role("PPE Player")
 @require_ppe_roles(player_required=True)
 async def myppe(interaction: discord.Interaction):
@@ -371,7 +371,7 @@ async def myppe(interaction: discord.Interaction):
     await interaction.response.send_message("\n".join(lines))
 
 
-@bot.tree.command(name="leaderboard", description="Show the best PPE from each player.")
+@bot.tree.command(name="leaderboard", description="Show the best PPE from each player.", guilds=guilds)
 async def leaderboard(interaction: discord.Interaction):
     guild_id = interaction.guild.id
     records = await load_player_records(guild_id)
@@ -414,7 +414,7 @@ def save_ppe_channels(channel_ids):
     with open(PPE_CHANNEL_FILE, "w", encoding="utf-8") as f:
         json.dump({"ppe_channels": channel_ids}, f, indent=2)
 
-@bot.tree.command(name="setppechannel", description="Mark this channel as a PPE channel.")
+@bot.tree.command(name="setppechannel", description="Mark this channel as a PPE channel.", guilds=guilds)
 # @commands.has_role("PPE Admin")
 @require_ppe_roles(admin_required=True)
 async def set_ppe_channel(interaction: discord.Interaction):
@@ -427,7 +427,7 @@ async def set_ppe_channel(interaction: discord.Interaction):
     save_ppe_channels(channels)
     await interaction.response.send_message(f"✅ Added **#{interaction.channel.name}** as a PPE channel.")
 
-@bot.tree.command(name="unsetppechannel", description="Remove this channel from PPE channels.")
+@bot.tree.command(name="unsetppechannel", description="Remove this channel from PPE channels.", guilds=guilds)
 # @commands.has_role("PPE Admin")
 @require_ppe_roles(admin_required=True)
 async def unset_ppe_channel(interaction: discord.Interaction):
@@ -440,7 +440,7 @@ async def unset_ppe_channel(interaction: discord.Interaction):
     save_ppe_channels(channels)
     await interaction.response.send_message(f"🗑️ Removed **#{interaction.channel.name}** from the PPE channel list.")
 
-@bot.tree.command(name="listppechannels", description="Show all channels marked as PPE channels.")
+@bot.tree.command(name="listppechannels", description="Show all channels marked as PPE channels.", guilds=guilds)
 # @commands.has_role("PPE Admin")
 @require_ppe_roles(admin_required=True)
 async def list_ppe_channels(interaction: discord.Interaction):
@@ -457,7 +457,7 @@ async def list_ppe_channels(interaction: discord.Interaction):
     await interaction.response.send_message("\n".join(lines))
 
 
-@bot.tree.command(name="ppehelp", description="Show available PPE commands for players and admins.")
+@bot.tree.command(name="ppehelp", description="Show available PPE commands for players and admins.", guilds=guilds)
 async def ppehelp(interaction: discord.Interaction):
     # --- Commands for everyone ---
     everyone_cmds = {
@@ -526,7 +526,7 @@ async def ppehelp(interaction: discord.Interaction):
 ###############
 
 # --- Give PPE Admin role ---
-@bot.tree.command(name="giveppeadminrole", description="Give the PPE Admin role to a member. Admin only.")
+@bot.tree.command(name="giveppeadminrole", description="Give the PPE Admin role to a member. Admin only.", guilds=guilds)
 @commands.has_permissions(manage_roles=True)
 @require_ppe_roles()
 async def give_ppe_admin_role(interaction: discord.Interaction, member: discord.Member):
@@ -558,7 +558,7 @@ async def give_ppe_player_role(interaction: discord.Interaction, member: discord
         await interaction.response.send_message("❌ I don't have permission to manage that role. Move my bot role higher in the hierarchy.")
 
 # --- Remove PPE Admin role ---
-@bot.tree.command(name="removeppeadminrole", description="Remove the PPE Admin role from a member. Admin only.")
+@bot.tree.command(name="removeppeadminrole", description="Remove the PPE Admin role from a member. Admin only.", guilds=guilds)
 @commands.has_permissions(manage_roles=True)
 async def remove_ppe_admin_role(interaction: discord.Interaction, member: discord.Member):
     role = discord.utils.get(interaction.guild.roles, name="PPE Admin")
@@ -590,7 +590,7 @@ async def remove_ppe_player_role(interaction: discord.Interaction, member: disco
         await interaction.response.send_message("❌ I don't have permission to manage that role. Move my bot role higher in the hierarchy.")
 
 # --- Command: list roles ---
-@bot.tree.command(name="listroles", description="List all roles in this server.")
+@bot.tree.command(name="listroles", description="List all roles in this server.", guilds=guilds)
 async def list_roles(interaction: discord.Interaction):
     roles = [r.name for r in interaction.guild.roles if r.name != "@everyone"]
     await interaction.response.send_message("🎭 Available roles:\n" + "\n".join(f"- {r}" for r in roles))
