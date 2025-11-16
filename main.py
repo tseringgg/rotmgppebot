@@ -133,7 +133,7 @@ async def newppe(interaction: discord.Interaction):
     # ctx = interaction
     guild_id = interaction.guild.id
     records = await load_player_records(guild_id)
-    key = interaction.author.display_name.lower()
+    key = interaction.user.display_name.lower()
     # Check membership first
     if key not in records or not records[key].get("is_member", False):
         return await interaction.response.send_message("❌ You’re not part of the PPE contest. Ask a mod to add you with `!addplayer @you`.")
@@ -163,7 +163,7 @@ async def newppe(interaction: discord.Interaction):
 async def setactiveppe(interaction: discord.Interaction, ppe_id: int):
     guild_id = interaction.guild.id
     records = await load_player_records(guild_id)
-    key = ensure_player_exists(records, interaction.author.display_name)
+    key = ensure_player_exists(records, interaction.user.display_name)
     player_data = records[key]
 
     ppe_ids = [ppe["id"] for ppe in player_data["ppes"]]
@@ -252,7 +252,7 @@ async def addpointsfor(interaction: discord.Interaction, member: discord.Member,
 async def addpoints(interaction: discord.Interaction, amount: float):
     guild_id = interaction.guild.id
     records = await load_player_records(guild_id)
-    key = interaction.author.display_name.lower()
+    key = interaction.user.display_name.lower()
 
     # Must be a contest member
     if key not in records or not records[key].get("is_member", False):
