@@ -3,7 +3,7 @@ import json
 import asyncio
 from typing import Dict, Any, List
 
-from dataclass import PPEData, PlayerData, PlayerRecord
+from dataclass import PPEData, PlayerData
 
 # Persistent data directory (Railway Volume)
 DATA_DIR = "/data"
@@ -34,9 +34,8 @@ def normalize_ppe(ppe: dict) -> PPEData:
     return PPEData(
         id=ppe.get("id", 0),
         name=ppe.get("name", "Unknown"),
-        date_started=ppe.get("date_started", ""),
         points=float(ppe.get("points", 0)),
-        loot=dict(ppe.get("loot", {}))
+        loot=list(ppe.get("loot", {}))
     )
 
 

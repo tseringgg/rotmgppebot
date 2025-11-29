@@ -23,16 +23,16 @@ async def calculate_loot_points(guild_id, player_name, detected_items):
     records = await load_player_records(guild_id)
     key = player_name.lower()
 
-    if key not in records or not records[key].get("is_member", False):
+    if key not in records or not records[key].is_member:
         raise ValueError(f"{player_name} is not a contest member.")
 
     player_data = records[key]
-    active_id = player_data.get("active_ppe")
+    active_id = player_data.active_ppe
     if not active_id:
         raise ValueError(f"{player_name} has no active PPE.")
 
     # --- get active PPE object ---
-    active_ppe = next((p for p in player_data["ppes"] if p["id"] == active_id), None)
+    active_ppe = next((p for p in player_data.ppes if p.id == active_id), None)
     if not active_ppe:
         raise ValueError(f"Active PPE (#{active_id}) not found for {player_name}.")
 
@@ -49,7 +49,7 @@ async def calculate_loot_points(guild_id, player_name, detected_items):
         if base_points != 1:
 
             # --- check duplicate inside this PPE's item list ---
-            existing_items = [i.lower() for i in active_ppe.get("items", [])]
+            existing_items = [i.item_name.lower() for i in active_ppe.loot]
             is_duplicate = item_name in existing_items
             final_points = base_points / 2 if is_duplicate else base_points
 
@@ -73,7 +73,7 @@ async def calculate_loot_points(guild_id, player_name, detected_items):
 
     
     await save_player_records(guild_id=guild_id, records=records)
-    return results, active_ppe["points"]
+    return results, active_ppe.points
 
 async def calc_points(guild_id: int, player_name: str, item: str, divine: bool, shiny: bool) -> float:
     loot_points = load_loot_points()
@@ -81,16 +81,16 @@ async def calc_points(guild_id: int, player_name: str, item: str, divine: bool, 
 
     records = await load_player_records(guild_id)
 
-    if key not in records or not records[key].get("is_member", False):
+    if key not in records or not records[key].is_member:
         raise ValueError(f"{player_name} is not a contest member.")
 
     player_data = records[key]
-    active_id = player_data.get("active_ppe")
+    active_id = player_data.active_ppe
     if not active_id:
         raise ValueError(f"{player_name} has no active PPE.")
 
     # --- get active PPE object ---
-    active_ppe = next((p for p in player_data["ppes"] if p["id"] == active_id), None)
+    active_ppe = next((p for p in player_data.ppes if p.id == active_id), None)
     if not active_ppe:
         raise ValueError(f"Active PPE (#{active_id}) not found for {player_name}.")
 
@@ -119,7 +119,7 @@ async def calc_points(guild_id: int, player_name: str, item: str, divine: bool, 
     if base_points != 1:
 
         # --- check duplicate inside this PPE's item list ---
-        existing_items = [i for i in active_ppe.get("loot", [])]
+        existing_items = [i.item_name for i in active_ppe.loot]
         is_duplicate = item_name in existing_items
         final_points = base_points / 2 if is_duplicate else base_points
         

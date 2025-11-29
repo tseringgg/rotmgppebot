@@ -220,7 +220,7 @@ def find_items_in_image(
                     template_alpha = tpl_alpha
                     break
 
-            if template_bgr is not None:
+            if template_bgr is not None and template_alpha is not None:
                 # Ensure size is 40x40 so it matches the slot region
                 tpl_bgr_resized  = cv2.resize(template_bgr,  (slot_height, slot_width), interpolation=cv2.INTER_AREA)
                 tpl_alpha_resize = cv2.resize(template_alpha, (slot_height, slot_width), interpolation=cv2.INTER_NEAREST)

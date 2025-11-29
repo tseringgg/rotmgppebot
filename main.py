@@ -1,4 +1,6 @@
 import io
+
+from anyio import Path
 from dataclass import Loot, PPEData, ROTMGClass
 import discord
 from discord import app_commands
@@ -211,6 +213,8 @@ async def on_ready():
 @app_commands.autocomplete(class_name=class_autocomplete)
 @require_ppe_roles(player_required=True)
 async def newppe(interaction: discord.Interaction, class_name: str):
+    if not interaction.guild:
+        return await interaction.response.send_message("❌ This command can only be used in a server.")
     # --- Validate class name ---
     if class_name not in [c.value for c in ROTMGClass]:
         return await interaction.response.send_message(
@@ -265,6 +269,8 @@ async def newppe(interaction: discord.Interaction, class_name: str):
 @bot.tree.command(name="setactiveppe", description="Set which PPE is active for point tracking.", guilds=guilds)
 @require_ppe_roles(player_required=True)
 async def setactiveppe(interaction: discord.Interaction, ppe_id: int):
+    if not interaction.guild:
+        return await interaction.response.send_message("❌ This command can only be used in a server.")
     guild_id = interaction.guild.id
     records = await load_player_records(guild_id)
     key = ensure_player_exists(records, interaction.user.display_name)
@@ -302,6 +308,8 @@ async def submitloot(
     dungeon: str,
     screenshot: discord.Attachment
 ):
+    if not interaction.guild:
+        return await interaction.response.send_message("❌ This command can only be used in a server.")
     guild_id = interaction.guild.id
     records = await load_player_records(guild_id)
     key = interaction.user.display_name.lower()
@@ -362,7 +370,7 @@ async def submitloot(
     # --- Prepare download directory ---
     download_dir = "./downloads"
     os.makedirs(download_dir, exist_ok=True)
-    file_path = f"./downloads/{screenshot.filename}"
+    file_path = Path(f"./downloads/{screenshot.filename}")
     await screenshot.save(file_path)
 
     
@@ -607,6 +615,8 @@ async def removeloot(
 # @commands.has_role("PPE Admin")  # both can use
 @require_ppe_roles(admin_required=True)
 async def addpointsfor(interaction: discord.Interaction, member: discord.Member, amount: float):
+    if not interaction.guild:
+        return await interaction.response.send_message("❌ This command can only be used in a server.")
     guild_id = interaction.guild.id
     records = await load_player_records(guild_id)
     key = member.display_name.lower()
@@ -634,6 +644,8 @@ async def addpointsfor(interaction: discord.Interaction, member: discord.Member,
 # # @commands.has_role("PPE Player")
 # @require_ppe_roles(player_required=True)
 async def addpoints(interaction: discord.Interaction, amount: float):
+    if not interaction.guild:
+        raise KeyError("❌ This command can only be used in a server.")
     if amount == 0:
         raise ValueError("⚠️ No points were added or subtracted since the amount was `0`.")
     guild_id = interaction.guild.id
@@ -672,6 +684,8 @@ async def addpoints(interaction: discord.Interaction, amount: float):
 # @commands.has_role("PPE Admin")
 @require_ppe_roles(admin_required=True)
 async def listplayers(interaction: discord.Interaction):
+    if not interaction.guild:
+        return await interaction.response.send_message("❌ This command can only be used in a server.")
     guild_id = interaction.guild.id
     records = await load_player_records(guild_id)
 
@@ -773,10 +787,12 @@ async def listloot(interaction: discord.Interaction):
 # @commands.has_role("PPE Admin")
 @require_ppe_roles(admin_required=True)
 async def addplayer(interaction: discord.Interaction, member: discord.Member):
+    if not interaction.guild:
+        return await interaction.response.send_message("❌ This command can only be used in a server.")
     """Gives the PPE Player role silently and lets the caller handle responses."""
     role = discord.utils.get(interaction.guild.roles, name="PPE Player")
     if not role:
-        await interaction.response.send_message("❌ PPE Player role not found. Create it first.")
+        return await interaction.response.send_message("❌ PPE Player role not found. Create it first.")
 
     guild_id = interaction.guild.id
     records = await load_player_records(guild_id)
@@ -804,6 +820,8 @@ async def addplayer(interaction: discord.Interaction, member: discord.Member):
 # @commands.has_role("PPE Admin")
 @require_ppe_roles(admin_required=True)
 async def removeplayer(interaction: discord.Interaction, member: discord.Member):
+    if not interaction.guild:
+        return await interaction.response.send_message("❌ This command can only be used in a server.")
     role = discord.utils.get(interaction.guild.roles, name="PPE Player")
     if not role:
         await interaction.response.send_message("❌ PPE Player role not found. Create it first.")
@@ -819,7 +837,8 @@ async def removeplayer(interaction: discord.Interaction, member: discord.Member)
         return await interaction.response.send_message(f"⚠️ `{member.display_name}` already does not have the `PPE Player` role.")
 
     try:
-        await member.remove_roles(role)
+        if role is not None:
+            await member.remove_roles(role)
     
         # Confirm removal
         # del records[key]
@@ -837,6 +856,8 @@ async def removeplayer(interaction: discord.Interaction, member: discord.Member)
 # @commands.has_role("PPE Player")
 @require_ppe_roles(player_required=True)
 async def myppe(interaction: discord.Interaction):
+    if not interaction.guild:
+        return await interaction.response.send_message("❌ This command can only be used in a server.")
     guild_id = interaction.guild.id
     records = await load_player_records(guild_id)
     key = interaction.user.display_name.lower()
@@ -859,6 +880,8 @@ async def myppe(interaction: discord.Interaction):
 @bot.tree.command(name="deleteallppes", description="Delete all your PPEs.", guilds=guilds)
 @require_ppe_roles(admin_required=True)
 async def delete_all_ppes(interaction: discord.Interaction, member: discord.Member):
+    if not interaction.guild:
+        return await interaction.response.send_message("❌ This command can only be used in a server.")
     guild_id = interaction.guild.id
     records = await load_player_records(guild_id)
     key = member.display_name.lower()
@@ -874,6 +897,8 @@ async def delete_all_ppes(interaction: discord.Interaction, member: discord.Memb
 
 @bot.tree.command(name="leaderboard", description="Show the best PPE from each player.", guilds=guilds)
 async def leaderboard(interaction: discord.Interaction):
+    if not interaction.guild:
+        return await interaction.response.send_message("❌ This command can only be used in a server.")
     guild_id = interaction.guild.id
     records = await load_player_records(guild_id)
 
@@ -977,6 +1002,9 @@ async def ppehelp(interaction: discord.Interaction):
 @commands.has_permissions(manage_roles=True)
 @require_ppe_roles()
 async def give_ppe_admin_role(interaction: discord.Interaction, member: discord.Member):
+    if not interaction.guild:
+        await interaction.response.send_message("❌ This command can only be used in a server.")
+        return
     role = discord.utils.get(interaction.guild.roles, name="PPE Admin")
     if not role:
         await interaction.response.send_message("❌ PPE Admin role not found. Create it first.")
@@ -993,6 +1021,9 @@ async def give_ppe_admin_role(interaction: discord.Interaction, member: discord.
 @bot.tree.command(name="removeppeadminrole", description="Remove the PPE Admin role from a member. Admin only.", guilds=guilds)
 @commands.has_permissions(manage_roles=True)
 async def remove_ppe_admin_role(interaction: discord.Interaction, member: discord.Member):
+    if not interaction.guild:
+        await interaction.response.send_message("❌ This command can only be used in a server.")
+        return
     role = discord.utils.get(interaction.guild.roles, name="PPE Admin")
     if not role:
         await interaction.response.send_message("❌ PPE Admin role not found.")
@@ -1008,9 +1039,14 @@ async def remove_ppe_admin_role(interaction: discord.Interaction, member: discor
 # --- Command: list roles ---
 @bot.tree.command(name="listroles", description="List all roles in this server.", guilds=guilds)
 async def list_roles(interaction: discord.Interaction):
+    if not interaction.guild:
+        await interaction.response.send_message("❌ This command can only be used in a server.")
+        return
     roles = [r.name for r in interaction.guild.roles if r.name != "@everyone"]
     await interaction.response.send_message("🎭 Available roles:\n" + "\n".join(f"- {r}" for r in roles))
 
 
-
+if not DISCORD_TOKEN:
+    print("Error: DISCORD_TOKEN environment variable not set.")
+    exit(1)
 bot.run(DISCORD_TOKEN)
