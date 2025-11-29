@@ -3,4 +3,5 @@
 /cropped
 /downloads
 /sprites - Copy
-/utils/__pycache__/
+*.pyc
+/__pycache__
