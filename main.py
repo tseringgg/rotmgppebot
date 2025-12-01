@@ -1,5 +1,6 @@
 import io
 
+from IPython import embed
 from anyio import Path
 from dataclass import Loot, PPEData, ROTMGClass
 import discord
@@ -570,8 +571,10 @@ async def removeloot(
         if suffixes:
             final_key = final_key + " " + " ".join(suffixes)
 
+
+        item = next((loot for loot in active_ppe.loot if loot.item_name == final_key), None)
         #  Guard 4 — item must exist
-        if final_key not in active_ppe.loot:
+        if not item:
             await interaction.response.send_message(
                 f"❌ Your active PPE does not contain any **{final_key}**.",
                 ephemeral=True
@@ -579,7 +582,7 @@ async def removeloot(
             return
 
         #  Guard 5 — count must be > 0
-        if active_ppe.loot[final_key].quantity <= 0:
+        if item.quantity <= 0:
             await interaction.response.send_message(
                 f"❌ No remaining copies of **{final_key}** to remove.",
                 ephemeral=True
@@ -587,11 +590,11 @@ async def removeloot(
             return
 
         #  Remove one
-        active_ppe.loot[final_key].quantity -= 1
+        item.quantity -= 1
 
         # If count hits 0, remove entry
-        if active_ppe.loot[final_key].quantity <= 0:
-            del active_ppe.loot[final_key]
+        if item.quantity <= 0:
+            active_ppe.loot.remove(item)
         await save_player_records(guild.id, records)
 
         try:
@@ -703,9 +706,9 @@ async def listplayers(interaction: discord.Interaction):
 
     await interaction.response.send_message("\n".join(lines))
 
-@bot.tree.command(name="listloot", description="Show all PPEs and loot for a player.", guilds=guilds)
+@bot.tree.command(name="myloot", description="Show all loot for your active PPE.", guilds=guilds)
 @require_ppe_roles(player_required=True)
-async def listloot(interaction: discord.Interaction):
+async def myloot(interaction: discord.Interaction):
         # member is the command caller
         member = interaction.user
     
@@ -772,12 +775,12 @@ async def listloot(interaction: discord.Interaction):
         # Build loot listing (sorted alphabetically)
         loot_lines = []
         for loot in loot_dict:
-            loot_lines.append(f"• **{loot.item_name}** × {loot.quantity}")
+            loot_lines.append(f"• {loot.item_name} × {loot.quantity}")
 
         embed = discord.Embed(
-            title=f"Loot for {member.display_name}'s Active PPE",
+            title=f"Loot for your {active_ppe.name} (PPE #{active_ppe.id})",
             description="\n".join(loot_lines),
-            color=discord.Color.gold()
+            color=discord.Color.blue()
         )
 
         await interaction.response.send_message(embed=embed, ephemeral=False) # public response, not ephemeral
@@ -852,10 +855,10 @@ async def removeplayer(interaction: discord.Interaction, member: discord.Member)
 
 
 
-@bot.tree.command(name="myppe", description="Show all your PPEs and which one is active.", guilds=guilds)
+@bot.tree.command(name="myppes", description="Show all your PPEs and which one is active.", guilds=guilds)
 # @commands.has_role("PPE Player")
 @require_ppe_roles(player_required=True)
-async def myppe(interaction: discord.Interaction):
+async def myppes(interaction: discord.Interaction):
     if not interaction.guild:
         return await interaction.response.send_message("❌ This command can only be used in a server.")
     guild_id = interaction.guild.id
@@ -867,14 +870,29 @@ async def myppe(interaction: discord.Interaction):
 
     player_data = records[key]
     active_id = player_data.active_ppe
-    lines = [f"`{interaction.user.display_name}'s` PPEs:"]
+    # lines = [f"`{interaction.user.display_name}'s` PPEs:"]
+    lines = []
     for ppe in sorted(player_data.ppes, key=lambda x: x.id):
         id_ = ppe.id
         pts = ppe.points  # ✅
-        marker = " -> (Active)" if id_ == active_id else ""
-        lines.append(f"• PPE #{id_} `{ppe.name}`: `{pts:.1f}` points {marker}")
+        marker = " (Active)"
+        pts_str = f"{int(pts)}" if pts == int(pts) else f"{pts:.1f}"
 
-    await interaction.response.send_message("\n".join(lines))
+        if id_ == active_id:
+            # Format points without decimal if whole number
+            lines.append(f"**#{id_} {ppe.name}: {pts_str} points {marker}**")
+        else:
+            lines.append(f"*#{id_} {ppe.name}: {pts_str} points*")
+
+    embed = discord.Embed(
+        title=f"{interaction.user.display_name}'s PPEs",
+        description="\n".join(lines),
+        color=discord.Color.blue()
+    )
+    # for line in lines:
+    #     embed.add_field(name="", value=line, inline=False)
+
+    await interaction.response.send_message(embed=embed, ephemeral=False)  # public response
 
 # delete all ppes for a user
 @bot.tree.command(name="deleteallppes", description="Delete all your PPEs.", guilds=guilds)
