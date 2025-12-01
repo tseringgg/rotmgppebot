@@ -260,7 +260,7 @@ async def newppe(interaction: discord.Interaction, class_name: str):
     await save_player_records(guild_id=guild_id, records=records)
 
     await interaction.response.send_message(
-        f"✅ Created `PPE #{next_id}` for your `{class_name}` "
+        f"✅ Created `PPE #{next_id}` for your `{class_name.value}` "
         f"and set it as your active PPE.\n"
         f"You now have {ppe_count + 1}/10 PPEs."
     )
