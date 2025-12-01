@@ -3,8 +3,7 @@ import json
 import asyncio
 from typing import Dict, Any, List
 
-from attrs import asdict
-
+from dataclasses import asdict
 from dataclass import Loot, PPEData, PlayerData
 
 # Persistent data directory (Railway Volume)
