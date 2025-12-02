@@ -1148,12 +1148,12 @@ async def ppehelp(interaction: discord.Interaction):
     }
     # --- Player Commands ---
     player_cmds = {
-        "myppe": "View your current PPE stats or progress.",
+        "myppes": "View your current PPE stats or progress.",
         "newppe": "Start a new PPE run and track your progress.",
         "setactiveppe": "Set which of your PPE characters is currently active.",
         "addloot": "Add loot to your active PPE manually.",
         "removeloot": "Remove loot from your active PPE manually.",
-        "listloot": "Show all loot recorded for your active PPE.",
+        "myloot": "Show all loot recorded for your active PPE.",
         "submitloot": "Submit a loot screenshot for point tracking automatically.",
     }
 
@@ -1189,11 +1189,11 @@ async def ppehelp(interaction: discord.Interaction):
 
     # --- Format player commands ---
     player_text = "\n".join([f"`/{cmd}` — {desc}" for cmd, desc in player_cmds.items()])
-    embed.add_field(name="🟢 Player Commands", value=player_text or "None available", inline=False)
+    embed.add_field(name="🟢 PPE Player Commands", value=player_text or "None available", inline=False)
 
     # --- Format admin commands ---
     admin_text = "\n".join([f"`/{cmd}` — {desc}" for cmd, desc in admin_cmds.items()])
-    embed.add_field(name="🔴 Admin Commands", value=admin_text or "None available", inline=False)
+    embed.add_field(name="🔴 PPE Admin Commands", value=admin_text or "None available", inline=False)
 
     # --- Format owner commands ---
     owner_text = "\n".join([f"`/{cmd}` — {desc}" for cmd, desc in owner_cmds.items()])
