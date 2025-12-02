@@ -282,8 +282,40 @@ async def setactiveppe(interaction: discord.Interaction, ppe_id: int):
         return await interaction.response.send_message(f"❌ You don’t have a PPE #{ppe_id}. Use `/newppe` to create one.")
 
     player_data.active_ppe = ppe_id
+    active_ppe = get_active_ppe(player_data)
+    if not active_ppe:
+        return await interaction.response.send_message("❌ Could not find your active PPE record. Try creating a new one with `/newppe`.")
     await save_player_records(guild_id=guild_id, records=records)
-    await interaction.response.send_message(f"✅ Set `PPE #{ppe_id}` as your active PPE.")
+    # await interaction.response.send_message(f"> ✅ Set **PPE #{ppe_id}** ({active_ppe.name}) as your active PPE.")
+
+    player_data = records[key]
+    active_id = player_data.active_ppe
+    # lines = [f"`{interaction.user.display_name}'s` PPEs:"]
+    lines = []
+    for ppe in sorted(player_data.ppes, key=lambda x: x.id):
+        id_ = ppe.id
+        pts = ppe.points  # ✅
+        marker = " (Active)"
+        pts_str = f"{int(pts)}" if pts == int(pts) else f"{pts:.1f}"
+
+        if id_ == active_id:
+            # Format points without decimal if whole number
+            lines.append(f"**#{id_} {ppe.name}: {pts_str} points {marker}**")
+        else:
+            lines.append(f"*#{id_} {ppe.name}: {pts_str} points*")
+
+    embed = discord.Embed(
+        title=f"{interaction.user.display_name}'s PPEs",
+        description="\n".join(lines),
+        color=discord.Color.blue()
+    )
+    # for line in lines:
+    #     embed.add_field(name="", value=line, inline=False)
+
+    await interaction.response.send_message(content=f"> ✅ Set **PPE #{ppe_id}** ({active_ppe.name}) as your active PPE.",
+                                    embed=embed, ephemeral=False)  # public response
+
+
 
         
 @bot.event
@@ -423,10 +455,90 @@ async def addloot(
         except (ValueError, KeyError) as e:
             return await interaction.response.send_message(str(e), ephemeral=True)
 
-        await interaction.response.send_message(
-            f"✅ Added **{final_key}** to your active PPE for {points} points.",
-            ephemeral=False
+        # await interaction.response.send_message(
+        #     f"> ✅ Added **{final_key}** to your active PPE for {points} points.",
+        #     ephemeral=False
+        # )
+
+        # member is the command caller
+        member = interaction.user
+    
+        guild = interaction.guild
+
+        if guild is None:
+            await interaction.response.send_message(
+                "❌ This command can only be used inside a server.",
+                ephemeral=True
+            )
+            return
+
+        # Load PPE records
+        guild_id = guild.id
+        records = await load_player_records(guild_id)
+
+        # Normalize key
+        key = ensure_player_exists(records, member.display_name.lower())
+
+        # ------------------------------------------------------------
+        # GUARD 3: Member has no PPE records
+        # ------------------------------------------------------------
+        if key not in records:
+            await interaction.response.send_message(
+                f"❌ {member.mention} has no PPE data in this server.",
+                ephemeral=True
+            )
+            return
+
+        player_data = records[key]
+
+        # ------------------------------------------------------------
+        # GUARD 4: Member has PPE records but no PPE runs
+        # ------------------------------------------------------------
+        if not player_data.ppes:
+            await interaction.response.send_message(
+                f"ℹ️ {member.mention} exists in PPE data but has **no PPE runs**.",
+                ephemeral=True
+            )
+            return
+
+        # ------------------------------------------------------------
+        # GUARD 5: Member has no active PPE
+        # ------------------------------------------------------------
+        active_ppe = get_active_ppe(player_data)
+        if not active_ppe:
+            await interaction.response.send_message(
+                f"ℹ️ {member.mention} has **no active PPE**.",
+                ephemeral=True
+            )
+            return
+
+        # ------------------------------------------------------------
+        # GUARD 6: Active PPE has no loot
+        # ------------------------------------------------------------
+        loot_dict = active_ppe.loot
+        if not loot_dict:
+            await interaction.response.send_message(
+                f"ℹ️ {member.mention}'s active PPE has **no loot recorded**.",
+                ephemeral=True
+            )
+            return
+
+        # Build loot listing (sorted alphabetically)
+        loot_lines = []
+        for loot in loot_dict:
+            if loot.item_name == final_key:
+                loot_lines.append(f"• **{loot.item_name} × {loot.quantity}**")
+            else:
+                loot_lines.append(f"• *{loot.item_name} × {loot.quantity}*")
+
+        embed = discord.Embed(
+            title=f"Loot for your {active_ppe.name} (PPE #{active_ppe.id}) ({int(active_ppe.points) if active_ppe.points == int(active_ppe.points) else f'{active_ppe.points:.1f}'} points)",
+            description="\n".join(loot_lines),
+            color=discord.Color.blue()
         )
+
+        await interaction.response.send_message(content=f"> ✅ Added **{final_key}** to your active PPE for {points} points.",
+                                                embed=embed, ephemeral=False) # public response, not ephemeral
 
 async def add_loot_to_player(
         interaction: discord.Interaction,
@@ -494,8 +606,9 @@ async def add_loot_to_player(
         final_key = base_name
 
     # Increment loot count
-    if final_key in active_ppe.loot:
-        active_ppe.loot[final_key].quantity += 1
+    match = next((loot for loot in active_ppe.loot if loot.item_name == final_key), None)
+    if match:
+        match.quantity += 1
     else:
         active_ppe.loot.append(Loot(item_name=final_key, quantity=1))
     await save_player_records(guild_id, records)
@@ -607,10 +720,89 @@ async def removeloot(
         except (ValueError, KeyError, LookupError) as e:
             return await interaction.response.send_message(str(e), ephemeral=True)
 
-        await interaction.response.send_message(
-            f"🗑️ Removed **1x {final_key}** from your active PPE and took away {points} points.",
-            ephemeral=False
+        # await interaction.response.send_message(
+        #     f"> 🗑️ Removed **1x {final_key}** from your active PPE and took away {points} points.",
+        #     ephemeral=False
+        # )
+
+        member = interaction.user
+    
+        guild = interaction.guild
+
+        if guild is None:
+            await interaction.response.send_message(
+                "❌ This command can only be used inside a server.",
+                ephemeral=True
+            )
+            return
+
+        # Load PPE records
+        guild_id = guild.id
+        records = await load_player_records(guild_id)
+
+        # Normalize key
+        key = ensure_player_exists(records, member.display_name.lower())
+
+        # ------------------------------------------------------------
+        # GUARD 3: Member has no PPE records
+        # ------------------------------------------------------------
+        if key not in records:
+            await interaction.response.send_message(
+                f"❌ {member.mention} has no PPE data in this server.",
+                ephemeral=True
+            )
+            return
+
+        player_data = records[key]
+
+        # ------------------------------------------------------------
+        # GUARD 4: Member has PPE records but no PPE runs
+        # ------------------------------------------------------------
+        if not player_data.ppes:
+            await interaction.response.send_message(
+                f"ℹ️ {member.mention} exists in PPE data but has **no PPE runs**.",
+                ephemeral=True
+            )
+            return
+
+        # ------------------------------------------------------------
+        # GUARD 5: Member has no active PPE
+        # ------------------------------------------------------------
+        active_ppe = get_active_ppe(player_data)
+        if not active_ppe:
+            await interaction.response.send_message(
+                f"ℹ️ {member.mention} has **no active PPE**.",
+                ephemeral=True
+            )
+            return
+
+        # ------------------------------------------------------------
+        # GUARD 6: Active PPE has no loot
+        # ------------------------------------------------------------
+        loot_dict = active_ppe.loot
+        if not loot_dict:
+            await interaction.response.send_message(
+                f"ℹ️ {member.mention}'s active PPE has **no loot recorded**.",
+                ephemeral=True
+            )
+            return
+
+        # Build loot listing (sorted alphabetically)
+        loot_lines = []
+        for loot in loot_dict:
+            if loot.item_name == final_key:
+                loot_lines.append(f"• **{loot.item_name} × {loot.quantity}**")
+            else:
+                loot_lines.append(f"• *{loot.item_name} × {loot.quantity}*")
+
+        embed = discord.Embed(
+            title=f"Loot for your {active_ppe.name} (PPE #{active_ppe.id}) ({int(active_ppe.points) if active_ppe.points == int(active_ppe.points) else f'{active_ppe.points:.1f}'} points)",
+            description="\n".join(loot_lines),
+            color=discord.Color.blue()
         )
+
+        await interaction.response.send_message(content=f"> 🗑️ Removed **1x {final_key}** from your active PPE and took away {points} points.",
+                                                embed=embed, ephemeral=False) # public response, not ephemeral
 
 
     
