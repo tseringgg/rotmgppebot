@@ -4,3 +4,4 @@ aiosqlite
 opencv-python-headless
 numpy
 IPython
+anyio
