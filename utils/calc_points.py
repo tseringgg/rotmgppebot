@@ -1,8 +1,10 @@
 
 LOOT_POINTS_CSV = "./rotmg_loot_drops_updated.csv"
 import csv
+
+import discord
 PLAYER_RECORD_FILE = "./guild_loot_records.json"
-from utils.player_records import load_player_records, save_player_records
+from utils.player_records import get_item_from_ppe, load_player_records, save_player_records
 
 # --- Load points table from CSV ---
 def load_loot_points():
@@ -16,72 +18,22 @@ def load_loot_points():
     return loot_points
 
 
-async def calculate_loot_points(guild_id, player_name, detected_items):
+
+
+async def calc_points(interaction: discord.Interaction, item: str, divine: bool, shiny: bool) -> float:
     loot_points = load_loot_points()
-    
-    # guild_id = ctx.guild.id
-    records = await load_player_records(guild_id)
-    key = player_name.lower()
+    key = interaction.user.id
+    if interaction.guild is None:
+            raise ValueError("Interaction guild is None.")
+    guild_id = interaction.guild.id
+    player_name = interaction.user.display_name
 
-    if key not in records or not records[key].is_member:
-        raise ValueError(f"{player_name} is not a contest member.")
+    records = await load_player_records(interaction)
 
-    player_data = records[key]
-    active_id = player_data.active_ppe
-    if not active_id:
-        raise ValueError(f"{player_name} has no active PPE.")
 
-    # --- get active PPE object ---
-    active_ppe = next((p for p in player_data.ppes if p.id == active_id), None)
-    if not active_ppe:
-        raise ValueError(f"Active PPE (#{active_id}) not found for {player_name}.")
-
-    results = []
-
-    for item in detected_items:
-        item_name = item["item"].lower()
-        base_points = loot_points.get(item_name, 0)
-
-        # Skip items with no point value
-        if base_points <= 0:
-            continue
-
-        if base_points != 1:
-
-            # --- check duplicate inside this PPE's item list ---
-            existing_items = [i.item_name.lower() for i in active_ppe.loot]
-            is_duplicate = item_name in existing_items
-            final_points = base_points / 2 if is_duplicate else base_points
-
-            # --- round down to nearest 0.5 ---
-            import math
-            final_points = math.floor(final_points * 2) / 2
-        else:
-            is_duplicate = False
-            final_points = 1
-
-        # --- update PPE items + points ---
-        # if not is_duplicate:
-        #     active_ppe.setdefault("items", []).append(item_name)
-        # active_ppe["points"] = active_ppe.get("points", 0) + final_points
-
-        results.append({
-            "item": item["item"],
-            "points": final_points,
-            "duplicate": is_duplicate
-        })
-
-    
-    await save_player_records(guild_id=guild_id, records=records)
-    return results, active_ppe.points
-
-async def calc_points(guild_id: int, player_name: str, item: str, divine: bool, shiny: bool) -> float:
-    loot_points = load_loot_points()
-    key = player_name.lower()
-
-    records = await load_player_records(guild_id)
-
-    if key not in records or not records[key].is_member:
+    if key not in records:
+        raise ValueError(f"Player record for {player_name} not found.")
+    if not records[key].is_member:
         raise ValueError(f"{player_name} is not a contest member.")
 
     player_data = records[key]
@@ -104,27 +56,16 @@ async def calc_points(guild_id: int, player_name: str, item: str, divine: bool, 
     else:
         base_points = loot_points.get(item_name, 0)
     
-    suffix_parts = []
-    if divine:
-        suffix_parts.append("(divine)")
-    if shiny:
-        suffix_parts.append("(shiny)")
 
-    if suffix_parts:
-        item_name = f"{item_name}" + " ".join(suffix_parts)
-
+    item_name = get_item_from_ppe(active_ppe, item_name, divine, shiny)
     if base_points <= 0:
         return 0.0
+    
+    is_duplicate = item_name is None
 
     if base_points != 1:
-
-        # --- check duplicate inside this PPE's item list ---
-        existing_items = [i.item_name for i in active_ppe.loot]
-        is_duplicate = item_name in existing_items
         final_points = base_points / 2 if is_duplicate else base_points
-        
     else:
-        is_duplicate = False
         final_points = 1.0
 
     if divine:

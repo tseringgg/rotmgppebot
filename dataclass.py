@@ -34,6 +34,8 @@ class ROTMGClass(str, Enum):
 class Loot:
     item_name: str
     quantity: int
+    divine: bool = False
+    shiny: bool = False
 
 @dataclass
 class PPEData:

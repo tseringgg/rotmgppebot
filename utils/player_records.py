@@ -1,9 +1,13 @@
+from csv import Error
 import os
 import json
 import asyncio
+import re
 from typing import Dict, Any, List
 
 from dataclasses import asdict
+
+import discord
 from dataclass import Loot, PPEData, PlayerData
 
 # Persistent data directory (Railway Volume)
@@ -42,7 +46,17 @@ def get_guild_data_path(guild_id: int) -> str:
 def normalize_ppe(ppe: dict) -> PPEData:
     
     loot_dicts = ppe.get("loot", [])
-    loot_objects = [Loot(**loot_dict) for loot_dict in loot_dicts]
+    loot_objects = []
+    
+    for loot_dict in loot_dicts:
+        # Ensure all required fields exist with defaults
+        normalized_loot = {
+            "item_name": loot_dict.get("item_name", "Unknown Item"),
+            "quantity": loot_dict.get("quantity", 0),
+            "divine": loot_dict.get("divine", False),
+            "shiny": loot_dict.get("shiny", False)
+        }
+        loot_objects.append(Loot(**normalized_loot))
     
     return PPEData(
         id=ppe.get("id", 0),
@@ -61,8 +75,11 @@ def normalize_player(player: dict) -> PlayerData:
         is_member=bool(player.get("is_member", False)),
     )
 
-async def load_player_records(guild_id: int) -> Dict[str, PlayerData]:
+async def load_player_records(interaction: discord.Interaction) -> Dict[int, PlayerData]:
     """Load player records for a specific guild safely and non-blockingly."""
+    if interaction.guild is None:
+            raise ValueError("Interaction guild is None.")
+    guild_id = interaction.guild.id
     path = get_guild_data_path(guild_id)
 
     if not os.path.exists(path):
@@ -71,13 +88,27 @@ async def load_player_records(guild_id: int) -> Dict[str, PlayerData]:
     async with get_lock(guild_id):
         try:
             raw_data = await asyncio.to_thread(_read_json_file, path)
-            return {name: normalize_player(v) for name, v in raw_data.items()}
-        except Exception:
+            # Handle migration from string keys to int keys
+            migrated_data = {}
+            for key, value in raw_data.items():
+                try:
+                    # Try to convert key to int (new format)
+                    int_key = int(key)
+                    migrated_data[int_key] = normalize_player(value)
+                except ValueError:
+                    # Skip string keys (old format) for now
+                    # You could add logic here to migrate based on username lookup if needed
+                    print(f"Skipping old string key: {key}")
+                    continue
+            return migrated_data
+        except Exception as e:
+            print(f"Error loading player records for guild {guild_id}: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
             return {}  # fallback
 
 
 def _read_json_file(path: str) -> Dict[str, Any]:
-# def _read_json_file(path: str) -> List[PlayerRecord]:
     """Blocking helper for reading JSON safely."""
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -88,14 +119,17 @@ def _read_json_file(path: str) -> Dict[str, Any]:
         return {}  # I/O error fallback
 
 
-async def save_player_records(guild_id: int, records: Dict[str, PlayerData]):
+async def save_player_records(interaction: discord.Interaction, records: Dict[int, PlayerData]):
     """Save player records safely using atomic write."""
+    if interaction.guild is None:
+        raise ValueError("Interaction guild is None.")
+    guild_id = interaction.guild.id
     path = get_guild_data_path(guild_id)
     temp_path = f"{path}.tmp"
 
     # Convert typed PlayerData objects into plain dicts
     json_ready = {
-        username: {
+        str(user_id): {  # Convert int key to string for JSON
             "is_member": data.is_member,
             "ppes": [
                 {
@@ -108,7 +142,7 @@ async def save_player_records(guild_id: int, records: Dict[str, PlayerData]):
             ],
             "active_ppe": data.active_ppe
         }
-        for username, data in records.items()
+        for user_id, data in records.items()
     }
     async with get_lock(guild_id):
         await asyncio.to_thread(_write_atomic_json, path, temp_path, json_ready)
@@ -132,18 +166,40 @@ def _write_atomic_json(path: str, temp_path: str, data: dict):
 # Player utilities
 # -------------------------------------------------------------------------
 
-def ensure_player_exists(records: Dict[str, PlayerData], player_name: str) -> str:
+def ensure_player_exists(records: Dict[int, PlayerData], player_id: int) -> int:
     """Ensure a player entry exists with at least one PPE."""
-    key = player_name.lower()
+    key = player_id
     if key not in records:
         records[key] = PlayerData(ppes=[], active_ppe=None, is_member=True)
     return key
 
 
-def get_active_ppe(player_data: PlayerData) -> PPEData | None:
+def get_active_ppe(player_data: PlayerData) -> PPEData:
     """Return the active PPE dict, or None."""
     active_id = player_data.active_ppe
     for ppe in player_data.ppes:
         if ppe.id == active_id:
             return ppe
+    raise ValueError("Active PPE ID not found in player's PPE records.")
+
+async def get_active_ppe_of_user(interaction: discord.Interaction) -> PPEData:
+    """Return the active PPE dict of the user, or None."""
+    if interaction.guild is None:
+            raise ValueError("Interaction guild is None.")
+    member = interaction.user
+    records = await load_player_records(interaction)
+    key = ensure_player_exists(records, member.id)
+    if key not in records:
+        raise ValueError("Player record not found after ensuring existence.")
+    player_data = records[key]
+    if not player_data.ppes:
+        raise ValueError("Player has no PPE records.")
+    await save_player_records(interaction, records)
+    return get_active_ppe(player_data)
+
+def get_item_from_ppe(active_ppe: PPEData, item_name: str, divine: bool, shiny: bool) -> Loot | None:
+    """Return the Loot object from active PPE by item name, or None."""
+    for item in active_ppe.loot:
+        if item.item_name.lower() == item_name.lower() and item.divine == divine and item.shiny == shiny and item.quantity > 0:
+            return item
     return None
