@@ -9,6 +9,7 @@ async def command(interaction: discord.Interaction):
         "leaderboard": "Show the current PPE leaderboard.",
         "ppehelp": "Show this help message.",
         "listroles": "List all roles in this server.",
+        "listadmins": "Show all admins (who can register you to contest).",
     }
     # --- Player Commands ---
     player_cmds = {

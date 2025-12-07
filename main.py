@@ -1,4 +1,4 @@
-from slash_commands import addloot_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, removeloot_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd
+from slash_commands import addloot_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, removeloot_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -250,6 +250,10 @@ async def remove_ppe_admin_role(interaction: discord.Interaction, member: discor
 @bot.tree.command(name="listroles", description="List all roles in this server.", guilds=guilds)
 async def list_roles(interaction: discord.Interaction):
     await listroles_cmd.list_roles(interaction)
+
+@bot.tree.command(name="listadmins", description="List all PPE Admins in the server.", guilds=guilds)
+async def list_admins_cmd_handler(interaction: discord.Interaction):
+    await listadmins_cmd.list_admins(interaction)
 
 if not DISCORD_TOKEN:
     print("Error: DISCORD_TOKEN environment variable not set.")
