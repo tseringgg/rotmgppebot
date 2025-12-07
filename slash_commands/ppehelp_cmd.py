@@ -9,6 +9,7 @@ async def command(interaction: discord.Interaction):
         "leaderboard": "Show the current PPE leaderboard.",
         "ppehelp": "Show this help message.",
         "listroles": "List all roles in this server.",
+        "listadmins": "Show all admins (who can register you to contest).",
     }
     # --- Player Commands ---
     player_cmds = {
@@ -31,6 +32,7 @@ async def command(interaction: discord.Interaction):
         "listplayers": "List all current participants in the PPE contest.",
         "addpointsfor": "Add points to another player's active PPE.",
         "deleteallppes": "Delete all PPEs for a specified player.",
+        "deleteppe": "Delete one ppe from a specific player.",
     }
     owner_cmds = {
         "giveppeadminrole": "Give the PPE Admin role to a member.",
