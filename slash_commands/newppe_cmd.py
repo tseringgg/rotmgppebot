@@ -58,7 +58,13 @@ async def command(interaction: discord.Interaction, class_name: str, pet_level: 
     # --- Create new PPE ---
     next_id = max((ppe.id for ppe in player_data.ppes), default=0) + 1
 
-    points = -round(pet_level / 4) - 0.5 * num_exalts - 2 * percent_loot - (2 * (incombat_reduction / 0.2))
+    # Calculate each handicap component separately for the receipt
+    pet_penalty = -round(pet_level / 4)
+    exalt_penalty = -0.5 * num_exalts
+    loot_penalty = -2 * percent_loot
+    incombat_penalty = -(2 * (incombat_reduction / 0.2))
+    
+    points = pet_penalty + exalt_penalty + loot_penalty + incombat_penalty
 
     new_ppe = PPEData(
         id=next_id,
@@ -72,9 +78,46 @@ async def command(interaction: discord.Interaction, class_name: str, pet_level: 
 
     await save_player_records(interaction=interaction, records=records)
 
+    # Create embed for handicap breakdown
+    embed = discord.Embed(
+        title="🧾 Starting Points Breakdown",
+        description="Here's how your starting points were calculated:",
+        color=discord.Color.blue()
+    )
+    
+    embed.add_field(
+        name="Pet Level Penalty",
+        value=f"Level {pet_level} → {pet_penalty} points",
+        inline=True
+    )
+    
+    embed.add_field(
+        name="Exalts Penalty", 
+        value=f"{num_exalts} exalts → {exalt_penalty} points",
+        inline=True
+    )
+    
+    embed.add_field(
+        name="Loot Boost Penalty",
+        value=f"{percent_loot}% boost → {loot_penalty} points", 
+        inline=True
+    )
+    
+    embed.add_field(
+        name="In-Combat Reduction Penalty",
+        value=f"{incombat_reduction} reduction → {incombat_penalty} points",
+        inline=True
+    )
+    
+    embed.add_field(
+        name="**Total Starting Points**",
+        value=f"**{points} points**",
+        inline=False
+    )
+
     await interaction.response.send_message(
         f"✅ Created `PPE #{next_id}` for your `{class_enum.value}` "
         f"and set it as your active PPE.\n"
-        f"You now have {ppe_count + 1}/10 PPEs.\n"
-        f" Your starting points are `{points}`."
+        f"You now have {ppe_count + 1}/10 PPEs.",
+        embed=embed
     )

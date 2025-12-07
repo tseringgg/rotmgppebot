@@ -1,8 +1,8 @@
 import discord
 
 from utils.embed_builders import build_loot_embed
+from utils.loot_data import LOOT
 from utils.player_manager import player_manager
-from utils.autocomplete import get_loot_items
 from utils.calc_points import calc_points
 
 
@@ -12,7 +12,7 @@ async def command(
         divine: bool = False,
         shiny: bool = False
     ):
-    if item_name not in get_loot_items():
+    if item_name not in LOOT:
         return await interaction.response.send_message(
             f"❌ `{item_name}` is not a recognized item name.\n"
             f"Use the autocomplete suggestions to select a valid item.",

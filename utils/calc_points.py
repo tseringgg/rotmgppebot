@@ -61,7 +61,7 @@ async def calc_points(interaction: discord.Interaction, item: str, divine: bool,
     if base_points <= 0:
         return 0.0
     
-    is_duplicate = item_name is None
+    is_duplicate = item_name is not None
 
     if base_points != 1:
         final_points = base_points / 2 if is_duplicate else base_points
