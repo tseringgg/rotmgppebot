@@ -1,4 +1,4 @@
-from slash_commands import addloot_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, removeloot_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd
+from slash_commands import addloot_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, removeloot_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -215,6 +215,11 @@ async def myppes(interaction: discord.Interaction):
 @require_ppe_roles(admin_required=True)
 async def delete_all_ppes(interaction: discord.Interaction, member: discord.Member):
     await deleteallppes_cmd.command(interaction, member)
+
+@bot.tree.command(name="deleteppe", description="Delete a specific PPE for a member.", guilds=guilds)
+@require_ppe_roles(admin_required=True)
+async def delete_ppe(interaction: discord.Interaction, member: discord.Member, ppe_id: int):
+    await deleteppe_cmd.command(interaction, member, ppe_id)
 
 @bot.tree.command(name="leaderboard", description="Show the best PPE from each player.", guilds=guilds)
 async def leaderboard(interaction: discord.Interaction):

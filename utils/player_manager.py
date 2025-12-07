@@ -221,5 +221,24 @@ class PlayerManager:
         
         return await self.execute_transaction(interaction, operation)
 
+    async def delete_ppe(self, interaction: discord.Interaction, member_id: int, ppe_id: int) -> bool:
+        """Delete a specific PPE for a member."""
+        
+        async def operation(records, interaction):
+            key = ensure_player_exists(records, member_id)
+            
+            player_data = records[key]
+            ppe_to_delete = next((ppe for ppe in player_data.ppes if ppe.id == ppe_id), None)
+            if not ppe_to_delete:
+                raise ValueError(f"❌ PPE #{ppe_id} not found for this member.")
+            
+            player_data.ppes.remove(ppe_to_delete)
+            if player_data.active_ppe == ppe_id:
+                player_data.active_ppe = player_data.ppes[0].id if player_data.ppes else None
+            
+            return True
+        
+        return await self.execute_transaction(interaction, operation)
+
 # Global instance
 player_manager = PlayerManager()
