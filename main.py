@@ -173,21 +173,6 @@ async def newppe(interaction: discord.Interaction, class_name: str, pet_level: i
 async def setactiveppe(interaction: discord.Interaction, ppe_id: int):
     await setactiveppe_cmd.command(interaction, ppe_id)
 
-######################
-### COMMANDS BELOW ###
-######################
-
-@bot.tree.command(name="newppe", description="Create a new PPE (max 10) and make it your active one.", guilds=guilds)
-@app_commands.describe(class_name="Choose your class")
-@app_commands.autocomplete(class_name=class_autocomplete)
-@require_ppe_roles(player_required=True)
-async def newppe(interaction: discord.Interaction, class_name: str):
-    await newppe_cmd.command(interaction, class_name)
-
-@bot.tree.command(name="setactiveppe", description="Set which PPE is active for point tracking.", guilds=guilds)
-@require_ppe_roles(player_required=True)
-async def setactiveppe(interaction: discord.Interaction, ppe_id: int):
-    await setactiveppe_cmd.command(interaction, ppe_id)
 
 @bot.tree.command(name="submitloot", description="Submit loot for point tracking.", guilds=guilds)
 @app_commands.describe(dungeon="Choose the dungeon you completed", screenshot="Upload a screenshot of your loot")
