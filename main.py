@@ -159,10 +159,14 @@ async def setup_roles(interaction: discord.Interaction):
 
 @bot.tree.command(name="newppe", description="Create a new PPE (max 10) and make it your active one.", guilds=guilds)
 @app_commands.describe(class_name="Choose your class")
+@app_commands.describe(pet_level="Level of your max pet ability -1st one (0-100)")
+@app_commands.describe(num_exalts="Number of exalts (0-40)")
+@app_commands.describe(percent_loot="Percent loot boost from exalts (0-25%)")
+@app_commands.describe(incombat_reduction="In-combat damage reduction seconds (0, .2, .4, .6, .8, 1)")
 @app_commands.autocomplete(class_name=class_autocomplete)
 @require_ppe_roles(player_required=True)
-async def newppe(interaction: discord.Interaction, class_name: str):
-    await newppe_cmd.command(interaction, class_name)
+async def newppe(interaction: discord.Interaction, class_name: str, pet_level: int, num_exalts: int, percent_loot: float, incombat_reduction: float):
+    await newppe_cmd.command(interaction, class_name, pet_level, num_exalts, percent_loot, incombat_reduction)
 
 @bot.tree.command(name="setactiveppe", description="Set which PPE is active for point tracking.", guilds=guilds)
 @require_ppe_roles(player_required=True)
