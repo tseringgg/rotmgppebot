@@ -1,4 +1,4 @@
-    import discord
+import discord
 
 from utils.player_manager import player_manager
 

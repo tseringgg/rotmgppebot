@@ -10,7 +10,7 @@ async def list_admins(interaction: discord.Interaction):
         await interaction.response.send_message("❌ No 'PPE Admin' role found in this server.")
         return
 
-    admins = [member.mention for member in role.members]
+    admins = [member.display_name for member in role.members]
 
     if not admins:
         await interaction.response.send_message("No Admins.")
