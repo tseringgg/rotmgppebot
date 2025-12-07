@@ -5,7 +5,9 @@ from discord.ext import commands
 from dotenv import load_dotenv
 import aiosqlite
 import os
+from utils.calc_points import load_loot_points
 from utils.role_checks import require_ppe_roles
+from utils.loot_data import set_loot_data
 
 from utils.autocomplete import class_autocomplete, dungeon_autocomplete, item_name_autocomplete
 
@@ -19,6 +21,34 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
 class PPEBot(commands.Bot):
     async def setup_hook(self):
+
+        EXCEPTIONS = {"of", "the", "in", "and", "for", "to", "a", "an"}
+        
+        # Create temporary list for loot items
+        loot_items = []
+
+        loot_points = load_loot_points()  # load once at startup
+
+        for internal_name in loot_points.keys():
+
+            # exclude shiny variants
+            if "(shiny)" in internal_name:
+                continue
+
+            # normalize capitalization
+            words = internal_name.split(" ")
+            pretty = " ".join(
+                word.lower() if word.lower() in EXCEPTIONS
+                else word.capitalize()
+                for word in words
+            )
+
+            loot_items.append(pretty)
+        
+        # Set the loot data in the shared module
+        set_loot_data(loot_items)
+        print(f"Loaded {len(loot_items)} loot items for autocomplete")
+        
         # Print to confirm commands are loaded BEFORE syncing
         print("Loaded commands:", [cmd.name for cmd in self.tree.get_commands()])
 

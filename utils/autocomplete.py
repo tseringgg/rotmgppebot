@@ -1,7 +1,7 @@
 import discord
 from dataclass import ROTMGClass
-from utils.calc_points import load_loot_points
 from discord import app_commands
+from .loot_data import get_loot_data
 
 
 DUNGEONS = [
@@ -19,9 +19,6 @@ DUNGEONS = [
     "Rainbow Road", "Santa's Workshop", "Ice Tomb", "Battle for the Nexus", "Stromwell's Rift I", "Stromwell's Rift II", "Stromwell's Rift III",
     "Belladonna's Garden", "Queen Bunny Chamber", "Mad God Mayhem", "The Trials of Cronus", "Hidden Interregnum", "Oryxmania", "White Snake Invasion",
     "The Realm"
-]
-LOOT = [
-
 ]
 
 # Autocomplete function
@@ -52,12 +49,14 @@ async def dungeon_autocomplete(interaction: discord.Interaction, current: str):
     ]
 
 async def item_name_autocomplete(interaction: discord.Interaction, current: str):
-
     current_lower = current.lower()
-
+    
+    # Get the loot data from the shared module
+    loot_items = get_loot_data()
+    
     matches = [
         app_commands.Choice(name=pretty, value=pretty)
-        for pretty in LOOT
+        for pretty in loot_items
         if current_lower in pretty.lower()
     ]
 
@@ -65,24 +64,3 @@ async def item_name_autocomplete(interaction: discord.Interaction, current: str)
 
 def get_dungeons() -> list[str]:
     return DUNGEONS
-def get_loot_items() -> list[str]:
-    EXCEPTIONS = {"of", "the"}
-
-    loot_points = load_loot_points()  # load once at startup
-
-    for internal_name in loot_points.keys():
-
-        # exclude shiny variants
-        if "(shiny)" in internal_name:
-            continue
-
-        # normalize capitalization
-        words = internal_name.split(" ")
-        pretty = " ".join(
-            word.lower() if word.lower() in EXCEPTIONS
-            else word.capitalize()
-            for word in words
-        )
-
-        LOOT.append(pretty)
-    return LOOT
