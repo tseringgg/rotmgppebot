@@ -119,7 +119,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     embed = await build_loot_embed(target_ppe)
     
     await interaction.response.send_message(
-        f"✅ Applied penalties to {user.display_name}'s PPE #{target_ppe.id} ({target_ppe.name})!\n\n"
+        f"✅ Applied penalties to {user.mention}'s PPE #{target_ppe.id} ({target_ppe.name})!\n\n"
         f"**Penalties Applied:**\n{penalty_text}\n"
         f"**Total penalty:** {total_penalty_points} points{removed_text}\n"
         f"PPE now has **{target_ppe.points} total points**.",

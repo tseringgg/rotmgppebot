@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -199,6 +199,20 @@ async def addloot(
     ):
     await addloot_cmd.command(interaction, item_name, divine, shiny)
 
+@bot.tree.command(name="addlootfor", description="Add an item to another player's specific PPE. Admin only.", guilds=guilds)
+@app_commands.describe(user="The player to add loot to", id="The PPE ID to target", item_name="Name of the item to add", divine="Is the item divine?", shiny="Is the item shiny?")
+@app_commands.autocomplete(item_name=item_name_autocomplete)
+@require_ppe_roles(admin_required=True)
+async def addlootfor(
+        interaction: discord.Interaction,
+        user: discord.Member,
+        id: int,
+        item_name: str,
+        divine: bool = False,
+        shiny: bool = False
+    ):
+    await addlootfor_cmd.command(interaction, user, id, item_name, divine, shiny)
+
 @bot.tree.command(name="addbonus", description="Add a bonus to your active PPE.", guilds=guilds)
 @app_commands.describe(bonus_name="Name of the bonus to add")
 @app_commands.autocomplete(bonus_name=bonus_autocomplete)
@@ -292,6 +306,20 @@ async def removeloot(
         shiny: bool = False
     ):
     await removeloot_cmd.command(interaction, item_name, divine, shiny)
+
+@bot.tree.command(name="removelootfrom", description="Remove an item from another player's specific PPE. Admin only.", guilds=guilds)
+@app_commands.describe(user="The player to remove loot from", id="The PPE ID to target", item_name="Name of the item to remove", divine="Is the item divine?", shiny="Is the item shiny?")
+@app_commands.autocomplete(item_name=item_name_autocomplete)
+@require_ppe_roles(admin_required=True)
+async def removelootfrom(
+        interaction: discord.Interaction,
+        user: discord.Member,
+        id: int,
+        item_name: str,
+        divine: bool = False,
+        shiny: bool = False
+    ):
+    await removelootfrom_cmd.command(interaction, user, id, item_name, divine, shiny)
 
 @bot.tree.command(name="addpointsfor", description="Add points to another player's active PPE.", guilds=guilds)
 # @commands.has_role("PPE Admin")  # both can use

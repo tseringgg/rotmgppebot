@@ -39,6 +39,8 @@ async def command(interaction: discord.Interaction):
         "addpenaltiesfor": "Apply retroactive penalties to a specific player's PPE.",
         "addbonusfor": "Add a bonus to another player's PPE by PPE ID.",
         "removebonusfrom": "Remove a bonus from another player's PPE by PPE ID.",
+        "addlootfor": "Add loot to another player's PPE by PPE ID.",
+        "removelootfrom": "Remove loot from another player's PPE by PPE ID.",
     }
     owner_cmds = {
         "giveppeadminrole": "Give the PPE Admin role to a member.",
