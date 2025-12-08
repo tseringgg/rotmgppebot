@@ -22,7 +22,7 @@ async def command(
         )
     
     try:
-        points = await calc_points(interaction, item_name, divine, shiny)
+        points = calc_points(item_name, divine, shiny)
         final_key, points_removed, active_ppe = await player_manager.remove_loot_and_points(
             interaction, item_name, divine, shiny, points
         )

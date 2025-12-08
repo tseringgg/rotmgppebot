@@ -101,7 +101,9 @@ async def command(
             else:
                 item_name = detected_loot["item"].strip()
             try:
-                points = await calc_points(interaction, item_name, divine=detected_loot["divine"], shiny=detected_loot["shiny"])
+                points = calc_points(item_name, divine=detected_loot["divine"], shiny=detected_loot["shiny"])
+                if points == 0:
+                    continue
                 final_key, points_added, _ = await player_manager.add_loot_and_points(
                     interaction, item_name, detected_loot["divine"], detected_loot["shiny"], points
                 )

@@ -87,13 +87,23 @@ class PlayerManager:
             if not item:
                 raise ValueError(f"❌ You don't have any **{item_name}** in your active PPE's loot.")
             
+            # Calculate points to remove based on duplicate logic
+            # If this is the only one (quantity will be 0 after removal), use full points
+            # If there will still be more (quantity > 1), use halved points (unless base points = 1)
+            will_be_duplicate = item.quantity > 1
+            
+            if points != 1 and will_be_duplicate:
+                points_to_remove = points / 2
+            else:
+                points_to_remove = points
+            
             item.quantity -= 1
             if item.quantity <= 0:
                 active_ppe.loot.remove(item)
             
             # Remove points
             import math
-            points_rounded = math.floor(points * 2) / 2
+            points_rounded = math.floor(points_to_remove * 2) / 2
             active_ppe.points -= points_rounded
             
             return item_name, points_rounded, active_ppe
