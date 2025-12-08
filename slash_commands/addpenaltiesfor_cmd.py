@@ -3,7 +3,7 @@ from dataclass import Bonus
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.embed_builders import build_loot_embed
 
-async def command(interaction: discord.Interaction, pet_level: int, num_exalts: int, percent_loot: float, incombat_reduction: float):
+async def command(interaction: discord.Interaction, user: discord.Member, id: int, pet_level: int, num_exalts: int, percent_loot: float, incombat_reduction: float):
     if not interaction.guild:
         return await interaction.response.send_message("❌ This command can only be used in a server.")
 
@@ -31,26 +31,26 @@ async def command(interaction: discord.Interaction, pet_level: int, num_exalts: 
 
     # Load player records
     records = await load_player_records(interaction)
-    key = ensure_player_exists(records, interaction.user.id)
+    key = ensure_player_exists(records, user.id)
     player_data = records[key]
 
-    # Check if player has an active PPE
-    if player_data.active_ppe is None:
+    # Check if target player has any PPEs
+    if not player_data.ppes:
         return await interaction.response.send_message(
-            "❌ You don't have an active PPE. Create one first with `/newppe`.",
+            f"❌ {user.display_name} doesn't have any PPEs.",
             ephemeral=True
         )
 
-    # Find the active PPE
-    active_ppe = None
+    # Find the specific PPE by ID
+    target_ppe = None
     for ppe in player_data.ppes:
-        if ppe.id == player_data.active_ppe:
-            active_ppe = ppe
+        if ppe.id == id:
+            target_ppe = ppe
             break
 
-    if not active_ppe:
+    if not target_ppe:
         return await interaction.response.send_message(
-            "❌ Could not find your active PPE.",
+            f"❌ Could not find PPE #{id} for {user.display_name}.",
             ephemeral=True
         )
 
@@ -78,41 +78,35 @@ async def command(interaction: discord.Interaction, pet_level: int, num_exalts: 
     if incombat_penalty != 0:
         new_penalties.append(Bonus(name="In-Combat Reduction Penalty", points=incombat_penalty, repeatable=False, quantity=1))
 
-    # Handle old format PPEs (initialize bonuses list if it doesn't exist)
-    if not hasattr(active_ppe, 'bonuses') or active_ppe.bonuses is None:
-        active_ppe.bonuses = []
-
-    # Remove existing penalties with the same names and subtract their points
+    # Remove any existing penalties of these types and subtract their points
     removed_penalty_points = 0
     bonuses_to_keep = []
     
-    for bonus in active_ppe.bonuses:
+    for bonus in target_ppe.bonuses:
         if bonus.name in penalty_names:
             removed_penalty_points += bonus.points
         else:
             bonuses_to_keep.append(bonus)
     
     # Replace bonuses list with only non-penalty bonuses
-    active_ppe.bonuses = bonuses_to_keep
-    
+    target_ppe.bonuses = bonuses_to_keep
+
     # Subtract removed penalty points
-    active_ppe.points -= removed_penalty_points
+    target_ppe.points -= removed_penalty_points
 
     # Add new penalties and their points
     total_penalty_points = 0
     for penalty in new_penalties:
-        active_ppe.bonuses.append(penalty)
+        target_ppe.bonuses.append(penalty)
         total_penalty_points += penalty.points
-    
+
     # Add new penalty points
-    active_ppe.points += total_penalty_points
+    target_ppe.points += total_penalty_points
 
     # Save records
     await save_player_records(interaction=interaction, records=records)
 
-    # Create response message and embed
-    embed = await build_loot_embed(active_ppe)
-    
+    # Create response message
     penalty_list = []
     for penalty in new_penalties:
         penalty_list.append(f"• {penalty.name}: {penalty.points} pts")
@@ -120,11 +114,14 @@ async def command(interaction: discord.Interaction, pet_level: int, num_exalts: 
     penalty_text = "\n".join(penalty_list) if penalty_list else "No penalties applied (all values were 0)"
     
     removed_text = f"\nRemoved previous penalties: {removed_penalty_points} pts" if removed_penalty_points != 0 else ""
-
+    
+    # Create embed
+    embed = await build_loot_embed(target_ppe)
+    
     await interaction.response.send_message(
-        f"✅ Applied penalties to your active PPE #{active_ppe.id} ({active_ppe.name})!\n\n"
+        f"✅ Applied penalties to {user.display_name}'s PPE #{target_ppe.id} ({target_ppe.name})!\n\n"
         f"**Penalties Applied:**\n{penalty_text}\n"
         f"**Total penalty:** {total_penalty_points} points{removed_text}\n"
-        f"Your PPE now has **{active_ppe.points} total points**.",
+        f"PPE now has **{target_ppe.points} total points**.",
         embed=embed
     )

@@ -22,6 +22,7 @@ async def command(interaction: discord.Interaction):
         "submitloot": "Submit a loot screenshot for point tracking automatically.",
         "addbonus": "Add a bonus to your active PPE (repeatable bonuses stack).",
         "removebonus": "Remove a bonus from your active PPE (decrements quantity).",
+        "addpenalties": "Apply retroactive penalties to your active PPE.",
     }
 
     # --- Admin Commands ---
@@ -35,7 +36,7 @@ async def command(interaction: discord.Interaction):
         "addpointsfor": "Add points to another player's active PPE.",
         "deleteallppes": "Delete all PPEs for a specified player.",
         "deleteppe": "Delete one ppe from a specific player.",
-        "addpenalties": "Apply retroactive penalties to a specific PPE.",
+        "addpenaltiesfor": "Apply retroactive penalties to a specific player's PPE.",
         "addbonusfor": "Add a bonus to another player's PPE by PPE ID.",
         "removebonusfrom": "Remove a bonus from another player's PPE by PPE ID.",
     }

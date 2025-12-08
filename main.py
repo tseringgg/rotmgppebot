@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addpenalties_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -241,7 +241,24 @@ async def removebonusfrom(
     ):
     await removebonusfrom_cmd.command(interaction, user, id, bonus_name)
 
-@bot.tree.command(name="addpenalties", description="Add penalty bonuses to another player's specific PPE. Admin only.", guilds=guilds)
+@bot.tree.command(name="addpenalties", description="Add penalty bonuses to your active PPE.", guilds=guilds)
+@app_commands.describe(
+    pet_level="Pet level (0-100)", 
+    num_exalts="Number of exalts (0-40)", 
+    percent_loot="Loot boost percentage (0-25)", 
+    incombat_reduction="In-combat damage reduction (0, 0.2, 0.4, 0.6, 0.8, 1.0)"
+)
+@require_ppe_roles(player_required=True)
+async def addpenalties(
+        interaction: discord.Interaction,
+        pet_level: int,
+        num_exalts: int,
+        percent_loot: float,
+        incombat_reduction: float
+    ):
+    await addpenalties_cmd.command(interaction, pet_level, num_exalts, percent_loot, incombat_reduction)
+
+@bot.tree.command(name="addpenaltiesfor", description="Add penalty bonuses to another player's specific PPE. Admin only.", guilds=guilds)
 @app_commands.describe(
     user="The player whose PPE to add penalties to", 
     id="The PPE ID to target", 
@@ -251,7 +268,7 @@ async def removebonusfrom(
     incombat_reduction="In-combat damage reduction (0, 0.2, 0.4, 0.6, 0.8, 1.0)"
 )
 @require_ppe_roles(admin_required=True)
-async def addpenalties(
+async def addpenaltiesfor(
         interaction: discord.Interaction,
         user: discord.Member,
         id: int,
@@ -260,7 +277,7 @@ async def addpenalties(
         percent_loot: float,
         incombat_reduction: float
     ):
-    await addpenalties_cmd.command(interaction, user, id, pet_level, num_exalts, percent_loot, incombat_reduction)
+    await addpenaltiesfor_cmd.command(interaction, user, id, pet_level, num_exalts, percent_loot, incombat_reduction)
 
 @bot.tree.command(name="removeloot", description="Remove an item from your active PPE's loot.", guilds=guilds)
 @app_commands.describe(item_name="Name of the item to remove", divine="Is the item divine?", shiny="Is the item shiny?")
