@@ -7,7 +7,7 @@ from utils.calc_points import load_loot_points
 
 
 def calculate_item_points(item_name: str, divine: bool, shiny: bool, quantity: int) -> float:
-    """Calculate total points for an item based on its properties and quantity"""
+    """Calculate total points for an item based on its properties and quantity (duplicates)"""
     loot_points = load_loot_points()
     
     # Get base points from CSV
@@ -23,12 +23,13 @@ def calculate_item_points(item_name: str, divine: bool, shiny: bool, quantity: i
     final_points = base_points
     if divine:
         final_points = final_points * 2
+
+    if quantity > 1:
+        # For multiple quantities, each additional item is worth half points
+        total_points = final_points + math.floor(final_points) / 2 * (quantity - 1)
+    else:
+        total_points = final_points * quantity
     
-    # Round down to nearest 0.5
-    final_points = math.floor(final_points * 2) / 2
-    
-    # Multiply by quantity
-    total_points = final_points * quantity
     
     return total_points
 

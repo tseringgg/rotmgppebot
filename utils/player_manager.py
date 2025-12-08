@@ -62,6 +62,11 @@ class PlayerManager:
             # Add loot
             from utils.player_records import get_item_from_ppe
             match = get_item_from_ppe(active_ppe, item_name, divine, shiny)
+            will_be_duplicate = match is not None
+            if will_be_duplicate:
+                points_to_add = points / 2
+            else:
+                points_to_add = points
             if match:
                 match.quantity += 1
             else:
@@ -69,7 +74,7 @@ class PlayerManager:
             
             # Add points
             import math
-            points_rounded = math.floor(points * 2) / 2
+            points_rounded = math.floor(points_to_add * 2) / 2
             active_ppe.points += points_rounded
             
             return item_name, points_rounded, active_ppe
@@ -164,7 +169,7 @@ class PlayerManager:
         
         return await self.execute_transaction(interaction, operation)
     
-    async def add_points_to_member(self, interaction: discord.Interaction, member_id: int, amount: float) -> tuple:
+    async def add_points_to_member(self, interaction: discord.Interaction, member_id: int, ppe_id: int, amount: float) -> tuple:
         """Add points to a specific member's active PPE (admin command)."""
         
         async def operation(records, interaction):
@@ -177,7 +182,7 @@ class PlayerManager:
             if not player_data.active_ppe:
                 raise LookupError("❌ This member does not have an active PPE.")
             
-            active_ppe = get_active_ppe(player_data)
+            active_ppe = next((ppe for ppe in player_data.ppes if ppe.id == ppe_id), None)
             if not active_ppe:
                 raise LookupError("❌ Could not find the member's active PPE record.")
             

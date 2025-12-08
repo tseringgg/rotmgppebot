@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -324,8 +324,19 @@ async def removelootfrom(
 @bot.tree.command(name="addpointsfor", description="Add points to another player's active PPE.", guilds=guilds)
 # @commands.has_role("PPE Admin")  # both can use
 @require_ppe_roles(admin_required=True)
-async def addpointsfor(interaction: discord.Interaction, member: discord.Member, amount: float):
-    await addpointsfor_cmd.command(interaction, member, amount)
+async def addpointsfor(interaction: discord.Interaction, member: discord.Member, ppe_id: int, amount: float):
+    await addpointsfor_cmd.command(interaction, member, ppe_id, amount)
+
+@bot.tree.command(name="refreshpointsfor", description="Recalculate and fix the point total for a specific PPE. Admin only.", guilds=guilds)
+@app_commands.describe(user="The player whose PPE to refresh", id="The PPE ID to recalculate")
+@require_ppe_roles(admin_required=True)
+async def refreshpointsfor(interaction: discord.Interaction, user: discord.Member, id: int):
+    await refreshpointsfor_cmd.command(interaction, user, id)
+
+@bot.tree.command(name="refreshallpoints", description="Recalculate and fix point totals for ALL PPEs in the server. Admin only.", guilds=guilds)
+@require_ppe_roles(admin_required=True)
+async def refreshallpoints(interaction: discord.Interaction):
+    await refreshallpoints_cmd.command(interaction)
 
 @bot.tree.command(name="listplayers", description="Show all current participants in the PPE contest.", guilds=guilds)
 # @commands.has_role("PPE Admin")

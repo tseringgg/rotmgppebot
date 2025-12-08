@@ -34,6 +34,8 @@ async def command(interaction: discord.Interaction):
         "removeplayer": "Remove a member from the PPE contest.",
         "listplayers": "List all current participants in the PPE contest.",
         "addpointsfor": "Add points to another player's active PPE.",
+        "refreshpointsfor": "Recalculate and fix the point total for a specific PPE.",
+        "refreshallpoints": "Recalculate and fix point totals for ALL PPEs in the server.",
         "deleteallppes": "Delete all PPEs for a specified player.",
         "deleteppe": "Delete one ppe from a specific player.",
         "addpenaltiesfor": "Apply retroactive penalties to a specific player's PPE.",
