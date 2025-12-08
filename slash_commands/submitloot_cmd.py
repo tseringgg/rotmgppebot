@@ -9,7 +9,7 @@ from utils.autocomplete import get_dungeons
 from utils.player_manager import player_manager
 from utils.calc_points import calc_points
 from utils.find_items import find_items_in_image
-from utils.player_records import load_player_records
+from utils.player_records import get_active_ppe_of_user, load_player_records
 
 
 async def command(
@@ -104,8 +104,12 @@ async def command(
                 points = calc_points(item_name, divine=detected_loot["divine"], shiny=detected_loot["shiny"])
                 if points == 0:
                     continue
+                ppe_id = (await get_active_ppe_of_user(interaction)).id
+                user = interaction.user
+                if not isinstance(user, discord.Member):
+                    raise ValueError("❌ Could not retrieve your member information.")
                 final_key, points_added, _ = await player_manager.add_loot_and_points(
-                    interaction, item_name, detected_loot["divine"], detected_loot["shiny"], points
+                    interaction, user=user, ppe_id=ppe_id, item_name=item_name, divine=detected_loot["divine"], shiny=detected_loot["shiny"], points=points
                 )
                 message += f"• **{final_key}** (+{points_added} points)\n"
             except (ValueError, KeyError, LookupError) as e:

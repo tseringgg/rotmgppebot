@@ -34,12 +34,12 @@ class PlayerManager:
             
             return result
     
-    async def add_loot_and_points(self, interaction: discord.Interaction, item_name: str, 
+    async def add_loot_and_points(self, interaction: discord.Interaction, user: discord.Member, ppe_id:int, item_name: str, 
                                 divine: bool = False, shiny: bool = False, points: float = 0) -> tuple:
         """Add loot and points atomically."""
         
         async def operation(records, interaction):
-            user_id = interaction.user.id
+            user_id = user.id
             key = ensure_player_exists(records, user_id)
             
             # Check if user is member
@@ -50,7 +50,12 @@ class PlayerManager:
             if not player_data.active_ppe:
                 raise LookupError("❌ You don't have an active PPE.")
             
-            active_ppe = get_active_ppe(player_data)
+            
+            active_ppe = None
+            for ppe in player_data.ppes:
+                if ppe.id == ppe_id:
+                    active_ppe = ppe
+                    break
             if not active_ppe:
                 raise LookupError("❌ Could not find your active PPE record.")
             
@@ -71,16 +76,23 @@ class PlayerManager:
         
         return await self.execute_transaction(interaction, operation)
     
-    async def remove_loot_and_points(self, interaction: discord.Interaction, item_name: str, 
+    async def remove_loot_and_points(self, interaction: discord.Interaction, user: discord.Member, ppe_id: int, item_name: str, 
                                    divine: bool = False, shiny: bool = False, points: float = 0) -> tuple:
         """Remove loot and points atomically."""
         
         async def operation(records, interaction):
-            user_id = interaction.user.id
+            user_id = user.id
             key = ensure_player_exists(records, user_id)
             
             player_data = records[key]
-            active_ppe = get_active_ppe(player_data)
+            active_ppe = None
+            for ppe in player_data.ppes:
+                if ppe.id == ppe_id:
+                    active_ppe = ppe
+                    break
+
+            if not active_ppe:
+                raise LookupError("❌ Could not find your active PPE record.")
             
             from utils.player_records import get_item_from_ppe
             item = get_item_from_ppe(active_ppe, item_name, divine, shiny)

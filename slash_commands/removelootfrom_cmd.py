@@ -48,7 +48,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
         
         # Remove loot and points using player_manager
         final_key, points_removed, updated_ppe = await player_manager.remove_loot_and_points(
-            interaction, item_name, divine, shiny, points
+            interaction, user=user, ppe_id=id, item_name=item_name, divine=divine, shiny=shiny, points=points
         )
         
         # Build embed

@@ -1,9 +1,12 @@
 import discord
+from pydantic import InstanceOf
+from yarg import get
 
 from utils.embed_builders import build_loot_embed
 from utils.loot_data import LOOT
 from utils.player_manager import player_manager
 from utils.calc_points import calc_points
+from utils.player_records import get_active_ppe_of_user
 
 
 async def command(
@@ -21,8 +24,12 @@ async def command(
     
     try:
         points = calc_points(item_name, divine, shiny)
+        ppe_id = (await get_active_ppe_of_user(interaction)).id
+        user = interaction.user
+        if not isinstance(user, discord.Member):
+            raise ValueError("❌ Could not retrieve your member information.")
         final_key, points_added, active_ppe = await player_manager.add_loot_and_points(
-            interaction, item_name, divine, shiny, points
+            interaction, user=user, ppe_id=ppe_id, item_name=item_name, divine=divine, shiny=shiny, points=points
         )
         embed = await build_loot_embed(active_ppe, recently_added=final_key)
         
