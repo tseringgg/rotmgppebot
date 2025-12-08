@@ -20,6 +20,8 @@ async def command(interaction: discord.Interaction):
         "removeloot": "Remove loot from your active PPE manually.",
         "myloot": "Show all loot recorded for your active PPE.",
         "submitloot": "Submit a loot screenshot for point tracking automatically.",
+        "addbonus": "Add a bonus to your active PPE (repeatable bonuses stack).",
+        "removebonus": "Remove a bonus from your active PPE (decrements quantity).",
     }
 
     # --- Admin Commands ---
@@ -33,6 +35,9 @@ async def command(interaction: discord.Interaction):
         "addpointsfor": "Add points to another player's active PPE.",
         "deleteallppes": "Delete all PPEs for a specified player.",
         "deleteppe": "Delete one ppe from a specific player.",
+        "addpenalties": "Apply retroactive penalties to a specific PPE.",
+        "addbonusfor": "Add a bonus to another player's PPE by PPE ID.",
+        "removebonusfrom": "Remove a bonus from another player's PPE by PPE ID.",
     }
     owner_cmds = {
         "giveppeadminrole": "Give the PPE Admin role to a member.",
