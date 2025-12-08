@@ -38,9 +38,11 @@ class PPEBot(commands.Bot):
             # normalize capitalization
             words = internal_name.split(" ")
             pretty = " ".join(
-                word.lower() if word.lower() in EXCEPTIONS
-                else word.capitalize()
-                for word in words
+                word.capitalize() if i == 0 else (
+                    word.lower() if word.lower() in EXCEPTIONS
+                    else word.capitalize()
+                )
+                for i, word in enumerate(words)
             )
 
             loot_items.append(pretty)

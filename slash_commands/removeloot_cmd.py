@@ -14,12 +14,12 @@ async def command(
         divine: bool = False,
         shiny: bool = False
     ):
-    if item_name not in LOOT:
-        return await interaction.response.send_message(
-            f"❌ `{item_name}` is not a recognized item name.\n"
-            f"Use the autocomplete suggestions to select a valid item.",
-            ephemeral=True
-        )
+    # if item_name not in LOOT:
+    #     return await interaction.response.send_message(
+    #         f"❌ `{item_name}` is not a recognized item name.\n"
+    #         f"Use the autocomplete suggestions to select a valid item.",
+    #         ephemeral=True
+    #     )
     
     try:
         points = calc_points(item_name, divine, shiny)
