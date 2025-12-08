@@ -174,16 +174,16 @@ async def setactiveppe(interaction: discord.Interaction, ppe_id: int):
     await setactiveppe_cmd.command(interaction, ppe_id)
 
 
-@bot.tree.command(name="submitloot", description="Submit loot for point tracking.", guilds=guilds)
-@app_commands.describe(dungeon="Choose the dungeon you completed", screenshot="Upload a screenshot of your loot")
-@app_commands.autocomplete(dungeon=dungeon_autocomplete)
-@require_ppe_roles(player_required=True)
-async def submitloot(
-    interaction: discord.Interaction,
-    dungeon: str,
-    screenshot: discord.Attachment
-):
-    await submitloot_cmd.command(interaction, dungeon, screenshot)
+# @bot.tree.command(name="submitloot", description="Submit loot for point tracking.", guilds=guilds)
+# @app_commands.describe(dungeon="Choose the dungeon you completed", screenshot="Upload a screenshot of your loot")
+# @app_commands.autocomplete(dungeon=dungeon_autocomplete)
+# @require_ppe_roles(player_required=True)
+# async def submitloot(
+#     interaction: discord.Interaction,
+#     dungeon: str,
+#     screenshot: discord.Attachment
+# ):
+#     await submitloot_cmd.command(interaction, dungeon, screenshot)
     
 @bot.tree.command(name="addloot", description="Add an item to your active PPE's loot.", guilds=guilds)
 @app_commands.describe(item_name="Name of the item to add", divine="Is the item divine?", shiny="Is the item shiny?")
