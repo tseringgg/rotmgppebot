@@ -41,10 +41,6 @@ Tier 7 Ring,Ring of Transcendent Speed,1.0
 Tier 7 Ring,Ring of Transcendent Dexterity,1.0
 Tier 7 Ring,Ring of Transcendent Vitality,1.0
 Tier 7 Ring,Ring of Transcendent Wisdom,1.0
-White or ST,Wine Cellar Incantation,4.0
-White or ST,Demon Frog Pet Skin,4.0
-White or ST,Horned Wyrm Pet Skin,4.0
-White or ST,Tarot Card Pack,4.0
 White or ST,Staff of Eruption,4.0
 White or ST,Scorchium Stone,4.0
 White or ST,Molten Mantle,4.0
@@ -74,7 +70,6 @@ White or ST,Fairy Plate,3.5
 White or ST,Ring of Pure Wishes,3.5
 White or ST,Mini Desire Troll Pet Skin,3.5
 White or ST,Wine Cellar Incantation,2.5
-White or ST,Tarot Card Pack,2.5
 White or ST,Jewel Eye Katana (Shiny),2.5
 White or ST,Ornate Armor,2.5
 White or ST,Bottled Medusozoan,5.5
@@ -104,7 +99,6 @@ White or ST,Ritual Robe,7.0
 White or ST,Bloodshed Ring,7.0
 White or ST,Ronin's Wakizashi,4.0
 White or ST,Wine Cellar Incantation,4.0
-White or ST,Tarot Card Pack,4.0
 White or ST,Cultured Bookwyrm Pet Skin,4.0
 White or ST,Enlightened Bookwyrm Pet Skin,4.0
 White or ST,Deathless Crossbow,4.0
@@ -157,7 +151,6 @@ White or ST,Cave Dweller Trap,7.5
 White or ST,Wine Cellar Incantation,4.5
 White or ST,Amulet of Dispersion,4.5
 White or ST,Werewolf Cub Pet Skin,4.5
-White or ST,Tarot Card Pack,4.5
 White or ST,Etherite Dagger,4.5
 White or ST,Ghastly Drape,4.5
 White or ST,Mantle of Skuld,4.5
@@ -250,13 +243,8 @@ White or ST,Water Dragon Silk Robe,6.0
 White or ST,Fire Dragon Battle Armor,6.0
 White or ST,Midnight Star,6.0
 White or ST,Vision of Draconis,6.0
-White or ST,The World Tarot Card,6.0
-White or ST,Large Flame Cloth,6.0
-White or ST,Small Flame Cloth,6.0
 White or ST,Large Heavy Chainmail Cloth,6.0
 White or ST,Small Heavy Chainmail Cloth,6.0
-White or ST,Tincture of Vitality,6.0
-White or ST,Effusion of Vitality,6.0
 White or ST,Fiery Katana,6.0
 White or ST,Pyro Sheath,6.0
 White or ST,Flame Guard,6.0
@@ -264,8 +252,6 @@ White or ST,Firelight Necklace,6.0
 White or ST,Skull of Endless Torment,6.0
 White or ST,Wakizashi of Crossing Fires,6.0
 White or ST,Igneous Starblossom,6.0
-White or ST,The Chariot Tarot Card,6.0
-White or ST,Gravel,8.0
 White or ST,Sword of the Colossus,8.0
 White or ST,Marble Seal,8.0
 White or ST,Breastplate of New Life,8.0
@@ -385,6 +371,8 @@ White or ST,The Moon Tarot Card,5.0
 White or ST,Wine Cellar Incantation,4.5
 White or ST,Theurgy Wand,4.5
 White or ST,Ceremonial Merlot,4.5
+White or ST,Anointed Robe,4.5
+White or ST,Ring of Pagan Favor,4.5
 White or ST,Cloak of the Mad God,4.5
 White or ST,Chicken Leg of Doom,4.5
 White or ST,Anatis Staff,4.5
@@ -439,7 +427,6 @@ White or ST,Performer's Hat,5.5
 White or ST,Thousand Shot,5.5
 White or ST,Prism of Dire Instability,5.5
 White or ST,Wine Cellar Incantation,4.0
-White or ST,Tarot Card Pack,4.0
 White or ST,Puppet Master Skin,4.0
 White or ST,Jester Skin,4.0
 White or ST,Magic Wand,4.0
@@ -464,7 +451,6 @@ White or ST,Snakeskin Shield,2.5
 White or ST,Wine Cellar Incantation,2.5
 White or ST,Mini Stheno Skin,2.5
 White or ST,Mini Flying Stheno Pet Skin,2.5
-White or ST,Tarot Card Pack,2.5
 White or ST,Wand of the Bulwark,2.5
 White or ST,Snake Charmer Pungi,2.5
 White or ST,Snakeskin Armor,2.5
@@ -491,7 +477,6 @@ White or ST,Wine Cellar Incantation,2.5
 White or ST,Mini Limon Pet Skin,2.5
 White or ST,Sprite Star Pet Skin,2.5
 White or ST,Celestial Forest Blueprint,2.5
-White or ST,Tarot Card Pack,2.5
 White or ST,Staff of Extreme Prejudice,2.5
 White or ST,Cloak of the Planewalker,2.5
 White or ST,Mace of the Celestial Forest,2.5
@@ -607,7 +592,6 @@ White or ST,Sentinel Watchdog Skin,10.0
 White or ST,Shadow Stormbird Pet Skin,10.0
 White or ST,Royal Void Cat Pet Skin,10.0
 White or ST,Ice Crown,10.0
-White or ST,The Tower Tarot Card,10.0
 White or ST,Wines,5.5
 White or ST,Mad God Ale,5.5
 White or ST,Oryx Stout,5.5
@@ -671,7 +655,6 @@ White or ST,Void Blade,4.0
 White or ST,Murky Toxin,4.0
 White or ST,Turtle Egg,4.0
 White or ST,Wine Cellar Incantation,3.5
-White or ST,Tarot Card Pack,3.5
 White or ST,Possessed Staff Pet Skin,3.5
 White or ST,Edictum Praetoris,3.5
 White or ST,Toga Picta,3.5
