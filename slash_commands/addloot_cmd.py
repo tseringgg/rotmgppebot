@@ -1,5 +1,4 @@
 import discord
-from pydantic import InstanceOf
 from yarg import get
 
 from utils.embed_builders import build_loot_embed
