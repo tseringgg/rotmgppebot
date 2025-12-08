@@ -1,5 +1,4 @@
 import discord
-from yarg import get
 
 from utils.embed_builders import build_loot_embed
 from utils.loot_data import LOOT
