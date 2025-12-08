@@ -2,6 +2,7 @@ import discord
 from dataclass import ROTMGClass
 from discord import app_commands
 from .loot_data import get_loot_data
+from .bonus_data import get_bonus_names
 
 
 DUNGEONS = [
@@ -61,6 +62,66 @@ async def item_name_autocomplete(interaction: discord.Interaction, current: str)
     ]
 
     return matches[:25]
+
+async def bonus_autocomplete(interaction: discord.Interaction, current: str):
+    current_lower = current.lower()
+    
+    # Get the bonus names from the bonus data
+    bonus_names = get_bonus_names()
+    
+    matches = [
+        app_commands.Choice(name=bonus, value=bonus)
+        for bonus in bonus_names
+        if current_lower in bonus.lower()
+    ]
+
+    return matches[:25]
+
+async def user_bonus_autocomplete(interaction: discord.Interaction, current: str):
+    """Autocomplete function for bonuses that the user currently has"""
+    from utils.player_records import load_player_records, ensure_player_exists
+    
+    current_lower = current.lower()
+    
+    try:
+        # Load player records
+        records = await load_player_records(interaction)
+        key = ensure_player_exists(records, interaction.user.id)
+        player_data = records[key]
+        
+        # Check if player has an active PPE
+        if player_data.active_ppe is None:
+            return []
+        
+        # Find the active PPE
+        active_ppe = None
+        for ppe in player_data.ppes:
+            if ppe.id == player_data.active_ppe:
+                active_ppe = ppe
+                break
+        
+        if not active_ppe or not active_ppe.bonuses:
+            return []
+        
+        # Get bonus names from the user's active PPE
+        user_bonus_names = [bonus.name for bonus in active_ppe.bonuses]
+        
+        matches = [
+            app_commands.Choice(name=bonus_name, value=bonus_name)
+            for bonus_name in user_bonus_names
+            if current_lower in bonus_name.lower()
+        ]
+
+        return matches[:25]
+    except Exception:
+        # If any error occurs, return empty list
+        return []
+
+async def target_user_bonus_autocomplete(interaction: discord.Interaction, current: str):
+    """Autocomplete function for bonuses - shows all available bonuses since we can't determine target user during autocomplete"""
+    # Since we can't reliably get the target user during autocomplete,
+    # we'll just show all available bonuses for now
+    return await bonus_autocomplete(interaction, current)
 
 def get_dungeons() -> list[str]:
     return DUNGEONS

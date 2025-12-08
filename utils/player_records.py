@@ -8,7 +8,7 @@ from typing import Dict, Any, List
 from dataclasses import asdict
 
 import discord
-from dataclass import Loot, PPEData, PlayerData
+from dataclass import Loot, PPEData, PlayerData, Bonus
 
 # Persistent data directory (Railway Volume)
 DATA_DIR = "/data"
@@ -58,11 +58,26 @@ def normalize_ppe(ppe: dict) -> PPEData:
         }
         loot_objects.append(Loot(**normalized_loot))
     
+    # Handle bonuses migration - if bonuses field doesn't exist, create empty list
+    bonus_dicts = ppe.get("bonuses", [])
+    bonus_objects = []
+    
+    for bonus_dict in bonus_dicts:
+        # Ensure all required fields exist with defaults
+        normalized_bonus = {
+            "name": bonus_dict.get("name", "Unknown Bonus"),
+            "points": float(bonus_dict.get("points", 0)),
+            "repeatable": bool(bonus_dict.get("repeatable", False)),
+            "quantity": int(bonus_dict.get("quantity", 1))  # Default quantity to 1 for old bonuses
+        }
+        bonus_objects.append(Bonus(**normalized_bonus))
+    
     return PPEData(
         id=ppe.get("id", 0),
         name=ppe.get("name", "Unknown"),
         points=float(ppe.get("points", 0)),
-        loot=loot_objects
+        loot=loot_objects,
+        bonuses=bonus_objects
     )
 
 
@@ -136,7 +151,8 @@ async def save_player_records(interaction: discord.Interaction, records: Dict[in
                     "id": p.id,
                     "name": p.name,
                     "points": p.points,
-                    "loot": [asdict(l) for l in p.loot]
+                    "loot": [asdict(l) for l in p.loot],
+                    "bonuses": [asdict(b) for b in p.bonuses]
                 }
                 for p in data.ppes
             ],

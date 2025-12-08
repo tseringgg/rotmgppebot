@@ -38,11 +38,19 @@ class Loot:
     shiny: bool = False
 
 @dataclass
+class Bonus:
+    name: str
+    points: float
+    repeatable: bool
+    quantity: int = 1
+
+@dataclass
 class PPEData:
     id: int
     name: ROTMGClass
     points: float = 0.0
     loot: List[Loot] = field(default_factory=list)
+    bonuses: List[Bonus] = field(default_factory=list)
 @dataclass
 class PlayerData:
     ppes: List[PPEData] = field(default_factory=list)

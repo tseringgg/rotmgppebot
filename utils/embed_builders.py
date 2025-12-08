@@ -61,9 +61,35 @@ async def build_loot_embed(active_ppe: PPEData, recently_added: str = "") -> dis
             else:
                 loot_lines.append(f"• *{name_with_tags} × {loot.quantity}* (+{points_text} pts)")
 
+    # Add bonuses section
+    bonus_lines = []
+    if active_ppe.bonuses:
+        bonus_lines.append("\n** Bonuses:**")
+        for bonus in active_ppe.bonuses:
+            # Format points display
+            if bonus.points == int(bonus.points):
+                points_text = f"{int(bonus.points * bonus.quantity)}"
+            else:
+                points_text = f"{bonus.points * bonus.quantity:.1f}"
+
+            if bonus.points >= 0:
+                points_text = f"+{points_text}"
+            
+            # Add quantity display if greater than 1
+            quantity_text = f" × {bonus.quantity}" if bonus.quantity > 1 else ""
+            repeatable_text = " (repeatable)" if bonus.repeatable else ""
+            
+            if bonus.name == recently_added:
+                bonus_lines.append(f"• **{bonus.name}{quantity_text} ({points_text} pts){repeatable_text}** (+)")
+            else:
+                bonus_lines.append(f"• *{bonus.name}{quantity_text} ({points_text} pts){repeatable_text}*")
+
+    # Combine loot and bonuses
+    all_lines = loot_lines + bonus_lines
+
     embed = discord.Embed(
         title=f"Loot for your {active_ppe.name} (PPE #{active_ppe.id}) ({int(active_ppe.points) if active_ppe.points == int(active_ppe.points) else f'{active_ppe.points:.1f}'} points)",
-        description="\n".join(loot_lines),
+        description="\n".join(all_lines),
         color=discord.Color.blue()
     )
     return embed

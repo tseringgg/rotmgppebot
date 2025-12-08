@@ -2,7 +2,7 @@
 
 import discord
 
-from dataclass import PPEData, ROTMGClass
+from dataclass import Bonus, PPEData, ROTMGClass
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 
 
@@ -66,11 +66,22 @@ async def command(interaction: discord.Interaction, class_name: str, pet_level: 
     
     points = pet_penalty + exalt_penalty + loot_penalty + incombat_penalty
 
+    penalties: list[Bonus] = []
+    if pet_penalty != 0:
+        penalties.append(Bonus(name="Pet Level Penalty", points=pet_penalty, repeatable=False))
+    if exalt_penalty != 0:
+        penalties.append(Bonus(name="Exalts Penalty", points=exalt_penalty, repeatable=False))
+    if loot_penalty != 0:
+        penalties.append(Bonus(name="Loot Boost Penalty", points=loot_penalty, repeatable=False))
+    if incombat_penalty != 0:
+        penalties.append(Bonus(name="In-Combat Reduction Penalty", points=incombat_penalty, repeatable=False))
+
     new_ppe = PPEData(
         id=next_id,
         name=class_enum,
         points=points,
-        loot=[]
+        loot=[],
+        bonuses=penalties
     )
 
     player_data.ppes.append(new_ppe)
