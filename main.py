@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, inspectloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, inspectloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd, shareloot_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -7,6 +7,7 @@ import aiosqlite
 import os
 from utils.role_checks import require_ppe_roles
 from utils.loot_data import init_loot_data
+from create_loot_table import create_loot_background_and_mapping
 
 from utils.autocomplete import class_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, target_user_ppe_id_autocomplete
 
@@ -23,6 +24,19 @@ class PPEBot(commands.Bot):
 
         # Initialize global loot data for autocomplete
         init_loot_data()
+        
+        # Generate background image and sprite mapping for shareloot system
+        try:
+            print("Generating loot background and sprite mapping...")
+            result = create_loot_background_and_mapping()
+            if result:
+                background_path, csv_path = result
+            else:
+                background_path, csv_path = None, None
+                print("[WARN] create_loot_background_and_mapping() returned None")
+            print(f"✅ Background: {background_path}, Mapping: {csv_path}")
+        except Exception as e:
+            print(f"[ERROR] Failed to generate loot background: {e}")
         
         # Print to confirm commands are loaded BEFORE syncing
         print("Loaded commands:", [cmd.name for cmd in self.tree.get_commands()])
@@ -320,6 +334,11 @@ async def listplayers(interaction: discord.Interaction):
 @require_ppe_roles(player_required=True)
 async def myloot(interaction: discord.Interaction):
     await myloot_cmd.command(interaction)
+
+@bot.tree.command(name="shareloot", description="Generate a visual loot table showing your active PPE's items.", guilds=guilds)
+@require_ppe_roles(player_required=True)
+async def shareloot(interaction: discord.Interaction):
+    await shareloot_cmd.command(interaction)
 
 @bot.tree.command(name="inspectloot", description="Inspect the loot of another player's specific PPE. Admin only.", guilds=guilds)
 @app_commands.describe(user="The player to inspect", id="The PPE ID to inspect")
