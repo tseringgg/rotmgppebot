@@ -1,4 +1,4 @@
-# 🧙 Discord PPE Bot
+# 🧙 ROTMG PPE Discord Bot
 
 A comprehensive Discord bot for managing **Petless Player Experience (PPE)** competitions in Realm of the Mad God communities. Track loot, manage bonuses, calculate points, and maintain leaderboards with automated precision.
 
