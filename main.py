@@ -38,10 +38,10 @@ class PPEBot(commands.Bot):
             # normalize capitalization
             words = internal_name.split(" ")
             pretty = " ".join(
-                word.capitalize() if i == 0 else (
-                    word.lower() if word.lower() in EXCEPTIONS
-                    else word.capitalize()
-                )
+                # word.capitalize() if i == 0 else (
+                    word.lower() if word.lower() in EXCEPTIONS and i != 0
+                    else word
+                # )
                 for i, word in enumerate(words)
             )
 
