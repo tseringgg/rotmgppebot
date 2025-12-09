@@ -1,6 +1,6 @@
 # 🧙 Discord PPE Bot
 
-A comprehensive Discord bot for managing **Player Progression Enhancement (PPE)** competitions in Realm of the Mad God communities. Track loot, manage bonuses, calculate points, and maintain leaderboards with automated precision.
+A comprehensive Discord bot for managing **Petless Player Experience (PPE)** competitions in Realm of the Mad God communities. Track loot, manage bonuses, calculate points, and maintain leaderboards with automated precision.
 
 ## ✨ Features
 
