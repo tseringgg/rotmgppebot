@@ -122,6 +122,9 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
         f"✅ Applied penalties to {user.mention}'s PPE #{target_ppe.id} ({target_ppe.name})!\n\n"
         f"**Penalties Applied:**\n{penalty_text}\n"
         f"**Total penalty:** {total_penalty_points} points{removed_text}\n"
-        f"PPE now has **{target_ppe.points} total points**.",
-        embed=embed
+    )
+    await interaction.followup.send(
+        f"Their PPE now has **{target_ppe.points} total points**.",
+        embed=embed,
+        ephemeral=True
     )

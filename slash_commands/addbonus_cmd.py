@@ -86,6 +86,9 @@ async def command(interaction: discord.Interaction, bonus_name: str):
     await interaction.response.send_message(
         f"✅ Added bonus `{bonus_name}` to PPE #{active_ppe.id} ({active_ppe.name})!{quantity_text}\n"
         f"**+{bonus_data.points} points**{repeatable_text}\n"
+    )
+    await interaction.followup.send(
         f"Your PPE now has **{active_ppe.points} total points**.",
-        embed=embed
+        embed=embed,
+        ephemeral=True
     )

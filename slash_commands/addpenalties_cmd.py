@@ -125,6 +125,9 @@ async def command(interaction: discord.Interaction, pet_level: int, num_exalts: 
         f"✅ Applied penalties to your active PPE #{active_ppe.id} ({active_ppe.name})!\n\n"
         f"**Penalties Applied:**\n{penalty_text}\n"
         f"**Total penalty:** {total_penalty_points} points{removed_text}\n"
+    )
+    await interaction.followup.send(
         f"Your PPE now has **{active_ppe.points} total points**.",
-        embed=embed
+        embed=embed,
+        ephemeral=True
     )

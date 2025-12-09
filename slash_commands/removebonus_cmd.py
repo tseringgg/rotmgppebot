@@ -71,6 +71,9 @@ async def command(interaction: discord.Interaction, bonus_name: str):
     await interaction.response.send_message(
         f"✅ Removed bonus `{removed_name}` from PPE #{active_ppe.id} ({active_ppe.name})!{quantity_text}\n"
         f"**-{removed_points} points**\n"
+    )
+    await interaction.followup.send(
         f"Your PPE now has **{active_ppe.points} total points**.",
-        embed=embed
+        embed=embed,
+        ephemeral=True
     )
