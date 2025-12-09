@@ -5,11 +5,10 @@ from discord.ext import commands
 from dotenv import load_dotenv
 import aiosqlite
 import os
-from utils.calc_points import load_loot_points
 from utils.role_checks import require_ppe_roles
-from utils.loot_data import set_loot_data
+from utils.loot_data import init_loot_data
 
-from utils.autocomplete import class_autocomplete, dungeon_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, target_user_ppe_id_autocomplete
+from utils.autocomplete import class_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, target_user_ppe_id_autocomplete
 
 SERVER1_ID = 879497062117412924 # Last Oasis
 SERVER2_ID = 1435436110829326459 # Test Server
@@ -22,34 +21,8 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 class PPEBot(commands.Bot):
     async def setup_hook(self):
 
-        EXCEPTIONS = {"of", "the", "in", "and", "for", "to", "a", "an"}
-        
-        # Create temporary list for loot items
-        loot_items = []
-
-        loot_points = load_loot_points()  # load once at startup
-
-        for internal_name in loot_points.keys():
-
-            # exclude shiny variants
-            if "(shiny)" in internal_name:
-                continue
-
-            # normalize capitalization
-            words = internal_name.split(" ")
-            pretty = " ".join(
-                # word.capitalize() if i == 0 else (
-                    word.lower() if word.lower() in EXCEPTIONS and i != 0
-                    else word
-                # )
-                for i, word in enumerate(words)
-            )
-
-            loot_items.append(pretty)
-        
-        # Set the loot data in the shared module
-        set_loot_data(loot_items)
-        print(f"Loaded {len(loot_items)} loot items for autocomplete")
+        # Initialize global loot data for autocomplete
+        init_loot_data()
         
         # Print to confirm commands are loaded BEFORE syncing
         print("Loaded commands:", [cmd.name for cmd in self.tree.get_commands()])
@@ -69,7 +42,6 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True  # Enable members intent
 
-# bot = commands.Bot(command_prefix="!", intents=intents)
 bot = PPEBot(command_prefix="!", intents=intents)
 
 @bot.event
