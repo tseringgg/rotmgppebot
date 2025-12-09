@@ -56,8 +56,11 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
         await interaction.response.send_message(
             f"> ✅ Added **1x {final_key}** to {user.mention}'s PPE #{updated_ppe.id} ({updated_ppe.name})!\n"
             f"**+{points_added} points**\n"
-            f"Their PPE now has **{updated_ppe.points} total points**.",
-            embed=embed
+        )
+        await interaction.followup.send(
+            content=f"{user.display_name}'s PPE #{updated_ppe.id} now has **{updated_ppe.points} total points**.",
+            embed=embed,
+            ephemeral=True
         )
         
     except (ValueError, KeyError, LookupError) as e:

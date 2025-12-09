@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, inspectloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -9,7 +9,7 @@ from utils.calc_points import load_loot_points
 from utils.role_checks import require_ppe_roles
 from utils.loot_data import set_loot_data
 
-from utils.autocomplete import class_autocomplete, dungeon_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete
+from utils.autocomplete import class_autocomplete, dungeon_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, target_user_ppe_id_autocomplete
 
 SERVER1_ID = 879497062117412924 # Last Oasis
 SERVER2_ID = 1435436110829326459 # Test Server
@@ -348,6 +348,13 @@ async def listplayers(interaction: discord.Interaction):
 @require_ppe_roles(player_required=True)
 async def myloot(interaction: discord.Interaction):
     await myloot_cmd.command(interaction)
+
+@bot.tree.command(name="inspectloot", description="Inspect the loot of another player's specific PPE. Admin only.", guilds=guilds)
+@app_commands.describe(user="The player to inspect", id="The PPE ID to inspect")
+@app_commands.autocomplete(id=target_user_ppe_id_autocomplete)
+@require_ppe_roles(admin_required=True)
+async def inspectloot(interaction: discord.Interaction, user: discord.Member, id: int):
+    await inspectloot_cmd.command(interaction, user, id)
 
 @bot.tree.command(name="addplayer", description="Add a player to the PPE contest.", guilds=guilds)
 @require_ppe_roles(admin_required=True)

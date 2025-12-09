@@ -35,7 +35,12 @@ async def command(
         
         await interaction.response.send_message(
             content=f"> 🗑️ Removed **1x {final_key}** from your active PPE and took away {points_removed} points.",
-            embed=embed, ephemeral=False
+            ephemeral=False
+        )
+        await interaction.followup.send(
+            content=f"Your active PPE now has **{active_ppe.points} total points**.",
+            embed=embed,
+            ephemeral=True
         )
     except (ValueError, KeyError, LookupError) as e:
         return await interaction.response.send_message(str(e), ephemeral=True)

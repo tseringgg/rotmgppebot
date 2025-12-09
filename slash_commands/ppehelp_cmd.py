@@ -36,6 +36,7 @@ async def command(interaction: discord.Interaction):
         "addpointsfor": "Add points to another player's active PPE.",
         "refreshpointsfor": "Recalculate and fix the point total for a specific PPE.",
         "refreshallpoints": "Recalculate and fix point totals for ALL PPEs in the server.",
+        "inspectloot": "Inspect the loot of another player's specific PPE.",
         "deleteallppes": "Delete all PPEs for a specified player.",
         "deleteppe": "Delete one ppe from a specific player.",
         "addpenaltiesfor": "Apply retroactive penalties to a specific player's PPE.",

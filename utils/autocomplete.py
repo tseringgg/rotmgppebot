@@ -123,5 +123,40 @@ async def target_user_bonus_autocomplete(interaction: discord.Interaction, curre
     # we'll just show all available bonuses for now
     return await bonus_autocomplete(interaction, current)
 
+async def target_user_ppe_id_autocomplete(interaction: discord.Interaction, current: str):
+    """Autocomplete function for PPE IDs of a target user during inspection"""
+    from .player_records import load_player_records, ensure_player_exists
+    
+    try:
+        # Get the target user from the interaction options
+        target_user = None
+        if hasattr(interaction, 'namespace') and hasattr(interaction.namespace, 'user'):
+            target_user = interaction.namespace.user
+        
+        if not target_user:
+            return []
+        
+        # Load player records
+        records = await load_player_records(interaction)
+        key = ensure_player_exists(records, target_user.id)
+        player_data = records[key]
+        
+        if not player_data.ppes:
+            return []
+        
+        # Create choices for each PPE
+        choices = []
+        for ppe in player_data.ppes:
+            # Create display text with PPE ID and class name
+            display_name = f"#{ppe.id} - {ppe.name}"
+            if current.lower() in display_name.lower() or current in str(ppe.id):
+                choices.append(app_commands.Choice(name=display_name, value=ppe.id))
+        
+        return choices[:25]  # Discord limit
+        
+    except Exception:
+        # If anything goes wrong, return empty list
+        return []
+
 def get_dungeons() -> list[str]:
     return DUNGEONS

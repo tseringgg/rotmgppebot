@@ -13,4 +13,4 @@ async def command(interaction: discord.Interaction):
     except (ValueError, KeyError) as e:
         return await interaction.response.send_message(str(e), ephemeral=True)
 
-    await interaction.response.send_message(embed=embed, ephemeral=False) # public response, not ephemeral
+    await interaction.response.send_message(embed=embed, ephemeral=True) # public response, not ephemeral
