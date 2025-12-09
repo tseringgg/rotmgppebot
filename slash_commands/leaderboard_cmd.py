@@ -9,8 +9,8 @@ async def command(interaction: discord.Interaction):
         return await interaction.response.send_message("❌ This command can only be used in a server.")
     records = await load_player_records(interaction)
 
-    for m in interaction.guild.members:
-        print(f"Member loaded: {m.display_name} (ID: {m.id})")
+    # for m in interaction.guild.members:
+    #     print(f"Member loaded: {m.display_name} (ID: {m.id})")
 
     leaderboard_data = []
     for pid, data in records.items():
