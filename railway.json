@@ -1,0 +1,5 @@
+{
+  "deploy": {
+    "ignorePaths": ["README.md"]
+  }
+}
