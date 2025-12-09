@@ -63,7 +63,7 @@ class PlayerManager:
             from utils.player_records import get_item_from_ppe
             match = get_item_from_ppe(active_ppe, item_name, divine, shiny)
             will_be_duplicate = match is not None
-            if will_be_duplicate:
+            if will_be_duplicate and points != 1:
                 points_to_add = points / 2
             else:
                 points_to_add = points
