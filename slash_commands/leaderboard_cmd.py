@@ -1,7 +1,6 @@
 
 
 import discord
-from regex import T
 from utils.player_records import load_player_records
 
 
