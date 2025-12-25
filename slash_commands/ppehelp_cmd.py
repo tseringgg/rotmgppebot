@@ -19,6 +19,7 @@ async def command(interaction: discord.Interaction):
         "addloot": "Add loot to your active PPE manually.",
         "removeloot": "Remove loot from your active PPE manually.",
         "myloot": "Show all loot recorded for your active PPE.",
+        "shareloot": "Generate a visual loot table showing your active PPE's items.",
         "submitloot": "Submit a loot screenshot for point tracking automatically.",
         "addbonus": "Add a bonus to your active PPE (repeatable bonuses stack).",
         "removebonus": "Remove a bonus from your active PPE (decrements quantity).",
