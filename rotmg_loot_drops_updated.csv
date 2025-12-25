@@ -47,6 +47,8 @@ White or ST,Molten Mantle,4.0
 White or ST,Ring of the Inferno,4.0
 White or ST,Demon Blade,4.0
 White or ST,Volcanic Sheath,4.0
+White or ST,Berserker's Breastplate,4.0
+White or ST,Adamantine Helm,6.0
 White or ST,Sword of Illumination,4.0
 White or ST,Cactus Juice,0
 White or ST,Wine Cellar Incantation,0
@@ -546,7 +548,7 @@ White or ST,Warmonger,10.0
 White or ST,Peacekeeper,10.0
 White or ST,Noble Mandolin,10.0
 White or ST,The Forgotten Crown,10.0
-White or ST,Chrysalis of Eternity,10.0
+White or ST,Chrysalis of Eternity,20.0
 White or ST,Corruption Tether,10.0
 White or ST,Ancient Eminence,10.0
 White or ST,Twilight Shroud,10.0
@@ -631,6 +633,7 @@ White or ST,Interregnum,6.0
 White or ST,Doom Bow,3.5
 White or ST,Spectral Sword,3.5
 White or ST,Wandering Souls Spell,3.5
+White or ST,Spirit's Bane,6
 White or ST,Ring of Skeletal Specters,3.5
 White or ST,Bow of the Morning Star,3.5
 White or ST,Lil' Ghost Egg,0
@@ -680,12 +683,14 @@ Event White,Deadly Keg,10
 Event White,Greaterhosen,10
 Event White,Crystal Sword,10
 Event White,Crystal Sword (shiny),20
-Event White,Candy Katana,10
-Event White,Sleigh Bell Staff,10
-Event White,Garland Bow,10
-Event White,Evergreen Dagger,10
-Event White,Brass Chamberstick,10
-Event White,Cheerful Chipper,10
+Event White,Frozen Wand,4.5
+Event White,Candy Katana,5
+Event White,Sleigh Bell Staff,5
+Event White,Garland Bow,5
+Event White,Evergreen Dagger,5
+Event White,Brass Chamberstick,5
+Event White,Cheerful Chipper,5
+Event White,Enchanted Ice Blade,5
 Biome White,Adventurer’s Scarf,10
 Biome White,Torrential Staff,10
 Biome White,Celestial Recurve,10
@@ -700,6 +705,17 @@ Biome White,Pollen Incendiary,10
 Biome White,Bloodbath Blade,10
 Biome White,Runes of Knowledge,10
 Biome White,Incubation Mace,10
+White or ST,Watarimono,10
+White or ST,Kiritsukeru,10
+White or ST,Reinforced Root Armor,10
+White or ST,Traveler’s Trinket,10
+White or ST,Mystic Syndicate Attire,7
+White or ST,Heavy Syndicate Attire,7
+White or ST,Light Syndicate Attire,7
+White or ST,Sunken Fire Opal Ring,7
+White or ST,Faded Heart Scarab,7
+White or ST,Fractured Hannya,7
+White or ST,Nightmatter Circlet,15.0
 White or ST,Vial of Soul Extract (shiny),0
 White or ST,Superior (shiny),19
 White or ST,Avarice (shiny),19
