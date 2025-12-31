@@ -170,7 +170,7 @@ def build_loot_embeds(active_ppe: PPEData, recently_added: str = "") -> List[dis
     total_items = total_loot_items + total_bonus_items
     
     # Split into pages (target 3800 chars to be safe)
-    pages = chunk_lines_to_pages(all_lines, 500)
+    pages = chunk_lines_to_pages(all_lines, 1000)
     
     # Build embeds for each page
     embeds = []
