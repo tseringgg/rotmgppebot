@@ -88,9 +88,9 @@ class LootPaginationView(discord.ui.View):
     @discord.ui.button(label='◀ Prev', style=discord.ButtonStyle.secondary)
     async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Handle previous page button click."""
-        if interaction.user.id != self.user_id:
-            await interaction.response.send_message("This is not your menu!", ephemeral=True)
-            return
+        # if interaction.user.id != self.user_id:
+        #     await interaction.response.send_message("This is not your menu!", ephemeral=True)
+        #     return
         
         if self.current_page > 0:
             self.current_page -= 1
@@ -100,9 +100,9 @@ class LootPaginationView(discord.ui.View):
     @discord.ui.button(label='Next ▶', style=discord.ButtonStyle.secondary)
     async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Handle next page button click."""
-        if interaction.user.id != self.user_id:
-            await interaction.response.send_message("This is not your menu!", ephemeral=True)
-            return
+        # if interaction.user.id != self.user_id:
+        #     await interaction.response.send_message("This is not your menu!", ephemeral=True)
+        #     return
         
         if self.current_page < len(self.embeds) - 1:
             self.current_page += 1
