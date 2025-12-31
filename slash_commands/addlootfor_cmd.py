@@ -1,5 +1,4 @@
 import discord
-from sympy import use
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.calc_points import calc_points
 from utils.player_manager import player_manager
