@@ -4,7 +4,6 @@ Discord pagination utility for handling large embeds.
 import discord
 from typing import List
 
-from sqlalchemy import Null
 
 
 def chunk_lines_to_pages(lines: List[str], max_chars: int) -> List[List[str]]:
