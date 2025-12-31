@@ -65,7 +65,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     await save_player_records(interaction=interaction, records=records)
     
     # Create response message and embed
-    embed = await build_loot_embed(target_ppe, removed_name)
+    embed = await build_loot_embed(target_ppe, user_id=user.id, recently_added=removed_name)
     
     await interaction.response.send_message(
         f"✅ Removed bonus `{removed_name}` from {user.display_name}'s PPE #{target_ppe.id} ({target_ppe.name})!{quantity_text}\n"
@@ -73,6 +73,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     )
     await interaction.followup.send(
         f"Their PPE now has **{target_ppe.points} total points**.",
-        embed=embed,
+        view=embed,
+        embed=embed.embeds[0],
         ephemeral=True
     )

@@ -116,7 +116,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     removed_text = f"\nRemoved previous penalties: {removed_penalty_points} pts" if removed_penalty_points != 0 else ""
     
     # Create embed
-    embed = await build_loot_embed(target_ppe)
+    embed = await build_loot_embed(target_ppe, user_id=user.id)
     
     await interaction.response.send_message(
         f"✅ Applied penalties to {user.mention}'s PPE #{target_ppe.id} ({target_ppe.name})!\n\n"
@@ -125,6 +125,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     )
     await interaction.followup.send(
         f"Their PPE now has **{target_ppe.points} total points**.",
-        embed=embed,
+        view=embed,
+        embed=embed.embeds[0],
         ephemeral=True
     )

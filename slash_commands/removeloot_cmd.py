@@ -31,7 +31,7 @@ async def command(
         final_key, points_removed, active_ppe = await player_manager.remove_loot_and_points(
             interaction, user=user, ppe_id=ppe_id, item_name=item_name, divine=divine, shiny=shiny, points=points
         )
-        embed = await build_loot_embed(active_ppe, recently_added=item_name)
+        embed = await build_loot_embed(active_ppe, user_id=user.id, recently_added=item_name)
         
         await interaction.response.send_message(
             content=f"> 🗑️ Removed **1x {final_key}** from your active PPE and took away {points_removed} points.",
@@ -39,7 +39,8 @@ async def command(
         )
         await interaction.followup.send(
             content=f"Your active PPE now has **{active_ppe.points} total points**.",
-            embed=embed,
+            view=embed,
+            embed=embed.embeds[0],
             ephemeral=True
         )
     except (ValueError, KeyError, LookupError) as e:

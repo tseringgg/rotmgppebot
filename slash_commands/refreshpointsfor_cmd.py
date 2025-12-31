@@ -70,13 +70,14 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
         difference_text = f"**{point_difference:.1f} points** (points were too high)"
     
     # Build embed
-    embed = await build_loot_embed(target_ppe)
+    embed = await build_loot_embed(target_ppe, user_id=user.id)
     
     await interaction.response.send_message(
         f"✅ Refreshed points for {user.display_name}'s PPE #{target_ppe.id} ({target_ppe.name})!\n\n"
         f"**Old Total:** {old_points:.1f} points\n"
         f"**New Total:** {corrected_total:.1f} points, From Loot: {total_loot_points:.1f} points, From Bonuses: {total_bonus_points:.1f} points\n"
         f"**Correction:** {difference_text}",
-        embed=embed,
+        view=embed,
+        embed=embed.embeds[0],
         ephemeral=True
     )

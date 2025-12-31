@@ -33,11 +33,12 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     
     try:
         # Build embed for the target PPE
-        embed = await build_loot_embed(target_ppe)
+        embed = await build_loot_embed(target_ppe, user_id=user.id)
         
         await interaction.response.send_message(
             f"**Loot inspection for {user.display_name}'s PPE #{target_ppe.id} ({target_ppe.name})**",
-            embed=embed,
+            view=embed,
+            embed=embed.embeds[0],
             ephemeral=True
         )
         

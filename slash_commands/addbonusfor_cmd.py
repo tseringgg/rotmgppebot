@@ -81,7 +81,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     
     # Create response message and embed
     repeatable_text = " (repeatable)" if bonus_data.repeatable else " (one-time)"
-    embed = await build_loot_embed(target_ppe)
+    embed = await build_loot_embed(target_ppe, user_id=user.id, recently_added=bonus_name)
     
     await interaction.response.send_message(
         f"✅ Added bonus `{bonus_name}` to {user.display_name}'s PPE #{target_ppe.id} ({target_ppe.name})!{quantity_text}\n"
@@ -89,6 +89,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     )
     await interaction.followup.send(
         f"Your PPE now has **{target_ppe.points} total points**.",
-        embed=embed,
+        view=embed,
+        embed=embed.embeds[0],
         ephemeral=True
     )

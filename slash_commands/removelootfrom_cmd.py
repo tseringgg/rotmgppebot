@@ -52,7 +52,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
         )
         
         # Build embed
-        embed = await build_loot_embed(updated_ppe, recently_added=item_name)
+        embed = await build_loot_embed(updated_ppe, user_id=user.id, recently_added=item_name)
         
         await interaction.response.send_message(
             f"> ✅ Removed **1x {final_key}** from {user.mention}'s PPE #{updated_ppe.id} ({updated_ppe.name})!\n"
@@ -61,7 +61,8 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
 
         await interaction.followup.send(
             content=f"{user.display_name}'s PPE #{updated_ppe.id} now has **{updated_ppe.points} total points**.",
-            embed=embed,
+            view=embed,
+            embed=embed.embeds[0],
             ephemeral=True
         )
         
