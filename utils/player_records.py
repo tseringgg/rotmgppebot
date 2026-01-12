@@ -83,11 +83,25 @@ def normalize_ppe(ppe: dict) -> PPEData:
 
 def normalize_player(player: dict) -> PlayerData:
     ppes = [normalize_ppe(p) for p in player.get("ppes", [])]
+    
+    # Handle unique_items migration - rebuild from PPEs if missing
+    unique_items_list = player.get("unique_items", None)
+    if unique_items_list is not None:
+        # Load from saved data (list of tuples)
+        unique_items = set(tuple(item) for item in unique_items_list)
+    else:
+        # Rebuild from all PPEs for migration
+        print("Migrating unique_items from PPE loot data...")
+        unique_items = set()
+        for ppe in ppes:
+            for loot in ppe.loot:
+                unique_items.add((loot.item_name, loot.shiny))
 
     return PlayerData(
         ppes=ppes,
         active_ppe=player.get("active_ppe"),
         is_member=bool(player.get("is_member", False)),
+        unique_items=unique_items
     )
 
 async def load_player_records(interaction: discord.Interaction) -> Dict[int, PlayerData]:
@@ -156,7 +170,8 @@ async def save_player_records(interaction: discord.Interaction, records: Dict[in
                 }
                 for p in data.ppes
             ],
-            "active_ppe": data.active_ppe
+            "active_ppe": data.active_ppe,
+            "unique_items": list(data.unique_items)  # Convert set to list for JSON
         }
         for user_id, data in records.items()
     }

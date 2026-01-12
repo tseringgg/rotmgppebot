@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from enum import Enum
 
@@ -56,4 +56,9 @@ class PlayerData:
     ppes: List[PPEData] = field(default_factory=list)
     active_ppe: Optional[int] = None
     is_member: bool = False
+    unique_items: Set[tuple] = field(default_factory=set)  # (item_name, shiny)
+    
+    def get_unique_item_count(self) -> int:
+        """Get the count of unique items across all PPEs."""
+        return len(self.unique_items)
 

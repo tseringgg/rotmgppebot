@@ -16,14 +16,18 @@ async def command(interaction: discord.Interaction):
         "myppes": "View your current PPE stats or progress.",
         "newppe": "Start a new PPE run and track your progress.",
         "setactiveppe": "Set which of your PPE characters is currently active.",
-        "addloot": "Add loot to your active PPE manually.",
-        "removeloot": "Remove loot from your active PPE manually.",
+        "addloot": "Add loot to your active PPE manually. Adds it to season loot as well.",
+        "removeloot": "Remove loot from your active PPE manually. If loot isn't on any other PPEs, removes it from season as well.",
         "myloot": "Show all loot recorded for your active PPE.",
         "shareloot": "Generate a visual loot table showing your active PPE's items.",
         "submitloot": "Submit a loot screenshot for point tracking automatically.",
         "addbonus": "Add a bonus to your active PPE (repeatable bonuses stack).",
         "removebonus": "Remove a bonus from your active PPE (decrements quantity).",
         "addpenalties": "Apply retroactive penalties to your active PPE.",
+        "addseasonloot": "Adds loot to your overall account.",
+        "removeseasonloot": "Removes loot from your overall account.",
+        "showseasonloot": "Show all loot recorded for your account this season.",
+        "seasonleaderboard": "Show the current season PPE leaderboard.",
     }
 
     # --- Admin Commands ---
@@ -45,6 +49,8 @@ async def command(interaction: discord.Interaction):
         "removebonusfrom": "Remove a bonus from another player's PPE by PPE ID.",
         "addlootfor": "Add loot to another player's PPE by PPE ID.",
         "removelootfrom": "Remove loot from another player's PPE by PPE ID.",
+        "addseasonlootfor": "Add loot to another player's overall account.",
+        "removeseasonlootfor": "Remove loot from another player's overall account.",
     }
     owner_cmds = {
         "giveppeadminrole": "Give the PPE Admin role to a member.",

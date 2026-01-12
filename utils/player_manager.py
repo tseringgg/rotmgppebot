@@ -72,6 +72,9 @@ class PlayerManager:
             else:
                 active_ppe.loot.append(Loot(item_name=item_name, quantity=1, divine=divine, shiny=shiny))
             
+            # Update unique_items cache
+            player_data.unique_items.add((item_name, shiny))
+            
             # Add points
             import math
             points_rounded = math.floor(points_to_add * 2) / 2
@@ -117,6 +120,21 @@ class PlayerManager:
             item.quantity -= 1
             if item.quantity <= 0:
                 active_ppe.loot.remove(item)
+                
+                # Check if this item still exists in any other PPE
+                item_key = (item_name, shiny)
+                item_exists_elsewhere = False
+                for ppe in player_data.ppes:
+                    for loot in ppe.loot:
+                        if (loot.item_name, loot.shiny) == item_key and loot.quantity > 0:
+                            item_exists_elsewhere = True
+                            break
+                    if item_exists_elsewhere:
+                        break
+                
+                # Only remove from unique_items if not found in any PPE
+                if not item_exists_elsewhere:
+                    player_data.unique_items.discard(item_key)
             
             # Remove points
             import math

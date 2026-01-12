@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, inspectloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd, shareloot_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, inspectloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd, shareloot_cmd, addseasonloot_cmd, addseasonlootfor_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, showseasonloot_cmd, seasonleaderboard_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -380,6 +380,65 @@ async def leaderboard(interaction: discord.Interaction):
 @bot.tree.command(name="ppehelp", description="Show available PPE commands for players and admins.", guilds=guilds)
 async def ppehelp(interaction: discord.Interaction):
     await ppehelp_cmd.command(interaction)
+
+#####################
+### SEASON LOOT #####
+#####################
+
+@bot.tree.command(name="addseasonloot", description="Add a unique item to your season loot collection.", guilds=guilds)
+@app_commands.describe(item_name="Name of the item to add", shiny="Is the item shiny?")
+@app_commands.autocomplete(item_name=item_name_autocomplete)
+@require_ppe_roles(player_required=True)
+async def addseasonloot(
+        interaction: discord.Interaction,
+        item_name: str,
+        shiny: bool = False
+    ):
+    await addseasonloot_cmd.command(interaction, item_name, shiny)
+
+@bot.tree.command(name="addseasonlootfor", description="Add a unique item to another player's season loot. Admin only.", guilds=guilds)
+@app_commands.describe(user="The player to add loot to", item_name="Name of the item to add", shiny="Is the item shiny?")
+@app_commands.autocomplete(item_name=item_name_autocomplete)
+@require_ppe_roles(admin_required=True)
+async def addseasonlootfor(
+        interaction: discord.Interaction,
+        user: discord.Member,
+        item_name: str,
+        shiny: bool = False
+    ):
+    await addseasonlootfor_cmd.command(interaction, user, item_name, shiny)
+
+@bot.tree.command(name="removeseasonloot", description="Remove a unique item from your season loot collection.", guilds=guilds)
+@app_commands.describe(item_name="Name of the item to remove", shiny="Is the item shiny?")
+@app_commands.autocomplete(item_name=item_name_autocomplete)
+@require_ppe_roles(player_required=True)
+async def removeseasonloot(
+        interaction: discord.Interaction,
+        item_name: str,
+        shiny: bool = False
+    ):
+    await removeseasonloot_cmd.command(interaction, item_name, shiny)
+
+@bot.tree.command(name="removeseasonlootfor", description="Remove a unique item from another player's season loot. Admin only.", guilds=guilds)
+@app_commands.describe(user="The player to remove loot from", item_name="Name of the item to remove", shiny="Is the item shiny?")
+@app_commands.autocomplete(item_name=item_name_autocomplete)
+@require_ppe_roles(admin_required=True)
+async def removeseasonlootfor(
+        interaction: discord.Interaction,
+        user: discord.Member,
+        item_name: str,
+        shiny: bool = False
+    ):
+    await removeseasonlootfor_cmd.command(interaction, user, item_name, shiny)
+
+@bot.tree.command(name="showseasonloot", description="Show all unique items in your season loot collection.", guilds=guilds)
+@require_ppe_roles(player_required=True)
+async def showseasonloot(interaction: discord.Interaction):
+    await showseasonloot_cmd.command(interaction)
+
+@bot.tree.command(name="seasonleaderboard", description="Show leaderboard ranked by unique items collected.", guilds=guilds)
+async def seasonleaderboard(interaction: discord.Interaction):
+    await seasonleaderboard_cmd.command(interaction)
 
 ###############
 #### ROLES ####
