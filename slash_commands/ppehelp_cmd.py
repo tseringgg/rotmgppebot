@@ -27,6 +27,7 @@ async def command(interaction: discord.Interaction):
         "addseasonloot": "Adds loot to your overall account.",
         "removeseasonloot": "Removes loot from your overall account.",
         "showseasonloot": "Show all loot recorded for your account this season.",
+        "shareseasonloot": "Generate a visual loot table showing all season unique items.",
         "seasonleaderboard": "Show the current season PPE leaderboard.",
     }
 
@@ -51,6 +52,7 @@ async def command(interaction: discord.Interaction):
         "removelootfrom": "Remove loot from another player's PPE by PPE ID.",
         "addseasonlootfor": "Add loot to another player's overall account.",
         "removeseasonlootfor": "Remove loot from another player's overall account.",
+        "resetseason": "Reset the season by clearing everything.",
     }
     owner_cmds = {
         "giveppeadminrole": "Give the PPE Admin role to a member.",
