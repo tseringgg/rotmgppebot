@@ -448,7 +448,7 @@ White or ST,Motivational Megaphone,8.0
 White or ST,Damnation,8.0
 White or ST,Vial of Soul Extract,0
 White or ST,Penitent Frog Pet Skin,0
-White or ST,Sprite Wand,2.5
+UT,Sprite Wand,0
 White or ST,Mini Limon Pet Skin,0
 White or ST,Sprite Star Pet Skin,0
 White or ST,Celestial Forest Blueprint,0
@@ -735,6 +735,7 @@ White or ST,Nightmatter Circlet,15.0
 White or ST,Ornaments of Unity,10.0
 White or ST,Vial of Soul Extract (shiny),0
 White or ST,Superior (shiny),19
+White or ST,Fairy Ring (shiny),6.0
 White or ST,Avarice (shiny),19
 White or ST,Lumiaire (shiny),19
 White or ST,Enforcer (shiny),19
@@ -891,7 +892,7 @@ White or ST,Marionette Ravager (shiny),8
 Event White,Jailer's Scythe (shiny),20
 White or ST,Marble Seal (shiny),16
 White or ST,Amulet of Dispersion (shiny),9
-White or ST,Sprite Wand (shiny),5
+White or ST,Sprite Wand,0
 White or ST,Burial Blades (shiny),14
 White or ST,Bottled Medusozoan (shiny),11
 White or ST,Snakeskin Armor (shiny),5
@@ -903,6 +904,11 @@ White or ST,S.H.E.A.T.H. (shiny),13
 White or ST,Tome of Pain (shiny),11
 White or ST,Woodland Robe (shiny),6
 White or ST,Overclocking Amulet (shiny),16
+White or ST,Mace of the Celestial Forest (shiny),5
+White or ST,Spider Silk Bow (shiny),11
+White or ST,Thistleleaf Necklace (shiny),12.0
+White or ST,Tools of the Tarnished (shiny),16.0
+Event White,Cloak of Bloody Surprises (shiny),20
 White or ST,Mystic Syndicate Attire,7
 White or ST,Heavy Syndicate Attire,7
 White or ST,Light Syndicate Attire,7
@@ -921,5 +927,35 @@ White or ST,Gilded Chain Scythe,7
 White or ST,Ritual Khopesh,7
 White or ST,Pirate's Sidearms,7
 White or ST,Obsidian Macuahuitl,7
+UT,Corsair Ring,0
+UT,Corsair Ring (shiny),0
+UT,Bramble Bow,0
+UT,Bramble Bow (shiny),0
+UT,Cocoon Quiver,0
+UT,Cocoon Quiver (shiny),0
+UT,Poison Fang Dagger,0
+UT,Poison Fang Dagger (shiny),0
+UT,Spider Shuriken,0
+UT,Spider Shuriken (shiny),0
+UT,Spider's Eye Ring,0
+UT,Spider's Eye Ring (shiny),0
+UT,Staff of the Crystal Serpent,0
+UT,Staff of the Crystal Serpent (shiny),0
+UT,Cracked Crystal Skull,0
+UT,Cracked Crystal Skull (shiny),0
+UT,Robe of the Tlatoani,0
+UT,Robe of the Tlatoani (shiny),0
+UT,Crystal Bone Ring,0
+UT,Crystal Bone Ring (shiny),0
+UT,Orb of Sweet Demise,0
+UT,Orb of Sweet Demise (shiny),0
+UT,Honey Scepter,0
+UT,Honey Scepter (shiny),0
+Event White,Elderfrost Heirloom,5
+Event White,Frozen Whisper,5
+Event White,Winter's Dire Kiss,5
+Event White,Icebreaker Maul,5
+Event White,Frostfall Rod,5
+Event White,Kendo (shiny),20
 Event White,Frozen Wand,10
 Event White,Enchanted Ice Blade,10
