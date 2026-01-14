@@ -1,5 +1,4 @@
 Loot Type,Item Name,Points
-Tier 13 Armor,Dominion Armor,0.0
 Tier 14 Weapon,Dagger of Dire Hatred,1.0
 Tier 14 Weapon,Bow of Deep Enchantment,1.0
 Tier 14 Weapon,Staff of the Fundamental Core,1.0
@@ -951,6 +950,12 @@ UT,Orb of Sweet Demise,0
 UT,Orb of Sweet Demise (shiny),0
 UT,Honey Scepter,0
 UT,Honey Scepter (shiny),0
+UT,Corrupted Cleaver,0
+UT,Bow of Nightmares,0
+UT,Staff of Horrific Knowledge,0
+UT,Wand of Ancient Terror,0
+UT,Dagger of the Terrible Talon,0
+UT,Skull-Splitter Sword,0
 Event White,Elderfrost Heirloom,5
 Event White,Frozen Whisper,5
 Event White,Winter's Dire Kiss,5
