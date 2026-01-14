@@ -15,7 +15,7 @@ def create_loot_background_and_mapping():
     dungeons_path = "dungeons"
     
     # Folders to ignore
-    ignored_folders = {"Forging", "Tiered Garbage", "_misc"}
+    ignored_folders = {"Forging", "Tiered Garbage"}
     
     if not os.path.exists(dungeons_path):
         print(f"Error: '{dungeons_path}' folder not found!")
