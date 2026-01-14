@@ -53,6 +53,7 @@ async def command(interaction: discord.Interaction):
         "addseasonlootfor": "Add loot to another player's overall account.",
         "removeseasonlootfor": "Remove loot from another player's overall account.",
         "resetseason": "Reset the season by clearing everything.",
+        "migrateapostrophes": "Normalize apostrophes in all player item records.",
     }
     owner_cmds = {
         "giveppeadminrole": "Give the PPE Admin role to a member.",

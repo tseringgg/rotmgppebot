@@ -78,8 +78,8 @@ async def command(interaction: discord.Interaction):
                 continue
             
             item_name = os.path.splitext(os.path.basename(png_file))[0]
-            # Normalize apostrophes to match CSV data
-            item_name = item_name.replace("'", "'")
+            # Normalize apostrophes - convert curly to regular
+            item_name = item_name.replace("'", "'").replace("'", "'")
             try:
                 img = Image.open(png_file)
                 if img.mode != 'RGBA':
@@ -102,8 +102,8 @@ async def command(interaction: discord.Interaction):
         
         # Place player's season loot on the background
         for item_name, shiny in player_data.unique_items:
-            # Normalize apostrophes
-            item_name = item_name.replace("'", "'")
+            # Normalize apostrophes - convert curly to regular
+            item_name = item_name.replace("'", "'").replace("'", "'")
             
             # Try with shiny suffix if the item is marked as shiny
             lookup_name = item_name

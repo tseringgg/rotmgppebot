@@ -69,6 +69,8 @@ def create_loot_background_and_mapping():
             
             # Get item name from filename (remove .png extension)
             item_name = os.path.splitext(os.path.basename(png_file))[0]
+            # Normalize apostrophes - convert curly to regular
+            item_name = item_name.replace("'", "'").replace("'", "'")
             seen_images[img_hash] = item_name
             
             # Create grayed-out silhouette
