@@ -62,7 +62,7 @@ async def command(interaction: discord.Interaction):
         
         # Load original sprite images
         dungeons_path = "dungeons"
-        ignored_folders = {"Forging", "Tiered Garbage"}
+        ignored_folders = {"Forging", "Tiered Garbage", "_misc"}
         
         # Find and load all original sprites
         import glob
