@@ -62,7 +62,7 @@ async def command(interaction: discord.Interaction):
         
         # Load original sprite images
         dungeons_path = "dungeons"
-        ignored_folders = {"Forging", "Tiered Garbage", "_misc"}
+        ignored_folders = {"Forging", "Tiered Garbage"}
         
         # Find and load all original sprites
         import glob
@@ -78,6 +78,8 @@ async def command(interaction: discord.Interaction):
                 continue
             
             item_name = os.path.splitext(os.path.basename(png_file))[0]
+            # Normalize apostrophes to match CSV data
+            item_name = item_name.replace("'", "'")
             try:
                 img = Image.open(png_file)
                 if img.mode != 'RGBA':
@@ -100,10 +102,20 @@ async def command(interaction: discord.Interaction):
         
         # Place player's season loot on the background
         for item_name, shiny in player_data.unique_items:
+            # Normalize apostrophes
+            item_name = item_name.replace("'", "'")
+            
+            # Try with shiny suffix if the item is marked as shiny
+            lookup_name = item_name
+            if shiny:
+                shiny_name = f"{item_name} (shiny)"
+                if shiny_name in sprite_positions and shiny_name in sprite_images:
+                    lookup_name = shiny_name
+            
             # Check if we have position data for this item
-            if item_name in sprite_positions and item_name in sprite_images:
-                pos = sprite_positions[item_name]
-                sprite = sprite_images[item_name]
+            if lookup_name in sprite_positions and lookup_name in sprite_images:
+                pos = sprite_positions[lookup_name]
+                sprite = sprite_images[lookup_name]
                 
                 # Place the colored sprite at the correct position
                 background.paste(sprite, (pos['pixel_x'], pos['pixel_y']), sprite)
