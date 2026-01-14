@@ -1,8 +1,6 @@
-import discord
 import json
-import os
-
-PLAYER_RECORD_FILE = "./guild_loot_records.json"
+import discord
+from utils.player_records import load_player_records, save_player_records
 
 
 async def command(interaction: discord.Interaction):
@@ -11,11 +9,12 @@ async def command(interaction: discord.Interaction):
     Converts curly/smart apostrophes (U+2019, U+2018) to regular ones (U+0027).
     
     Admin only command.
+    Safely uses the same data loading/saving as other admin commands.
     """
     
-    if not os.path.exists(PLAYER_RECORD_FILE):
+    if not interaction.guild:
         return await interaction.response.send_message(
-            "⚠️ No player records found yet. Nothing to migrate.",
+            "❌ This command can only be used in a server.",
             ephemeral=True
         )
     
@@ -23,49 +22,64 @@ async def command(interaction: discord.Interaction):
         # Defer response since this might take a moment
         await interaction.response.defer()
         
-        # Load player records
-        with open(PLAYER_RECORD_FILE, 'r', encoding='utf-8') as f:
-            records = json.load(f)
+        # Load player records using the safe utility (same as /refreshallpoints)
+        records = await load_player_records(interaction)
         
         changes_made = {}
         total_items_fixed = 0
         
-        # Process each player's records
+        # Iterate through all players (safe iteration)
         for user_key, player_data in records.items():
-            if 'unique_items' not in player_data:
-                continue
-            
-            original_items = player_data['unique_items']
-            normalized_items = []
-            player_changes = 0
-            
-            for item in original_items:
-                item_name, shiny = item[0], item[1]
+            # Normalize season loot (unique_items)
+            if player_data.unique_items:
+                normalized_items = set()
                 
-                # Normalize apostrophes: curly → regular
-                original_name = item_name
-                normalized_name = item_name.replace('\u2019', "'").replace('\u2018', "'")
+                for item_tuple in player_data.unique_items:
+                    item_name, shiny = item_tuple
+                    
+                    # Normalize apostrophes: curly → regular
+                    original_name = item_name
+                    normalized_name = item_name.replace('\u2019', "'").replace('\u2018', "'")
+                    
+                    if original_name != normalized_name:
+                        total_items_fixed += 1
+                        if user_key not in changes_made:
+                            changes_made[user_key] = []
+                        changes_made[user_key].append(original_name)
+                    
+                    # Add normalized tuple to set
+                    normalized_items.add((normalized_name, shiny))
                 
-                if original_name != normalized_name:
-                    player_changes += 1
-                    total_items_fixed += 1
-                    if user_key not in changes_made:
-                        changes_made[user_key] = []
-                    changes_made[user_key].append(original_name)
-                
-                normalized_items.append([normalized_name, shiny])
+                # Update the player's season items
+                player_data.unique_items = normalized_items
             
-            # Update the player's items
-            player_data['unique_items'] = normalized_items
+            # Normalize regular PPE loot
+            if player_data.ppes:
+                for ppe in player_data.ppes:
+                    if ppe.loot:
+                        for loot_item in ppe.loot:
+                            item_name = loot_item.item_name
+                            
+                            # Normalize apostrophes: curly → regular
+                            original_name = item_name
+                            normalized_name = item_name.replace('\u2019', "'").replace('\u2018', "'")
+                            
+                            if original_name != normalized_name:
+                                total_items_fixed += 1
+                                if user_key not in changes_made:
+                                    changes_made[user_key] = []
+                                changes_made[user_key].append(original_name)
+                            
+                            # Update the loot item's name
+                            loot_item.item_name = normalized_name
         
-        # Save the cleaned records back
-        with open(PLAYER_RECORD_FILE, 'w', encoding='utf-8') as f:
-            json.dump(records, f, ensure_ascii=False, indent=2)
+        # Save using the safe utility (same as /refreshallpoints)
+        await save_player_records(interaction, records)
         
         # Build response
         embed = discord.Embed(
             title="✅ Apostrophe Migration Complete",
-            color=discord.Color.green()
+            color=discord.Color.green() if total_items_fixed > 0 else discord.Color.greyple()
         )
         
         embed.add_field(
@@ -74,7 +88,13 @@ async def command(interaction: discord.Interaction):
             inline=False
         )
         
-        if changes_made:
+        if total_items_fixed == 0:
+            embed.add_field(
+                name="ℹ️ Status",
+                value="All apostrophes were already normalized - no changes needed!",
+                inline=False
+            )
+        else:
             # Show which items were fixed
             affected_items = set()
             for items in changes_made.values():
@@ -89,12 +109,6 @@ async def command(interaction: discord.Interaction):
                 value=items_list,
                 inline=False
             )
-        else:
-            embed.add_field(
-                name="ℹ️ Status",
-                value="All apostrophes were already normalized - no changes needed!",
-                inline=False
-            )
         
         embed.set_footer(text="All apostrophes converted to regular (U+0027)")
         
@@ -103,6 +117,11 @@ async def command(interaction: discord.Interaction):
     except json.JSONDecodeError as e:
         await interaction.followup.send(
             f"❌ Error reading player records: Invalid JSON format.\n{str(e)}",
+            ephemeral=True
+        )
+    except FileNotFoundError:
+        await interaction.followup.send(
+            f"❌ No player records found yet for this guild. Nothing to migrate.",
             ephemeral=True
         )
     except Exception as e:
