@@ -10,6 +10,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 - **Bonus System**: Apply achievement bonuses with quantity tracking
 - **Point Management**: Automated point calculations with duplicate handling
 - **Personal Statistics**: View your PPE progress and loot collections
+- **Seperate Seasonal Tracking**: View your overall season progress and loot!
 
 ### 🔧 Admin Features
 - **Player Management**: Add/remove contest participants
@@ -24,6 +25,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 - **Data Integrity**: Atomic transactions prevent data corruption
 - **Penalty Calculations**: Automatic penalties for pets, exalts, and boosts
 - **Leaderboard System**: Real-time rankings with best PPE tracking
+- **Seasonal Tracking**: Separate seasonal and overall loot tracking with dedicated leaderboards
 
 ## 🚀 Quick Start
 
@@ -109,6 +111,52 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/listadmins` | View all PPE admins |
 | `/listroles` | Show server role information |
 
+## 🚂 Hosting on Railway (No Coding Required)
+
+For those unfamiliar with programming, [Railway](https://railway.app/) offers a simple way to host this bot 24/7 in the cloud with minimal setup. This is perfect if you don't want to run the bot on your personal computer.
+
+### Why Railway?
+- **Affordable**: Costs approximately **$1-2 per month** (often less)
+- **Reliable**: 24/7 uptime for your bot
+- **Simple**: No command line experience needed
+- **Easy Deployment**: Connect your GitHub account and deploy in minutes
+
+### Railway Setup Instructions
+
+1. **Create a Railway Account**
+   - Go to [railway.app](https://railway.app/) and sign up with your GitHub account
+
+2. **Create a New Project**
+   - Click "Create New Project"
+   - Select "Deploy from GitHub repo"
+   - Authorize Railway to access your GitHub account
+   - Select the `rotmgppebot` repository
+
+3. **Configure Environment Variables**
+   - In the Railway dashboard, go to your project settings
+   - Add a new variable: `DISCORD_TOKEN` and set it to your bot token
+
+4. **Create the Data Volume**
+   - **This is critical**: The bot stores all player records in a `/data` directory
+   - In the Railway dashboard, go to the "Storage" tab
+   - Create a new volume called `/data` and mount it by dragging onto the `rotmgppebot` instance.
+   - This ensures your player data persists between bot restarts
+
+5. **Deploy**
+   - Railway will automatically detect the `requirements.txt` and deploy the bot
+   - You'll see build logs in the dashboard
+   - Once deployment completes, your bot will start running
+
+6. **Verify It's Running**
+   - Check the bot is online in your Discord server
+   - Run `/ppehelp` to confirm it's responding
+
+### Important Notes
+- **Never commit your `.env` file** with the bot token to GitHub
+- The `/data` volume is where all player records, loot tracking, and season data are stored—**never delete it**
+- If you need to update the code, simply push changes to your GitHub repo and Railway will redeploy automatically
+- Check Railway's [documentation](https://docs.railway.app/) for additional help
+
 ## 🏗️ Architecture
 
 ### Data Structure
@@ -116,6 +164,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 PlayerData
 ├── is_member: bool
 ├── active_ppe: int
+├── unique_items: Set[tuple]  # (item_name, shiny) - Seasonal
 └── ppes: List[PPEData]
     ├── id: int
     ├── name: ROTMGClass
@@ -136,6 +185,7 @@ PlayerData
 
 - **Player Manager**: Atomic transactions for data safety
 - **Point Calculator**: Handles duplicates and special modifiers
+- **Seasonal Tracker**: Maintains unique item collections across seasons with dedicated leaderboards
 - **Autocomplete System**: Dynamic suggestions based on context
 - **Embed Builder**: Rich Discord embed formatting
 - **Role Checker**: Permission validation and error handling
