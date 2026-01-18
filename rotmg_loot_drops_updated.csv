@@ -49,8 +49,6 @@ White or ST,Volcanic Sheath,4.0
 White or ST,Berserker's Breastplate,4.0
 White or ST,Adamantine Helm,6.0
 White or ST,Sword of Illumination,4.0
-White or ST,Cactus Juice,0
-White or ST,Wine Cellar Incantation,0
 White or ST,Arcane Rapier,3.0
 White or ST,Amber Encrusted Helmet,3.0
 White or ST,Sandstone Seal,3.0
@@ -59,8 +57,6 @@ White or ST,Embellished Quiver,3.0
 White or ST,Ornate Armor,3.0
 White or ST,Aquamarine Amulet,3.0
 White or ST,Sand Wanderer Trickster Skin,0
-White or ST,Gumballs,0
-White or ST,Rock Candy,0
 White or ST,Candy Ring,0
 White or ST,Candy-Coated Armor,3.5
 White or ST,Bubblegum Bucket,3.5
@@ -88,7 +84,6 @@ White or ST,Fractured Gemstone Wakizashi,7.5
 White or ST,Star of Enlightenment,7.5
 White or ST,Crystallised Mist,7.5
 White or ST,Vial of Pure Darkness,0
-White or ST,Storm Shaman Set Shard,0
 White or ST,Mini Malus Sorcerer Skin,0
 White or ST,Burial Blades,7.0
 White or ST,Staff of Unholy Sacrifice,7.0
@@ -106,7 +101,6 @@ White or ST,Wand of Hidden Knowledge,4.0
 White or ST,Necronomicon,4.0
 White or ST,Scholar's Seal,4.0
 White or ST,Corruption Cutter,4.0
-White or ST,Ghost Pirate Rum,0
 White or ST,Spirit Pet Skin,0
 White or ST,Lil' Davy Pet Skin,0
 White or ST,Quartermaster Scabbard,5.0
@@ -117,7 +111,6 @@ White or ST,Captain's Ring,5.0
 White or ST,Pearl Necklace,0
 White or ST,Golden Chalice,0
 White or ST,Ruby Gemstone,0
-White or ST,Spirit Egg,0
 White or ST,Calamity Crab Pet Skin,0
 White or ST,Swashbuckler's Sickle,5.5
 White or ST,Tricorne of the High Seas,5.5
@@ -128,9 +121,6 @@ White or ST,Wavecrest Concertina,5.5
 White or ST,Foramite Staff,5.0
 White or ST,Acidic Slasher,5.0
 White or ST,Corrosion Cutter,5.0
-White or ST,Universal Fragment,0
-White or ST,Forax Fragment,0
-White or ST,Magic Mushroom,0
 White or ST,Fungal Breastplate,7.5
 White or ST,Crystallized Worm Spellblade,7.5
 White or ST,Crystal Shield,7.5
@@ -146,8 +136,6 @@ White or ST,Spectral Ring of Horrors,4.5
 White or ST,Soul's Guidance,4.5
 White or ST,Plague Poison,4.5
 White or ST,Resurrected Warrior's Armor,4.5
-White or ST,Tincture of Defense,0
-White or ST,Effusion of Defense,0
 White or ST,Blizzard Pet Skin,0
 White or ST,C.L.A.W.,6.5
 White or ST,B.O.O.M.,6.5
@@ -184,11 +172,7 @@ White or ST,Alien Core: Corrosion,10.0
 White or ST,Warlord Wand,5.0
 White or ST,Gaseous Glaive,5.0
 White or ST,Blazon Bow,5.0
-White or ST,Katalund Fragment,0
-White or ST,Kogbold Inventor Archer Set Shard,0
-White or ST,Kogbold Pyrotechnician Wizard Set Shard,0
 White or ST,Kogbold Maid Pet Skin,0
-White or ST,Precision Cog,0
 White or ST,Overclocking Amulet,8.0
 White or ST,Steam Pipe,8.0
 White or ST,Chain Dagger,8.0
@@ -229,8 +213,6 @@ White or ST,Water Dragon Silk Robe,6.0
 White or ST,Fire Dragon Battle Armor,6.0
 White or ST,Midnight Star,6.0
 White or ST,Vision of Draconis,6.0
-White or ST,Large Heavy Chainmail Cloth,0
-White or ST,Small Heavy Chainmail Cloth,0
 White or ST,Fiery Katana,6.0
 White or ST,Pyro Sheath,6.0
 White or ST,Flame Guard,6.0
@@ -251,17 +233,13 @@ White or ST,Abomination's Wrath,4.0
 White or ST,Grotesque Scepter,4.0
 White or ST,Garment of the Beast,4.0
 White or ST,Horrific Claws,4.0
-White or ST,Tarot Card Pack,0
 White or ST,Conducting Wand,4.0
 White or ST,Scepter of Fulmination,4.0
 White or ST,Robe of the Mad Scientist,4.0
 White or ST,Experimental Ring,4.0
 White or ST,Golden Nut,0
 White or ST,Golden Bolt,0
-White or ST,The Magician Tarot Card,0
-White or ST,Robobuddy Egg,0
 White or ST,C.O.N.T.R.O.L.L.E.R.,4.0
-White or ST,Fairy Dust,0
 White or ST,Fountain Child Pet Skin,0
 White or ST,Bergenia Bow,3.0
 White or ST,Lifebringing Lotus,3.0
@@ -275,10 +253,7 @@ White or ST,Fairy Ring,3.0
 White or ST,Sun's Judgement,5.0
 White or ST,Fire Blade,5.0
 White or ST,Comet of Calamity,5.0
-White or ST,Malogia Fragment,0
-White or ST,Holy Water,0
-White or ST,Bat Egg,0
-White or ST,Vampire Lord,0
+White or ST,Vampire Lord Skin,0
 White or ST,Soulcursed Scythe,4.0
 White or ST,Vampiric Cape,4.0
 White or ST,Hallowed Hide,4.0
@@ -291,7 +266,6 @@ White or ST,Chasuble of Holy Light,4.0
 White or ST,Ring of Divine Faith,4.0
 White or ST,Golden Candelabra,0
 White or ST,Holy Cross,0
-White or ST,Death Tarot Card,0
 White or ST,Sage's Wakibiki,9.0
 White or ST,Ethereal Happi,9.0
 White or ST,Flowering Kimono,9.0
@@ -300,25 +274,10 @@ White or ST,Taiko Drums,9.0
 White or ST,Elegant Parasol,9.0
 White or ST,Festival Enjoyer Kensei,0
 White or ST,Festival Enjoyer Bard,0
-White or ST,The Princess and the Fox: Page 1-6,0
 White or ST,Makakoyumi,9.0
 White or ST,Tezutsu Hanabi,9.0
 White or ST,Kagenohikari,9.0
 White or ST,Concentrated Soul Fire,0
-White or ST,The Night Prince: Page 1-5,0
-White or ST,The Night Prince Unlocker,0
-White or ST,Akuma Ramen,0
-White or ST,Barbecued Shrimp,0
-White or ST,Grilled Fish,0
-White or ST,Onigiri,0
-White or ST,Salmon Roe,0
-White or ST,Seafood Bento,0
-White or ST,Sizzled Tentacle,0
-White or ST,Steamed Clam,0
-White or ST,Sushi Roll,0
-White or ST,Takoyaki,0
-White or ST,Tuna Nigiri,0
-White or ST,Unadon,0
 White or ST,Mysterious Crate,0
 White or ST,Possessed Lantern Pet Skin,0
 White or ST,Kazekiri,6.0
@@ -329,8 +288,6 @@ White or ST,Wand of the Fallen,6.0
 White or ST,Orb of Aether,6.0
 White or ST,Jade Storm,6.0
 White or ST,Kaiken,6.0
-White or ST,Coral Juice,0
-White or ST,Sea Slurp Egg,0
 White or ST,Sea Slurp Skin Unlocker,0
 White or ST,Tideturner Trident,5.0
 White or ST,Slurpian Sea Scroll,5.0
@@ -344,7 +301,6 @@ White or ST,Arctic Bow,5.0
 White or ST,Golden Cockle,0
 White or ST,Golden Conch,0
 White or ST,Golden Horn Conch,0
-White or ST,The Moon Tarot Card,0
 White or ST,Theurgy Wand,4.5
 White or ST,Ceremonial Merlot,4.5
 White or ST,Anointed Robe,4.5
@@ -357,11 +313,6 @@ White or ST,Cloak of the Mad God,4.5
 White or ST,Chicken Leg of Doom,4.5
 White or ST,Anatis Staff,4.5
 White or ST,Apocalypse Feather,4.5
-White or ST,Tincture of Courage,0
-White or ST,Tincture of Fear,0
-White or ST,Shaman Necromancer Set Shard,0
-White or ST,Mad Minotaur Set Shard,0
-White or ST,Astral Arcanist Set Shard,0
 White or ST,Superior,9.5
 White or ST,Genesis Spell,9.5
 White or ST,Diplomatic Robe,9.5
@@ -394,9 +345,6 @@ White or ST,Recurring Terror Spell,5.5
 White or ST,Scepter of Devastation,5.5
 White or ST,Maw of Malignance,5.5
 White or ST,Tome of Pain,5.5
-White or ST,Tincture of Wisdom,0
-White or ST,Effusion of Wisdom,0
-White or ST,Wooden Box,0
 White or ST,Jaco Pet Skin,0
 White or ST,Magic Wand,5.5
 White or ST,Lightshow Scepter,5.5
@@ -422,7 +370,6 @@ White or ST,Penetrating Blast Spell,6.5
 White or ST,Reikoku,6.5
 White or ST,Daybreak Chakram,6.5
 White or ST,Hirejou Tenne,6.5
-White or ST,Snake Oil,0
 White or ST,Snakeskin Shield,2.5
 White or ST,Mini Stheno Skin,0
 White or ST,Mini Flying Stheno Pet Skin,0
@@ -433,9 +380,6 @@ White or ST,Snake Eye Ring,2.5
 White or ST,Eternal Snowflake Wand,2.5
 White or ST,Acidic Armor,2.5
 White or ST,Pernicious Peridot,2.5
-White or ST,Plague Doctor Priest Set Shard,0
-White or ST,Alchemist Assassin Set Shard,0
-White or ST,Spellbound Soulthief Set Shard,0
 White or ST,Tools of the Tarnished,8.0
 White or ST,Wretched Rags,8.0
 White or ST,Sinister Syringes,8.0
@@ -450,7 +394,6 @@ White or ST,Penitent Frog Pet Skin,0
 UT,Sprite Wand,0
 White or ST,Mini Limon Pet Skin,0
 White or ST,Sprite Star Pet Skin,0
-White or ST,Celestial Forest Blueprint,0
 White or ST,Staff of Extreme Prejudice,2.5
 White or ST,Cloak of the Planewalker,2.5
 White or ST,Mace of the Celestial Forest,2.5
@@ -462,15 +405,10 @@ White or ST,Brambletooth Tachi,6.0
 White or ST,Sulfuric Stone,6.0
 White or ST,Warped Mantle,6.0
 White or ST,Thistleleaf Necklace,6.0
-White or ST,Healing Ichor,0
 White or ST,Spider Silk Bow,5.5
 White or ST,Doku No Ken,5.5
 White or ST,Mace of the Depths,5.5
-White or ST,Server Heart,0
-White or ST,Large Futurist Cloth,0
-White or ST,Small Futurist Cloth,0
 White or ST,Toaster Pet Skin,0
-White or ST,Mystery Stat Pot,0
 White or ST,Brilliance Bow,4.5
 White or ST,Luxurious Leather,4.5
 White or ST,Regal Ring,4.5
@@ -508,30 +446,19 @@ White or ST,Cheater Light Armor,4.5
 White or ST,Cheater Robe,4.5
 White or ST,Cheater Heavy Armor,4.5
 White or ST,Omni-Impotence Ring,4.5
-White or ST,Royal Jelly,0
-White or ST,Large Blue Bee Cloth,0
-White or ST,Small Blue Bee Cloth,0
-White or ST,Large Red Bee Cloth,0
-White or ST,Small Red Bee Cloth,0
-White or ST,Large Yellow Bee Cloth,0
-White or ST,Small Yellow Bee Cloth,0
 White or ST,Blue Beehemoth Armor,7.0
 White or ST,Red Beehemoth Armor,7.0
 White or ST,Yellow Beehemoth Armor,7.0
-White or ST,Killbilly Warrior Set Shard,0
-White or ST,Resurrected Huntress Set Shard,0
 White or ST,Killer Bee Queen Pet Skin,0
 White or ST,Nectar Crossfire,7.0
 White or ST,Honeytomb Snare,7.0
 White or ST,Apiary Armor,7.0
 White or ST,Honey Circlet,7.0
-White or ST,Amber Honeycomb,0
 White or ST,Queen's Stinger,7.0
 White or ST,Combcutter Kunai,7.0
 White or ST,Hivemaster Helm,7.0
 White or ST,Hivemind Mace,7.0
 White or ST,Beekeeper's Flamethrower,7.0
-White or ST,Herbal Tincture,0
 White or ST,The Forgotten Ring,10.0
 White or ST,Royal Guard's Cuirass,10.0
 White or ST,Valor,10.0
@@ -581,22 +508,11 @@ White or ST,Sentinel Watchdog Skin,0
 White or ST,Shadow Stormbird Pet Skin,0
 White or ST,Royal Void Cat Pet Skin,0
 White or ST,Ice Crown,10.0
-White or ST,Wines,0
-White or ST,Mad God Ale,0
-White or ST,Oryx Stout,0
-White or ST,Realm-wheat Hefeweizen,0
 White or ST,The Right Hook,5.5
 White or ST,Tipsy Topper,5.5
 White or ST,Double Vision Darts,5.5
 White or ST,Cask Corslet,5.5
 White or ST,Brewer's Bangle,5.5
-White or ST,Large Cronus Square Cloth,0
-White or ST,Small Cronus Square Cloth,0
-White or ST,Large Hollow Square Cloth,0
-White or ST,Small Hollow Square Cloth,0
-White or ST,Large Pink Cube Cloth,0
-White or ST,Small Pink Cube Cloth,0
-White or ST,Cubic Jelly,0
 White or ST,Squaroid Staff,6.0
 White or ST,Cubic Frame,6.0
 White or ST,Polygonal Garbs,6.0
@@ -609,7 +525,6 @@ White or ST,Quiver of Shadows,8.5
 White or ST,Armor of Nil,8.5
 White or ST,Sourcestone,8.5
 White or ST,Omnipotence Ring,8.5
-White or ST,Pet Eggs,0
 White or ST,Mini Nut Archer Skin,0
 White or ST,Mini Geb Skin,0
 White or ST,Bes' Artifact,0
@@ -620,7 +535,6 @@ White or ST,Wand of Geb,6.0
 White or ST,Book of Geb,6.0
 White or ST,Shendyt of Geb,6.0
 White or ST,Geb's Ring of Wisdom,6.0
-White or ST,Ascension Ankh,0
 White or ST,Ring of the Pyramid,6.0
 White or ST,Tome of Holy Protection,6.0
 White or ST,Ring of the Sphinx,6.0
@@ -630,8 +544,6 @@ White or ST,Tome of Frigid Protection,10
 White or ST,Golden Ankh,0
 White or ST,Eye of Osiris,0
 White or ST,Pharaoh's Mask,0
-White or ST,Tomb Snake Egg,0
-White or ST,Power Pizza,0
 White or ST,Slurp Knight Skin,0
 White or ST,Turtle Pet Skin,0
 White or ST,Toxin Tooth,4.0
@@ -640,7 +552,6 @@ White or ST,Acidic Armor,4.0
 White or ST,Pernicious Peridot,4.0
 White or ST,Void Blade,4.0
 White or ST,Murky Toxin,4.0
-White or ST,Turtle Egg,0
 White or ST,Possessed Staff Pet Skin,0
 White or ST,Edictum Praetoris,3.5
 White or ST,Toga Picta,3.5
@@ -652,17 +563,14 @@ White or ST,Wandering Souls Spell,3.5
 White or ST,Spirit's Bane,6
 White or ST,Ring of Skeletal Specters,3.5
 White or ST,Bow of the Morning Star,3.5
-White or ST,Lil' Ghost Egg,0
 White or ST,Moonbeam Blade,5.0
 White or ST,Dueling Daggers,5.0
 White or ST,Snowblind Wand,5.0
-White or ST,Untaris Fragment,0
 White or ST,Oryx's Greatsword,6.0
 White or ST,Champion's Bastion,6.0
 White or ST,Mercy's Bane,6.0
 White or ST,Bloodstone Ring,6.0
 White or ST,Tome of Holy Furor,6.0
-White or ST,Speed Sprout,0
 White or ST,Leaf Bow,5
 White or ST,Quiver of Dazing Love,5
 White or ST,Heartstruck Bow,5
@@ -895,7 +803,7 @@ White or ST,Marionette Ravager (shiny),8
 Event White,Jailer's Scythe (shiny),20
 White or ST,Marble Seal (shiny),16
 White or ST,Amulet of Dispersion (shiny),9
-White or ST,Sprite Wand,0
+White or ST,Sprite Wand (shiny),0
 White or ST,Burial Blades (shiny),14
 White or ST,Bottled Medusozoan (shiny),11
 White or ST,Snakeskin Armor (shiny),5
