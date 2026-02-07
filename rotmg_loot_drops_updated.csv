@@ -91,6 +91,7 @@ White or ST,Skull of Corrupted Souls,7.0
 White or ST,Ritual Robe,7.0
 White or ST,Bloodshed Ring,7.0
 White or ST,Ronin's Wakizashi,4.0
+White or ST,Ronin's Wakizashi (shiny),8.0
 White or ST,Cultured Bookwyrm Pet Skin,0
 White or ST,Enlightened Bookwyrm Pet Skin,0
 White or ST,Deathless Crossbow,4.0
@@ -264,6 +265,7 @@ White or ST,St. Abraham's Wand,4.0
 White or ST,Tome of Purification,4.0
 White or ST,Chasuble of Holy Light,4.0
 White or ST,Ring of Divine Faith,4.0
+White or ST,Ring of Divine Faith (shiny),8.0
 White or ST,Golden Candelabra,0
 White or ST,Holy Cross,0
 White or ST,Sage's Wakibiki,9.0
@@ -364,6 +366,7 @@ White or ST,Harlequin Armor,4.0
 White or ST,Good Mask Spirit Pet Skin,0
 White or ST,Evil Mask Spirit Pet Skin,0
 White or ST,Tlatoani's Shroud,6.5
+White or ST,Tlatoani's Shroud (shiny),13
 White or ST,Tezcacoatl's Tail,6.5
 White or ST,Sealed Crystal Skull,6.5
 White or ST,Penetrating Blast Spell,6.5
@@ -390,6 +393,7 @@ White or ST,Ocular Entrapment,8.0
 White or ST,Overwhelming Axehead,8.0
 White or ST,Motivational Megaphone,8.0
 White or ST,Damnation,8.0
+White or ST,Damnation (shiny),16.0
 White or ST,Vial of Soul Extract,0
 White or ST,Penitent Frog Pet Skin,0
 UT,Sprite Wand,0
@@ -545,6 +549,7 @@ White or ST,Geb's Ring of Wisdom,6.0
 White or ST,Ring of the Pyramid,6.0
 White or ST,Tome of Holy Protection,6.0
 White or ST,Ring of the Sphinx,6.0
+White or ST,Ring of the Sphinx (shiny),12.0
 White or ST,Pharaoh's Requiem,6.0
 White or ST,Ring of the Nile,6.0
 White or ST,Tome of Frigid Protection,10
@@ -605,6 +610,7 @@ Event White,Kageboshi,10
 Event White,Kogbold Multitool,10
 Event White,Orb of Conflict,10
 Event White,Quiver of Thunder,10
+Event White,Quiver of Thunder (shiny),20
 Event White,Ray Katana,10
 Event White,Seal of Blasphemous Prayer,10
 Event White,Shield of Ogmur,10
@@ -888,6 +894,29 @@ UT,Anteros Longbow,0
 UT,Lovestruck Yoyo,0
 UT,Love Heart Spellblade,0
 UT,Sweetheart Taichi,0
+White or ST,Unstable Anomaly,6
+White or ST,Lethargic Sentience,6
+White or ST,Toy Knife,6
+White or ST,Barely Attuned Magic Thingy,6
+White or ST,Precisely Calibrated Stringstick,6
+White or ST,Random Spell Extraction Device,6
+White or ST,Krathana,6
+White or ST,Silex's Hammer,6
+White or ST,Mimicry Trap,10
+White or ST,Gem of Tenderness,10
+White or ST,Gem of Tenderness (shiny),20
+White or ST,Gem of Adoration,10
+White or ST,Gem of Adoration (shiny),20
+White or ST,Soulful Affection,10
+White or ST,Soulful Affection (shiny),20
+White or ST,Chocolate Armor,10
+White or ST,Heartseeker Katana,10
+White or ST,Eternal Star,10
+White or ST,Sweetener Ring,10
+White or ST,Spring Rose,0
+White or ST,Floral Corset,0
+White or ST,Ever Green Skull,0
+White or ST,Rose Brooch,0
 Event White,Elderfrost Heirloom,5
 Event White,Frozen Whisper,5
 Event White,Winter's Dire Kiss,5
