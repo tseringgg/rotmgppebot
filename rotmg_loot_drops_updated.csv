@@ -100,6 +100,7 @@ White or ST,Wraith's Brigandine,4.0
 White or ST,Revenant Ring,4.0
 White or ST,Wand of Hidden Knowledge,4.0
 White or ST,Necronomicon,4.0
+White or ST,Necronomicon (shiny),8.0
 White or ST,Scholar's Seal,4.0
 White or ST,Corruption Cutter,4.0
 White or ST,Spirit Pet Skin,0
@@ -260,6 +261,7 @@ White or ST,Vampiric Cape,4.0
 White or ST,Hallowed Hide,4.0
 White or ST,Ruthven's Rosary,4.0
 White or ST,Bone Dagger,4.0
+White or ST,Bone Dagger (shiny),4.0
 White or ST,Kyuuketsuki Hitogoroshi,4.0
 White or ST,St. Abraham's Wand,4.0
 White or ST,Tome of Purification,4.0
@@ -299,6 +301,7 @@ White or ST,Coral Bow,5.0
 White or ST,Coral Venom Trap,5.0
 White or ST,Coral Silk Armor,5.0
 White or ST,Coral Ring,5.0
+White or ST,Coral Ring (shiny),10.0
 White or ST,Arctic Bow,5.0
 White or ST,Golden Cockle,0
 White or ST,Golden Conch,0
@@ -369,6 +372,7 @@ White or ST,Tlatoani's Shroud,6.5
 White or ST,Tlatoani's Shroud (shiny),13
 White or ST,Tezcacoatl's Tail,6.5
 White or ST,Sealed Crystal Skull,6.5
+White or ST,Sealed Crystal Skull (shiny),13
 White or ST,Penetrating Blast Spell,6.5
 White or ST,Reikoku,6.5
 White or ST,Daybreak Chakram,6.5
@@ -534,6 +538,7 @@ White or ST,Seal of Cubic Conundra,6.0
 White or ST,Bow of the Void,8.5
 White or ST,Quiver of Shadows,8.5
 White or ST,Armor of Nil,8.5
+White or ST,Armor of Nil (shiny),17
 White or ST,Sourcestone,8.5
 White or ST,Omnipotence Ring,8.5
 White or ST,Mini Nut Archer Skin,0
@@ -609,6 +614,7 @@ Event White,Jailer's Scythe,10
 Event White,Kageboshi,10
 Event White,Kogbold Multitool,10
 Event White,Orb of Conflict,10
+Event White,Orb of Conflict (shiny),20
 Event White,Quiver of Thunder,10
 Event White,Quiver of Thunder (shiny),20
 Event White,Ray Katana,10
@@ -645,6 +651,7 @@ Biome White,Pollen Incendiary,10
 Biome White,Bloodbath Blade,10
 Biome White,Runes of Knowledge,10
 Biome White,Incubation Mace,10
+Event White,Keychain Cutlass,10
 White or ST,Watarimono,10
 White or ST,Kiritsukeru,10
 White or ST,Reinforced Root Armor,10
@@ -927,4 +934,11 @@ Event White,Frostfall Rod,5
 Event White,Kendo (shiny),20
 Event White,Frozen Wand,10
 Event White,Enchanted Ice Blade,10
+Event White,Heart of the Eternal Pyre,10
+Event White,Solar Flare Igniter,5
+Event White,Crest of the Rising Sun,5
+Event White,Bloom-Fire Scepter,5
+Event White,Ashen Talon Dagger,5
+Event White,Sovereign Cinder-Blade,5
+Event White,Blade of Eternal Rebirth,5
 

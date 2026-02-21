@@ -6,7 +6,7 @@ from enum import Enum
 ROTMG_CLASSES = [
     "Wizard", "Priest", "Archer", "Rogue", "Warrior", "Knight", "Paladin",
     "Assassin", "Necromancer", "Huntress", "Mystic", "Trickster",
-    "Sorcerer", "Ninja", "Samurai", "Bard", "Summoner", "Kensei"
+    "Sorcerer", "Ninja", "Samurai", "Bard", "Summoner", "Kensei", "Druid"
 ]
 
 class ROTMGClass(str, Enum):
@@ -28,6 +28,7 @@ class ROTMGClass(str, Enum):
     BARD = "Bard"
     SUMMONER = "Summoner"
     KENSEI = "Kensei"
+    DRUID = "Druid"
 
 
 @dataclass
@@ -51,6 +52,7 @@ class PPEData:
     points: float = 0.0
     loot: List[Loot] = field(default_factory=list)
     bonuses: List[Bonus] = field(default_factory=list)
+
 @dataclass
 class PlayerData:
     ppes: List[PPEData] = field(default_factory=list)
