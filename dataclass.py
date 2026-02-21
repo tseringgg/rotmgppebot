@@ -54,11 +54,19 @@ class PPEData:
     bonuses: List[Bonus] = field(default_factory=list)
 
 @dataclass
+class TeamData:
+    """Represents a team in the PPE contest."""
+    name: str
+    leader_id: int  # Discord user ID of the team leader
+    members: List[int] = field(default_factory=list)  # Discord user IDs of all members
+
+@dataclass
 class PlayerData:
     ppes: List[PPEData] = field(default_factory=list)
     active_ppe: Optional[int] = None
     is_member: bool = False
     unique_items: Set[tuple] = field(default_factory=set)  # (item_name, shiny)
+    team_name: Optional[str] = None  # Name of the team this player is on (None if not on a team)
     
     def get_unique_item_count(self) -> int:
         """Get the count of unique items across all PPEs."""

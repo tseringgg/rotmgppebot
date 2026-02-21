@@ -11,6 +11,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 - **Point Management**: Automated point calculations with duplicate handling
 - **Personal Statistics**: View your PPE progress and loot collections
 - **Seperate Seasonal Tracking**: View your overall season progress and loot!
+- **Team System**: Join teams with team leaders who can manage team members
 
 ### 🔧 Admin Features
 - **Player Management**: Add/remove contest participants
@@ -18,6 +19,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 - **Point Corrections**: Refresh and fix point totals automatically
 - **Bulk Operations**: Mass point recalculation for server-wide fixes
 - **Inspection Tools**: View detailed loot and bonus information
+- **Team Management**: Create teams, manage members, and delete teams
 
 ### 📊 Advanced Systems
 - **Smart Autocomplete**: Context-aware suggestions for items, bonuses, and PPE IDs
@@ -26,6 +28,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 - **Penalty Calculations**: Automatic penalties for pets, exalts, and boosts
 - **Leaderboard System**: Real-time rankings with best PPE tracking
 - **Seasonal Tracking**: Separate seasonal and overall loot tracking with dedicated leaderboards
+- **Team Management**: Collaborative competition with team-based leaderboards
 
 ## 🚀 Quick Start
 
@@ -103,6 +106,16 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/deleteallppes` | Delete all PPEs for a player |
 | `/deleteppe` | Delete a specific PPE by ID |
 
+### Team Commands (Leaders & Admins)
+| Command | Description |
+|---------|-------------|
+| `/addteam` | Create a new team with a leader (Admin only) |
+| `/addplayer_team` | Add a player to a team (Team leader or Admin) |
+| `/leaveteam` | Remove a player from their team (Admin only) |
+| `/updateteam` | Rename a team (Team leader or Admin) |
+| `/deleteteam` | Delete a team and remove all members (Admin only) |
+| `/teamleaderboard` | View team rankings by total points |
+
 ### Utility Commands
 | Command | Description |
 |---------|-------------|
@@ -164,6 +177,7 @@ For those unfamiliar with programming, [Railway](https://railway.app/) offers a 
 PlayerData
 ├── is_member: bool
 ├── active_ppe: int
+├── team_name: str (optional)  # Name of team player is on
 ├── unique_items: Set[tuple]  # (item_name, shiny) - Seasonal
 └── ppes: List[PPEData]
     ├── id: int
@@ -179,11 +193,17 @@ PlayerData
         ├── points: float
         ├── repeatable: bool
         └── quantity: int
+
+TeamData
+├── name: str          # Team name
+├── leader_id: int     # Discord user ID of leader
+└── members: List[int] # Discord user IDs of all members
 ```
 
 ### Key Components
 
 - **Player Manager**: Atomic transactions for data safety
+- **Team Manager**: Manages team creation, member assignments, and leaderboard calculations
 - **Point Calculator**: Handles duplicates and special modifiers
 - **Seasonal Tracker**: Maintains unique item collections across seasons with dedicated leaderboards
 - **Autocomplete System**: Dynamic suggestions based on context
@@ -202,7 +222,8 @@ SERVER2_ID = another_server_id_here
 ### Data Files
 - `rotmg_loot_drops_updated.csv`: Item point values
 - `bonuses.csv`: Available achievement bonuses
-- `guild_loot_records.json`: Player data storage
+- `{guild_id}_loot_records.json`: Player data storage (per guild)
+- `{guild_id}_teams.json`: Team data storage (per guild)
 
 ### Role Requirements
 - **PPE Player**: Can create PPEs and manage own data
@@ -226,7 +247,32 @@ SERVER2_ID = another_server_id_here
 - **Loot Boost**: -2 points per 1% boost
 - **In-Combat Reduction**: -10 points per 0.2 seconds
 
-## 🛠️ Development
+## � Team System
+
+### Overview
+Teams enable collaborative PPE competition where multiple players combine their efforts for group rankings.
+
+### Key Features
+- **Team Creation**: Admins create teams with a designated leader
+- **Member Management**: Team leaders and admins can add/remove players
+- **One Team Per Player**: Players cannot be on multiple teams simultaneously
+- **Team Leaderboard**: Teams ranked by combined points (using each member's best PPE)
+- **Automatic Roles**: Discord roles created automatically for each team
+- **Team Renaming**: Leaders and admins can update team names
+- **Season Reset**: All teams are deleted when season resets
+
+### Team Point Calculation
+- Each team member's **highest-scoring PPE** is counted toward the team total
+- Team points = Sum of all members' best PPE points
+- Members added/removed update totals automatically
+- Team leader can be viewed on the team leaderboard
+
+### Permissions
+- **Admin Only**: Create teams, delete teams, force remove players
+- **Team Leader + Admin**: Add players to team, update team name
+- **All Players**: Join a team (if invited), view team leaderboard
+
+## �🛠️ Development
 
 ### Project Structure
 ```

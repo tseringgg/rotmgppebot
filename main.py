@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, inspectloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd, shareloot_cmd, shareseasonloot_cmd, addseasonloot_cmd, addseasonlootfor_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, showseasonloot_cmd, seasonleaderboard_cmd, resetseason_cmd, migrateapostrophes_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, inspectloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd, shareloot_cmd, shareseasonloot_cmd, addseasonloot_cmd, addseasonlootfor_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, showseasonloot_cmd, seasonleaderboard_cmd, resetseason_cmd, migrateapostrophes_cmd, addteam_cmd, addplayer_team_cmd, leaveteam_cmd, teamleaderboard_cmd, updateteam_cmd, deleteteam_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -9,7 +9,7 @@ from utils.role_checks import require_ppe_roles
 from utils.loot_data import init_loot_data
 from create_loot_table import create_loot_background_and_mapping
 
-from utils.autocomplete import class_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, target_user_ppe_id_autocomplete
+from utils.autocomplete import class_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, target_user_ppe_id_autocomplete, team_name_autocomplete
 
 SERVER1_ID = 879497062117412924 # Last Oasis
 SERVER2_ID = 1435436110829326459 # Test Server
@@ -446,6 +446,53 @@ async def resetseason(interaction: discord.Interaction):
 @require_ppe_roles(admin_required=True)
 async def migrate_apostrophes(interaction: discord.Interaction):
     await migrateapostrophes_cmd.command(interaction)
+
+##################
+#### TEAMS ####
+##################
+
+# --- Add team ---
+@bot.tree.command(name="addteam", description="Create a new team for the PPE contest. Admin only.", guilds=guilds)
+@app_commands.describe(team_name="Name of the team", team_leader="The team leader")
+@require_ppe_roles(admin_required=True)
+async def addteam(interaction: discord.Interaction, team_name: str, team_leader: discord.Member):
+    await addteam_cmd.command(interaction, team_name, team_leader)
+
+# --- Add player to team ---
+@bot.tree.command(name="addplayer_team", description="Add a player to a team. Team leaders and admins only.", guilds=guilds)
+@app_commands.describe(player="The player to add to the team", team_name="Name of the team")
+@app_commands.autocomplete(team_name=team_name_autocomplete)
+@require_ppe_roles()
+async def addplayer_team(interaction: discord.Interaction, player: discord.Member, team_name: str):
+    await addplayer_team_cmd.command(interaction, player, team_name)
+
+# --- Remove player from team ---
+@bot.tree.command(name="leaveteam", description="Remove a player from their team. Admin only.", guilds=guilds)
+@app_commands.describe(player="The player to remove from teams")
+@require_ppe_roles(admin_required=True)
+async def leaveteam(interaction: discord.Interaction, player: discord.Member):
+    await leaveteam_cmd.command(interaction, player)
+
+# --- Team leaderboard ---
+@bot.tree.command(name="teamleaderboard", description="Show the team leaderboard.", guilds=guilds)
+async def teamleaderboard(interaction: discord.Interaction):
+    await teamleaderboard_cmd.command(interaction)
+
+# --- Update team name ---
+@bot.tree.command(name="updateteam", description="Update a team's name. Team leaders and admins only.", guilds=guilds)
+@app_commands.describe(old_name="Current team name", new_name="New team name")
+@app_commands.autocomplete(old_name=team_name_autocomplete)
+@require_ppe_roles()
+async def updateteam(interaction: discord.Interaction, old_name: str, new_name: str):
+    await updateteam_cmd.command(interaction, old_name, new_name)
+
+# --- Delete team ---
+@bot.tree.command(name="deleteteam", description="Delete a team and remove all its members. Admin only.", guilds=guilds)
+@app_commands.describe(team_name="Name of the team to delete")
+@app_commands.autocomplete(team_name=team_name_autocomplete)
+@require_ppe_roles(admin_required=True)
+async def deleteteam(interaction: discord.Interaction, team_name: str):
+    await deleteteam_cmd.command(interaction, team_name)
 
 ###############
 #### ROLES ####

@@ -8,7 +8,7 @@ from typing import Dict, Any, List
 from dataclasses import asdict
 
 import discord
-from dataclass import Loot, PPEData, PlayerData, Bonus
+from dataclass import Loot, PPEData, PlayerData, Bonus, TeamData
 
 # Persistent data directory (Railway Volume)
 DATA_DIR = "/data"
@@ -101,7 +101,8 @@ def normalize_player(player: dict) -> PlayerData:
         ppes=ppes,
         active_ppe=player.get("active_ppe"),
         is_member=bool(player.get("is_member", False)),
-        unique_items=unique_items
+        unique_items=unique_items,
+        team_name=player.get("team_name", None)
     )
 
 async def load_player_records(interaction: discord.Interaction) -> Dict[int, PlayerData]:
@@ -171,7 +172,8 @@ async def save_player_records(interaction: discord.Interaction, records: Dict[in
                 for p in data.ppes
             ],
             "active_ppe": data.active_ppe,
-            "unique_items": list(data.unique_items)  # Convert set to list for JSON
+            "unique_items": list(data.unique_items),  # Convert set to list for JSON
+            "team_name": data.team_name
         }
         for user_id, data in records.items()
     }
@@ -234,3 +236,86 @@ def get_item_from_ppe(active_ppe: PPEData, item_name: str, divine: bool, shiny: 
         if item.item_name.lower() == item_name.lower() and item.divine == divine and item.shiny == shiny and item.quantity > 0:
             return item
     return None
+
+
+async def is_team_leader(interaction: discord.Interaction, member_id: int, team_name: str) -> bool:
+    """Check if a member is the leader of a specific team."""
+    try:
+        teams = await load_teams(interaction)
+        # Find team (case-insensitive)
+        actual_team_name = None
+        for team_key in teams:
+            if team_key.lower() == team_name.lower():
+                actual_team_name = team_key
+                break
+        
+        if not actual_team_name:
+            return False
+        
+        team = teams[actual_team_name]
+        return team.leader_id == member_id
+    except Exception:
+        return False
+
+
+# -------------------------------------------------------------------------
+# Team management functions
+# -------------------------------------------------------------------------
+
+def get_guild_teams_path(guild_id: int) -> str:
+    """Return the file path for this guild's teams data file."""
+    return os.path.join(DATA_DIR, f"{guild_id}_teams.json")
+
+
+def normalize_team(team: dict) -> TeamData:
+    """Convert a dict representation of a team to TeamData."""
+    return TeamData(
+        name=team.get("name", "Unknown Team"),
+        leader_id=int(team.get("leader_id", 0)),
+        members=[int(m) for m in team.get("members", [])]
+    )
+
+
+async def load_teams(interaction: discord.Interaction) -> Dict[str, TeamData]:
+    """Load all teams for a guild. Key is team name (case-insensitive, stored as-is)."""
+    if interaction.guild is None:
+        raise ValueError("Interaction guild is None.")
+    guild_id = interaction.guild.id
+    path = get_guild_teams_path(guild_id)
+
+    if not os.path.exists(path):
+        return {}
+
+    async with get_lock(guild_id):
+        try:
+            raw_data = await asyncio.to_thread(_read_json_file, path)
+            teams = {}
+            for team_name, team_data in raw_data.items():
+                teams[team_name] = normalize_team(team_data)
+            return teams
+        except Exception as e:
+            print(f"Error loading teams for guild {guild_id}: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
+            return {}
+
+
+async def save_teams(interaction: discord.Interaction, teams: Dict[str, TeamData]):
+    """Save all teams for a guild safely using atomic write."""
+    if interaction.guild is None:
+        raise ValueError("Interaction guild is None.")
+    guild_id = interaction.guild.id
+    path = get_guild_teams_path(guild_id)
+    temp_path = f"{path}.tmp"
+
+    # Convert TeamData objects into plain dicts
+    json_ready = {
+        team_name: {
+            "name": team.name,
+            "leader_id": team.leader_id,
+            "members": team.members
+        }
+        for team_name, team in teams.items()
+    }
+    async with get_lock(guild_id):
+        await asyncio.to_thread(_write_atomic_json, path, temp_path, json_ready)

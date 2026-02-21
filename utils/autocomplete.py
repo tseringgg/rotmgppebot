@@ -3,6 +3,7 @@ from dataclass import ROTMGClass
 from discord import app_commands
 from .loot_data import get_loot_data
 from .bonus_data import get_bonus_names
+from .player_records import load_teams
 
 
 DUNGEONS = [
@@ -160,3 +161,23 @@ async def target_user_ppe_id_autocomplete(interaction: discord.Interaction, curr
 
 def get_dungeons() -> list[str]:
     return DUNGEONS
+
+async def team_name_autocomplete(interaction: discord.Interaction, current: str):
+    """Autocomplete function for team names"""
+    current_lower = current.lower()
+    
+    try:
+        # Load team data
+        teams = await load_teams(interaction)
+        
+        # Get team names that match the current input
+        matches = [
+            app_commands.Choice(name=team_name, value=team_name)
+            for team_name in teams.keys()
+            if current_lower in team_name.lower()
+        ]
+        
+        return matches[:25]  # Discord limit
+    except Exception:
+        # If any error occurs, return empty list
+        return []
