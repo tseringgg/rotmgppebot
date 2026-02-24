@@ -29,6 +29,7 @@ Tier 7 Ability,Virtuous Wakizashi,1.0
 Tier 7 Ability,Nebular Lute,1.0
 Tier 7 Ability,Grandmaster Mace,1.0
 Tier 7 Ability,Sonic Wave Sheath,1.0
+Tier 7 Ability,Sigil of the Rhino,1.0
 Tier 14 Armor,Leviathan Armor,1.0
 Tier 14 Armor,Robe of the Ancient Intellect,1.0
 Tier 14 Armor,Annihilation Armor,1.0
@@ -50,8 +51,9 @@ White or ST,Berserker's Breastplate,4.0
 White or ST,Adamantine Helm,6.0
 White or ST,Sword of Illumination,4.0
 White or ST,Arcane Rapier,3.0
-White or ST,Amber Encrusted Helmet,3.0
-White or ST,Sandstone Seal,3.0
+White or ST,Amber Encrusted Helmet,0
+White or ST,Sandstone Seal,0
+White or ST,Sandstone Seal (shiny),0
 White or ST,Resplendent Bow,3.0
 White or ST,Embellished Quiver,3.0
 White or ST,Ornate Armor,3.0
@@ -90,8 +92,8 @@ White or ST,Staff of Unholy Sacrifice,7.0
 White or ST,Skull of Corrupted Souls,7.0
 White or ST,Ritual Robe,7.0
 White or ST,Bloodshed Ring,7.0
-White or ST,Ronin's Wakizashi,4.0
-White or ST,Ronin's Wakizashi (shiny),8.0
+White or ST,Ronin's Wakizashi,0
+White or ST,Ronin's Wakizashi (shiny),0
 White or ST,Cultured Bookwyrm Pet Skin,0
 White or ST,Enlightened Bookwyrm Pet Skin,0
 White or ST,Deathless Crossbow,4.0
@@ -129,7 +131,7 @@ White or ST,Crystal Shield,7.5
 White or ST,Sporous Spray Spell,7.5
 White or ST,Tome of the Mushroom Tribes,7.5
 White or ST,Cave Dweller Trap,7.5
-White or ST,Amulet of Dispersion,4.5
+White or ST,Amulet of Dispersion,0
 White or ST,Werewolf Cub Pet Skin,0
 White or ST,Etherite Dagger,4.5
 White or ST,Ghastly Drape,4.5
@@ -281,7 +283,7 @@ White or ST,Festival Enjoyer Bard,0
 White or ST,Makakoyumi,9.0
 White or ST,Tezutsu Hanabi,9.0
 White or ST,Kagenohikari,9.0
-White or ST,Concentrated Soul Fire,0
+White or ST,Concentrated Soul Fire,9
 White or ST,Mysterious Crate,0
 White or ST,Possessed Lantern Pet Skin,0
 White or ST,Kazekiri,6.0
@@ -459,9 +461,9 @@ White or ST,Cheater Light Armor,4.5
 White or ST,Cheater Robe,4.5
 White or ST,Cheater Heavy Armor,4.5
 White or ST,Omni-Impotence Ring,4.5
-White or ST,Blue Beehemoth Armor,7.0
-White or ST,Red Beehemoth Armor,7.0
-White or ST,Yellow Beehemoth Armor,7.0
+White or ST,Blue Beehemoth Armor,0
+White or ST,Red Beehemoth Armor,0
+White or ST,Yellow Beehemoth Armor,0
 White or ST,Killer Bee Queen Pet Skin,0
 White or ST,Nectar Crossfire,7.0
 White or ST,Honeytomb Snare,7.0
@@ -577,6 +579,7 @@ White or ST,Interregnum,6.0
 White or ST,Doom Bow,3.5
 White or ST,Spectral Sword,3.5
 White or ST,Wandering Souls Spell,3.5
+White or ST,Wandering Souls Spell (shiny),7
 White or ST,Spirit's Bane,6
 White or ST,Ring of Skeletal Specters,3.5
 White or ST,Bow of the Morning Star,3.5
@@ -728,7 +731,7 @@ White or ST,Warmonger (shiny),20
 White or ST,Quiver of Shadows (shiny),17
 White or ST,Skull of Endless Torment (shiny),12
 Event White,Helm of the Juggernaut (shiny),20
-White or ST,Amber Encrusted Helmet (shiny),6
+White or ST,Amber Encrusted Helmet (shiny),0
 White or ST,Cloak of the Mad God (shiny),9
 White or ST,Cnidaria Rod (shiny),11
 White or ST,Polarity Poison (shiny),20
@@ -822,7 +825,7 @@ White or ST,Ring of the Nile (shiny),12
 White or ST,Marionette Ravager (shiny),8
 Event White,Jailer's Scythe (shiny),20
 White or ST,Marble Seal (shiny),16
-White or ST,Amulet of Dispersion (shiny),9
+White or ST,Amulet of Dispersion (shiny),0
 White or ST,Sprite Wand (shiny),0
 White or ST,Burial Blades (shiny),14
 White or ST,Bottled Medusozoan (shiny),11
@@ -916,16 +919,21 @@ White or ST,Gem of Adoration,10
 White or ST,Gem of Adoration (shiny),20
 White or ST,Soulful Affection,10
 White or ST,Soulful Affection (shiny),20
-White or ST,Chocolate Armor,10
-White or ST,Heartseeker Katana,10
-White or ST,Eternal Star,10
-White or ST,Sweetener Ring,10
-White or ST,Spring Rose,0
-White or ST,Floral Corset,0
-White or ST,Ever Green Skull,0
-White or ST,Rose Brooch,0
-White or ST,Lovebite Armor,0
-White or ST,Sweetcut Wakizashi,0
+White or ST,Chocolate Armor,5
+White or ST,Heartseeker Katana,5
+White or ST,Eternal Star,5
+White or ST,Sweetener Ring,5
+White or ST,Spring Rose,5
+White or ST,Floral Corset,5
+White or ST,Ever Green Skull,5
+White or ST,Rose Brooch,5
+White or ST,Lovebite Armor,5
+White or ST,Sweetcut Wakizashi,5
+White or ST,Sharktooth Sigil,5
+White or ST,Silken Sigil,5.5
+White or ST,Draconic Sigil,6
+White or ST,Swarmlord's Sigil,7
+White or ST,Sigil of the Crystal Golem,7.5
 Event White,Elderfrost Heirloom,5
 Event White,Frozen Whisper,5
 Event White,Winter's Dire Kiss,5
