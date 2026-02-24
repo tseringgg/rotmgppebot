@@ -48,40 +48,50 @@ async def command(interaction: discord.Interaction):
             return
         
         records = await load_player_records(interaction)
+        teams = await load_teams(interaction)
         
-        # Clear unique_items for all players
+        # Get team role names before clearing teams
+        team_names = set(teams.keys())
+        
+        # Clear all PPE characters and unique items for all players
         items_cleared = 0
+        ppes_cleared = 0
         for player_data in records.values():
+            # Clear all PPE characters
+            ppes_cleared += len(player_data.ppes)
+            player_data.ppes.clear()
+            player_data.active_ppe = None
+            
+            # Clear unique items
             if len(player_data.unique_items) > 0:
                 items_cleared += len(player_data.unique_items)
                 player_data.unique_items.clear()
-            # Also clear team associations
+            
+            # Clear team associations
             player_data.team_name = None
         
         # Save the updated records
         await save_player_records(interaction, records)
         
-        # Delete all teams
-        teams = await load_teams(interaction)
+        # Delete all teams from data
         teams_deleted = len(teams)
         teams.clear()
         await save_teams(interaction, teams)
         
-        # Try to delete all team roles
-        for role in interaction.guild.roles:
+        # Delete team roles using the actual team names we had
+        for team_name in team_names:
             try:
-                # Delete roles that match team names (heuristic: if it's not a default role)
-                if role.name not in ["@everyone", "PPE Player", "PPE Admin"] and not role.managed:
-                    # Only delete if it looks like a team role (not system roles)
-                    if len(role.members) < 100 or role.name.startswith("Team"):
-                        await role.delete(reason="Season reset - team cleanup")
+                team_role = discord.utils.get(interaction.guild.roles, name=team_name)
+                if team_role and not team_role.managed:
+                    await team_role.delete(reason="Season reset - team cleanup")
             except Exception:
+                print(f"Failed to delete role for team '{team_name}'. It may have already been deleted or does not exist.")
                 pass  # Silently ignore any role deletion errors
         
         await interaction.followup.send(
             f"✅ Season reset complete!\n"
-            f"**Cleared:** {items_cleared} unique items across all players\n"
-            f"**Deleted:** {teams_deleted} teams\n"
+            f"**Cleared:** {ppes_cleared} PPE characters, {items_cleared} unique items\n"
+            f"**Deleted:** {teams_deleted} teams and their roles\n"
             f"**Preserved:** Player member status and PPE roles",
             ephemeral=False
         )
