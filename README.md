@@ -95,6 +95,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/addplayer` | Register a player for the contest |
 | `/removeplayer` | Remove a player and all their data |
 | `/listplayers` | View all contest participants |
+| `/listcharactersfor` | Show all characters and IDs for a specific player |
 | `/addlootfor` | Add items to any player's specific PPE |
 | `/removelootfrom` | Remove items from any player's PPE |
 | `/addbonusfor` | Add bonuses to any player's PPE |
@@ -120,6 +121,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | Command | Description |
 |---------|-------------|
 | `/leaderboard` | Show top PPE rankings |
+| `/characterleaderboard` | Show highest point characters of a specific class |
 | `/ppehelp` | Display all available commands |
 | `/listadmins` | View all PPE admins |
 | `/listroles` | Show server role information |

@@ -7,6 +7,7 @@ async def command(interaction: discord.Interaction):
     # --- Commands for everyone ---
     general_cmds = {
         "leaderboard": "Show the current PPE leaderboard.",
+        "characterleaderboard": "Show highest points for specific class.",
         "seasonleaderboard": "Show season leaderboard by unique items.",
         "teamleaderboard": "Show team leaderboard by combined points.",
         "ppehelp": "Show this help message.",
@@ -50,6 +51,7 @@ async def command(interaction: discord.Interaction):
         "addplayer": "Add member to contest.",
         "removeplayer": "Remove member from contest.",
         "listplayers": "List all participants.",
+        "listcharactersfor": "Show all characters for a player.",
         "deleteallppes": "Delete all PPEs for player.",
         "deleteppe": "Delete specific PPE.",
     }
@@ -84,11 +86,11 @@ async def command(interaction: discord.Interaction):
     
     # --- Admin: Utility ---
     admin_util_cmds = {
-        "resetseason": "Clear all season data & teams.",
         "migrateapostrophes": "Fix apostrophes in records.",
     }
     
     owner_cmds = {
+        "resetseason": "Clear all season data & teams.",
         "giveppeadminrole": "Grant PPE Admin role.",
         "removeppeadminrole": "Remove PPE Admin role.",
         "setuproles": "Create required roles.",
