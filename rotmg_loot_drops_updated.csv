@@ -608,6 +608,7 @@ Event White,Yellow Beehemoth Quiver,10
 Event White,Red Beehemoth Quiver,10
 Event White,Blue Beehemoth Quiver,10
 White or ST,Green Beehemoth Quiver,8.5
+White or ST,Green Beehemoth Quiver (shiny),17
 Event White,Cloak of Bloody Surprises,10
 Event White,Crystallised Fang's Venom,10
 Event White,Dirk of Cronus,10
@@ -939,7 +940,7 @@ Event White,Frozen Whisper,5
 Event White,Winter's Dire Kiss,5
 Event White,Icebreaker Maul,5
 Event White,Frostfall Rod,5
-Event White,Kendo (shiny),20
+Event White,Kendo (shiny),100
 Event White,Frozen Wand,10
 Event White,Enchanted Ice Blade,10
 Event White,Heart of the Eternal Pyre,10
@@ -951,3 +952,4 @@ Event White,Sovereign Cinder-Blade,5
 Event White,Blade of Eternal Rebirth,5
 Event White,Crystal Key,5
 Event White,Heart of Gold Prism,5
+
