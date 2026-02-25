@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, inspectloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd, shareloot_cmd, shareseasonloot_cmd, addseasonloot_cmd, addseasonlootfor_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, showseasonloot_cmd, seasonleaderboard_cmd, resetseason_cmd, migrateapostrophes_cmd, addteam_cmd, addplayer_team_cmd, leaveteam_cmd, teamleaderboard_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, listcharactersfor_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, inspectloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd, shareloot_cmd, shareseasonloot_cmd, addseasonloot_cmd, addseasonlootfor_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, showseasonloot_cmd, seasonleaderboard_cmd, resetseason_cmd, migrateapostrophes_cmd, addteam_cmd, addplayer_team_cmd, leaveteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, listcharactersfor_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -489,6 +489,13 @@ async def leaveteam(interaction: discord.Interaction, player: discord.Member):
 @bot.tree.command(name="teamleaderboard", description="Show the team leaderboard.", guilds=guilds)
 async def teamleaderboard(interaction: discord.Interaction):
     await teamleaderboard_cmd.command(interaction)
+
+# --- My team ---
+@bot.tree.command(name="myteam", description="Show your team members and their rankings. Optional: specify a team name to view.", guilds=guilds)
+@app_commands.describe(team_name="Optional: Team name to view (defaults to your team)")
+@app_commands.autocomplete(team_name=team_name_autocomplete)
+async def myteam(interaction: discord.Interaction, team_name: str = None):
+    await myteam_cmd.command(interaction, team_name)
 
 # --- Update team name ---
 @bot.tree.command(name="updateteam", description="Update a team's name. Team leaders and admins only.", guilds=guilds)

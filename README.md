@@ -112,10 +112,11 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 |---------|-------------|
 | `/addteam` | Create a new team with a leader (Admin only) |
 | `/addplayer_team` | Add a player to a team (Team leader or Admin) |
-| `/leaveteam` | Remove a player from their team (Admin only) |
+| `/leaveteam` | Remove a player from their team (Admin only); works even if player was removed from contest |
 | `/updateteam` | Rename a team (Team leader or Admin) |
 | `/deleteteam` | Delete a team and remove all members (Admin only) |
 | `/teamleaderboard` | View team rankings by total points |
+| `/myteam` | View your team members and their rankings (optional: specify team name) |
 
 ### Utility Commands
 | Command | Description |
@@ -259,9 +260,11 @@ Teams enable collaborative PPE competition where multiple players combine their 
 - **Member Management**: Team leaders and admins can add/remove players
 - **One Team Per Player**: Players cannot be on multiple teams simultaneously
 - **Team Leaderboard**: Teams ranked by combined points (using each member's best PPE)
+- **Team Viewer**: `/myteam` shows all team members ranked by their best PPE points
 - **Automatic Roles**: Discord roles created automatically for each team
 - **Team Renaming**: Leaders and admins can update team names
 - **Season Reset**: All teams are deleted when season resets
+- **Robust Removal**: `/leaveteam` works even for players no longer in the contest
 
 ### Team Point Calculation
 - Each team member's **highest-scoring PPE** is counted toward the team total
@@ -269,10 +272,18 @@ Teams enable collaborative PPE competition where multiple players combine their 
 - Members added/removed update totals automatically
 - Team leader can be viewed on the team leaderboard
 
+### Viewing Teams
+- **`/teamleaderboard`**: See all teams ranked by total points
+- **`/myteam`**: View your team members and their individual rankings (or specify a team name to view any team)
+
+### Player Removal Behavior
+- **`/removeplayer`**: Now properly removes players from their teams and removes their team Discord role
+- **`/leaveteam`**: Can remove players from teams even if they were previously removed from the contest system
+
 ### Permissions
-- **Admin Only**: Create teams, delete teams, force remove players
+- **Admin Only**: Create teams, delete teams, force remove players from teams
 - **Team Leader + Admin**: Add players to team, update team name
-- **All Players**: Join a team (if invited), view team leaderboard
+- **All Players**: View team leaderboard, view own team with `/myteam`
 
 ## �🛠️ Development
 

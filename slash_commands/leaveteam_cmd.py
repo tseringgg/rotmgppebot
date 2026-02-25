@@ -7,8 +7,8 @@ async def command(interaction: discord.Interaction, player: discord.Member):
         return await interaction.response.send_message("❌ This command can only be used in a server.")
     
     try:
-        # Remove player from all teams
-        team_name = await team_manager.remove_player_from_teams(interaction, player.id)
+        # Remove player from all teams (use force_remove to handle players no longer in PPE system)
+        team_name = await team_manager.force_remove_player_from_teams(interaction, player.id)
         
         if team_name:
             # Try to remove the team role from the player

@@ -44,12 +44,13 @@ async def command(interaction: discord.Interaction):
     # --- Team Commands (Player/Leader) ---
     team_cmds = {
         "teamleaderboard": "View team rankings.",
+        "myteam": "View your team members and rankings (optional: specify team name).",
     }
     
     # --- Admin: Player Management ---
     admin_player_cmds = {
         "addplayer": "Add member to contest.",
-        "removeplayer": "Remove member from contest.",
+        "removeplayer": "Remove member from contest (also removes team role and membership).",
         "listplayers": "List all participants.",
         "listcharactersfor": "Show all characters for a player.",
         "deleteallppes": "Delete all PPEs for player.",
@@ -75,7 +76,7 @@ async def command(interaction: discord.Interaction):
     admin_team_cmds = {
         "addteam": "Create new team.",
         "deleteteam": "Delete team.",
-        "leaveteam": "Remove player from team.",
+        "leaveteam": "Remove player from team (works even if player was removed from contest).",
     }
     
     # --- Team Leader Commands ---

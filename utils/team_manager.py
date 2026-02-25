@@ -121,6 +121,31 @@ class TeamManager:
         
         return await self.execute_transaction(interaction, operation)
     
+    async def force_remove_player_from_teams(self, interaction: discord.Interaction, player_id: int):
+        """Force remove a player from all teams they're on, even if they're not a PPE player.
+        
+        This is useful for removing players who were already deleted from the PPE system
+        but may still be in team member lists.
+        """
+        
+        async def operation(teams, records, interaction):
+            found_team = None
+            
+            # Search through all teams and remove the player from any team they're in
+            for team_name, team in teams.items():
+                if player_id in team.members:
+                    team.members.remove(player_id)
+                    found_team = team_name
+            
+            # Also try to update their player record if it exists
+            player_key = ensure_player_exists(records, player_id)
+            if player_key in records:
+                records[player_key].team_name = None
+            
+            return found_team
+        
+        return await self.execute_transaction(interaction, operation)
+    
     async def update_team_name(self, interaction: discord.Interaction, old_name: str, new_name: str) -> TeamData:
         """Update a team's name."""
         
