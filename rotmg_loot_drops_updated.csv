@@ -185,7 +185,7 @@ White or ST,Laser Pointer,8.0
 White or ST,Kogbold Cower Shield,8.0
 White or ST,Scepter of Rust,8.0
 White or ST,Brain Cube,8.0
-White or ST,Kogbold Enhancement Core,0
+White or ST,Kogbold Enhancement Core,8
 White or ST,Arctic Bow,6.0
 White or ST,Freezing Quiver,6.0
 White or ST,Frimarra,6.0
@@ -763,7 +763,7 @@ White or ST,Coral Bow (shiny),10
 White or ST,Prism of Dancing Swords (shiny),8
 White or ST,Peacekeeper (shiny),20
 White or ST,Fire Dragon Battle Armor (shiny),12
-White or ST,Kogbold Enhancement Core (shiny),0
+White or ST,Kogbold Enhancement Core (shiny),16
 Event White,Kogbold Multitool (shiny),20
 White or ST,Ocular Entrapment (shiny),16
 Event White,Greaterhosen (shiny),20
@@ -954,4 +954,5 @@ Event White,Sovereign Cinder-Blade,5
 Event White,Blade of Eternal Rebirth,5
 Event White,Crystal Key,5
 Event White,Heart of Gold Prism,5
+
 
