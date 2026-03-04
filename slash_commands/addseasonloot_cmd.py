@@ -1,6 +1,7 @@
 import discord
 from utils.player_records import load_player_records, save_player_records, ensure_player_exists
 from utils.loot_data import LOOT
+from utils.calc_points import load_loot_points
 
 
 async def command(
@@ -14,6 +15,16 @@ async def command(
             f"Use the autocomplete suggestions to select a valid item.",
             ephemeral=True
         )
+    
+    # Validate that shiny variant exists in database
+    if shiny:
+        loot_points = load_loot_points()
+        shiny_item_name = f"{item_name} (shiny)"
+        if shiny_item_name not in loot_points:
+            return await interaction.response.send_message(
+                f"❌ Shiny variant of `{item_name}` is not currently in bot.",
+                ephemeral=True
+            )
     
     try:
         records = await load_player_records(interaction)

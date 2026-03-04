@@ -131,6 +131,7 @@ White or ST,Crystal Shield,7.5
 White or ST,Sporous Spray Spell,7.5
 White or ST,Tome of the Mushroom Tribes,7.5
 White or ST,Cave Dweller Trap,7.5
+White or ST,Cave Dweller Trap (shiny),15
 White or ST,Amulet of Dispersion,0
 White or ST,Werewolf Cub Pet Skin,0
 White or ST,Etherite Dagger,4.5
@@ -250,6 +251,7 @@ White or ST,Lifebringing Lotus,3.0
 White or ST,Hollyhock Hide,3.0
 White or ST,Chrysanthemum Corsage,3.0
 White or ST,Spirit Staff,3.0
+White or ST,Spirit Staff (shiny),6.0
 White or ST,Enchantment Orb,3.0
 White or ST,Shield of Flowing Clarity,3.0
 White or ST,Woodland Robe,3.0
@@ -400,7 +402,7 @@ White or ST,Overwhelming Axehead,8.0
 White or ST,Motivational Megaphone,8.0
 White or ST,Damnation,8.0
 White or ST,Damnation (shiny),16.0
-White or ST,Vial of Soul Extract,0
+White or ST,Vial of Soul Extract,8
 White or ST,Penitent Frog Pet Skin,0
 UT,Sprite Wand,0
 White or ST,The Phylactery,10
@@ -668,7 +670,7 @@ White or ST,Faded Heart Scarab,7
 White or ST,Fractured Hannya,7
 White or ST,Nightmatter Circlet,15.0
 White or ST,Ornaments of Unity,10.0
-White or ST,Vial of Soul Extract (shiny),0
+White or ST,Vial of Soul Extract (shiny),16
 White or ST,Superior (shiny),19
 White or ST,Fairy Ring (shiny),6.0
 White or ST,Avarice (shiny),19
@@ -932,7 +934,7 @@ White or ST,Lovebite Armor,5
 White or ST,Sweetcut Wakizashi,5
 White or ST,Sharktooth Sigil,5
 White or ST,Silken Sigil,5.5
-White or ST,Draconic Sigil,6
+White or ST,Draconic Insignia,6
 White or ST,Swarmlord's Sigil,7
 White or ST,Sigil of the Crystal Golem,7.5
 Event White,Elderfrost Heirloom,5

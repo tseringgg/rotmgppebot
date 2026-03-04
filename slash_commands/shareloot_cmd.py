@@ -88,23 +88,28 @@ async def command(interaction: discord.Interaction):
             # Normalize apostrophes
             item_name = item_name.replace("'", "'")
             
-            # Try with shiny suffix if the item is marked as shiny
-            lookup_name = item_name
+            # Check if item is marked as shiny
             if loot_item.shiny:
                 shiny_name = f"{item_name} (shiny)"
+                # Check if shiny variant exists
                 if shiny_name in sprite_positions and shiny_name in sprite_images:
-                    lookup_name = shiny_name
-            
-            # Check if we have position data for this item
-            if lookup_name in sprite_positions and lookup_name in sprite_images:
-                pos = sprite_positions[lookup_name]
-                sprite = sprite_images[lookup_name]
-                
-                # Place the colored sprite at the correct position
-                background.paste(sprite, (pos['pixel_x'], pos['pixel_y']), sprite)
-                items_placed += 1
+                    # Shiny sprite exists, use it
+                    pos = sprite_positions[shiny_name]
+                    sprite = sprite_images[shiny_name]
+                    background.paste(sprite, (pos['pixel_x'], pos['pixel_y']), sprite)
+                    items_placed += 1
+                else:
+                    # Shiny sprite is missing
+                    items_not_found.append(f"{item_name} (shiny)")
             else:
-                items_not_found.append(item_name)
+                # Non-shiny item
+                if item_name in sprite_positions and item_name in sprite_images:
+                    pos = sprite_positions[item_name]
+                    sprite = sprite_images[item_name]
+                    background.paste(sprite, (pos['pixel_x'], pos['pixel_y']), sprite)
+                    items_placed += 1
+                else:
+                    items_not_found.append(item_name)
         
         # Generate filename
         username = interaction.user.display_name.replace(" ", "_")

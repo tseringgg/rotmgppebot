@@ -53,6 +53,10 @@ async def dungeon_autocomplete(interaction: discord.Interaction, current: str):
 async def item_name_autocomplete(interaction: discord.Interaction, current: str):
     current_lower = current.lower()
     
+    # Require at least 2 characters to prevent rate limiting
+    if len(current) < 2:
+        return [app_commands.Choice(name="Type at least 2 characters...", value="")]
+    
     # Get the loot data from the shared module
     loot_items = get_loot_data()
     
