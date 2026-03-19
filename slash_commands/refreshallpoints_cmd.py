@@ -1,7 +1,7 @@
 import discord
 from utils.player_records import load_player_records, save_player_records
 from utils.embed_builders import calculate_item_points
-from utils.calc_points import load_loot_points
+from utils.calc_points import load_loot_points, normalize_item_name
 from utils.pagination import chunk_lines_to_pages
 
 async def command(interaction: discord.Interaction):
@@ -20,10 +20,31 @@ async def command(interaction: discord.Interaction):
     correction_summary = []
     # Track invalid removals as: {player_name: {item_label: {"total_quantity": int, "characters": [str]}}}
     removed_items_by_player = {}
+    # Track invalid unique-item removals as: {player_name: [item_label, ...]}
+    removed_unique_items_by_player = {}
     
     # Iterate through all players
     for player_key, player_data in records.items():
         if not player_data.ppes:
+            # Still clean invalid season cache entries even if player has no PPEs.
+            invalid_unique_items = []
+            for item_name, shiny in list(player_data.unique_items):
+                lookup_name = f"{normalize_item_name(item_name)} (shiny)" if shiny else normalize_item_name(item_name)
+                if lookup_name not in loot_points:
+                    invalid_unique_items.append((item_name, shiny))
+
+            if invalid_unique_items:
+                try:
+                    member = interaction.guild.get_member(int(player_key))
+                    player_name = member.display_name if member else f"User {player_key}"
+                except:
+                    player_name = f"User {player_key}"
+
+                removed_unique_items_by_player.setdefault(player_name, [])
+                for item_name, shiny in invalid_unique_items:
+                    player_data.unique_items.discard((item_name, shiny))
+                    item_label = f"{item_name}{' (shiny)' if shiny else ''}"
+                    removed_unique_items_by_player[player_name].append(item_label)
             continue
             
         # Process each PPE for this player
@@ -38,9 +59,9 @@ async def command(interaction: discord.Interaction):
             for loot_item in ppe.loot:
                 # Check if item exists in loot_points
                 if loot_item.shiny:
-                    lookup_name = f"{loot_item.item_name} (shiny)"
+                    lookup_name = f"{normalize_item_name(loot_item.item_name)} (shiny)"
                 else:
-                    lookup_name = loot_item.item_name
+                    lookup_name = normalize_item_name(loot_item.item_name)
                 
                 if lookup_name not in loot_points:
                     # Item is invalid, flag it for removal
@@ -104,6 +125,26 @@ async def command(interaction: discord.Interaction):
                     f"{old_points:.1f} → {corrected_total:.1f} "
                     f"({point_difference:+.1f})"
                 )
+
+        # Clean invalid season cache entries for this player as well.
+        invalid_unique_items = []
+        for item_name, shiny in list(player_data.unique_items):
+            lookup_name = f"{normalize_item_name(item_name)} (shiny)" if shiny else normalize_item_name(item_name)
+            if lookup_name not in loot_points:
+                invalid_unique_items.append((item_name, shiny))
+
+        if invalid_unique_items:
+            try:
+                member = interaction.guild.get_member(int(player_key))
+                player_name = member.display_name if member else f"User {player_key}"
+            except:
+                player_name = f"User {player_key}"
+
+            removed_unique_items_by_player.setdefault(player_name, [])
+            for item_name, shiny in invalid_unique_items:
+                player_data.unique_items.discard((item_name, shiny))
+                item_label = f"{item_name}{' (shiny)' if shiny else ''}"
+                removed_unique_items_by_player[player_name].append(item_label)
     
     # Save all records
     await save_player_records(interaction=interaction, records=records)
@@ -138,6 +179,18 @@ async def command(interaction: discord.Interaction):
         response_lines.append("")
         response_lines.append(f"**Point Corrections Made:**")
         response_lines.extend(correction_summary)
+
+    if removed_unique_items_by_player:
+        response_lines.append("")
+        total_removed_unique = sum(len(items) for items in removed_unique_items_by_player.values())
+        response_lines.append(f"**Removed Invalid Season Items ({total_removed_unique} total):**")
+
+        for player_name in sorted(removed_unique_items_by_player.keys()):
+            items = sorted(removed_unique_items_by_player[player_name])
+            preview = ", ".join(items[:5])
+            if len(items) > 5:
+                preview += f" (+{len(items) - 5} more)"
+            response_lines.append(f"• **{player_name}**: {preview}")
     
     # Split into pages if necessary
     pages = chunk_lines_to_pages(response_lines, 1900)

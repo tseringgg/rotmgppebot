@@ -1,6 +1,7 @@
 from discord import app_commands
 import discord
 from utils.player_records import load_player_records, ensure_player_exists
+from utils.calc_points import normalize_item_name
 import csv
 from PIL import Image
 import os
@@ -65,7 +66,8 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
         with open(sprite_csv, 'r', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
-                sprite_positions[row['item_name']] = {
+                normalized_name = normalize_item_name(row['item_name'])
+                sprite_positions[normalized_name] = {
                     'pixel_x': int(row['pixel_x']),
                     'pixel_y': int(row['pixel_y'])
                 }
@@ -100,8 +102,7 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
                 continue
             
             item_name = os.path.splitext(os.path.basename(png_file))[0]
-            # Normalize apostrophes - convert curly to regular
-            item_name = item_name.replace("'", "'").replace("'", "'")
+            item_name = normalize_item_name(item_name)
             try:
                 img = Image.open(png_file)
                 if img.mode != 'RGBA':
@@ -124,8 +125,7 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
         
         # Place player's season loot on the background
         for item_name, shiny in player_data.unique_items:
-            # Normalize apostrophes - convert curly to regular
-            item_name = item_name.replace("'", "'").replace("'", "'")
+            item_name = normalize_item_name(item_name)
             
             # Check if item is marked as shiny
             if shiny:

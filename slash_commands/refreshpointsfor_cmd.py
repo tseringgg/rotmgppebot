@@ -1,7 +1,7 @@
 import discord
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.embed_builders import calculate_item_points, build_loot_embed
-from utils.calc_points import load_loot_points
+from utils.calc_points import load_loot_points, normalize_item_name
 from utils.pagination import chunk_lines_to_pages
 
 async def command(interaction: discord.Interaction, user: discord.Member, id: int):
@@ -47,9 +47,9 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     for loot_item in target_ppe.loot:
         # Check if item exists in loot_points
         if loot_item.shiny:
-            lookup_name = f"{loot_item.item_name} (shiny)"
+            lookup_name = f"{normalize_item_name(loot_item.item_name)} (shiny)"
         else:
-            lookup_name = loot_item.item_name
+            lookup_name = normalize_item_name(loot_item.item_name)
         
         if lookup_name not in loot_points:
             # Item is invalid, flag it for removal
@@ -85,6 +85,16 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     for bonus in target_ppe.bonuses:
         bonus_points = bonus.points * bonus.quantity
         total_bonus_points += bonus_points
+
+    # Clean invalid season cache entries for this player.
+    removed_unique_items = []
+    for item_name, shiny in list(player_data.unique_items):
+        lookup_name = f"{normalize_item_name(item_name)} (shiny)" if shiny else normalize_item_name(item_name)
+        if lookup_name not in loot_points:
+            removed_unique_items.append((item_name, shiny))
+
+    for item_name, shiny in removed_unique_items:
+        player_data.unique_items.discard((item_name, shiny))
     
     # Set the corrected total
     corrected_total = total_loot_points + total_bonus_points
@@ -125,6 +135,17 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
             response_lines.append(
                 f"• **{item_label}** x{item_data['total_quantity']} from: {character_breakdown}"
             )
+
+    if removed_unique_items:
+        response_lines.append("")
+        response_lines.append(f"**Removed Invalid Season Items ({len(removed_unique_items)} total):**")
+        unique_labels = sorted(
+            f"{item_name}{' (shiny)' if shiny else ''}" for item_name, shiny in removed_unique_items
+        )
+        preview = ", ".join(unique_labels[:5])
+        if len(unique_labels) > 5:
+            preview += f" (+{len(unique_labels) - 5} more)"
+        response_lines.append(f"• {preview}")
     
     # Split into pages if necessary
     pages = chunk_lines_to_pages(response_lines, 1900)

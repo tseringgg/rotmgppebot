@@ -2,6 +2,7 @@ from discord import app_commands
 import discord
 from utils.player_records import get_active_ppe_of_user
 from utils.role_checks import require_ppe_roles
+from utils.calc_points import normalize_item_name
 import csv
 from PIL import Image
 import os
@@ -47,7 +48,8 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
         with open(sprite_csv, 'r', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
-                sprite_positions[row['item_name']] = {
+                normalized_name = normalize_item_name(row['item_name'])
+                sprite_positions[normalized_name] = {
                     'pixel_x': int(row['pixel_x']),
                     'pixel_y': int(row['pixel_y'])
                 }
@@ -82,8 +84,7 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
                 continue
             
             item_name = os.path.splitext(os.path.basename(png_file))[0]
-            # Normalize apostrophes to match CSV data
-            item_name = item_name.replace("'", "'")
+            item_name = normalize_item_name(item_name)
             try:
                 img = Image.open(png_file)
                 if img.mode != 'RGBA':
@@ -106,9 +107,7 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
         
         # Place player's loot on the background
         for loot_item in active_ppe.loot:
-            item_name = loot_item.item_name
-            # Normalize apostrophes
-            item_name = item_name.replace("'", "'")
+            item_name = normalize_item_name(loot_item.item_name)
             
             # Check if item is marked as shiny
             if loot_item.shiny:
