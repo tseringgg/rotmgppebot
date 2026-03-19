@@ -108,7 +108,7 @@ async def command(
                 user = interaction.user
                 if not isinstance(user, discord.Member):
                     raise ValueError("❌ Could not retrieve your member information.")
-                final_key, points_added, _ = await player_manager.add_loot_and_points(
+                final_key, points_added, _active_ppe, _quest_update = await player_manager.add_loot_and_points(
                     interaction, user=user, ppe_id=ppe_id, item_name=item_name, divine=detected_loot["divine"], shiny=detected_loot["shiny"], points=points
                 )
                 message += f"• **{final_key}** (+{points_added} points)\n"

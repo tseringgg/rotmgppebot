@@ -56,7 +56,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
         points = calc_points(item_name, divine, shiny)
         
         # Add loot and points using player_manager
-        final_key, points_added, updated_ppe = await player_manager.add_loot_and_points(
+        final_key, points_added, updated_ppe, _quest_update = await player_manager.add_loot_and_points(
             interaction, user=user, ppe_id=id, item_name=item_name, divine=divine, shiny=shiny, points=points
         )
         

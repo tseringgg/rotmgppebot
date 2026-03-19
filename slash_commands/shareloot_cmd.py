@@ -57,6 +57,7 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
         
         sprite_positions = {}
         sprite_images = {}
+        item_type_lookup = {}
         
         with open(sprite_csv, 'r', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
@@ -67,20 +68,39 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
                     'pixel_y': int(row['pixel_y'])
                 }
 
+        # Load loot type metadata so variant inclusion is based on item class
+        # (normal/skin/limited), not on whether a sprite row exists.
+        with open('rotmg_loot_drops_updated.csv', 'r', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                normalized_name = normalize_item_name(row['Item Name'])
+                item_type_lookup[normalized_name] = row['Loot Type'].strip().lower()
+
         # Build the selected variant item set so we only report missing items
         # that should appear on this specific background variant.
         selected_variant_items = set(sprite_positions.keys())
 
         # Track which loot items belong to this selected variant so summary
         # counts are accurate for non-"all" pictures.
+        def is_in_variant(item_type: str) -> bool:
+            if variant == "all":
+                return True
+            if variant == "normal":
+                return item_type not in {"skin", "limited"}
+            if variant == "normal_skins":
+                return item_type != "limited"
+            if variant == "normal_limited":
+                return item_type != "skin"
+            return True
+
         total_variant_items = 0
         items_excluded_from_variant = []
         for loot_item in active_ppe.loot:
             normalized_name = normalize_item_name(loot_item.item_name)
-            variant_key = f"{normalized_name} (shiny)" if loot_item.shiny else normalized_name
             display_name = f"{loot_item.item_name} (shiny)" if loot_item.shiny else loot_item.item_name
 
-            if variant_key in selected_variant_items:
+            item_type = item_type_lookup.get(normalized_name, "")
+            if is_in_variant(item_type):
                 total_variant_items += 1
             else:
                 items_excluded_from_variant.append(display_name)
@@ -135,6 +155,11 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
         # Place player's loot on the background
         for loot_item in active_ppe.loot:
             item_name = normalize_item_name(loot_item.item_name)
+            item_type = item_type_lookup.get(item_name, "")
+
+            # Skip items intentionally excluded by selected picture variant.
+            if not is_in_variant(item_type):
+                continue
             
             # Check if item is marked as shiny
             if loot_item.shiny:
@@ -147,9 +172,7 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
                     background.paste(sprite, (pos['pixel_x'], pos['pixel_y']), sprite)
                     items_placed += 1
                 else:
-                    # Only mark as missing if this item belongs to the selected variant.
-                    if shiny_name in selected_variant_items:
-                        items_not_found.append(f"{item_name} (shiny)")
+                    items_not_found.append(f"{item_name} (shiny)")
             else:
                 # Non-shiny item
                 if item_name in sprite_positions and item_name in sprite_images:
@@ -158,9 +181,7 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
                     background.paste(sprite, (pos['pixel_x'], pos['pixel_y']), sprite)
                     items_placed += 1
                 else:
-                    # Only mark as missing if this item belongs to the selected variant.
-                    if item_name in selected_variant_items:
-                        items_not_found.append(item_name)
+                    items_not_found.append(item_name)
         
         # Generate filename
         username = interaction.user.display_name.replace(" ", "_")

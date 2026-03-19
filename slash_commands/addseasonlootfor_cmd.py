@@ -2,6 +2,7 @@ import discord
 from utils.player_records import load_player_records, save_player_records, ensure_player_exists
 from utils.loot_data import LOOT
 from utils.calc_points import load_loot_points
+from utils.quest_manager import update_quests_for_item
 
 
 async def command(
@@ -54,6 +55,7 @@ async def command(
             )
         
         player_data.unique_items.add(item_key)
+        update_quests_for_item(player_data, item_name)
         
         await save_player_records(interaction, records)
         

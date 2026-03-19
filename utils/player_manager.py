@@ -3,6 +3,7 @@ from typing import Dict, Optional
 import discord
 from dataclass import Loot, PPEData, PlayerData
 from utils.player_records import load_player_records, save_player_records, ensure_player_exists, get_active_ppe
+from utils.quest_manager import update_quests_for_item
 
 class PlayerManager:
     """Centralized manager for player data operations to prevent race conditions."""
@@ -34,7 +35,7 @@ class PlayerManager:
             
             return result
     
-    async def add_loot_and_points(self, interaction: discord.Interaction, user: discord.Member, ppe_id:int, item_name: str, 
+    async def add_loot_and_points(self, interaction: discord.Interaction, user: discord.Member, ppe_id:int, item_name: str,
                                 divine: bool = False, shiny: bool = False, points: float = 0) -> tuple:
         """Add loot and points atomically."""
         
@@ -79,8 +80,10 @@ class PlayerManager:
             import math
             points_rounded = math.floor(points_to_add * 2) / 2
             active_ppe.points += points_rounded
+
+            quest_update = update_quests_for_item(player_data, item_name)
             
-            return item_name, points_rounded, active_ppe
+            return item_name, points_rounded, active_ppe, quest_update
         
         return await self.execute_transaction(interaction, operation)
     

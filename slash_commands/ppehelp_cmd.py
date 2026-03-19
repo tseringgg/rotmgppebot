@@ -1,6 +1,7 @@
 
 
 import discord
+from utils.pagination import LootPaginationView
 
 
 async def command(interaction: discord.Interaction):
@@ -39,6 +40,7 @@ async def command(interaction: discord.Interaction):
         "removeseasonloot": "Remove unique item from season.",
         "showseasonloot": "Show all season unique items.",
         "shareseasonloot": "Generate season loot table.",
+        "myquests": "Show your current and completed quests.",
     }
     
     # --- Team Commands (Player/Leader) ---
@@ -70,6 +72,8 @@ async def command(interaction: discord.Interaction):
         "addpointsfor": "Manually add points.",
         "refreshpointsfor": "Recalculate PPE points.",
         "refreshallpoints": "Recalculate all PPE points.",
+        "viewquestsfor": "View quest state for a player.",
+        "resetquestfor": "Reset quest sections for a player.",
     }
     
     # --- Admin: Team Management ---
@@ -97,28 +101,89 @@ async def command(interaction: discord.Interaction):
         "setuproles": "Create required roles.",
     }
 
-    # --- Create help embed ---
-    embed = discord.Embed(
-        title="🧙 PPE Bot Help",
-        description="Welcome to the PPE competition bot!",
-        color=discord.Color.blurple()
-    )
+    def split_field_lines(lines: list[str], max_chars: int = 1000) -> list[str]:
+        chunks = []
+        current_lines = []
+        current_len = 0
 
-    # Format and add fields (keeping under 1024 char limit per field)
-    def format_cmds(cmds_dict):
-        return "\n".join([f"`/{cmd}` — {desc}" for cmd, desc in cmds_dict.items()])
-    
-    embed.add_field(name="⚪ General Commands", value=format_cmds(general_cmds), inline=False)
-    embed.add_field(name="🟢 PPE Management", value=format_cmds(ppe_mgmt_cmds), inline=False)
-    embed.add_field(name="📦 Loot & Bonuses", value=format_cmds(loot_cmds), inline=False)
-    embed.add_field(name="🌟 Season Tracking", value=format_cmds(season_cmds), inline=False)
-    embed.add_field(name="👥 Team Commands", value=format_cmds(team_cmds), inline=False)
-    embed.add_field(name="👔 Team Leader", value=format_cmds(leader_cmds), inline=False)
-    embed.add_field(name="🔴 Admin: Players", value=format_cmds(admin_player_cmds), inline=False)
-    embed.add_field(name="🔴 Admin: Loot & Data", value=format_cmds(admin_data_cmds), inline=False)
-    embed.add_field(name="🔴 Admin: Teams", value=format_cmds(admin_team_cmds), inline=False)
-    embed.add_field(name="🔴 Admin: Utility", value=format_cmds(admin_util_cmds), inline=False)
-    embed.add_field(name="🔒 Owner Only", value=format_cmds(owner_cmds), inline=False)
+        for line in lines:
+            additional = len(line) + (1 if current_lines else 0)
+            if current_lines and current_len + additional > max_chars:
+                chunks.append("\n".join(current_lines))
+                current_lines = [line]
+                current_len = len(line)
+            else:
+                current_lines.append(line)
+                current_len += additional
 
-    embed.set_footer(text="PPE Bot by LogicVoid — use /ppehelp anytime")
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+        if current_lines:
+            chunks.append("\n".join(current_lines))
+
+        return chunks or ["No commands available."]
+
+    categories = [
+        ("⚪ General Commands", general_cmds),
+        ("🟢 PPE Management", ppe_mgmt_cmds),
+        ("📦 Loot & Bonuses", loot_cmds),
+        ("🌟 Season Tracking", season_cmds),
+        ("👥 Team Commands", team_cmds),
+        ("👔 Team Leader", leader_cmds),
+        ("🔴 Admin: Players", admin_player_cmds),
+        ("🔴 Admin: Loot & Data", admin_data_cmds),
+        ("🔴 Admin: Teams", admin_team_cmds),
+        ("🔴 Admin: Utility", admin_util_cmds),
+        ("🔒 Owner Only", owner_cmds),
+    ]
+
+    expanded_fields: list[tuple[str, str]] = []
+    for category_name, cmds_dict in categories:
+        lines = [f"`/{cmd}` — {desc}" for cmd, desc in cmds_dict.items()]
+        chunks = split_field_lines(lines)
+        for idx, chunk in enumerate(chunks):
+            suffix = "" if idx == 0 else f" (cont. {idx + 1})"
+            expanded_fields.append((f"{category_name}{suffix}", chunk))
+
+    embeds: list[discord.Embed] = []
+    max_fields_per_embed = 8
+    max_embed_chars = 5500
+    pages: list[list[tuple[str, str]]] = []
+    current_page_fields: list[tuple[str, str]] = []
+    current_page_chars = 0
+
+    for field_name, field_value in expanded_fields:
+        field_chars = len(field_name) + len(field_value)
+        would_exceed_field_count = len(current_page_fields) >= max_fields_per_embed
+        would_exceed_char_budget = current_page_fields and (current_page_chars + field_chars > max_embed_chars)
+
+        if would_exceed_field_count or would_exceed_char_budget:
+            pages.append(current_page_fields)
+            current_page_fields = [(field_name, field_value)]
+            current_page_chars = field_chars
+        else:
+            current_page_fields.append((field_name, field_value))
+            current_page_chars += field_chars
+
+    if current_page_fields:
+        pages.append(current_page_fields)
+
+    for page_fields in pages:
+        embed = discord.Embed(
+            title="🧙 PPE Bot Help",
+            description="Welcome to the PPE competition bot!",
+            color=discord.Color.blurple(),
+        )
+        for field_name, field_value in page_fields:
+            embed.add_field(name=field_name, value=field_value, inline=False)
+        embeds.append(embed)
+
+    for page_num, embed in enumerate(embeds, start=1):
+        if len(embeds) > 1:
+            embed.set_footer(text=f"PPE Bot by LogicVoid — Page {page_num}/{len(embeds)}")
+        else:
+            embed.set_footer(text="PPE Bot by LogicVoid — use /ppehelp anytime")
+
+    if len(embeds) == 1:
+        await interaction.response.send_message(embed=embeds[0], ephemeral=True)
+    else:
+        view = LootPaginationView(embeds=embeds, user_id=interaction.user.id)
+        await interaction.response.send_message(embed=embeds[0], view=view, ephemeral=True)

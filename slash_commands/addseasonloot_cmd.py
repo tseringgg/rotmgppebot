@@ -2,6 +2,7 @@ import discord
 from utils.player_records import load_player_records, save_player_records, ensure_player_exists
 from utils.loot_data import LOOT
 from utils.calc_points import load_loot_points
+from utils.quest_manager import update_quests_for_item
 
 
 async def command(
@@ -48,16 +49,26 @@ async def command(
             )
         
         player_data.unique_items.add(item_key)
+
+        quest_update = update_quests_for_item(player_data, item_name)
         
         await save_player_records(interaction, records)
         
         total_count = player_data.get_unique_item_count()
         
-        await interaction.response.send_message(
+        response_lines = [
             f"✅ Added **{item_name}{' (shiny)' if shiny else ''}** to your season loot!\n"
-            f"You now have **{total_count}** unique items collected.",
-            ephemeral=False
-        )
+            f"You now have **{total_count}** unique items collected."
+        ]
+
+        for completed_item in quest_update.get("completed_items", []):
+            response_lines.append(f"✅ Item quest completed: **{completed_item}**")
+        for completed_skin in quest_update.get("completed_skins", []):
+            response_lines.append(f"✅ Skin quest completed: **{completed_skin}**")
+        if quest_update.get("completed_items") or quest_update.get("completed_skins"):
+            response_lines.append("Use `/myquests` to view your updated quest list.")
+
+        await interaction.response.send_message("\n".join(response_lines), ephemeral=False)
         
     except (ValueError, KeyError, LookupError) as e:
         return await interaction.response.send_message(str(e), ephemeral=True)

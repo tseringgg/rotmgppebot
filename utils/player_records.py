@@ -8,7 +8,7 @@ from typing import Dict, Any, List
 from dataclasses import asdict
 
 import discord
-from dataclass import Loot, PPEData, PlayerData, Bonus, TeamData
+from dataclass import Loot, PPEData, PlayerData, Bonus, TeamData, QuestData
 
 # Persistent data directory (Railway Volume)
 DATA_DIR = "/data"
@@ -83,6 +83,23 @@ def normalize_ppe(ppe: dict) -> PPEData:
 
 def normalize_player(player: dict) -> PlayerData:
     ppes = [normalize_ppe(p) for p in player.get("ppes", [])]
+
+    def safe_str_list(value) -> List[str]:
+        """Coerce unknown/legacy values into a clean list of strings."""
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return [str(item) for item in value if item is not None]
+        return []
+
+    quests_raw = player.get("quests", {}) if isinstance(player.get("quests", {}), dict) else {}
+    normalized_quests = QuestData(
+        # Prefer unified quests field, but gracefully fall back to legacy keys.
+        current_items=safe_str_list(quests_raw.get("current_items", player.get("current_item_quests", []))),
+        current_skins=safe_str_list(quests_raw.get("current_skins", player.get("current_skin_quests", []))),
+        completed_items=safe_str_list(quests_raw.get("completed_items", player.get("completed_item_quests", []))),
+        completed_skins=safe_str_list(quests_raw.get("completed_skins", player.get("completed_skin_quests", []))),
+    )
     
     # Handle unique_items migration - rebuild from PPEs if missing
     unique_items_list = player.get("unique_items", None)
@@ -102,7 +119,8 @@ def normalize_player(player: dict) -> PlayerData:
         active_ppe=player.get("active_ppe"),
         is_member=bool(player.get("is_member", False)),
         unique_items=unique_items,
-        team_name=player.get("team_name", None)
+        team_name=player.get("team_name", None),
+        quests=normalized_quests
     )
 
 async def load_player_records(interaction: discord.Interaction) -> Dict[int, PlayerData]:
@@ -173,7 +191,13 @@ async def save_player_records(interaction: discord.Interaction, records: Dict[in
             ],
             "active_ppe": data.active_ppe,
             "unique_items": list(data.unique_items),  # Convert set to list for JSON
-            "team_name": data.team_name
+            "team_name": data.team_name,
+            "quests": {
+                "current_items": data.quests.current_items,
+                "current_skins": data.quests.current_skins,
+                "completed_items": data.quests.completed_items,
+                "completed_skins": data.quests.completed_skins,
+            }
         }
         for user_id, data in records.items()
     }

@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, inspectloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd, shareloot_cmd, shareseasonloot_cmd, addseasonloot_cmd, addseasonlootfor_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, showseasonloot_cmd, seasonleaderboard_cmd, resetseason_cmd, migrateapostrophes_cmd, addteam_cmd, addplayer_team_cmd, leaveteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, listcharactersfor_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, inspectloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myquests_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd, shareloot_cmd, shareseasonloot_cmd, addseasonloot_cmd, addseasonlootfor_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, showseasonloot_cmd, seasonleaderboard_cmd, resetseason_cmd, migrateapostrophes_cmd, addteam_cmd, addplayer_team_cmd, leaveteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, listcharactersfor_cmd, viewquestsfor_cmd, resetquestfor_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -327,6 +327,11 @@ async def listcharactersfor(interaction: discord.Interaction, member: discord.Me
 async def myloot(interaction: discord.Interaction):
     await myloot_cmd.command(interaction)
 
+@bot.tree.command(name="myquests", description="Show your current and completed account quests.", guilds=guilds)
+@require_ppe_roles(player_required=True)
+async def myquests(interaction: discord.Interaction):
+    await myquests_cmd.command(interaction)
+
 @bot.tree.command(name="shareloot", description="Generate a visual loot table showing your active PPE's items.", guilds=guilds)
 @app_commands.describe(include_skins="Include skin items in the loot background", include_limited="Include limited items in the loot background")
 @require_ppe_roles(player_required=True)
@@ -434,6 +439,18 @@ async def removeseasonlootfor(
 @require_ppe_roles(player_required=True)
 async def showseasonloot(interaction: discord.Interaction):
     await showseasonloot_cmd.command(interaction)
+
+@bot.tree.command(name="viewquestsfor", description="Show quests for a specific player. Admin only.", guilds=guilds)
+@app_commands.describe(member="The player whose quests you want to view")
+@require_ppe_roles(admin_required=True)
+async def viewquestsfor(interaction: discord.Interaction, member: discord.Member):
+    await viewquestsfor_cmd.command(interaction, member)
+
+@bot.tree.command(name="resetquestfor", description="Reset quests for a specific player. Admin only.", guilds=guilds)
+@app_commands.describe(member="The player whose quests to reset")
+@require_ppe_roles(admin_required=True)
+async def resetquestfor(interaction: discord.Interaction, member: discord.Member):
+    await resetquestfor_cmd.command(interaction, member)
 
 @bot.tree.command(name="shareseasonloot", description="Generate a visual loot table showing all your season loot items.", guilds=guilds)
 @app_commands.describe(include_skins="Include skin items in the loot background", include_limited="Include limited items in the loot background")

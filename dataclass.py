@@ -60,6 +60,14 @@ class TeamData:
     leader_id: int  # Discord user ID of the team leader
     members: List[int] = field(default_factory=list)  # Discord user IDs of all members
 
+
+@dataclass
+class QuestData:
+    current_items: List[str] = field(default_factory=list)
+    current_skins: List[str] = field(default_factory=list)
+    completed_items: List[str] = field(default_factory=list)
+    completed_skins: List[str] = field(default_factory=list)
+
 @dataclass
 class PlayerData:
     ppes: List[PPEData] = field(default_factory=list)
@@ -67,6 +75,7 @@ class PlayerData:
     is_member: bool = False
     unique_items: Set[tuple] = field(default_factory=set)  # (item_name, shiny)
     team_name: Optional[str] = None  # Name of the team this player is on (None if not on a team)
+    quests: QuestData = field(default_factory=QuestData)
     
     def get_unique_item_count(self) -> int:
         """Get the count of unique items across all PPEs."""

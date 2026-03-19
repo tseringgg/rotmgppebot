@@ -22,7 +22,7 @@ class ConfirmView(discord.ui.View):
 
 async def command(interaction: discord.Interaction):
     """
-    Reset the season by clearing all unique items for all players.
+    Reset the season by clearing all unique items and quest data for all players.
     Retains player member status and PPE roles.
     Admin only.
     """
@@ -34,7 +34,7 @@ async def command(interaction: discord.Interaction):
         view = ConfirmView()
         await interaction.response.send_message(
             "⚠️ **Are you sure you want to reset the season?**\n"
-            "This will clear all unique items for all players and delete all teams.\n"
+            "This will clear all unique items and quest data for all players and delete all teams.\n"
             "Member status and PPE roles will be preserved.",
             view=view,
             ephemeral=True
@@ -56,6 +56,7 @@ async def command(interaction: discord.Interaction):
         # Clear all PPE characters and unique items for all players
         items_cleared = 0
         ppes_cleared = 0
+        quest_entries_cleared = 0
         for player_data in records.values():
             # Clear all PPE characters
             ppes_cleared += len(player_data.ppes)
@@ -66,6 +67,16 @@ async def command(interaction: discord.Interaction):
             if len(player_data.unique_items) > 0:
                 items_cleared += len(player_data.unique_items)
                 player_data.unique_items.clear()
+
+            # Clear all quest data
+            quest_entries_cleared += len(player_data.quests.current_items)
+            quest_entries_cleared += len(player_data.quests.current_skins)
+            quest_entries_cleared += len(player_data.quests.completed_items)
+            quest_entries_cleared += len(player_data.quests.completed_skins)
+            player_data.quests.current_items.clear()
+            player_data.quests.current_skins.clear()
+            player_data.quests.completed_items.clear()
+            player_data.quests.completed_skins.clear()
             
             # Clear team associations
             player_data.team_name = None
@@ -90,7 +101,7 @@ async def command(interaction: discord.Interaction):
         
         await interaction.followup.send(
             f"✅ Season reset complete!\n"
-            f"**Cleared:** {ppes_cleared} PPE characters, {items_cleared} unique items\n"
+            f"**Cleared:** {ppes_cleared} PPE characters, {items_cleared} unique items, {quest_entries_cleared} quest entries\n"
             f"**Deleted:** {teams_deleted} teams and their roles\n"
             f"**Preserved:** Player member status and PPE roles",
             ephemeral=False

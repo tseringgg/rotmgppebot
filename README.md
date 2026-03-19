@@ -11,6 +11,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 - **Point Management**: Automated point calculations with duplicate handling
 - **Personal Statistics**: View your PPE progress and loot collections
 - **Seperate Seasonal Tracking**: View your overall season progress and loot!
+- **Account Quests**: Get randomized item/skin quests tied to your account with completion tracking
 - **Team System**: Join teams with team leaders who can manage team members
 
 ### 🔧 Admin Features
@@ -19,6 +20,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 - **Point Corrections**: Refresh and fix point totals automatically
 - **Bulk Operations**: Mass point recalculation for server-wide fixes
 - **Inspection Tools**: View detailed loot and bonus information
+- **Quest Administration**: View and reset quest progress for any contest player
 - **Team Management**: Create teams, manage members, and delete teams
 
 ### 📊 Advanced Systems
@@ -88,6 +90,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/addpenalties` | Apply retroactive penalties to your PPE |
 | `/myloot` | View your current PPE's loot and stats |
 | `/myppes` | See all your PPEs and which is active |
+| `/myquests` | View your current and completed account quests |
 
 ### Admin Commands
 | Command | Description |
@@ -106,6 +109,8 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/refreshallpoints` | Fix all PPE point totals server-wide |
 | `/deleteallppes` | Delete all PPEs for a player |
 | `/deleteppe` | Delete a specific PPE by ID |
+| `/viewquestsfor` | View quest state for any player |
+| `/resetquestfor` | Open an interactive menu to reset quest sections for any player |
 
 ### Team Commands (Leaders & Admins)
 | Command | Description |
@@ -182,6 +187,11 @@ PlayerData
 ├── active_ppe: int
 ├── team_name: str (optional)  # Name of team player is on
 ├── unique_items: Set[tuple]  # (item_name, shiny) - Seasonal
+├── quests: QuestData
+│   ├── current_items: List[str]
+│   ├── current_skins: List[str]
+│   ├── completed_items: List[str]
+│   └── completed_skins: List[str]
 └── ppes: List[PPEData]
     ├── id: int
     ├── name: ROTMGClass
@@ -209,6 +219,7 @@ TeamData
 - **Team Manager**: Manages team creation, member assignments, and leaderboard calculations
 - **Point Calculator**: Handles duplicates and special modifiers
 - **Seasonal Tracker**: Maintains unique item collections across seasons with dedicated leaderboards
+- **Quest Manager**: Generates randomized item/skin quests and rotates replacements on completion
 - **Autocomplete System**: Dynamic suggestions based on context
 - **Embed Builder**: Rich Discord embed formatting
 - **Role Checker**: Permission validation and error handling

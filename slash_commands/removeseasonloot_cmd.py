@@ -1,6 +1,7 @@
 import discord
 from utils.player_records import load_player_records, save_player_records, ensure_player_exists
 from utils.loot_data import LOOT
+from utils.quest_manager import remove_item_from_completed_quests
 
 
 async def command(
@@ -37,16 +38,22 @@ async def command(
             )
         
         player_data.unique_items.discard(item_key)
+        removed_quest_entries = remove_item_from_completed_quests(player_data, item_name)
         
         await save_player_records(interaction, records)
         
         total_count = player_data.get_unique_item_count()
         
-        await interaction.response.send_message(
-            f"✅ Removed **{item_name}{' (shiny)' if shiny else ''}** from your season loot!\n"
+        response_lines = [
+            f"✅ Removed **{item_name}{' (shiny)' if shiny else ''}** from your season loot!",
             f"You now have **{total_count}** unique items collected.",
-            ephemeral=False
-        )
+        ]
+
+        removed_entries = removed_quest_entries.get("removed_completed_items", []) + removed_quest_entries.get("removed_completed_skins", [])
+        if removed_entries:
+            response_lines.append(f"🧹 Removed completed quest entries: {', '.join(removed_entries)}")
+
+        await interaction.response.send_message("\n".join(response_lines), ephemeral=False)
         
     except (ValueError, KeyError, LookupError) as e:
         return await interaction.response.send_message(str(e), ephemeral=True)
