@@ -81,7 +81,7 @@ class PlayerManager:
             points_rounded = math.floor(points_to_add * 2) / 2
             active_ppe.points += points_rounded
 
-            quest_update = update_quests_for_item(player_data, item_name)
+            quest_update = update_quests_for_item(player_data, item_name, shiny)
             
             return item_name, points_rounded, active_ppe, quest_update
         

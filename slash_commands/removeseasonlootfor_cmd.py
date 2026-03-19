@@ -44,7 +44,7 @@ async def command(
             )
         
         player_data.unique_items.discard(item_key)
-        removed_quest_entries = remove_item_from_completed_quests(player_data, item_name)
+        removed_quest_entries = remove_item_from_completed_quests(player_data, item_name, shiny)
         
         await save_player_records(interaction, records)
         

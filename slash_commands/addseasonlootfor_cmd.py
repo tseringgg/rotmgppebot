@@ -55,7 +55,7 @@ async def command(
             )
         
         player_data.unique_items.add(item_key)
-        update_quests_for_item(player_data, item_name)
+        update_quests_for_item(player_data, item_name, shiny)
         
         await save_player_records(interaction, records)
         

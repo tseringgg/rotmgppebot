@@ -48,6 +48,13 @@ def _contains_name(items: List[str], item_name: str) -> bool:
     return any(normalize_item_name(item).lower() == target for item in items)
 
 
+def _quest_target_name(item_name: str, shiny: bool = False) -> str:
+    normalized = normalize_item_name(item_name)
+    if shiny and not normalized.lower().endswith(" (shiny)"):
+        return f"{normalized} (shiny)"
+    return normalized
+
+
 def _owned_normalized_items(player_data: PlayerData) -> set[str]:
     owned = set()
     for item_name, _shiny in player_data.unique_items:
@@ -133,9 +140,9 @@ def refresh_player_quests(player_data: PlayerData) -> bool:
     return bool(changed or replacement_items or replacement_skins)
 
 
-def update_quests_for_item(player_data: PlayerData, item_name: str) -> dict:
+def update_quests_for_item(player_data: PlayerData, item_name: str, shiny: bool = False) -> dict:
     initialized = initialize_quests_if_needed(player_data)
-    normalized_item = normalize_item_name(item_name).lower()
+    normalized_item = normalize_item_name(_quest_target_name(item_name, shiny)).lower()
     quests = player_data.quests
 
     completed_items: List[str] = []
@@ -176,10 +183,10 @@ def update_quests_for_item(player_data: PlayerData, item_name: str) -> dict:
     }
 
 
-def remove_item_from_completed_quests(player_data: PlayerData, item_name: str) -> dict:
+def remove_item_from_completed_quests(player_data: PlayerData, item_name: str, shiny: bool = False) -> dict:
     """Remove matching item from completed quest lists after season-loot removal."""
     quests = player_data.quests
-    normalized_item = normalize_item_name(item_name).lower()
+    normalized_item = normalize_item_name(_quest_target_name(item_name, shiny)).lower()
 
     removed_completed_items = [
         quest for quest in quests.completed_items

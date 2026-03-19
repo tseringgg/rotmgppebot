@@ -811,59 +811,73 @@ Cheerful Chipper (shiny),28,26,1120,1040
 Snow Branch,29,26,1160,1040
 Enchanted Ice Blade,0,27,0,1080
 Frozen Wand,1,27,40,1080
-Esoteric Buckler,2,27,80,1080
-Corrupted Cleaver,3,27,120,1080
-Bow of Nightmares,4,27,160,1080
-Staff of Horrific Knowledge,5,27,200,1080
-Wand of Ancient Terror,6,27,240,1080
-Dagger of the Terrible Talon,7,27,280,1080
-Skull-Splitter Sword,8,27,320,1080
-Heartfind Dagger,9,27,360,1080
-Wand of Budding Romance,10,27,400,1080
-Cupid's Bow,11,27,440,1080
-Vinesword,12,27,480,1080
-Staff of Adoration,13,27,520,1080
-Diamond-Bladed Katana,14,27,560,1080
-Heart Jewel Blades,15,27,600,1080
-Morning Star of Sweet Miracles,16,27,640,1080
-Anteros Longbow,17,27,680,1080
-Lovestruck Yoyo,18,27,720,1080
-Love Heart Spellblade,19,27,760,1080
-Sweetheart Taichi,20,27,800,1080
-Quiver of Dazing Love,21,27,840,1080
-Heartstruck Bow,22,27,880,1080
-Cupid's Garments,23,27,920,1080
-Ring of Unbound Love,24,27,960,1080
-Heartseeker Katana,25,27,1000,1080
-Eternal Star,26,27,1040,1080
-Chocolate Armor,27,27,1080,1080
-Sweetener Ring,28,27,1120,1080
-Ever Green Skull,29,27,1160,1080
-Floral Corset,0,28,0,1120
-Lovebite Armor,1,28,40,1120
-Sweetcut Wakizashi,2,28,80,1120
-Spring Rose,3,28,120,1120
-Rose Brooch,4,28,160,1120
-Elderfrost Heirloom,5,28,200,1120
-Frozen Whisper,6,28,240,1120
-Winter's Dire Kiss,7,28,280,1120
-Icebreaker Maul,8,28,320,1120
-Frostfall Rod,9,28,360,1120
-Perennial Cranium,10,28,400,1120
-Hanagasaku,11,28,440,1120
-Perennial Cranium (shiny),12,28,480,1120
-Gem of Tenderness,13,28,520,1120
-Gem of Adoration,14,28,560,1120
-Soulful Affection,15,28,600,1120
-Soulful Affection (shiny),16,28,640,1120
-Gem of Adoration (shiny),17,28,680,1120
-Gem of Tenderness (shiny),18,28,720,1120
-Heart of Gold Prism,19,28,760,1120
-Incubation Mace,20,28,800,1120
-Incubation Mace (shiny),21,28,840,1120
-Crystal Key,22,28,880,1120
-Keychain Cutlass,23,28,920,1120
-Ornaments of Unity,24,28,960,1120
-Eternal Echo,25,28,1000,1120
-Eden's Embrace,26,28,1040,1120
-Nightmatter Circlet,27,28,1080,1120
+Chicken Leg of Doom,2,27,80,1080
+Esoteric Buckler,3,27,120,1080
+Corrupted Cleaver,4,27,160,1080
+Bow of Nightmares,5,27,200,1080
+Staff of Horrific Knowledge,6,27,240,1080
+Wand of Ancient Terror,7,27,280,1080
+Dagger of the Terrible Talon,8,27,320,1080
+Skull-Splitter Sword,9,27,360,1080
+Heartfind Dagger,10,27,400,1080
+Wand of Budding Romance,11,27,440,1080
+Cupid's Bow,12,27,480,1080
+Vinesword,13,27,520,1080
+Staff of Adoration,14,27,560,1080
+Diamond-Bladed Katana,15,27,600,1080
+Heart Jewel Blades,16,27,640,1080
+Morning Star of Sweet Miracles,17,27,680,1080
+Anteros Longbow,18,27,720,1080
+Lovestruck Yoyo,19,27,760,1080
+Love Heart Spellblade,20,27,800,1080
+Sweetheart Taichi,21,27,840,1080
+Quiver of Dazing Love,22,27,880,1080
+Heartstruck Bow,23,27,920,1080
+Cupid's Garments,24,27,960,1080
+Ring of Unbound Love,25,27,1000,1080
+Heartseeker Katana,26,27,1040,1080
+Eternal Star,27,27,1080,1080
+Chocolate Armor,28,27,1120,1080
+Sweetener Ring,29,27,1160,1080
+Ever Green Skull,0,28,0,1120
+Floral Corset,1,28,40,1120
+Lovebite Armor,2,28,80,1120
+Sweetcut Wakizashi,3,28,120,1120
+Spring Rose,4,28,160,1120
+Rose Brooch,5,28,200,1120
+Elderfrost Heirloom,6,28,240,1120
+Frozen Whisper,7,28,280,1120
+Winter's Dire Kiss,8,28,320,1120
+Icebreaker Maul,9,28,360,1120
+Frostfall Rod,10,28,400,1120
+Perennial Cranium,11,28,440,1120
+Hanagasaku,12,28,480,1120
+Perennial Cranium (shiny),13,28,520,1120
+Gem of Tenderness,14,28,560,1120
+Gem of Adoration,15,28,600,1120
+Soulful Affection,16,28,640,1120
+Soulful Affection (shiny),17,28,680,1120
+Gem of Adoration (shiny),18,28,720,1120
+Gem of Tenderness (shiny),19,28,760,1120
+Heart of Gold Prism,20,28,800,1120
+Solar Flare Igniter,21,28,840,1120
+Crest of the Rising Sun,22,28,880,1120
+Bloom-Fire Scepter,23,28,920,1120
+Sovereign Cinder-Blade,24,28,960,1120
+Blade of Eternal Rebirth,25,28,1000,1120
+Prismatic Slasher,26,28,1040,1120
+Rainbow Rod,27,28,1080,1120
+Staff of the Saint,28,28,1120,1120
+Sword of the Rainbow's End,29,28,1160,1120
+Clover Bow,0,29,0,1160
+Katana of Good Fortune,1,29,40,1160
+Painbow,2,29,80,1160
+Clover Star,3,29,120,1160
+Incubation Mace,4,29,160,1160
+Incubation Mace (shiny),5,29,200,1160
+Crystal Key,6,29,240,1160
+Keychain Cutlass,7,29,280,1160
+Ornaments of Unity,8,29,320,1160
+Eternal Echo,9,29,360,1160
+Eden's Embrace,10,29,400,1160
+Nightmatter Circlet,11,29,440,1160
