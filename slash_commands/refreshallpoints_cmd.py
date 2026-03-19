@@ -7,6 +7,9 @@ from utils.pagination import chunk_lines_to_pages
 async def command(interaction: discord.Interaction):
     if not interaction.guild:
         return await interaction.response.send_message("❌ This command can only be used in a server.")
+
+    # This command can take longer than Discord's initial interaction timeout.
+    await interaction.response.defer(thinking=True)
     
     # Load player records and loot data
     records = await load_player_records(interaction)
@@ -15,7 +18,8 @@ async def command(interaction: discord.Interaction):
     total_ppes_processed = 0
     total_corrections = 0
     correction_summary = []
-    removed_items_summary = []
+    # Track invalid removals as: {player_name: {item_label: {"total_quantity": int, "characters": [str]}}}
+    removed_items_by_player = {}
     
     # Iterate through all players
     for player_key, player_data in records.items():
@@ -45,10 +49,17 @@ async def command(interaction: discord.Interaction):
                         player_name = member.display_name if member else f"User {player_key}"
                     except:
                         player_name = f"User {player_key}"
-                    
-                    removed_items_summary.append(
-                        f"• **{player_name}** - PPE #{ppe.id} ({ppe.name}): "
-                        f"Removed **{loot_item.item_name}{' (shiny)' if loot_item.shiny else ''}{' (divine)' if loot_item.divine else ''}** (x{loot_item.quantity})"
+
+                    item_label = f"{loot_item.item_name}{' (shiny)' if loot_item.shiny else ''}{' (divine)' if loot_item.divine else ''}"
+                    player_summary = removed_items_by_player.setdefault(player_name, {})
+                    item_summary = player_summary.setdefault(
+                        item_label,
+                        {"total_quantity": 0, "characters": []}
+                    )
+
+                    item_summary["total_quantity"] += loot_item.quantity
+                    item_summary["characters"].append(
+                        f"PPE #{ppe.id} ({ppe.name}) x{loot_item.quantity}"
                     )
                 else:
                     valid_loot.append(loot_item)
@@ -102,10 +113,26 @@ async def command(interaction: discord.Interaction):
     response_lines.append(f"Processed **{total_ppes_processed} PPEs**")
     response_lines.append(f"Made **{total_corrections} corrections**")
     
-    if removed_items_summary:
+    if removed_items_by_player:
         response_lines.append("")
-        response_lines.append(f"**Removed Invalid Items ({len(removed_items_summary)}):**")
-        response_lines.extend(removed_items_summary)
+        total_removed_quantity = sum(
+            item_data["total_quantity"]
+            for player_data in removed_items_by_player.values()
+            for item_data in player_data.values()
+        )
+        response_lines.append(f"**Removed Invalid Items ({total_removed_quantity} total):**")
+
+        for player_name in sorted(removed_items_by_player.keys()):
+            player_data = removed_items_by_player[player_name]
+            player_total = sum(item_data["total_quantity"] for item_data in player_data.values())
+            response_lines.append(f"• **{player_name}** - removed **{player_total}** invalid item(s):")
+
+            for item_label in sorted(player_data.keys()):
+                item_data = player_data[item_label]
+                character_breakdown = "; ".join(item_data["characters"])
+                response_lines.append(
+                    f"  - **{item_label}** x{item_data['total_quantity']} from: {character_breakdown}"
+                )
     
     if correction_summary:
         response_lines.append("")
@@ -116,11 +143,11 @@ async def command(interaction: discord.Interaction):
     pages = chunk_lines_to_pages(response_lines, 1900)
     
     if len(pages) == 1:
-        await interaction.response.send_message("\n".join(pages[0]))
+        await interaction.followup.send("\n".join(pages[0]))
     else:
         # Send first page with footer, then additional pages
         first_message = "\n".join(pages[0]) + f"\n\n*[Part 1 of {len(pages)}]*"
-        await interaction.response.send_message(first_message)
+        await interaction.followup.send(first_message)
         
         for i, page in enumerate(pages[1:], start=2):
             page_text = "\n".join(page) + f"\n\n*[Part {i} of {len(pages)}]*"

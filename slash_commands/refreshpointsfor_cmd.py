@@ -7,6 +7,9 @@ from utils.pagination import chunk_lines_to_pages
 async def command(interaction: discord.Interaction, user: discord.Member, id: int):
     if not interaction.guild:
         return await interaction.response.send_message("❌ This command can only be used in a server.")
+
+    # Keep the interaction alive in case recalculation or embed building takes time.
+    await interaction.response.defer(thinking=True, ephemeral=True)
     
     # Load player records and loot data
     records = await load_player_records(interaction)
@@ -16,7 +19,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     
     # Check if target player has any PPEs
     if not player_data.ppes:
-        return await interaction.response.send_message(
+        return await interaction.followup.send(
             f"❌ {user.display_name} doesn't have any PPEs.",
             ephemeral=True
         )
@@ -29,7 +32,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
             break
     
     if not target_ppe:
-        return await interaction.response.send_message(
+        return await interaction.followup.send(
             f"❌ Could not find PPE #{id} for {user.display_name}.",
             ephemeral=True
         )
@@ -38,7 +41,8 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     old_points = target_ppe.points
     
     # Validate and remove invalid items
-    removed_items = []
+    # Track invalid removals as: {item_label: {"total_quantity": int, "characters": [str]}}
+    removed_items_by_item = {}
     valid_loot = []
     for loot_item in target_ppe.loot:
         # Check if item exists in loot_points
@@ -49,8 +53,15 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
         
         if lookup_name not in loot_points:
             # Item is invalid, flag it for removal
-            removed_items.append(
-                f"• Removed **{loot_item.item_name}{' (shiny)' if loot_item.shiny else ''}{' (divine)' if loot_item.divine else ''}** (x{loot_item.quantity})"
+            item_label = f"{loot_item.item_name}{' (shiny)' if loot_item.shiny else ''}{' (divine)' if loot_item.divine else ''}"
+            item_summary = removed_items_by_item.setdefault(
+                item_label,
+                {"total_quantity": 0, "characters": []}
+            )
+
+            item_summary["total_quantity"] += loot_item.quantity
+            item_summary["characters"].append(
+                f"PPE #{target_ppe.id} ({target_ppe.name}) x{loot_item.quantity}"
             )
         else:
             valid_loot.append(loot_item)
@@ -86,7 +97,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     point_difference = corrected_total - old_points
     
     # Create response message
-    if point_difference == 0 and not removed_items:
+    if point_difference == 0 and not removed_items_by_item:
         difference_text = "No correction needed - points were already accurate."
     elif point_difference > 0:
         difference_text = f"**+{point_difference:.1f} points** (points were too low)"
@@ -103,10 +114,17 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     response_lines.append(f"**From Bonuses:** {total_bonus_points:.1f} points")
     response_lines.append(f"**Correction:** {difference_text}")
     
-    if removed_items:
+    if removed_items_by_item:
         response_lines.append("")
-        response_lines.append(f"**Removed Invalid Items:**")
-        response_lines.extend(removed_items)
+        total_removed_quantity = sum(item_data["total_quantity"] for item_data in removed_items_by_item.values())
+        response_lines.append(f"**Removed Invalid Items ({total_removed_quantity} total):**")
+
+        for item_label in sorted(removed_items_by_item.keys()):
+            item_data = removed_items_by_item[item_label]
+            character_breakdown = "; ".join(item_data["characters"])
+            response_lines.append(
+                f"• **{item_label}** x{item_data['total_quantity']} from: {character_breakdown}"
+            )
     
     # Split into pages if necessary
     pages = chunk_lines_to_pages(response_lines, 1900)
@@ -115,7 +133,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     embed = await build_loot_embed(target_ppe, user_id=user.id)
     
     if len(pages) == 1:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             "\n".join(pages[0]),
             view=embed,
             embed=embed.embeds[0],
@@ -124,7 +142,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     else:
         # Send first page with embed
         first_message = "\n".join(pages[0]) + f"\n\n*[Part 1 of {len(pages)}]*"
-        await interaction.response.send_message(
+        await interaction.followup.send(
             first_message,
             view=embed,
             embed=embed.embeds[0],

@@ -51,6 +51,10 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
                     'pixel_x': int(row['pixel_x']),
                     'pixel_y': int(row['pixel_y'])
                 }
+
+        # Build the selected variant item set so we only report missing items
+        # that should appear on this specific background variant.
+        selected_variant_items = set(sprite_positions.keys())
         
         # Load background image
         if not os.path.exists(background_file):
@@ -117,8 +121,9 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
                     background.paste(sprite, (pos['pixel_x'], pos['pixel_y']), sprite)
                     items_placed += 1
                 else:
-                    # Shiny sprite is missing
-                    items_not_found.append(f"{item_name} (shiny)")
+                    # Only mark as missing if this item belongs to the selected variant.
+                    if shiny_name in selected_variant_items:
+                        items_not_found.append(f"{item_name} (shiny)")
             else:
                 # Non-shiny item
                 if item_name in sprite_positions and item_name in sprite_images:
@@ -127,7 +132,9 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
                     background.paste(sprite, (pos['pixel_x'], pos['pixel_y']), sprite)
                     items_placed += 1
                 else:
-                    items_not_found.append(item_name)
+                    # Only mark as missing if this item belongs to the selected variant.
+                    if item_name in selected_variant_items:
+                        items_not_found.append(item_name)
         
         # Generate filename
         username = interaction.user.display_name.replace(" ", "_")
