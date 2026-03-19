@@ -10,6 +10,7 @@ async def command(interaction: discord.Interaction):
         "leaderboard": "Show the current PPE leaderboard.",
         "characterleaderboard": "Show highest points for specific class.",
         "seasonleaderboard": "Show season leaderboard by unique items.",
+        "questleaderboard": "Show leaderboard by total completed quests.",
         "teamleaderboard": "Show team leaderboard by combined points.",
         "ppehelp": "Show this help message.",
         "listroles": "List all roles in this server.",

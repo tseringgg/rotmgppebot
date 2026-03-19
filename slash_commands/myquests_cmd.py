@@ -51,10 +51,10 @@ async def command(interaction: discord.Interaction):
             embeds.append(embed)
 
         if len(embeds) == 1:
-            await interaction.response.send_message(embed=embeds[0], ephemeral=True)
+            await interaction.response.send_message(embed=embeds[0], ephemeral=False)
         else:
             view = LootPaginationView(embeds=embeds, user_id=user_id)
-            await interaction.response.send_message(embed=embeds[0], view=view, ephemeral=True)
+            await interaction.response.send_message(embed=embeds[0], view=view, ephemeral=False)
 
     except (ValueError, KeyError, LookupError) as e:
         return await interaction.response.send_message(str(e), ephemeral=True)
