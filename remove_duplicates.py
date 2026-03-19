@@ -19,6 +19,10 @@ def remove_duplicates_from_csv():
         
         # Process each row
         for row in reader:
+            # Skip empty rows
+            if not row or all(not cell.strip() for cell in row):
+                continue
+            
             # Convert row to tuple so it can be added to set
             row_tuple = tuple(row)
             
