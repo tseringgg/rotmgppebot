@@ -50,6 +50,19 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
             variant = "normal_limited"
         else:
             variant = "normal"
+
+        variant_display_names = {
+            "normal": "Normal loot",
+            "normal_skins": "Normal + Skins loot",
+            "normal_limited": "Normal + Limited loot",
+            "all": "All loot",
+        }
+
+        variant_summary_prefix = {
+            "normal": "Normal",
+            "normal_skins": "Normal + Skin",
+            "normal_limited": "Normal + Limited",
+        }
         
         # Construct file paths
         sprite_csv = f"sprite_positions_{variant}.csv"
@@ -75,6 +88,20 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
         # Build the selected variant item set so we only report missing items
         # that should appear on this specific background variant.
         selected_variant_items = set(sprite_positions.keys())
+
+        # Track which player items are part of this selected variant so the
+        # summary can be variant-specific when not using the "all" image.
+        total_variant_items = 0
+        items_excluded_from_variant = []
+        for item_name, shiny in player_data.unique_items:
+            normalized_name = normalize_item_name(item_name)
+            variant_key = f"{normalized_name} (shiny)" if shiny else normalized_name
+            display_name = f"{item_name} (shiny)" if shiny else item_name
+
+            if variant_key in selected_variant_items:
+                total_variant_items += 1
+            else:
+                items_excluded_from_variant.append(display_name)
         
         # Load background image
         if not os.path.exists(background_file):
@@ -168,19 +195,47 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
             color=0xFFD700,
             description=f"**{interaction.user.display_name}'s** Season Loot Collection"
         )
+
+        embed.add_field(
+            name="🖼️ Picture",
+            value=f"**Showing:** {variant_display_names.get(variant, variant)}",
+            inline=True
+        )
+
+        if variant == "all":
+            summary_value = (
+                f"**Items Placed:** {items_placed}\n"
+                f"**Total Unique Items:** {len(player_data.unique_items)}"
+            )
+        else:
+            summary_prefix = variant_summary_prefix.get(variant, "Selected")
+            summary_value = (
+                f"**{summary_prefix} Items Placed:** {items_placed}\n"
+                f"**Total {summary_prefix} Items:** {total_variant_items}"
+            )
         
         embed.add_field(
             name="📊 Summary",
-            value=f"**Items Placed:** {items_placed}\n**Total Unique Items:** {len(player_data.unique_items)}",
+            value=summary_value,
             inline=True
         )
+
+        if variant != "all" and items_excluded_from_variant:
+            excluded_text = ", ".join(items_excluded_from_variant[:5])
+            if len(items_excluded_from_variant) > 5:
+                excluded_text += f" (+{len(items_excluded_from_variant) - 5} more)"
+            embed.add_field(
+                name="📦 Items Not Shown In This Picture",
+                value=excluded_text,
+                inline=False
+            )
         
         if items_not_found:
             not_found_text = ", ".join(items_not_found[:5])
             if len(items_not_found) > 5:
                 not_found_text += f" (+{len(items_not_found) - 5} more)"
             embed.add_field(
-                name="⚠️ Items Not Found",
+                name="⚠️ Items Missing Sprites",
                 value=not_found_text,
                 inline=False
             )
