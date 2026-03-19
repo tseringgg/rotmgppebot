@@ -4,102 +4,169 @@ from PIL import Image, ImageEnhance
 import glob
 import csv
 
-def create_loot_background_and_mapping():
+def find_item_image(item_name, dungeons_path):
     """
-    Create a background PNG with grayed-out item silhouettes and a CSV mapping
-    of item names to grid positions for the shareloot command system.
+    Search for an item's PNG file across all dungeon folders.
+    Returns the path if found, None otherwise.
+    """
+    # Normalize apostrophes in the search name
+    normalized_name = item_name.replace("'", "'").replace("'", "'")
+    
+    # Search in all dungeon subdirectories
+    for dungeon_folder in os.listdir(dungeons_path):
+        dungeon_path = os.path.join(dungeons_path, dungeon_folder)
+        
+        if not os.path.isdir(dungeon_path):
+            continue
+        
+        # Check if this folder should be ignored
+        if dungeon_folder in {"Forging", "Tiered Garbage", "_misc"}:
+            continue
+        
+        # Try to find the PNG file with the normalized name
+        png_path = os.path.join(dungeon_path, f"{normalized_name}.png")
+        if os.path.exists(png_path):
+            return png_path
+    
+    return None
+
+def create_loot_images_from_csv():
+    """
+    Create 4 different loot background images and CSV mappings based on item order from rotmg_loot_drops_updated.csv:
+    1. Normal items (excluding Skin and Limited)
+    2. Normal items + Skins
+    3. Normal items + Limited
+    4. All items (Normal + Skins + Limited)
     """
     
-    # Find all PNG files in dungeons folder and subfolders
-    png_files = []
+    # Paths
     dungeons_path = "dungeons"
-    
-    # Folders to ignore
-    ignored_folders = {"Forging", "Tiered Garbage", "_misc"}
+    csv_file = "rotmg_loot_drops_updated.csv"
+    target_size = (40, 40)
     
     if not os.path.exists(dungeons_path):
         print(f"Error: '{dungeons_path}' folder not found!")
         return
     
-    # Use glob to find all PNG files recursively
-    pattern = os.path.join(dungeons_path, "**", "*.png")
-    all_png_files = glob.glob(pattern, recursive=True)
-    
-    # Filter out files from ignored folders
-    for png_file in all_png_files:
-        # Get the relative path from dungeons folder
-        rel_path = os.path.relpath(png_file, dungeons_path)
-        folder_parts = rel_path.split(os.sep)
-        
-        # Check if any part of the path matches ignored folders
-        if not any(part in ignored_folders for part in folder_parts):
-            png_files.append(png_file)
-
-    if not png_files:
-        print(f"No PNG files found in '{dungeons_path}' folder (after filtering)!")
+    if not os.path.exists(csv_file):
+        print(f"Error: '{csv_file}' not found!")
         return
     
-    print(f"Found {len(png_files)} PNG files (filtered)")
+    # Read the CSV file and load items in order
+    all_items = []
+    try:
+        with open(csv_file, newline='', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                item_name = row["Item Name"].strip()
+                loot_type = row["Loot Type"].strip()
+                
+                if not item_name or not loot_type:
+                    continue
+                
+                all_items.append({
+                    'name': item_name,
+                    'loot_type': loot_type
+                })
+    except Exception as e:
+        print(f"Error reading CSV: {e}")
+        return
     
-    # Load all images and create grayed-out versions
-    images = []
-    target_size = (40, 40)  # Standard size for all images
-    seen_images = {}  # Track duplicates by image hash
-    sprite_mapping = []  # Store name -> grid position mapping
+    print(f"Loaded {len(all_items)} items from CSV")
     
-    for png_file in png_files:
+    # Separate items into categories
+    normal_items = []  # Not Skin or Limited
+    skin_items = []
+    limited_items = []
+    all_loaded_items = []
+    
+    missing_items = []
+    
+    for item in all_items:
+        item_name = item['name']
+        loot_type = item['loot_type']
+        
+        # Find the image file
+        img_path = find_item_image(item_name, dungeons_path)
+        
+        if img_path is None:
+            missing_items.append((item_name, loot_type))
+            continue
+        
         try:
-            img = Image.open(png_file)
-            # Convert to RGBA if not already
+            # Load and process the image
+            img = Image.open(img_path)
             if img.mode != 'RGBA':
                 img = img.convert('RGBA')
             
-            # Resize to 40x40 if not already that size
             if img.size != target_size:
                 img = img.resize(target_size, Image.Resampling.LANCZOS)
-                print(f"Resized: {os.path.basename(png_file)} to 40x40")
-            
-            # Create a simple hash of the image data to detect duplicates
-            img_hash = hash(img.tobytes())
-            
-            if img_hash in seen_images:
-                print(f"Skipping duplicate: {os.path.basename(png_file)} (same as {seen_images[img_hash]})")
-                img.close()
-                continue
-            
-            # Get item name from filename (remove .png extension)
-            item_name = os.path.splitext(os.path.basename(png_file))[0]
-            # Normalize apostrophes - convert curly to regular
-            item_name = item_name.replace("'", "'").replace("'", "'")
-            seen_images[img_hash] = item_name
             
             # Create grayed-out silhouette
             gray_img = create_gray_silhouette(img)
-            images.append((gray_img, item_name))
-            print(f"Loaded: {item_name} (40x40)")
+            
+            # Categorize the item
+            if loot_type == "Skin":
+                skin_items.append((gray_img, item_name))
+                all_loaded_items.append((gray_img, item_name))
+            elif loot_type == "Limited":
+                limited_items.append((gray_img, item_name))
+                all_loaded_items.append((gray_img, item_name))
+            else:
+                normal_items.append((gray_img, item_name))
+                all_loaded_items.append((gray_img, item_name))
+            
         except Exception as e:
-            print(f"Error loading {png_file}: {e}")
+            print(f"Error loading {img_path}: {e}")
+            missing_items.append((item_name, loot_type))
+    
+    # Create 4 image variants
+    variants = [
+        ("normal", normal_items),
+        ("normal_skins", normal_items + skin_items),
+        ("normal_limited", normal_items + limited_items),
+        ("all", all_loaded_items)
+    ]
+    
+    for variant_name, items in variants:
+        if not items:
+            print(f"⚠️  No items for variant '{variant_name}'")
+            continue
+        
+        create_loot_background_image(items, variant_name, target_size)
+    
+    # Print missing items
+    print("\n" + "="*60)
+    if missing_items:
+        print(f"❌ {len(missing_items)} items missing images:")
+        for item_name, loot_type in missing_items:
+            print(f"  - {item_name} ({loot_type})")
+    else:
+        print("✅ All items have images!")
+    print("="*60)
 
-    if not images:
-        print("No valid images loaded!")
-        return
+def create_loot_background_image(items, variant_name, target_size):
+    """
+    Create a single loot background image and CSV mapping for a variant.
+    """
+    num_images = len(items)
     
     # Calculate grid dimensions
-    num_images = len(images)
-    # Try to make a square-ish grid
     grid_cols = math.ceil(math.sqrt(num_images))
     grid_rows = math.ceil(num_images / grid_cols)
     
-    print(f"Creating {grid_cols}x{grid_rows} grid for {num_images} images")
-    print(f"Each cell will be {target_size[0]}x{target_size[1]} pixels")
+    print(f"\n📊 Creating '{variant_name}' variant:")
+    print(f"   {num_images} items in {grid_cols}x{grid_rows} grid")
     
     # Create the background image
     total_width = grid_cols * target_size[0]
     total_height = grid_rows * target_size[1]
     background_image = Image.new('RGBA', (total_width, total_height), (255, 255, 255, 0))
     
+    sprite_mapping = []
+    
     # Place images in grid and record positions
-    for i, (img, item_name) in enumerate(images):
+    for i, (img, item_name) in enumerate(items):
         row = i // grid_cols
         col = i % grid_cols
         
@@ -119,27 +186,25 @@ def create_loot_background_and_mapping():
         })
     
     # Save the background image
-    background_path = "loot_background.png"
+    background_path = f"loot_background_{variant_name}.png"
     background_image.save(background_path, "PNG")
-    print(f"✅ Loot background saved as '{background_path}'")
-    print(f"Background dimensions: {total_width}x{total_height} pixels")
+    print(f"   ✅ Image saved: {background_path} ({total_width}x{total_height}px)")
     
     # Save the mapping CSV
-    csv_path = "sprite_positions.csv"
+    csv_path = f"sprite_positions_{variant_name}.csv"
     with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
         fieldnames = ['item_name', 'grid_x', 'grid_y', 'pixel_x', 'pixel_y']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(sprite_mapping)
     
-    print(f"✅ Sprite mapping saved as '{csv_path}'")
-    print(f"Mapped {len(sprite_mapping)} unique items")
-    
-    # Clean up
-    for img, _ in images:
-        img.close()
-    
-    return background_path, csv_path
+    print(f"   ✅ Mapping saved: {csv_path}")
+
+def create_loot_background_and_mapping():
+    """
+    Legacy function - now calls the new CSV-based creation function
+    """
+    return create_loot_images_from_csv()
 
 def create_gray_silhouette(img):
     """
@@ -165,11 +230,6 @@ def create_gray_silhouette(img):
     
     return silhouette
 
-def create_loot_table():
-    """
-    Legacy function - now calls the new background creation function
-    """
-    return create_loot_background_and_mapping()
 
 if __name__ == "__main__":
-    create_loot_background_and_mapping()
+    create_loot_images_from_csv()

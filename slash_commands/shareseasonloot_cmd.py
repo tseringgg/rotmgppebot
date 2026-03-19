@@ -5,9 +5,13 @@ import csv
 from PIL import Image
 import os
 
-async def command(interaction: discord.Interaction):
+async def command(interaction: discord.Interaction, include_skins: bool = False, include_limited: bool = False):
     """
     Generate a personalized loot image showing all the player's season loot (unique items).
+    
+    Args:
+        include_skins: Include skin items in the loot background
+        include_limited: Include limited items in the loot background
     """
     
     try:
@@ -36,15 +40,29 @@ async def command(interaction: discord.Interaction):
         return await interaction.response.send_message(str(e), ephemeral=True)
     
     try:
+        # Determine which variant to use based on parameters
+        if include_skins and include_limited:
+            variant = "all"
+        elif include_skins:
+            variant = "normal_skins"
+        elif include_limited:
+            variant = "normal_limited"
+        else:
+            variant = "normal"
+        
+        # Construct file paths
+        sprite_csv = f"sprite_positions_{variant}.csv"
+        background_file = f"loot_background_{variant}.png"
+        
         # Load sprite positions mapping
-        if not os.path.exists("sprite_positions.csv"):
-            await interaction.response.send_message("❌ Sprite mapping not found! Contact an admin.", ephemeral=True)
+        if not os.path.exists(sprite_csv):
+            await interaction.response.send_message(f"❌ Sprite mapping not found! ({sprite_csv})", ephemeral=True)
             return
         
         sprite_positions = {}
         sprite_images = {}
         
-        with open("sprite_positions.csv", 'r', encoding='utf-8') as csvfile:
+        with open(sprite_csv, 'r', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
                 sprite_positions[row['item_name']] = {
@@ -53,12 +71,12 @@ async def command(interaction: discord.Interaction):
                 }
         
         # Load background image
-        if not os.path.exists("loot_background.png"):
-            await interaction.response.send_message("❌ Loot background not found! Contact an admin.", ephemeral=True)
+        if not os.path.exists(background_file):
+            await interaction.response.send_message(f"❌ Loot background not found! ({background_file})", ephemeral=True)
             return
         
         # Create a copy of the background for this player
-        background = Image.open("loot_background.png").copy()
+        background = Image.open(background_file).copy()
         
         # Load original sprite images
         dungeons_path = "dungeons"

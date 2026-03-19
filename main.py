@@ -25,18 +25,13 @@ class PPEBot(commands.Bot):
         # Initialize global loot data for autocomplete
         init_loot_data()
         
-        # Generate background image and sprite mapping for shareloot system
+        # Generate 4 background images and sprite mappings for shareloot system
         try:
-            print("Generating loot background and sprite mapping...")
-            result = create_loot_background_and_mapping()
-            if result:
-                background_path, csv_path = result
-            else:
-                background_path, csv_path = None, None
-                print("[WARN] create_loot_background_and_mapping() returned None")
-            print(f"✅ Background: {background_path}, Mapping: {csv_path}")
+            print("Generating 4 loot background variants and sprite mappings...")
+            create_loot_background_and_mapping()
+            print("✅ All loot backgrounds and mappings generated successfully!")
         except Exception as e:
-            print(f"[ERROR] Failed to generate loot background: {e}")
+            print(f"[ERROR] Failed to generate loot backgrounds: {e}")
         
         # Print to confirm commands are loaded BEFORE syncing
         print("Loaded commands:", [cmd.name for cmd in self.tree.get_commands()])
@@ -333,9 +328,10 @@ async def myloot(interaction: discord.Interaction):
     await myloot_cmd.command(interaction)
 
 @bot.tree.command(name="shareloot", description="Generate a visual loot table showing your active PPE's items.", guilds=guilds)
+@app_commands.describe(include_skins="Include skin items in the loot background", include_limited="Include limited items in the loot background")
 @require_ppe_roles(player_required=True)
-async def shareloot(interaction: discord.Interaction):
-    await shareloot_cmd.command(interaction)
+async def shareloot(interaction: discord.Interaction, include_skins: bool = False, include_limited: bool = False):
+    await shareloot_cmd.command(interaction, include_skins, include_limited)
 
 @bot.tree.command(name="inspectloot", description="Inspect the loot of another player's specific PPE. Admin only.", guilds=guilds)
 @app_commands.describe(user="The player to inspect", id="The PPE ID to inspect")
@@ -440,9 +436,10 @@ async def showseasonloot(interaction: discord.Interaction):
     await showseasonloot_cmd.command(interaction)
 
 @bot.tree.command(name="shareseasonloot", description="Generate a visual loot table showing all your season loot items.", guilds=guilds)
+@app_commands.describe(include_skins="Include skin items in the loot background", include_limited="Include limited items in the loot background")
 @require_ppe_roles(player_required=True)
-async def shareseasonloot(interaction: discord.Interaction):
-    await shareseasonloot_cmd.command(interaction)
+async def shareseasonloot(interaction: discord.Interaction, include_skins: bool = False, include_limited: bool = False):
+    await shareseasonloot_cmd.command(interaction, include_skins, include_limited)
 
 @bot.tree.command(name="seasonleaderboard", description="Show leaderboard ranked by unique items collected.", guilds=guilds)
 async def seasonleaderboard(interaction: discord.Interaction):
