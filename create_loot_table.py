@@ -1,7 +1,6 @@
 import os
 import math
 from PIL import Image, ImageEnhance
-import glob
 import csv
 
 def find_item_image(item_name, dungeons_path):
@@ -33,10 +32,10 @@ def find_item_image(item_name, dungeons_path):
 def create_loot_images_from_csv():
     """
     Create 4 different loot background images and CSV mappings based on item order from rotmg_loot_drops_updated.csv:
-    1. Normal items (excluding Skin and Limited)
+    1. Normal items (excluding Skin, Limited, and Item)
     2. Normal items + Skins
     3. Normal items + Limited
-    4. All items (Normal + Skins + Limited)
+    4. All items (Normal + Skins + Limited + Item)
     """
     
     # Paths
@@ -75,9 +74,10 @@ def create_loot_images_from_csv():
     print(f"Loaded {len(all_items)} items from CSV")
     
     # Separate items into categories
-    normal_items = []  # Not Skin or Limited
+    normal_items = []  # Excludes Skin, Limited, and Item
     skin_items = []
     limited_items = []
+    item_type_items = []
     all_loaded_items = []
     
     missing_items = []
@@ -111,6 +111,10 @@ def create_loot_images_from_csv():
                 all_loaded_items.append((gray_img, item_name))
             elif loot_type == "Limited":
                 limited_items.append((gray_img, item_name))
+                all_loaded_items.append((gray_img, item_name))
+            elif loot_type == "Item":
+                # 'Item' type should only appear in the all variant.
+                item_type_items.append((gray_img, item_name))
                 all_loaded_items.append((gray_img, item_name))
             else:
                 normal_items.append((gray_img, item_name))

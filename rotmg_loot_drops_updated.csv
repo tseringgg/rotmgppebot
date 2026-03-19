@@ -78,13 +78,13 @@ White or ST,Pixie-Enchanted Sword,3.5
 White or ST,Seal of the Enchanted Forest,3.5
 White or ST,Fairy Plate,3.5
 White or ST,Ring of Pure Wishes,3.5
-White or ST,Mini Desire Troll Pet Skin,0
+Skin,Mini Desire Troll Pet Skin,0
 
 White or ST,Bottled Medusozoan,5.5
 White or ST,Cnidaria Rod,5.5
 White or ST,Bottled Medusozoan (shiny),11
 White or ST,Cnidaria Rod (shiny),11
-White or ST,Jellyhead Trickster Skin,0
+Skin,Jellyhead Trickster Skin,0
 
 White or ST,Fungal Breastplate,7.5
 White or ST,Crystallized Worm Spellblade,7.5
@@ -716,8 +716,8 @@ White or ST,Labyrinth Dweller's Sheath,5.5
 White or ST,Leaf Bow (shiny),11
 White or ST,Wakizashi of Eastern Winds (shiny),11
 White or ST,Labyrinth Dweller's Sheath (shiny),11
-White or ST,Woodland Huntress Skin,0
-White or ST,Blessed Blade Pet Skin,0
+Skin,Woodland Huntress Skin,0
+Skin,Blessed Blade Pet Skin,0
 
 
 UT,Corsair Ring,0
@@ -805,8 +805,9 @@ Biome White,Pollen Incendiary,10
 Biome White,Bloodbath Blade,10
 Biome White,Runes of Knowledge,10
 
-Event White,Kendo (shiny),100
-Event White,Jewel Eye Katana (Shiny),100
+Item,Kendo Stick,0
+Event White,Kendo Stick (shiny),100
+Event White,Jewel Eye Katana (shiny),100
 
 White or ST,Watarimono,10
 White or ST,Kiritsukeru,10
@@ -877,10 +878,10 @@ White or ST,Dueling Daggers,5.0
 White or ST,Snowblind Wand,5.0
 White or ST,Dueling Daggers (shiny),10
 
-White or ST,Alien Core: Warp,10.0
-White or ST,Alien Core: Dark Matter,10.0
-White or ST,Alien Core: Power,10.0
-White or ST,Alien Core: Corrosion,10.0
+White or ST,Alien Core Warp,10.0
+White or ST,Alien Core Dark Matter,10.0
+White or ST,Alien Core Power,10.0
+White or ST,Alien Core Corrosion,10.0
 
 White or ST,Piper's Pan Flute,10
 White or ST,Mouse Trap,10
