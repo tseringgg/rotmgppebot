@@ -42,7 +42,7 @@ class _SyntheticInteraction:
 
 _DEBUG = os.getenv("REALMSHARK_DEBUG", "false").strip().lower() in {"1", "true", "yes", "on"}
 _MISSING_ITEMS_LOG_PATH = "/data/realmshark_not_logged_items.jsonl"
-Notifier = Callable[[int, str], Awaitable[None]]
+Notifier = Callable[[int, str, int | None], Awaitable[None]]
 
 
 def _utc_iso_now() -> str:
@@ -280,6 +280,19 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
         f"Token resolved guild_id={guild_id} token={_token_preview(token)} linked_user_id={linked_user_id}"
     )
 
+    announce_channel_id: int | None = None
+    announce_channel_raw = settings.get("announce_channel_id", 0)
+    try:
+        parsed_announce_channel_id = int(announce_channel_raw)
+    except (TypeError, ValueError):
+        parsed_announce_channel_id = 0
+    if parsed_announce_channel_id > 0:
+        announce_channel_id = parsed_announce_channel_id
+
+    _info_log(
+        f"Announcement routing guild_id={guild_id} announce_channel_id={announce_channel_id or 0}"
+    )
+
     if event_type == "bridge_settings_test":
         source = str(payload.get("source", "tomato")).strip() or "tomato"
         test_message = (
@@ -290,7 +303,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
         if notifier is not None:
             try:
                 _info_log(f"Dispatching bridge settings test announcement for guild_id={guild_id}")
-                await notifier(guild_id, test_message)
+                await notifier(guild_id, test_message, announce_channel_id)
                 _info_log(f"Bridge settings test announcement sent for guild_id={guild_id}")
             except Exception as e:
                 _info_log(f"Bridge test notifier error for guild_id={guild_id}: {e}")
@@ -375,6 +388,26 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
 
     result["guild_id"] = guild_id
     result["user_id"] = linked_user_id
+
+    if notifier is not None:
+        announcement = (
+            "RealmShark loot logged: "
+            f"{result.get('item', item_name)} "
+            f"for <@{linked_user_id}> "
+            f"(mode={mode}, guild_id={guild_id})"
+        )
+        try:
+            _info_log(
+                f"Dispatching loot announcement guild_id={guild_id} user_id={linked_user_id} item={result.get('item', item_name)}"
+            )
+            await notifier(guild_id, announcement, announce_channel_id)
+            _info_log(
+                f"Loot announcement sent guild_id={guild_id} user_id={linked_user_id} item={result.get('item', item_name)}"
+            )
+        except Exception as e:
+            _info_log(f"Loot announcement failed guild_id={guild_id} user_id={linked_user_id}: {e}")
+            _debug_log(f"Loot announcement failed guild_id={guild_id} user_id={linked_user_id}: {e}")
+
     _info_log(
         "Completed ingest "
         f"guild_id={guild_id} user_id={linked_user_id} reason={result.get('mode', '')} item={result.get('item', '')}"

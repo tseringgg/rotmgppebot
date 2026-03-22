@@ -13,6 +13,7 @@ _REALMSHARK_DEFAULTS: Dict[str, Any] = {
     "enabled": False,
     "mode": "addloot",
     "links": {},
+    "announce_channel_id": 0,
 }
 
 
@@ -83,6 +84,29 @@ async def set_enabled(interaction: discord.Interaction, enabled: bool) -> None:
     )
 
 
+async def set_announce_channel(
+    interaction: discord.Interaction,
+    channel: discord.TextChannel | None,
+) -> None:
+    settings = await get_realmshark_settings(interaction)
+
+    if channel is None:
+        settings["announce_channel_id"] = 0
+        settings = await set_realmshark_settings(interaction, settings)
+        return await interaction.response.send_message(
+            "RealmShark announcement channel reset to default (system channel or first writable text channel).",
+            ephemeral=True,
+        )
+
+    settings["announce_channel_id"] = int(channel.id)
+    settings = await set_realmshark_settings(interaction, settings)
+
+    await interaction.response.send_message(
+        f"RealmShark announcement channel set to {channel.mention}.",
+        ephemeral=True,
+    )
+
+
 async def unlink_token(interaction: discord.Interaction, token: str) -> None:
     settings = await get_realmshark_settings(interaction)
     links = settings.get("links", {}) if isinstance(settings.get("links"), dict) else {}
@@ -104,6 +128,7 @@ async def status(interaction: discord.Interaction) -> None:
     lines = [
         f"enabled: `{settings.get('enabled', False)}`",
         f"mode: `{settings.get('mode', 'addloot')}`",
+        f"announce_channel_id: `{settings.get('announce_channel_id', 0)}`",
         f"link_count: `{len(links)}`",
     ]
 
@@ -128,6 +153,7 @@ async def reset_all(interaction: discord.Interaction) -> None:
         "Reset all RealmShark data for this guild.\n"
         f"enabled: `{saved.get('enabled', False)}`\n"
         f"mode: `{saved.get('mode', 'addloot')}`\n"
+        f"announce_channel_id: `{saved.get('announce_channel_id', 0)}`\n"
         f"link_count: `{len(saved.get('links', {}))}`",
         ephemeral=True,
     )

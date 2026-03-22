@@ -20,6 +20,7 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
         "enabled": False,
         "mode": "addloot",
         "links": {},
+        "announce_channel_id": 0,
     },
 }
 
@@ -91,10 +92,20 @@ def _normalized_realmshark_settings(config: Dict[str, Any]) -> Dict[str, Any]:
                 "last_used_at": str(link_data.get("last_used_at", "")),
             }
 
+    announce_channel_raw = settings.get("announce_channel_id", _DEFAULT_CONFIG["realmshark_settings"]["announce_channel_id"])
+    try:
+        announce_channel_id = int(announce_channel_raw)
+    except (TypeError, ValueError):
+        announce_channel_id = _DEFAULT_CONFIG["realmshark_settings"]["announce_channel_id"]
+
+    if announce_channel_id < 0:
+        announce_channel_id = _DEFAULT_CONFIG["realmshark_settings"]["announce_channel_id"]
+
     return {
         "enabled": bool(settings.get("enabled", _DEFAULT_CONFIG["realmshark_settings"]["enabled"])),
         "mode": mode,
         "links": links,
+        "announce_channel_id": announce_channel_id,
     }
 
 

@@ -22,7 +22,7 @@ load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
 class PPEBot(commands.Bot):
-    async def _send_realmshark_announce(self, guild_id: int, message: str) -> None:
+    async def _send_realmshark_announce(self, guild_id: int, message: str, channel_id: int | None = None) -> None:
         guild = self.get_guild(guild_id)
         if guild is None:
             print(f"[REALMSHARK] Could not announce test event: guild {guild_id} not found in bot cache.")
@@ -32,12 +32,28 @@ class PPEBot(commands.Bot):
         if me is None and self.user is not None:
             me = guild.get_member(self.user.id)
 
-        channel = guild.system_channel
-        if channel is None or me is None or not channel.permissions_for(me).send_messages:
-            channel = next(
-                (c for c in guild.text_channels if me is not None and c.permissions_for(me).send_messages),
-                None,
-            )
+        channel = None
+        if channel_id is not None and channel_id > 0:
+            configured_channel = guild.get_channel(channel_id)
+            if isinstance(configured_channel, discord.TextChannel):
+                if me is not None and configured_channel.permissions_for(me).send_messages:
+                    channel = configured_channel
+                else:
+                    print(
+                        f"[REALMSHARK] Configured announce channel {channel_id} is not writable for guild {guild_id}, falling back."
+                    )
+            else:
+                print(
+                    f"[REALMSHARK] Configured announce channel {channel_id} not found in guild {guild_id}, falling back."
+                )
+
+        if channel is None:
+            channel = guild.system_channel
+            if channel is None or me is None or not channel.permissions_for(me).send_messages:
+                channel = next(
+                    (c for c in guild.text_channels if me is not None and c.permissions_for(me).send_messages),
+                    None,
+                )
 
         if channel is None:
             print(f"[REALMSHARK] Could not announce test event: no writable text channel in guild {guild_id}.")
@@ -558,6 +574,12 @@ async def realmsharkmode(interaction: discord.Interaction, mode: app_commands.Ch
 @require_ppe_roles(admin_required=True)
 async def realmsharkenabled(interaction: discord.Interaction, enabled: bool):
     await realmshark_cmd.set_enabled(interaction, enabled)
+
+@bot.tree.command(name="realmsharkchannel", description="Set channel for RealmShark announcements (omit to reset default).", guilds=guilds)
+@app_commands.describe(channel="Optional channel for RealmShark announcements")
+@require_ppe_roles(admin_required=True)
+async def realmsharkchannel(interaction: discord.Interaction, channel: discord.TextChannel | None = None):
+    await realmshark_cmd.set_announce_channel(interaction, channel)
 
 @bot.tree.command(name="realmsharkstatus", description="Show RealmShark integration status for this guild.", guilds=guilds)
 @require_ppe_roles(admin_required=True)
