@@ -1,4 +1,5 @@
 import discord
+from utils.guild_config import get_realmshark_settings, set_realmshark_settings
 from utils.player_records import load_player_records, save_player_records, load_teams, save_teams
 
 
@@ -22,7 +23,8 @@ class ConfirmView(discord.ui.View):
 
 async def command(interaction: discord.Interaction):
     """
-    Reset the season by clearing all unique items and quest data for all players.
+    Reset the season by clearing all unique items and quest data for all players,
+    deleting all teams, and resetting RealmShark integration state.
     Retains player member status and PPE roles.
     Admin only.
     """
@@ -34,7 +36,7 @@ async def command(interaction: discord.Interaction):
         view = ConfirmView()
         await interaction.response.send_message(
             "⚠️ **Are you sure you want to reset the season?**\n"
-            "This will clear all unique items and quest data for all players and delete all teams.\n"
+            "This will clear all unique items and quest data for all players, delete all teams, and reset RealmShark links/settings.\n"
             "Member status and PPE roles will be preserved.",
             view=view,
             ephemeral=True
@@ -92,6 +94,19 @@ async def command(interaction: discord.Interaction):
         teams_deleted = len(teams)
         teams.clear()
         await save_teams(interaction, teams)
+
+        # Reset RealmShark state (disable integration, default mode, and clear all links).
+        realmshark_settings = await get_realmshark_settings(interaction)
+        realmshark_links = realmshark_settings.get("links", {}) if isinstance(realmshark_settings.get("links"), dict) else {}
+        realmshark_links_cleared = len(realmshark_links)
+        await set_realmshark_settings(
+            interaction,
+            {
+                "enabled": False,
+                "mode": "addloot",
+                "links": {},
+            },
+        )
         
         # Delete team roles using the actual team names we had
         for team_name in team_names:
@@ -107,6 +122,7 @@ async def command(interaction: discord.Interaction):
             f"✅ Season reset complete!\n"
             f"**Cleared:** {ppes_cleared} PPE characters, {items_cleared} unique items, {quest_entries_cleared} quest entries\n"
             f"**Deleted:** {teams_deleted} teams and their roles\n"
+            f"**RealmShark:** Reset to defaults and revoked {realmshark_links_cleared} link tokens\n"
             f"**Preserved:** Player member status and PPE roles",
             ephemeral=False
         )

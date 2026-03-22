@@ -129,6 +129,20 @@ async def on_message(message: discord.Message):
 
     await bot.process_commands(message)
 
+
+@bot.tree.error
+async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    # Role/permission checks already provide user-facing feedback in the predicate.
+    if isinstance(error, app_commands.CheckFailure):
+        if not interaction.response.is_done():
+            await interaction.response.send_message(
+                "🚫 You do not have permission to use this command.",
+                ephemeral=True,
+            )
+        return
+
+    print(f"[ERROR] Slash command failed: {type(error).__name__}: {error}")
+
 @bot.tree.command(name="setuproles", description="Check and create required PPE roles in this server.", guilds=guilds)
 @commands.has_permissions(manage_roles=True)
 async def setup_roles(interaction: discord.Interaction):
@@ -530,6 +544,11 @@ async def realmsharkstatus(interaction: discord.Interaction):
 async def realmsharkunlink(interaction: discord.Interaction, token: str):
     await realmshark_cmd.unlink_token(interaction, token)
 
+@bot.tree.command(name="realmsharkreset", description="Reset all RealmShark integration data for this guild.", guilds=guilds)
+@require_ppe_roles(admin_required=True)
+async def realmsharkreset(interaction: discord.Interaction):
+    await realmshark_cmd.reset_all(interaction)
+
 @bot.tree.command(name="shareseasonloot", description="Generate a visual loot table showing all your season loot items.", guilds=guilds)
 @app_commands.describe(include_skins="Include skin items in the loot background", include_limited="Include limited items in the loot background")
 @require_ppe_roles(player_required=True)
@@ -544,7 +563,7 @@ async def seasonleaderboard(interaction: discord.Interaction):
 async def questleaderboard(interaction: discord.Interaction):
     await questleaderboard_cmd.command(interaction)
 
-@bot.tree.command(name="resetseason", description="Reset the season by clearing all unique items for all players. Server owner/admin only.", guilds=guilds)
+@bot.tree.command(name="resetseason", description="Reset season data, teams, and RealmShark links/settings. Server owner/admin only.", guilds=guilds)
 @commands.has_permissions(administrator=True)
 async def resetseason(interaction: discord.Interaction):
     await resetseason_cmd.command(interaction)

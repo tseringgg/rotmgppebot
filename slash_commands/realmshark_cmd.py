@@ -9,6 +9,13 @@ import discord
 from utils.guild_config import get_realmshark_settings, set_realmshark_settings
 
 
+_REALMSHARK_DEFAULTS: Dict[str, Any] = {
+    "enabled": False,
+    "mode": "addloot",
+    "links": {},
+}
+
+
 def _utc_iso_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -113,3 +120,14 @@ async def status(interaction: discord.Interaction) -> None:
         lines.extend(previews[:15])
 
     await interaction.response.send_message("\n".join(lines), ephemeral=True)
+
+
+async def reset_all(interaction: discord.Interaction) -> None:
+    saved = await set_realmshark_settings(interaction, dict(_REALMSHARK_DEFAULTS))
+    await interaction.response.send_message(
+        "Reset all RealmShark data for this guild.\n"
+        f"enabled: `{saved.get('enabled', False)}`\n"
+        f"mode: `{saved.get('mode', 'addloot')}`\n"
+        f"link_count: `{len(saved.get('links', {}))}`",
+        ephemeral=True,
+    )
