@@ -1,12 +1,14 @@
 
 LOOT_POINTS_CSV = "./rotmg_loot_drops_updated.csv"
 import csv
+import re
 
 import discord
 PLAYER_RECORD_FILE = "./guild_loot_records.json"
 from utils.player_records import get_item_from_ppe, load_player_records, save_player_records
 
 _APOSTROPHE_VARIANTS = "\u2018\u2019\u02bc\u2032\u00b4`"
+_DASH_VARIANTS = "\u2010\u2011\u2012\u2013\u2014\u2015\u2212"
 
 
 def normalize_item_name(name: str) -> str:
@@ -14,8 +16,18 @@ def normalize_item_name(name: str) -> str:
     if not name:
         return ""
     normalized = name
+
+    # Normalize typographic apostrophes to plain ASCII apostrophe.
     for apostrophe in _APOSTROPHE_VARIANTS:
         normalized = normalized.replace(apostrophe, "'")
+
+    # Normalize unicode dash/minus variants to a standard hyphen.
+    for dash in _DASH_VARIANTS:
+        normalized = normalized.replace(dash, "-")
+
+    # Treat spacing around hyphens as cosmetic formatting differences.
+    normalized = re.sub(r"\s*-\s*", "-", normalized)
+
     normalized = " ".join(normalized.split())
     return normalized.strip()
 

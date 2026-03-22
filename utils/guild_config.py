@@ -15,7 +15,12 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
         "regular_points": 5,
         "shiny_points": 10,
         "skin_points": 15,
-    }
+    },
+    "realmshark_settings": {
+        "enabled": False,
+        "mode": "addloot",
+        "links": {},
+    },
 }
 
 
@@ -58,17 +63,49 @@ def _normalized_targets(config: Dict[str, Any]) -> Dict[str, int]:
     }
 
 
+def _normalized_realmshark_settings(config: Dict[str, Any]) -> Dict[str, Any]:
+    settings = config.get("realmshark_settings", {}) if isinstance(config.get("realmshark_settings", {}), dict) else {}
+
+    mode = str(settings.get("mode", _DEFAULT_CONFIG["realmshark_settings"]["mode"]))
+    if mode not in {"addloot", "addseasonloot"}:
+        mode = _DEFAULT_CONFIG["realmshark_settings"]["mode"]
+
+    raw_links = settings.get("links", {})
+    links: Dict[str, Dict[str, Any]] = {}
+    if isinstance(raw_links, dict):
+        for token, link_data in raw_links.items():
+            if not isinstance(token, str) or not token.strip():
+                continue
+            if not isinstance(link_data, dict):
+                continue
+
+            user_id = link_data.get("user_id")
+            try:
+                parsed_user_id = int(user_id)
+            except (TypeError, ValueError):
+                continue
+
+            links[token] = {
+                "user_id": parsed_user_id,
+                "created_at": str(link_data.get("created_at", "")),
+                "last_used_at": str(link_data.get("last_used_at", "")),
+            }
+
+    return {
+        "enabled": bool(settings.get("enabled", _DEFAULT_CONFIG["realmshark_settings"]["enabled"])),
+        "mode": mode,
+        "links": links,
+    }
+
+
 def _merge_defaults(raw: Dict[str, Any]) -> Dict[str, Any]:
     merged = dict(_DEFAULT_CONFIG)
     merged["quest_settings"] = _normalized_targets(raw)
+    merged["realmshark_settings"] = _normalized_realmshark_settings(raw)
     return merged
 
 
-async def load_guild_config(interaction: discord.Interaction) -> Dict[str, Any]:
-    if interaction.guild is None:
-        raise ValueError("Interaction guild is None.")
-
-    guild_id = interaction.guild.id
+async def load_guild_config_by_id(guild_id: int) -> Dict[str, Any]:
     path = _config_path(guild_id)
 
     if not os.path.exists(path):
@@ -85,11 +122,7 @@ async def load_guild_config(interaction: discord.Interaction) -> Dict[str, Any]:
         return normalized
 
 
-async def save_guild_config(interaction: discord.Interaction, config: Dict[str, Any]) -> Dict[str, Any]:
-    if interaction.guild is None:
-        raise ValueError("Interaction guild is None.")
-
-    guild_id = interaction.guild.id
+async def save_guild_config_by_id(guild_id: int, config: Dict[str, Any]) -> Dict[str, Any]:
     path = _config_path(guild_id)
     normalized = _merge_defaults(config)
 
@@ -97,6 +130,22 @@ async def save_guild_config(interaction: discord.Interaction, config: Dict[str, 
         await asyncio.to_thread(_write_json_atomic, path, normalized)
 
     return normalized
+
+
+async def load_guild_config(interaction: discord.Interaction) -> Dict[str, Any]:
+    if interaction.guild is None:
+        raise ValueError("Interaction guild is None.")
+
+    guild_id = interaction.guild.id
+    return await load_guild_config_by_id(guild_id)
+
+
+async def save_guild_config(interaction: discord.Interaction, config: Dict[str, Any]) -> Dict[str, Any]:
+    if interaction.guild is None:
+        raise ValueError("Interaction guild is None.")
+
+    guild_id = interaction.guild.id
+    return await save_guild_config_by_id(guild_id, config)
 
 
 async def get_quest_targets(interaction: discord.Interaction) -> tuple[int, int, int]:
@@ -151,3 +200,27 @@ async def set_quest_points(
 
     config["quest_settings"] = settings
     return await save_guild_config(interaction, config)
+
+
+async def get_realmshark_settings(interaction: discord.Interaction) -> Dict[str, Any]:
+    config = await load_guild_config(interaction)
+    return dict(config["realmshark_settings"])
+
+
+async def set_realmshark_settings(interaction: discord.Interaction, settings: Dict[str, Any]) -> Dict[str, Any]:
+    config = await load_guild_config(interaction)
+    config["realmshark_settings"] = settings
+    saved = await save_guild_config(interaction, config)
+    return dict(saved["realmshark_settings"])
+
+
+async def get_realmshark_settings_by_id(guild_id: int) -> Dict[str, Any]:
+    config = await load_guild_config_by_id(guild_id)
+    return dict(config["realmshark_settings"])
+
+
+async def set_realmshark_settings_by_id(guild_id: int, settings: Dict[str, Any]) -> Dict[str, Any]:
+    config = await load_guild_config_by_id(guild_id)
+    config["realmshark_settings"] = settings
+    saved = await save_guild_config_by_id(guild_id, config)
+    return dict(saved["realmshark_settings"])

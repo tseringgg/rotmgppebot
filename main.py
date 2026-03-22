@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, inspectloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myquests_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd, shareloot_cmd, shareseasonloot_cmd, addseasonloot_cmd, addseasonlootfor_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, showseasonloot_cmd, seasonleaderboard_cmd, questleaderboard_cmd, resetseason_cmd, migrateapostrophes_cmd, addteam_cmd, addplayer_team_cmd, leaveteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, listcharactersfor_cmd, viewquestsfor_cmd, resetquestfor_cmd, resetquests_cmd, managequests_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, inspectloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myquests_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd, shareloot_cmd, shareseasonloot_cmd, addseasonloot_cmd, addseasonlootfor_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, showseasonloot_cmd, seasonleaderboard_cmd, questleaderboard_cmd, resetseason_cmd, migrateapostrophes_cmd, addteam_cmd, addplayer_team_cmd, leaveteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, listcharactersfor_cmd, viewquestsfor_cmd, resetquestfor_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -8,6 +8,7 @@ import os
 from utils.role_checks import require_ppe_roles
 from utils.loot_data import init_loot_data
 from create_loot_table import create_loot_background_and_mapping
+from utils.realmshark_ingest_server import start_realmshark_ingest_server
 
 from utils.autocomplete import class_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, target_user_ppe_id_autocomplete, team_name_autocomplete
 
@@ -45,6 +46,13 @@ class PPEBot(commands.Bot):
                 print(f"[ERROR] Failed to sync commands to guild {guild.id}: {e}")
 
         print("Guild commands synced!")
+        self.realmshark_ingest_runner = await start_realmshark_ingest_server()
+
+    async def close(self):
+        runner = getattr(self, "realmshark_ingest_runner", None)
+        if runner is not None:
+            await runner.cleanup()
+        await super().close()
 
 
 intents = discord.Intents.default()
@@ -490,6 +498,36 @@ async def managequests(
         shiny_points,
         skin_points,
     )
+
+@bot.tree.command(name="realmsharklink", description="Generate a RealmShark link token for your account.", guilds=guilds)
+@require_ppe_roles(player_required=True)
+async def realmsharklink(interaction: discord.Interaction):
+    await realmshark_cmd.generate_link_token(interaction)
+
+@bot.tree.command(name="realmsharkmode", description="Set automatic RealmShark loot mode for this guild.", guilds=guilds)
+@app_commands.describe(mode="Choose addloot or addseasonloot")
+@app_commands.choices(mode=[
+    app_commands.Choice(name="addloot", value="addloot"),
+    app_commands.Choice(name="addseasonloot", value="addseasonloot"),
+])
+@require_ppe_roles(admin_required=True)
+async def realmsharkmode(interaction: discord.Interaction, mode: app_commands.Choice[str]):
+    await realmshark_cmd.set_mode(interaction, mode.value)
+
+@bot.tree.command(name="realmsharkenabled", description="Enable or disable RealmShark ingest for this guild.", guilds=guilds)
+@require_ppe_roles(admin_required=True)
+async def realmsharkenabled(interaction: discord.Interaction, enabled: bool):
+    await realmshark_cmd.set_enabled(interaction, enabled)
+
+@bot.tree.command(name="realmsharkstatus", description="Show RealmShark integration status for this guild.", guilds=guilds)
+@require_ppe_roles(admin_required=True)
+async def realmsharkstatus(interaction: discord.Interaction):
+    await realmshark_cmd.status(interaction)
+
+@bot.tree.command(name="realmsharkunlink", description="Revoke a specific RealmShark link token.", guilds=guilds)
+@require_ppe_roles(admin_required=True)
+async def realmsharkunlink(interaction: discord.Interaction, token: str):
+    await realmshark_cmd.unlink_token(interaction, token)
 
 @bot.tree.command(name="shareseasonloot", description="Generate a visual loot table showing all your season loot items.", guilds=guilds)
 @app_commands.describe(include_skins="Include skin items in the loot background", include_limited="Include limited items in the loot background")
