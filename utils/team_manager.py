@@ -3,6 +3,7 @@ from typing import Dict, Optional
 import discord
 from dataclass import TeamData, PlayerData, PPEData
 from utils.player_records import load_player_records, save_player_records, load_teams, save_teams, ensure_player_exists, get_active_ppe
+from utils.guild_config import get_quest_points
 
 class TeamManager:
     """Centralized manager for team data operations."""
@@ -181,28 +182,40 @@ class TeamManager:
     async def get_team_leaderboard_data(self, interaction: discord.Interaction) -> list:
         """Get team leaderboard data sorted by total points.
         
-        Returns a list of tuples: (team_name, leader_id, total_points, member_count)
+        Returns a list of tuples:
+        (team_name, leader_id, ppe_points, quest_points, total_points, member_count)
         """
         
         async def operation(teams, records, interaction):
             leaderboard_data = []
+            regular_qp, shiny_qp, skin_qp = await get_quest_points(interaction)
             
             for team_name, team in teams.items():
-                total_points = 0
+                ppe_points = 0.0
+                quest_points = 0
                 
-                # Sum up the highest PPE points for each member
+                # Sum up each member's highest PPE points + account-level quest points.
                 for member_id in team.members:
                     if member_id in records:
                         player_data = records[member_id]
+
                         if player_data.ppes:
                             # Get the PPE with the highest points
                             max_points = max(ppe.points for ppe in player_data.ppes)
-                            total_points += max_points
+                            ppe_points += max_points
+
+                        quest_points += (
+                            len(player_data.quests.completed_items) * regular_qp
+                            + len(player_data.quests.completed_shinies) * shiny_qp
+                            + len(player_data.quests.completed_skins) * skin_qp
+                        )
+
+                total_points = ppe_points + quest_points
                 
-                leaderboard_data.append((team_name, team.leader_id, total_points, len(team.members)))
+                leaderboard_data.append((team_name, team.leader_id, ppe_points, quest_points, total_points, len(team.members)))
             
-            # Sort by total_points descending
-            leaderboard_data.sort(key=lambda x: x[2], reverse=True)
+            # Sort by combined points descending, then PPE points as tie-breaker.
+            leaderboard_data.sort(key=lambda x: (x[4], x[2]), reverse=True)
             
             return leaderboard_data
         

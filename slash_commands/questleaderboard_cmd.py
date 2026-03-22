@@ -2,6 +2,7 @@ import discord
 
 from utils.player_records import load_player_records
 from utils.pagination import chunk_lines_to_pages, LootPaginationView
+from utils.guild_config import get_quest_points
 
 
 async def command(interaction: discord.Interaction):
@@ -9,24 +10,31 @@ async def command(interaction: discord.Interaction):
         return await interaction.response.send_message("❌ This command can only be used in a server.", ephemeral=True)
 
     records = await load_player_records(interaction)
+    regular_points, shiny_points, skin_points = await get_quest_points(interaction)
 
     leaderboard_data = []
     for pid, data in records.items():
         if not data.is_member:
             continue
 
-        completed_count = (
-            len(data.quests.completed_items)
-            + len(data.quests.completed_shinies)
-            + len(data.quests.completed_skins)
+        completed_regular = len(data.quests.completed_items)
+        completed_shiny = len(data.quests.completed_shinies)
+        completed_skin = len(data.quests.completed_skins)
+
+        total_completed = completed_regular + completed_shiny + completed_skin
+        total_points = (
+            completed_regular * regular_points
+            + completed_shiny * shiny_points
+            + completed_skin * skin_points
         )
-        if completed_count <= 0:
+
+        if total_completed <= 0 and total_points <= 0:
             continue
 
         player_name = next((m.display_name for m in interaction.guild.members if m.id == pid), f"Unknown User ({pid})")
-        leaderboard_data.append((player_name, completed_count))
+        leaderboard_data.append((player_name, completed_regular, completed_shiny, completed_skin, total_points))
 
-    leaderboard_data.sort(key=lambda x: x[1], reverse=True)
+    leaderboard_data.sort(key=lambda x: (x[4], x[1] + x[2] + x[3]), reverse=True)
 
     if not leaderboard_data:
         return await interaction.response.send_message(
@@ -35,8 +43,12 @@ async def command(interaction: discord.Interaction):
             ephemeral=True,
         )
 
-    lines = ["**Quest Completion Leaderboard**", ""]
-    for rank, (player_name, completed_count) in enumerate(leaderboard_data, start=1):
+    lines = [
+        "**Quest Points Leaderboard**",
+        f"`Reg {regular_points} | Shiny {shiny_points} | Skin {skin_points}`",
+        "",
+    ]
+    for rank, (player_name, completed_regular, completed_shiny, completed_skin, total_points) in enumerate(leaderboard_data, start=1):
         if rank == 1:
             medal = "🥇"
         elif rank == 2:
@@ -45,7 +57,9 @@ async def command(interaction: discord.Interaction):
             medal = "🥉"
         else:
             medal = f"{rank}."
-        lines.append(f"{medal} **{player_name}** — {completed_count} quests completed")
+        lines.append(
+            f"{medal} **{player_name}** — {completed_regular} Reg, {completed_shiny} Shiny, {completed_skin} Skin • **{total_points} pts**"
+        )
 
     pages = chunk_lines_to_pages(lines, 3900)
     embeds = []

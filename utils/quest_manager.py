@@ -25,6 +25,10 @@ RESETTABLE_QUEST_SECTIONS = {
 }
 
 
+def _is_shiny_name(item_name: str) -> bool:
+    return normalize_item_name(item_name).lower().endswith(" (shiny)")
+
+
 def _load_quest_pools() -> None:
     global _POOLS_LOADED
     if _POOLS_LOADED:
@@ -36,6 +40,10 @@ def _load_quest_pools() -> None:
             item_name = normalize_item_name(row.get("Item Name", ""))
             loot_type = normalize_item_name(row.get("Loot Type", "")).lower()
             if not item_name:
+                continue
+
+            # Keep shiny entries out of regular/skin pools so categories stay strict.
+            if _is_shiny_name(item_name):
                 continue
 
             normalized = normalize_item_name(item_name).lower()
@@ -118,6 +126,30 @@ def _pick_random_shiny_from_pool(pool: Dict[str, str], blocked_targets: set[str]
     return random.sample(candidates, count)
 
 
+def _sanitize_quest_buckets(player_data: PlayerData) -> bool:
+    """Move any shiny-labeled entries out of regular buckets into shiny buckets."""
+    quests = player_data.quests
+    changed = False
+
+    moved_current = [quest for quest in quests.current_items if _is_shiny_name(quest)]
+    if moved_current:
+        quests.current_items = [quest for quest in quests.current_items if not _is_shiny_name(quest)]
+        for quest in moved_current:
+            if not _contains_name(quests.current_shinies, quest):
+                quests.current_shinies.append(quest)
+        changed = True
+
+    moved_completed = [quest for quest in quests.completed_items if _is_shiny_name(quest)]
+    if moved_completed:
+        quests.completed_items = [quest for quest in quests.completed_items if not _is_shiny_name(quest)]
+        for quest in moved_completed:
+            if not _contains_name(quests.completed_shinies, quest):
+                quests.completed_shinies.append(quest)
+        changed = True
+
+    return changed
+
+
 def _fill_missing_quests(
     player_data: PlayerData,
     target_item_quests: int = DEFAULT_REGULAR_QUEST_TARGET,
@@ -188,14 +220,26 @@ def refresh_player_quests(
     target_shiny_quests: int = DEFAULT_SHINY_QUEST_TARGET,
     target_skin_quests: int = DEFAULT_SKIN_QUEST_TARGET,
 ) -> bool:
+    sanitized = _sanitize_quest_buckets(player_data)
     initialized = initialize_quests_if_needed(
         player_data,
         target_item_quests=target_item_quests,
         target_shiny_quests=target_shiny_quests,
         target_skin_quests=target_skin_quests,
     )
-    changed = initialized
+    changed = bool(sanitized or initialized)
     quests = player_data.quests
+
+    # Enforce configured target caps before completion checks/refills.
+    if len(quests.current_items) > target_item_quests:
+        quests.current_items = quests.current_items[:target_item_quests]
+        changed = True
+    if len(quests.current_shinies) > target_shiny_quests:
+        quests.current_shinies = quests.current_shinies[:target_shiny_quests]
+        changed = True
+    if len(quests.current_skins) > target_skin_quests:
+        quests.current_skins = quests.current_skins[:target_skin_quests]
+        changed = True
 
     owned_regular_norms = _owned_regular_norms(player_data)
     owned_shiny_targets = _owned_shiny_target_norms(player_data)
@@ -247,6 +291,7 @@ def update_quests_for_item(
     target_shiny_quests: int = DEFAULT_SHINY_QUEST_TARGET,
     target_skin_quests: int = DEFAULT_SKIN_QUEST_TARGET,
 ) -> dict:
+    sanitized = _sanitize_quest_buckets(player_data)
     initialized = initialize_quests_if_needed(
         player_data,
         target_item_quests=target_item_quests,
@@ -313,7 +358,8 @@ def update_quests_for_item(
         "replacement_shinies": replacement_shinies,
         "replacement_skins": replacement_skins,
         "changed": bool(
-            initialized
+            sanitized
+            or initialized
             or completed_items
             or completed_shinies
             or completed_skins

@@ -14,8 +14,10 @@ async def command(interaction: discord.Interaction):
             return await interaction.response.send_message("❌ No teams available yet.")
         
         lines = ["🏆 `Team Leaderboard` 🏆"]
-        for rank, (team_name, leader_id, total_points, member_count) in enumerate(leaderboard_data, start=1):
-            lines.append(f"{rank}. `{team_name}` — `{total_points:.1f}` points (`{member_count}` members)")
+        for team_name, _leader_id, ppe_points, quest_points, total_points, member_count in leaderboard_data:
+            lines.append(
+                f"`{team_name}` — `{ppe_points:.1f}` ppe points + `{quest_points}` quest points = `{total_points:.1f}` total points (`{member_count}` members)"
+            )
         
         await interaction.response.send_message("\n".join(lines))
     except Exception as e:

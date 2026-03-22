@@ -10,7 +10,7 @@ async def command(interaction: discord.Interaction):
         "leaderboard": "Show the current PPE leaderboard.",
         "characterleaderboard": "Show highest points for specific class.",
         "seasonleaderboard": "Show season leaderboard by unique items.",
-        "questleaderboard": "Show leaderboard by total completed quests.",
+        "questleaderboard": "Show leaderboard by weighted quest points.",
         "teamleaderboard": "Show team leaderboard by combined points.",
         "ppehelp": "Show this help message.",
         "listroles": "List all roles in this server.",
@@ -76,7 +76,7 @@ async def command(interaction: discord.Interaction):
         "viewquestsfor": "View quest state for a player.",
         "resetquestfor": "Reset quest sections for a player.",
         "resetallquests": "Reset all quest data for all players (with confirmation).",
-        "managequests": "View/update active quest targets (regular/shiny/skin) for this server.",
+        "managequests": "View/update quest targets and quest leaderboard point weights.",
     }
     
     # --- Admin: Team Management ---

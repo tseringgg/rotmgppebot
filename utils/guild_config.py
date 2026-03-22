@@ -12,6 +12,9 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
         "regular_target": 8,
         "shiny_target": 3,
         "skin_target": 1,
+        "regular_points": 5,
+        "shiny_points": 10,
+        "skin_points": 15,
     }
 }
 
@@ -49,6 +52,9 @@ def _normalized_targets(config: Dict[str, Any]) -> Dict[str, int]:
         "regular_target": _as_non_negative_int(settings.get("regular_target"), _DEFAULT_CONFIG["quest_settings"]["regular_target"]),
         "shiny_target": _as_non_negative_int(settings.get("shiny_target"), _DEFAULT_CONFIG["quest_settings"]["shiny_target"]),
         "skin_target": _as_non_negative_int(settings.get("skin_target"), _DEFAULT_CONFIG["quest_settings"]["skin_target"]),
+        "regular_points": _as_non_negative_int(settings.get("regular_points"), _DEFAULT_CONFIG["quest_settings"]["regular_points"]),
+        "shiny_points": _as_non_negative_int(settings.get("shiny_points"), _DEFAULT_CONFIG["quest_settings"]["shiny_points"]),
+        "skin_points": _as_non_negative_int(settings.get("skin_points"), _DEFAULT_CONFIG["quest_settings"]["skin_points"]),
     }
 
 
@@ -115,6 +121,33 @@ async def set_quest_targets(
         settings["shiny_target"] = max(0, int(shiny_target))
     if skin_target is not None:
         settings["skin_target"] = max(0, int(skin_target))
+
+    config["quest_settings"] = settings
+    return await save_guild_config(interaction, config)
+
+
+async def get_quest_points(interaction: discord.Interaction) -> tuple[int, int, int]:
+    config = await load_guild_config(interaction)
+    settings = config["quest_settings"]
+    return settings["regular_points"], settings["shiny_points"], settings["skin_points"]
+
+
+async def set_quest_points(
+    interaction: discord.Interaction,
+    *,
+    regular_points: int | None = None,
+    shiny_points: int | None = None,
+    skin_points: int | None = None,
+) -> Dict[str, Any]:
+    config = await load_guild_config(interaction)
+    settings = dict(config.get("quest_settings", {}))
+
+    if regular_points is not None:
+        settings["regular_points"] = max(0, int(regular_points))
+    if shiny_points is not None:
+        settings["shiny_points"] = max(0, int(shiny_points))
+    if skin_points is not None:
+        settings["skin_points"] = max(0, int(skin_points))
 
     config["quest_settings"] = settings
     return await save_guild_config(interaction, config)
