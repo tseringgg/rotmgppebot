@@ -243,8 +243,9 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     if not token:
         raise IngestValidationError("link_token is required.", status_code=401, error_code="missing_link_token")
 
+    event_type = str(payload.get("event_type", "")).strip().lower()
+
     raw_item_name = str(payload.get("item_name", "")).strip()
-    item_name = _resolve_known_item_if_any(raw_item_name)
     divine = _as_bool(payload.get("divine", False))
     shiny = _as_bool(payload.get("shiny", False))
 
@@ -252,7 +253,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     _info_log(
         "Payload accepted "
         f"guild_id={guild_id} token={_token_preview(token)} item='{raw_item_name}' "
-        f"shiny={shiny} divine={divine} event_type={payload.get('event_type', 'loot')}"
+        f"shiny={shiny} divine={divine} event_type={event_type or 'loot'}"
     )
 
     settings = await get_realmshark_settings_by_id(guild_id)
@@ -279,7 +280,6 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
         f"Token resolved guild_id={guild_id} token={_token_preview(token)} linked_user_id={linked_user_id}"
     )
 
-    event_type = str(payload.get("event_type", "")).strip().lower()
     if event_type == "bridge_settings_test":
         source = str(payload.get("source", "tomato")).strip() or "tomato"
         test_message = (
@@ -314,6 +314,8 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
             "reason": "bridge_settings_test_ok",
             "announced": notifier is not None,
         }
+
+    item_name = _resolve_known_item_if_any(raw_item_name)
 
     # Only items present in rotmg_loot_drops_updated.csv are logged into addloot/addseasonloot.
     # Missing UT/ST items are explicitly flagged for CSV follow-up instead of being silently dropped.
