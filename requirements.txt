@@ -1,6 +1,7 @@
 discord.py
 python-dotenv
 aiosqlite
+aiohttp
 opencv-python-headless
 numpy
 IPython
