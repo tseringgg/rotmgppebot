@@ -79,6 +79,7 @@ White or ST,Seal of the Enchanted Forest,3.5
 White or ST,Fairy Plate,3.5
 White or ST,Ring of Pure Wishes,3.5
 Skin,Mini Desire Troll Pet Skin,0
+Skin,Peppermint Snail Pet Skin,0
 
 White or ST,Bottled Medusozoan,5.5
 White or ST,Cnidaria Rod,5.5
@@ -260,6 +261,7 @@ White or ST,Indomptable,6.0
 White or ST,Helm of Draconic Dominance,6.0
 White or ST,Zaarvox's Heart,6.0
 White or ST,Amulet of Drakefyre,6.0
+Skin,Mini Nikao Pet Skin,0
 
 White or ST,Wakizashi of Crossing Fires,6.0
 White or ST,Skull of Endless Torment,6.0
@@ -341,7 +343,7 @@ White or ST,St. Abraham's Wand,4.0
 White or ST,Tome of Purification,4.0
 White or ST,Chasuble of Holy Light,4.0
 White or ST,Ring of Divine Faith,4.0
-White or ST,Bone Dagger (shiny),4.0
+White or ST,Bone Dagger (shiny),8.0
 White or ST,St. Abraham's Wand (shiny),8
 White or ST,Tome of Purification (shiny),8
 White or ST,Chasuble of Holy Light (shiny),8
@@ -746,6 +748,7 @@ UT,Crystal Bone Ring (shiny),0
 UT,Robe of the Tlatoani (shiny),0
 UT,Cracked Crystal Skull (shiny),0
 UT,Staff of the Crystal Serpent (shiny),0
+Skin,Baby Basilisk Pet Skin,0
 
 UT,Orb of Sweet Demise,0
 UT,Honey Scepter,0
@@ -792,6 +795,9 @@ Event White,Mighty Stein (shiny),20
 Event White,Barnacle Basher (shiny),20
 Event White,Jailer's Scythe (shiny),20
 Event White,Cloak of Bloody Surprises (shiny),20
+Event White,Yellow Beehemoth Quiver (shiny),20
+Event White,Red Beehemoth Quiver (shiny),20
+Event White,Blue Beehemoth Quiver (shiny),20
 
 Biome White,Adventurer's Scarf,10
 Biome White,Torrential Staff,10
@@ -1032,6 +1038,8 @@ Limited,Ashen Talon Dagger,5
 Limited,Sovereign Cinder-Blade,5
 Limited,Blade of Eternal Rebirth,5
 Limited,Heart of the Eternal Pyre,10
+Limited,Flying Eyeball Pet Skin,0
+Limited,Corrupted Tinkerer Pet Skin,0
 
 Limited,Prismatic Slasher,5
 Limited,Rainbow Rod,5

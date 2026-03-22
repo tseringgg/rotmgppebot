@@ -70,12 +70,16 @@ async def command(interaction: discord.Interaction):
 
             # Clear all quest data
             quest_entries_cleared += len(player_data.quests.current_items)
+            quest_entries_cleared += len(player_data.quests.current_shinies)
             quest_entries_cleared += len(player_data.quests.current_skins)
             quest_entries_cleared += len(player_data.quests.completed_items)
+            quest_entries_cleared += len(player_data.quests.completed_shinies)
             quest_entries_cleared += len(player_data.quests.completed_skins)
             player_data.quests.current_items.clear()
+            player_data.quests.current_shinies.clear()
             player_data.quests.current_skins.clear()
             player_data.quests.completed_items.clear()
+            player_data.quests.completed_shinies.clear()
             player_data.quests.completed_skins.clear()
             
             # Clear team associations

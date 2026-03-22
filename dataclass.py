@@ -64,8 +64,10 @@ class TeamData:
 @dataclass
 class QuestData:
     current_items: List[str] = field(default_factory=list)
+    current_shinies: List[str] = field(default_factory=list)
     current_skins: List[str] = field(default_factory=list)
     completed_items: List[str] = field(default_factory=list)
+    completed_shinies: List[str] = field(default_factory=list)
     completed_skins: List[str] = field(default_factory=list)
 
 @dataclass

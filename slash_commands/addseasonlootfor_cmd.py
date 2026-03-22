@@ -3,6 +3,7 @@ from utils.player_records import load_player_records, save_player_records, ensur
 from utils.loot_data import LOOT
 from utils.calc_points import load_loot_points
 from utils.quest_manager import update_quests_for_item
+from utils.guild_config import get_quest_targets
 
 
 async def command(
@@ -55,7 +56,15 @@ async def command(
             )
         
         player_data.unique_items.add(item_key)
-        update_quests_for_item(player_data, item_name, shiny)
+        regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
+        update_quests_for_item(
+            player_data,
+            item_name,
+            shiny,
+            target_item_quests=regular_target,
+            target_shiny_quests=shiny_target,
+            target_skin_quests=skin_target,
+        )
         
         await save_player_records(interaction, records)
         

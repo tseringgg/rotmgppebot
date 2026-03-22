@@ -15,7 +15,11 @@ async def command(interaction: discord.Interaction):
         if not data.is_member:
             continue
 
-        completed_count = len(data.quests.completed_items) + len(data.quests.completed_skins)
+        completed_count = (
+            len(data.quests.completed_items)
+            + len(data.quests.completed_shinies)
+            + len(data.quests.completed_skins)
+        )
         if completed_count <= 0:
             continue
 

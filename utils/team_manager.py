@@ -137,10 +137,9 @@ class TeamManager:
                     team.members.remove(player_id)
                     found_team = team_name
             
-            # Also try to update their player record if it exists
-            player_key = ensure_player_exists(records, player_id)
-            if player_key in records:
-                records[player_key].team_name = None
+            # Also try to update their player record if it already exists.
+            if player_id in records:
+                records[player_id].team_name = None
             
             return found_team
         

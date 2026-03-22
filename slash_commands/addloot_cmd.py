@@ -44,6 +44,8 @@ async def command(
         quest_lines = []
         for completed_item in quest_update.get("completed_items", []):
             quest_lines.append(f"✅ Item quest completed: **{completed_item}**")
+        for completed_shiny in quest_update.get("completed_shinies", []):
+            quest_lines.append(f"✨ Shiny quest completed: **{completed_shiny}**")
         for completed_skin in quest_update.get("completed_skins", []):
             quest_lines.append(f"✅ Skin quest completed: **{completed_skin}**")
 

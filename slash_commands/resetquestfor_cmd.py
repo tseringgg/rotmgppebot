@@ -3,9 +3,11 @@ from discord import ui
 
 from utils.player_records import load_player_records, save_player_records
 from utils.quest_manager import refresh_player_quests
+from utils.guild_config import get_quest_targets
 
 
 ACTION_RESET_COMPLETED_ITEMS = "action_reset_completed_items"
+ACTION_RESET_COMPLETED_SHINIES = "action_reset_completed_shinies"
 ACTION_RESET_COMPLETED_SKINS = "action_reset_completed_skins"
 ACTION_CLEAR_ALL_INFO = "action_clear_all_info"
 
@@ -17,12 +19,14 @@ class ResetQuestSelectionView(ui.View):
             admin_id: int,
             member: discord.Member,
             active_item_quests: list[str],
+            active_shiny_quests: list[str],
             active_skin_quests: list[str]
         ):
         super().__init__(timeout=120)
         self.admin_id = admin_id
         self.member = member
         self.active_item_quests = list(active_item_quests)
+        self.active_shiny_quests = list(active_shiny_quests)
         self.active_skin_quests = list(active_skin_quests)
         self.selected_values: set[str] = set()
         self.omitted_active_options_count = 0
@@ -34,6 +38,12 @@ class ResetQuestSelectionView(ui.View):
                 label = label[:97] + "..."
             active_options.append(discord.SelectOption(label=label, value=f"item_idx::{idx}"))
 
+        for idx, shiny_name in enumerate(self.active_shiny_quests):
+            label = f"Shiny: {shiny_name}"
+            if len(label) > 100:
+                label = label[:97] + "..."
+            active_options.append(discord.SelectOption(label=label, value=f"shiny_idx::{idx}"))
+
         for idx, skin_name in enumerate(self.active_skin_quests):
             label = f"Skin: {skin_name}"
             if len(label) > 100:
@@ -42,6 +52,7 @@ class ResetQuestSelectionView(ui.View):
 
         bulk_options = [
             discord.SelectOption(label="Reset all completed items", value=ACTION_RESET_COMPLETED_ITEMS),
+            discord.SelectOption(label="Reset all completed shinies", value=ACTION_RESET_COMPLETED_SHINIES),
             discord.SelectOption(label="Reset all completed skins", value=ACTION_RESET_COMPLETED_SKINS),
             discord.SelectOption(label="Clear all quest information", value=ACTION_CLEAR_ALL_INFO),
         ]
@@ -105,21 +116,28 @@ class ResetQuestSelectionView(ui.View):
         quests = player_data.quests
 
         removed_current_items = []
+        removed_current_shinies = []
         removed_current_skins = []
         reset_completed_items = False
+        reset_completed_shinies = False
         reset_completed_skins = False
         cleared_all_info = False
 
         if ACTION_CLEAR_ALL_INFO in self.selected_values:
             quests.current_items.clear()
+            quests.current_shinies.clear()
             quests.current_skins.clear()
             quests.completed_items.clear()
+            quests.completed_shinies.clear()
             quests.completed_skins.clear()
             cleared_all_info = True
         else:
             if ACTION_RESET_COMPLETED_ITEMS in self.selected_values:
                 quests.completed_items.clear()
                 reset_completed_items = True
+            if ACTION_RESET_COMPLETED_SHINIES in self.selected_values:
+                quests.completed_shinies.clear()
+                reset_completed_shinies = True
             if ACTION_RESET_COMPLETED_SKINS in self.selected_values:
                 quests.completed_skins.clear()
                 reset_completed_skins = True
@@ -134,6 +152,11 @@ class ResetQuestSelectionView(ui.View):
                 for value in self.selected_values
                 if value.startswith("skin_idx::")
             }
+            selected_shiny_indexes = {
+                int(value.split("::", 1)[1])
+                for value in self.selected_values
+                if value.startswith("shiny_idx::")
+            }
 
             selected_item_quests = {
                 self.active_item_quests[idx]
@@ -144,6 +167,11 @@ class ResetQuestSelectionView(ui.View):
                 self.active_skin_quests[idx]
                 for idx in selected_skin_indexes
                 if 0 <= idx < len(self.active_skin_quests)
+            }
+            selected_shiny_quests = {
+                self.active_shiny_quests[idx]
+                for idx in selected_shiny_indexes
+                if 0 <= idx < len(self.active_shiny_quests)
             }
 
             if selected_item_quests:
@@ -156,19 +184,34 @@ class ResetQuestSelectionView(ui.View):
                 quests.current_skins = [q for q in quests.current_skins if q not in selected_skin_quests]
                 removed_current_skins = [q for q in before if q in selected_skin_quests]
 
+            if selected_shiny_quests:
+                before = list(quests.current_shinies)
+                quests.current_shinies = [q for q in quests.current_shinies if q not in selected_shiny_quests]
+                removed_current_shinies = [q for q in before if q in selected_shiny_quests]
+
             # Refill active quest slots after removing active quests.
-            if removed_current_items or removed_current_skins:
-                refresh_player_quests(player_data)
+            if removed_current_items or removed_current_shinies or removed_current_skins:
+                regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
+                refresh_player_quests(
+                    player_data,
+                    target_item_quests=regular_target,
+                    target_shiny_quests=shiny_target,
+                    target_skin_quests=skin_target,
+                )
 
         await save_player_records(interaction, records)
 
         summary_lines = [f"✅ Updated quest reset for {self.member.display_name}."]
         if removed_current_items:
             summary_lines.append(f"- Active item quests reset: {', '.join(removed_current_items)}")
+        if removed_current_shinies:
+            summary_lines.append(f"- Active shiny quests reset: {', '.join(removed_current_shinies)}")
         if removed_current_skins:
             summary_lines.append(f"- Active skin quests reset: {', '.join(removed_current_skins)}")
         if reset_completed_items:
             summary_lines.append("- Reset all completed item quests")
+        if reset_completed_shinies:
+            summary_lines.append("- Reset all completed shiny quests")
         if reset_completed_skins:
             summary_lines.append("- Reset all completed skin quests")
         if cleared_all_info:
@@ -207,18 +250,22 @@ async def command(interaction: discord.Interaction, member: discord.Member):
 
         player_data = records[key]
         active_item_quests = list(player_data.quests.current_items)
+        active_shiny_quests = list(player_data.quests.current_shinies)
         active_skin_quests = list(player_data.quests.current_skins)
 
         view = ResetQuestSelectionView(
             admin_id=interaction.user.id,
             member=member,
             active_item_quests=active_item_quests,
+            active_shiny_quests=active_shiny_quests,
             active_skin_quests=active_skin_quests,
         )
 
         active_lines = []
         for item in active_item_quests:
             active_lines.append(f"- Item: {item}")
+        for shiny in active_shiny_quests:
+            active_lines.append(f"- Shiny: {shiny}")
         for skin in active_skin_quests:
             active_lines.append(f"- Skin: {skin}")
         if not active_lines:
@@ -238,6 +285,7 @@ async def command(interaction: discord.Interaction, member: discord.Member):
                 + "\n".join(active_lines)
                 + "\n\nAdditional options:\n"
                 "- Reset all completed items\n"
+                "- Reset all completed shinies\n"
                 "- Reset all completed skins\n"
                 "- Clear all quest information\n\n"
                 "Select options below, then confirm or cancel."

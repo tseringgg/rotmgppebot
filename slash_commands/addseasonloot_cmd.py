@@ -3,6 +3,7 @@ from utils.player_records import load_player_records, save_player_records, ensur
 from utils.loot_data import LOOT
 from utils.calc_points import load_loot_points
 from utils.quest_manager import update_quests_for_item
+from utils.guild_config import get_quest_targets
 
 
 async def command(
@@ -50,7 +51,15 @@ async def command(
         
         player_data.unique_items.add(item_key)
 
-        quest_update = update_quests_for_item(player_data, item_name, shiny)
+        regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
+        quest_update = update_quests_for_item(
+            player_data,
+            item_name,
+            shiny,
+            target_item_quests=regular_target,
+            target_shiny_quests=shiny_target,
+            target_skin_quests=skin_target,
+        )
         
         await save_player_records(interaction, records)
         
@@ -63,9 +72,11 @@ async def command(
 
         for completed_item in quest_update.get("completed_items", []):
             response_lines.append(f"✅ Item quest completed: **{completed_item}**")
+        for completed_shiny in quest_update.get("completed_shinies", []):
+            response_lines.append(f"✨ Shiny quest completed: **{completed_shiny}**")
         for completed_skin in quest_update.get("completed_skins", []):
             response_lines.append(f"✅ Skin quest completed: **{completed_skin}**")
-        if quest_update.get("completed_items") or quest_update.get("completed_skins"):
+        if quest_update.get("completed_items") or quest_update.get("completed_shinies") or quest_update.get("completed_skins"):
             response_lines.append("Use `/myquests` to view your updated quest list.")
 
         await interaction.response.send_message("\n".join(response_lines), ephemeral=False)

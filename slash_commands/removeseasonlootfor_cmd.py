@@ -55,7 +55,11 @@ async def command(
             f"They now have **{total_count}** unique items collected.",
         ]
 
-        removed_entries = removed_quest_entries.get("removed_completed_items", []) + removed_quest_entries.get("removed_completed_skins", [])
+        removed_entries = (
+            removed_quest_entries.get("removed_completed_items", [])
+            + removed_quest_entries.get("removed_completed_shinies", [])
+            + removed_quest_entries.get("removed_completed_skins", [])
+        )
         if removed_entries:
             response_lines.append(f"Removed completed quest entries: {', '.join(removed_entries)}")
 

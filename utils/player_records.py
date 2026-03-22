@@ -96,8 +96,10 @@ def normalize_player(player: dict) -> PlayerData:
     normalized_quests = QuestData(
         # Prefer unified quests field, but gracefully fall back to legacy keys.
         current_items=safe_str_list(quests_raw.get("current_items", player.get("current_item_quests", []))),
+        current_shinies=safe_str_list(quests_raw.get("current_shinies", player.get("current_shiny_quests", []))),
         current_skins=safe_str_list(quests_raw.get("current_skins", player.get("current_skin_quests", []))),
         completed_items=safe_str_list(quests_raw.get("completed_items", player.get("completed_item_quests", []))),
+        completed_shinies=safe_str_list(quests_raw.get("completed_shinies", player.get("completed_shiny_quests", []))),
         completed_skins=safe_str_list(quests_raw.get("completed_skins", player.get("completed_skin_quests", []))),
     )
     
@@ -194,8 +196,10 @@ async def save_player_records(interaction: discord.Interaction, records: Dict[in
             "team_name": data.team_name,
             "quests": {
                 "current_items": data.quests.current_items,
+                "current_shinies": data.quests.current_shinies,
                 "current_skins": data.quests.current_skins,
                 "completed_items": data.quests.completed_items,
+                "completed_shinies": data.quests.completed_shinies,
                 "completed_skins": data.quests.completed_skins,
             }
         }

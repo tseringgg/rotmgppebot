@@ -10,8 +10,8 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 - **Bonus System**: Apply achievement bonuses with quantity tracking
 - **Point Management**: Automated point calculations with duplicate handling
 - **Personal Statistics**: View your PPE progress and loot collections
-- **Seperate Seasonal Tracking**: View your overall season progress and loot!
-- **Account Quests**: Get randomized item/skin quests tied to your account with completion tracking
+- **Separate Seasonal Tracking**: View your overall season progress and loot
+- **Account Quests**: Get randomized regular, shiny, and skin quests tied to your account with completion tracking
 - **Team System**: Join teams with team leaders who can manage team members
 
 ### 🔧 Admin Features
@@ -20,7 +20,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 - **Point Corrections**: Refresh and fix point totals automatically
 - **Bulk Operations**: Mass point recalculation for server-wide fixes
 - **Inspection Tools**: View detailed loot and bonus information
-- **Quest Administration**: View and reset quest progress for any contest player
+- **Quest Administration**: View and reset quest progress for any contest player, including global resets and per-server target tuning
 - **Team Management**: Create teams, manage members, and delete teams
 
 ### 📊 Advanced Systems
@@ -111,6 +111,8 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/deleteppe` | Delete a specific PPE by ID |
 | `/viewquestsfor` | View quest state for any player |
 | `/resetquestfor` | Open an interactive menu to reset quest sections for any player |
+| `/resetallquests` | Reset quest data for all players (with confirmation) |
+| `/managequests` | View or update per-server quest targets (regular/shiny/skin) |
 
 ### Team Commands (Leaders & Admins)
 | Command | Description |
@@ -189,8 +191,10 @@ PlayerData
 ├── unique_items: Set[tuple]  # (item_name, shiny) - Seasonal
 ├── quests: QuestData
 │   ├── current_items: List[str]
+│   ├── current_shinies: List[str]
 │   ├── current_skins: List[str]
 │   ├── completed_items: List[str]
+│   ├── completed_shinies: List[str]
 │   └── completed_skins: List[str]
 └── ppes: List[PPEData]
     ├── id: int
@@ -219,7 +223,7 @@ TeamData
 - **Team Manager**: Manages team creation, member assignments, and leaderboard calculations
 - **Point Calculator**: Handles duplicates and special modifiers
 - **Seasonal Tracker**: Maintains unique item collections across seasons with dedicated leaderboards
-- **Quest Manager**: Generates randomized item/skin quests and rotates replacements on completion
+- **Quest Manager**: Generates randomized regular/shiny/skin quests and rotates replacements on completion
 - **Autocomplete System**: Dynamic suggestions based on context
 - **Embed Builder**: Rich Discord embed formatting
 - **Role Checker**: Permission validation and error handling
@@ -238,6 +242,7 @@ SERVER2_ID = another_server_id_here
 - `bonuses.csv`: Available achievement bonuses
 - `{guild_id}_loot_records.json`: Player data storage (per guild)
 - `{guild_id}_teams.json`: Team data storage (per guild)
+- `{guild_id}_config.json`: Per-server settings storage (quest target counts and future config)
 
 ### Role Requirements
 - **PPE Player**: Can create PPEs and manage own data
@@ -288,7 +293,7 @@ Teams enable collaborative PPE competition where multiple players combine their 
 - **`/myteam`**: View your team members and their individual rankings (or specify a team name to view any team)
 
 ### Player Removal Behavior
-- **`/removeplayer`**: Now properly removes players from their teams and removes their team Discord role
+- **`/removeplayer`**: Removes players by member or raw Discord user ID, clears contest data, and removes team associations
 - **`/leaveteam`**: Can remove players from teams even if they were previously removed from the contest system
 
 ### Permissions

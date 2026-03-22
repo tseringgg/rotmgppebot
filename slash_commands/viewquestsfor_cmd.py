@@ -3,6 +3,7 @@ import discord
 from utils.player_records import load_player_records, save_player_records
 from utils.quest_manager import refresh_player_quests
 from utils.pagination import chunk_lines_to_pages, LootPaginationView
+from utils.guild_config import get_quest_targets
 
 
 async def command(interaction: discord.Interaction, member: discord.Member):
@@ -20,7 +21,13 @@ async def command(interaction: discord.Interaction, member: discord.Member):
             )
 
         player_data = records[key]
-        changed = refresh_player_quests(player_data)
+        regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
+        changed = refresh_player_quests(
+            player_data,
+            target_item_quests=regular_target,
+            target_shiny_quests=shiny_target,
+            target_skin_quests=skin_target,
+        )
         if changed:
             await save_player_records(interaction, records)
 
@@ -31,12 +38,18 @@ async def command(interaction: discord.Interaction, member: discord.Member):
             "- Items To Find:",
             *([f"• {item}" for item in quests.current_items] or ["• None"]),
             "",
+            "- Shiny Items To Find:",
+            *([f"• {item}" for item in quests.current_shinies] or ["• None"]),
+            "",
             "- Skins To Find:",
             *([f"• {item}" for item in quests.current_skins] or ["• None"]),
             "",
             "**Completed Quests:**",
             "- Item Quests Completed:",
             *([f"• {item}" for item in quests.completed_items] or ["• None"]),
+            "",
+            "- Shiny Quests Completed:",
+            *([f"• {item}" for item in quests.completed_shinies] or ["• None"]),
             "",
             "- Skins Quests Completed:",
             *([f"• {item}" for item in quests.completed_skins] or ["• None"]),

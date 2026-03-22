@@ -53,7 +53,7 @@ async def command(interaction: discord.Interaction):
     # --- Admin: Player Management ---
     admin_player_cmds = {
         "addplayer": "Add member to contest.",
-        "removeplayer": "Remove member from contest (also removes team role and membership).",
+        "removeplayer": "Remove member (or Discord user ID) from contest and team data.",
         "listplayers": "List all participants.",
         "listcharactersfor": "Show all characters for a player.",
         "deleteallppes": "Delete all PPEs for player.",
@@ -75,6 +75,8 @@ async def command(interaction: discord.Interaction):
         "refreshallpoints": "Recalculate all PPE points.",
         "viewquestsfor": "View quest state for a player.",
         "resetquestfor": "Reset quest sections for a player.",
+        "resetallquests": "Reset all quest data for all players (with confirmation).",
+        "managequests": "View/update active quest targets (regular/shiny/skin) for this server.",
     }
     
     # --- Admin: Team Management ---

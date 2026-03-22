@@ -4,6 +4,7 @@ import discord
 from dataclass import Loot, PPEData, PlayerData
 from utils.player_records import load_player_records, save_player_records, ensure_player_exists, get_active_ppe
 from utils.quest_manager import update_quests_for_item
+from utils.guild_config import get_quest_targets
 
 class PlayerManager:
     """Centralized manager for player data operations to prevent race conditions."""
@@ -81,7 +82,15 @@ class PlayerManager:
             points_rounded = math.floor(points_to_add * 2) / 2
             active_ppe.points += points_rounded
 
-            quest_update = update_quests_for_item(player_data, item_name, shiny)
+            regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
+            quest_update = update_quests_for_item(
+                player_data,
+                item_name,
+                shiny,
+                target_item_quests=regular_target,
+                target_shiny_quests=shiny_target,
+                target_skin_quests=skin_target,
+            )
             
             return item_name, points_rounded, active_ppe, quest_update
         
