@@ -22,6 +22,29 @@ load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
 class PPEBot(commands.Bot):
+    async def _send_realmshark_announce(self, guild_id: int, message: str) -> None:
+        guild = self.get_guild(guild_id)
+        if guild is None:
+            print(f"[REALMSHARK] Could not announce test event: guild {guild_id} not found in bot cache.")
+            return
+
+        me = guild.me
+        if me is None and self.user is not None:
+            me = guild.get_member(self.user.id)
+
+        channel = guild.system_channel
+        if channel is None or me is None or not channel.permissions_for(me).send_messages:
+            channel = next(
+                (c for c in guild.text_channels if me is not None and c.permissions_for(me).send_messages),
+                None,
+            )
+
+        if channel is None:
+            print(f"[REALMSHARK] Could not announce test event: no writable text channel in guild {guild_id}.")
+            return
+
+        await channel.send(f"[RealmShark] {message}")
+
     async def setup_hook(self):
 
         # Initialize global loot data for autocomplete
@@ -47,7 +70,9 @@ class PPEBot(commands.Bot):
                 print(f"[ERROR] Failed to sync commands to guild {guild.id}: {e}")
 
         print("Guild commands synced!")
-        self.realmshark_ingest_runner = await start_realmshark_ingest_server()
+        self.realmshark_ingest_runner = await start_realmshark_ingest_server(
+            notifier=self._send_realmshark_announce
+        )
 
     async def close(self):
         runner = getattr(self, "realmshark_ingest_runner", None)

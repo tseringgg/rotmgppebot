@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import json
 import os
 import re
-from typing import Any, Dict
+from typing import Any, Awaitable, Callable, Dict
 
 from dataclass import PlayerData
 from utils.calc_points import calc_points, load_loot_points, normalize_item_name
@@ -42,6 +42,7 @@ class _SyntheticInteraction:
 
 _DEBUG = os.getenv("REALMSHARK_DEBUG", "false").strip().lower() in {"1", "true", "yes", "on"}
 _MISSING_ITEMS_LOG_PATH = "/data/realmshark_not_logged_items.jsonl"
+Notifier = Callable[[int, str], Awaitable[None]]
 
 
 def _utc_iso_now() -> str:
@@ -221,7 +222,7 @@ async def _addseasonloot_for_user(guild_id: int, user_id: int, item_name: str, s
     }
 
 
-async def ingest_loot_event(payload: Dict[str, Any]) -> Dict[str, Any]:
+async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None = None) -> Dict[str, Any]:
     try:
         guild_id = int(payload.get("guild_id"))
     except (TypeError, ValueError):
@@ -251,6 +252,36 @@ async def ingest_loot_event(payload: Dict[str, Any]) -> Dict[str, Any]:
         linked_user_id = int(link_data.get("user_id"))
     except (TypeError, ValueError):
         raise IngestValidationError("Linked token is misconfigured.", status_code=500, error_code="broken_link")
+
+    event_type = str(payload.get("event_type", "")).strip().lower()
+    if event_type == "bridge_settings_test":
+        source = str(payload.get("source", "tomato")).strip() or "tomato"
+        test_message = (
+            "RealmShark bridge test succeeded. "
+            f"guild_id={guild_id} user_id={linked_user_id} source={source}"
+        )
+
+        if notifier is not None:
+            try:
+                await notifier(guild_id, test_message)
+            except Exception as e:
+                _debug_log(f"Bridge test notifier error for guild={guild_id}: {e}")
+
+        link_data["last_used_at"] = _utc_iso_now()
+        links[token] = link_data
+        settings["links"] = links
+        await set_realmshark_settings_by_id(guild_id, settings)
+
+        return {
+            "mode": "none",
+            "guild_id": guild_id,
+            "user_id": linked_user_id,
+            "item": "",
+            "logged": False,
+            "flagged_not_logged": False,
+            "reason": "bridge_settings_test_ok",
+            "announced": notifier is not None,
+        }
 
     # Only items present in rotmg_loot_drops_updated.csv are logged into addloot/addseasonloot.
     # Missing UT/ST items are explicitly flagged for CSV follow-up instead of being silently dropped.

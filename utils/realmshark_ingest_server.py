@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Dict
+from typing import Any, Awaitable, Callable, Dict
 
 from aiohttp import web
 
@@ -22,7 +22,10 @@ def _as_bool(value: str | None, default: bool = True) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
-def _build_app() -> web.Application:
+Notifier = Callable[[int, str], Awaitable[None]]
+
+
+def _build_app(notifier: Notifier | None = None) -> web.Application:
     app = web.Application()
 
     async def health(_request: web.Request) -> web.Response:
@@ -40,7 +43,7 @@ def _build_app() -> web.Application:
 
         try:
             _debug_log("Processing ingest request")
-            result = await ingest_loot_event(payload)
+            result = await ingest_loot_event(payload, notifier=notifier)
             _debug_log(f"Ingest success: {result.get('reason', 'logged')} item={result.get('item', '')}")
             return web.json_response({"ok": True, "result": result})
         except IngestValidationError as e:
@@ -61,7 +64,7 @@ def _build_app() -> web.Application:
     return app
 
 
-async def start_realmshark_ingest_server() -> web.AppRunner | None:
+async def start_realmshark_ingest_server(notifier: Notifier | None = None) -> web.AppRunner | None:
     if not _as_bool(os.getenv("REALMSHARK_INGEST_ENABLED"), default=True):
         print("RealmShark ingest server disabled (REALMSHARK_INGEST_ENABLED=false).")
         return None
@@ -74,7 +77,7 @@ async def start_realmshark_ingest_server() -> web.AppRunner | None:
     except ValueError:
         port = 8080
 
-    app = _build_app()
+    app = _build_app(notifier=notifier)
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, host=host, port=port)
