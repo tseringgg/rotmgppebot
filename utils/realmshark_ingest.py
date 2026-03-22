@@ -54,6 +54,16 @@ def _debug_log(message: str) -> None:
         print(f"[REALMSHARK_DEBUG] {message}")
 
 
+def _info_log(message: str) -> None:
+    print(f"[REALMSHARK] {message}")
+
+
+def _token_preview(token: str) -> str:
+    if len(token) <= 10:
+        return token
+    return f"{token[:6]}...{token[-4:]}"
+
+
 def _is_known_csv_item(raw_item_name: str) -> str | None:
     normalized = normalize_item_name(raw_item_name).lower()
     if not normalized:
@@ -107,6 +117,7 @@ def _append_missing_utst_log(guild_id: int, item_name: str, payload: Dict[str, A
         f.write(json.dumps(entry, ensure_ascii=True) + "\n")
 
     _debug_log(f"Flagged missing UT/ST item for CSV follow-up: item={item_name} guild={guild_id}")
+    _info_log(f"Flagged missing UT/ST item for CSV follow-up: item={item_name} guild_id={guild_id}")
 
 
 def _resolve_item_name(raw_item_name: str) -> str:
@@ -238,20 +249,35 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     shiny = _as_bool(payload.get("shiny", False))
 
     _debug_log(f"Ingest request received guild_id={guild_id} item='{raw_item_name}' shiny={shiny} divine={divine}")
+    _info_log(
+        "Payload accepted "
+        f"guild_id={guild_id} token={_token_preview(token)} item='{raw_item_name}' "
+        f"shiny={shiny} divine={divine} event_type={payload.get('event_type', 'loot')}"
+    )
 
     settings = await get_realmshark_settings_by_id(guild_id)
+    _info_log(
+        "Loaded guild settings "
+        f"guild_id={guild_id} enabled={settings.get('enabled', False)} "
+        f"mode={settings.get('mode', 'addloot')}"
+    )
     if not settings.get("enabled", False):
         raise IngestValidationError("RealmShark integration is disabled for this guild.", status_code=403, error_code="disabled")
 
     links = settings.get("links", {}) if isinstance(settings.get("links"), dict) else {}
     link_data = links.get(token)
     if not isinstance(link_data, dict):
+        _info_log(f"Invalid link token for guild_id={guild_id} token={_token_preview(token)}")
         raise IngestValidationError("Invalid link token.", status_code=401, error_code="invalid_link_token")
 
     try:
         linked_user_id = int(link_data.get("user_id"))
     except (TypeError, ValueError):
         raise IngestValidationError("Linked token is misconfigured.", status_code=500, error_code="broken_link")
+
+    _info_log(
+        f"Token resolved guild_id={guild_id} token={_token_preview(token)} linked_user_id={linked_user_id}"
+    )
 
     event_type = str(payload.get("event_type", "")).strip().lower()
     if event_type == "bridge_settings_test":
@@ -263,14 +289,20 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
 
         if notifier is not None:
             try:
+                _info_log(f"Dispatching bridge settings test announcement for guild_id={guild_id}")
                 await notifier(guild_id, test_message)
+                _info_log(f"Bridge settings test announcement sent for guild_id={guild_id}")
             except Exception as e:
+                _info_log(f"Bridge test notifier error for guild_id={guild_id}: {e}")
                 _debug_log(f"Bridge test notifier error for guild={guild_id}: {e}")
+        else:
+            _info_log(f"Bridge settings test received for guild_id={guild_id} but notifier is not configured")
 
         link_data["last_used_at"] = _utc_iso_now()
         links[token] = link_data
         settings["links"] = links
         await set_realmshark_settings_by_id(guild_id, settings)
+        _info_log(f"Updated last_used_at for bridge settings test token in guild_id={guild_id}")
 
         return {
             "mode": "none",
@@ -287,6 +319,9 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     # Missing UT/ST items are explicitly flagged for CSV follow-up instead of being silently dropped.
     if item_name is None:
         if _is_ut_or_st_event(payload):
+            _info_log(
+                f"Item not in tracked CSV but identified as UT/ST: guild_id={guild_id} item='{raw_item_name}'"
+            )
             _append_missing_utst_log(guild_id, raw_item_name, payload)
             return {
                 "mode": "none",
@@ -299,6 +334,9 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
             }
 
         _debug_log(f"Skipped non-tracked non-UT/ST item '{raw_item_name}'")
+        _info_log(
+            f"Skipped non-tracked non-UT/ST item: guild_id={guild_id} item='{raw_item_name}'"
+        )
         return {
             "mode": "none",
             "guild_id": guild_id,
@@ -310,8 +348,12 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
         }
 
     _validate_shiny_variant(item_name, shiny)
+    _info_log(
+        f"Resolved tracked item for logging: guild_id={guild_id} item='{item_name}' shiny={shiny}"
+    )
 
     mode = str(settings.get("mode", "addloot"))
+    _info_log(f"Dispatching loot event using mode={mode} guild_id={guild_id} user_id={linked_user_id}")
     if mode == "addseasonloot":
         result = await _addseasonloot_for_user(guild_id, linked_user_id, item_name, shiny)
     else:
@@ -325,7 +367,14 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     links[token] = link_data
     settings["links"] = links
     await set_realmshark_settings_by_id(guild_id, settings)
+    _info_log(
+        f"Updated last_used_at after loot logging: guild_id={guild_id} user_id={linked_user_id} item='{item_name}'"
+    )
 
     result["guild_id"] = guild_id
     result["user_id"] = linked_user_id
+    _info_log(
+        "Completed ingest "
+        f"guild_id={guild_id} user_id={linked_user_id} reason={result.get('mode', '')} item={result.get('item', '')}"
+    )
     return result
