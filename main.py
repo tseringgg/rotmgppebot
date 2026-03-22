@@ -13,9 +13,9 @@ from utils.realmshark_ingest_server import start_realmshark_ingest_server
 from utils.autocomplete import class_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, target_user_ppe_id_autocomplete, team_name_autocomplete
 
 SERVER1_ID = 879497062117412924 # Last Oasis
-SERVER2_ID = 1435436110829326459 # Test Server
+# SERVER2_ID = 1435436110829326459 # Test Server
 
-guilds = [discord.Object(id=SERVER1_ID), discord.Object(id=SERVER2_ID)]
+guilds = [discord.Object(id=SERVER1_ID)] #, discord.Object(id=SERVER2_ID)]
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")

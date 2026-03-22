@@ -72,7 +72,7 @@ async def start_realmshark_ingest_server() -> web.AppRunner | None:
     try:
         port = int(port_raw)
     except ValueError:
-        port = 8787
+        port = 8080
 
     app = _build_app()
     runner = web.AppRunner(app)
