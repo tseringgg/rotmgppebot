@@ -59,10 +59,9 @@ class LootPaginationView(discord.ui.View):
     
     def update_buttons(self):
         """Update button states based on current page."""
-        # Disable prev button on first page
-        self.prev_button.disabled = self.current_page == 0
-        # Disable next button on last page
-        self.next_button.disabled = self.current_page == len(self.embeds) - 1
+        # With wrapping, buttons are never disabled
+        self.prev_button.disabled = False
+        self.next_button.disabled = False
     
     async def on_timeout(self):
         """Called when the view times out."""
@@ -93,8 +92,12 @@ class LootPaginationView(discord.ui.View):
         
         if self.current_page > 0:
             self.current_page -= 1
-            self.update_buttons()
-            await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
+        else:
+            # Wrap to last page
+            self.current_page = len(self.embeds) - 1
+            
+        self.update_buttons()
+        await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
     
     @discord.ui.button(label='Next ▶', style=discord.ButtonStyle.secondary)
     async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -105,5 +108,9 @@ class LootPaginationView(discord.ui.View):
         
         if self.current_page < len(self.embeds) - 1:
             self.current_page += 1
-            self.update_buttons()
-            await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
+        else:
+            # Wrap to first page
+            self.current_page = 0
+            
+        self.update_buttons()
+        await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
