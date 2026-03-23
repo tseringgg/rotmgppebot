@@ -15,6 +15,7 @@ from utils.loot_data import LOOT
 from utils.player_manager import player_manager
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.quest_manager import update_quests_for_item
+from utils.realmshark_pending_store import append_pending_event, migrate_legacy_pending_map
 
 
 class IngestValidationError(Exception):
@@ -174,6 +175,44 @@ def _normalize_rarity(value: Any) -> str:
     return "rare"
 
 
+def _parse_positive_int(value: Any) -> int | None:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return None
+    if parsed <= 0:
+        return None
+    return parsed
+
+
+def _normalized_character_bindings(link_data: Dict[str, Any]) -> Dict[str, int]:
+    raw = link_data.get("character_bindings", {})
+    if not isinstance(raw, dict):
+        return {}
+
+    normalized: Dict[str, int] = {}
+    for raw_character_id, raw_ppe_id in raw.items():
+        character_id = _parse_positive_int(raw_character_id)
+        ppe_id = _parse_positive_int(raw_ppe_id)
+        if character_id is None or ppe_id is None:
+            continue
+        normalized[str(character_id)] = ppe_id
+    return normalized
+
+
+def _normalized_seasonal_character_ids(link_data: Dict[str, Any]) -> set[str]:
+    raw = link_data.get("seasonal_character_ids", [])
+    values = raw if isinstance(raw, list) else []
+
+    normalized: set[str] = set()
+    for value in values:
+        character_id = _parse_positive_int(value)
+        if character_id is None:
+            continue
+        normalized.add(str(character_id))
+    return normalized
+
+
 def _display_rarity(rarity: str) -> str:
     normalized = _normalize_rarity(rarity)
     return normalized[:1].upper() + normalized[1:]
@@ -245,7 +284,6 @@ def _validate_shiny_variant(item_name: str, shiny: bool) -> None:
 async def _addloot_for_user(guild_id: int, user_id: int, item_name: str, divine: bool, shiny: bool) -> Dict[str, Any]:
     interaction = _SyntheticInteraction(guild=_SyntheticGuild(guild_id), user=_SyntheticUser(user_id))
 
-    points = calc_points(item_name, divine, shiny)
     records = await load_player_records(interaction)
     key = ensure_player_exists(records, user_id)
     player_data = records.get(key)
@@ -257,10 +295,39 @@ async def _addloot_for_user(guild_id: int, user_id: int, item_name: str, divine:
     if ppe_id is None:
         raise IngestValidationError("Linked user does not have an active PPE.", status_code=409, error_code="no_active_ppe")
 
+    return await _addloot_for_user_with_ppe(guild_id, user_id, item_name, divine, shiny, int(ppe_id))
+
+
+async def _addloot_for_user_with_ppe(
+    guild_id: int,
+    user_id: int,
+    item_name: str,
+    divine: bool,
+    shiny: bool,
+    ppe_id: int,
+) -> Dict[str, Any]:
+    interaction = _SyntheticInteraction(guild=_SyntheticGuild(guild_id), user=_SyntheticUser(user_id))
+
+    points = calc_points(item_name, divine, shiny)
+    records = await load_player_records(interaction)
+    key = ensure_player_exists(records, user_id)
+    player_data = records.get(key)
+
+    if player_data is None or not player_data.is_member:
+        raise IngestValidationError("Linked user is not part of the PPE contest.", status_code=403, error_code="not_member")
+
+    target_ppe = next((ppe for ppe in player_data.ppes if ppe.id == ppe_id), None)
+    if target_ppe is None:
+        raise IngestValidationError(
+            f"Linked user does not have PPE #{ppe_id}.",
+            status_code=409,
+            error_code="invalid_target_ppe",
+        )
+
     item_key, points_added, active_ppe, _quest_update = await player_manager.add_loot_and_points(
         interaction,
         user=_SyntheticUser(user_id),
-        ppe_id=ppe_id,
+        ppe_id=int(ppe_id),
         item_name=item_name,
         divine=divine,
         shiny=shiny,
@@ -325,6 +392,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
         raise IngestValidationError("link_token is required.", status_code=401, error_code="missing_link_token")
 
     event_type = str(payload.get("event_type", "")).strip().lower()
+    character_id = _parse_positive_int(payload.get("character_id"))
 
     raw_item_name = str(payload.get("item_name", "")).strip()
     divine = _as_bool(payload.get("divine", False))
@@ -343,7 +411,8 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     _info_log(
         "Payload accepted "
         f"guild_id={guild_id} token={_token_preview(token)} item='{raw_item_name}' "
-        f"shiny={shiny} divine={divine} rarity={item_rarity} event_type={event_type or 'loot'}"
+        f"shiny={shiny} divine={divine} rarity={item_rarity} "
+        f"event_type={event_type or 'loot'} character_id={character_id or 0}"
     )
 
     settings = await get_realmshark_settings_by_id(guild_id)
@@ -369,6 +438,14 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     _info_log(
         f"Token resolved guild_id={guild_id} token={_token_preview(token)} linked_user_id={linked_user_id}"
     )
+
+    legacy_pending = link_data.get("pending_unmapped_characters", {})
+    if isinstance(legacy_pending, dict) and legacy_pending:
+        await migrate_legacy_pending_map(guild_id, linked_user_id, legacy_pending)
+        link_data["pending_unmapped_characters"] = {}
+
+    if character_id is not None:
+        link_data["last_seen_character_id"] = character_id
 
     announce_channel_id: int | None = None
     announce_channel_raw = settings.get("announce_channel_id", 0)
@@ -458,11 +535,88 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     )
 
     mode = str(settings.get("mode", "addloot"))
-    _info_log(f"Dispatching loot event using mode={mode} guild_id={guild_id} user_id={linked_user_id}")
-    if mode == "addseasonloot":
-        result = await _addseasonloot_for_user(guild_id, linked_user_id, item_name, shiny)
+    routing_reason = "legacy_mode"
+    used_character_binding = False
+
+    if character_id is not None:
+        key = str(character_id)
+        bindings = _normalized_character_bindings(link_data)
+        seasonal_ids = _normalized_seasonal_character_ids(link_data)
+        bound_ppe_id = _parse_positive_int(bindings.get(key))
+
+        if key in seasonal_ids:
+            mode = "addseasonloot"
+            routing_reason = "mapped_seasonal_character"
+            _info_log(
+                f"Character_id={character_id} explicitly mapped to seasonal. "
+                f"Routing to addseasonloot guild_id={guild_id} user_id={linked_user_id}"
+            )
+            result = await _addseasonloot_for_user(guild_id, linked_user_id, item_name, shiny)
+        elif bound_ppe_id is not None:
+            try:
+                mode = "addloot"
+                routing_reason = "mapped_character"
+                used_character_binding = True
+                _info_log(
+                    f"Routing via mapped character_id={character_id} ppe_id={bound_ppe_id} "
+                    f"guild_id={guild_id} user_id={linked_user_id}"
+                )
+                result = await _addloot_for_user_with_ppe(
+                    guild_id,
+                    linked_user_id,
+                    item_name,
+                    divine,
+                    shiny,
+                    bound_ppe_id,
+                )
+            except IngestValidationError as e:
+                _info_log(
+                    f"Mapped PPE routing failed for character_id={character_id} ppe_id={bound_ppe_id} "
+                    f"guild_id={guild_id} user_id={linked_user_id}: {e.message}. Falling back to addseasonloot."
+                )
+                mode = "addseasonloot"
+                routing_reason = "mapped_character_fallback_to_season"
+                result = await _addseasonloot_for_user(guild_id, linked_user_id, item_name, shiny)
+        else:
+            mode = "addseasonloot"
+            routing_reason = "unmapped_character"
+            _info_log(
+                f"Unmapped character_id={character_id}; routing to addseasonloot "
+                f"guild_id={guild_id} user_id={linked_user_id}"
+            )
+            result = await _addseasonloot_for_user(guild_id, linked_user_id, item_name, shiny)
+
+            is_first_unmapped = await append_pending_event(
+                guild_id,
+                linked_user_id,
+                character_id=character_id,
+                item_name=item_name,
+                item_rarity=_normalize_rarity(item_rarity),
+                shiny=shiny,
+                divine=divine,
+            )
+
+            if is_first_unmapped and notifier is not None:
+                try:
+                    prompt = (
+                        f"<@{linked_user_id}> New character detected (`{character_id}`). "
+                        "Loot is currently tracked as seasonal. "
+                        "Use `/realmsharkconfigure` to map this character to a PPE or keep it seasonal."
+                    )
+                    await notifier(guild_id, prompt, announce_channel_id, linked_user_id, None)
+                except Exception as e:
+                    _info_log(
+                        f"Failed to send unmapped-character prompt guild_id={guild_id} "
+                        f"user_id={linked_user_id} character_id={character_id}: {e}"
+                    )
     else:
-        result = await _addloot_for_user(guild_id, linked_user_id, item_name, divine, shiny)
+        _info_log(
+            f"Dispatching loot event using legacy mode={mode} guild_id={guild_id} user_id={linked_user_id}"
+        )
+        if mode == "addseasonloot":
+            result = await _addseasonloot_for_user(guild_id, linked_user_id, item_name, shiny)
+        else:
+            result = await _addloot_for_user(guild_id, linked_user_id, item_name, divine, shiny)
 
     _debug_log(
         f"Logged item via mode={mode} guild_id={guild_id} user_id={linked_user_id} item='{item_name}'"
@@ -479,6 +633,9 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     result["guild_id"] = guild_id
     result["user_id"] = linked_user_id
     result["item_rarity"] = item_rarity
+    result["character_id"] = character_id or 0
+    result["routing_reason"] = routing_reason
+    result["used_character_binding"] = used_character_binding
 
     if notifier is not None:
         image_path = _resolve_item_image_path(item_name, shiny)

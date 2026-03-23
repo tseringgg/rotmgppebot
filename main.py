@@ -615,6 +615,65 @@ async def realmsharkchannel(interaction: discord.Interaction, channel: discord.T
 async def realmsharkstatus(interaction: discord.Interaction):
     await realmshark_cmd.status(interaction)
 
+@bot.tree.command(name="realmsharkbindings", description="Show your RealmShark character-to-PPE mappings.", guilds=guilds)
+@require_ppe_roles(player_required=True)
+async def realmsharkbindings(interaction: discord.Interaction):
+    await realmshark_cmd.bindings(interaction)
+
+@bot.tree.command(name="realmsharkconfigure", description="Configure how a character_id should be logged (PPE or seasonal).", guilds=guilds)
+@app_commands.describe(action="What you want to do")
+@app_commands.describe(character_id="Character ID from RealmShark/Tomato (optional: uses last seen)")
+@app_commands.describe(ppe_id="Required for map/apply actions")
+@app_commands.describe(token="Optional full token if you only want to update one token")
+@app_commands.choices(action=[
+    app_commands.Choice(name="show my mappings", value="show"),
+    app_commands.Choice(name="map character to PPE", value="map_ppe"),
+    app_commands.Choice(name="set character as seasonal", value="set_seasonal"),
+    app_commands.Choice(name="clear character mapping", value="clear_mapping"),
+    app_commands.Choice(name="show pending loot for character", value="show_pending"),
+    app_commands.Choice(name="apply pending loot to PPE", value="apply_pending_to_ppe"),
+    app_commands.Choice(name="clear pending loot log", value="clear_pending"),
+])
+@require_ppe_roles(player_required=True)
+async def realmsharkconfigure(
+    interaction: discord.Interaction,
+    action: app_commands.Choice[str],
+    character_id: int | None = None,
+    ppe_id: int | None = None,
+    token: str | None = None,
+):
+    await realmshark_cmd.configure(interaction, action.value, character_id, ppe_id, token)
+
+@bot.tree.command(name="realmsharkpanel", description="Open an interactive panel to map a character to PPE or seasonal.", guilds=guilds)
+@app_commands.describe(mode="Choose whether panel starts from all characters or pending-only")
+@app_commands.describe(character_id="Optional character ID (defaults to your last seen character)")
+@app_commands.describe(token="Optional full token if you want panel actions scoped to one token")
+@app_commands.choices(mode=[
+    app_commands.Choice(name="Show All", value="show_all"),
+    app_commands.Choice(name="Show Pending", value="show_pending"),
+])
+@require_ppe_roles(player_required=True)
+async def realmsharkpanel(
+    interaction: discord.Interaction,
+    mode: app_commands.Choice[str],
+    character_id: int | None = None,
+    token: str | None = None,
+):
+    await realmshark_cmd.open_panel(interaction, mode.value, character_id, token)
+
+@bot.tree.command(name="realmsharkadminview", description="Admin view of a player's RealmShark mappings and pending logs.", guilds=guilds)
+@app_commands.describe(member="Player to inspect")
+@require_ppe_roles(admin_required=True)
+async def realmsharkadminview(interaction: discord.Interaction, member: discord.Member):
+    await realmshark_cmd.admin_view(interaction, member)
+
+@bot.tree.command(name="realmsharkunbindcharacter", description="Remove a RealmShark character_id mapping from your token(s).", guilds=guilds)
+@app_commands.describe(character_id="Character ID from sniffer payload")
+@app_commands.describe(token="Optional full token (leave empty to remove from all your tokens)")
+@require_ppe_roles(player_required=True)
+async def realmsharkunbindcharacter(interaction: discord.Interaction, character_id: int, token: str | None = None):
+    await realmshark_cmd.unbind_character(interaction, character_id, token)
+
 @bot.tree.command(name="realmsharkunlink", description="Revoke a specific RealmShark link token.", guilds=guilds)
 @require_ppe_roles(admin_required=True)
 async def realmsharkunlink(interaction: discord.Interaction, token: str):

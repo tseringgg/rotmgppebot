@@ -86,11 +86,50 @@ def _normalized_realmshark_settings(config: Dict[str, Any]) -> Dict[str, Any]:
             except (TypeError, ValueError):
                 continue
 
+            raw_last_seen = link_data.get("last_seen_character_id", 0)
+            try:
+                last_seen_character_id = int(raw_last_seen or 0)
+            except (TypeError, ValueError):
+                last_seen_character_id = 0
+            if last_seen_character_id < 0:
+                last_seen_character_id = 0
+
             links[token] = {
                 "user_id": parsed_user_id,
                 "created_at": str(link_data.get("created_at", "")),
                 "last_used_at": str(link_data.get("last_used_at", "")),
+                "auto_bind_next_seen_character": bool(link_data.get("auto_bind_next_seen_character", False)),
+                "last_seen_character_id": last_seen_character_id,
+                "character_bindings": {},
+                "seasonal_character_ids": [],
             }
+
+            raw_bindings = link_data.get("character_bindings", {})
+            if isinstance(raw_bindings, dict):
+                bindings: Dict[str, int] = {}
+                for raw_character_id, raw_ppe_id in raw_bindings.items():
+                    try:
+                        character_id = int(raw_character_id)
+                        ppe_id = int(raw_ppe_id)
+                    except (TypeError, ValueError):
+                        continue
+                    if character_id <= 0 or ppe_id <= 0:
+                        continue
+                    bindings[str(character_id)] = ppe_id
+                links[token]["character_bindings"] = bindings
+
+            raw_seasonal_ids = link_data.get("seasonal_character_ids", [])
+            seasonal_ids = raw_seasonal_ids if isinstance(raw_seasonal_ids, list) else []
+            normalized_seasonal_ids: list[str] = []
+            for raw_character_id in seasonal_ids:
+                try:
+                    character_id = int(raw_character_id)
+                except (TypeError, ValueError):
+                    continue
+                if character_id <= 0:
+                    continue
+                normalized_seasonal_ids.append(str(character_id))
+            links[token]["seasonal_character_ids"] = sorted(set(normalized_seasonal_ids), key=int)
 
     announce_channel_raw = settings.get("announce_channel_id", _DEFAULT_CONFIG["realmshark_settings"]["announce_channel_id"])
     try:
