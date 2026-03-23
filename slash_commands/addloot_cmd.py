@@ -5,6 +5,7 @@ from utils.loot_data import LOOT
 from utils.player_manager import player_manager
 from utils.calc_points import calc_points, load_loot_points
 from utils.player_records import get_active_ppe_of_user
+from slash_commands.helpers.loot_table_message import LootTableMessage
 
 
 async def command(
@@ -39,7 +40,6 @@ async def command(
         final_key, points_added, active_ppe, quest_update = await player_manager.add_loot_and_points(
             interaction, user=user, ppe_id=ppe_id, item_name=item_name, divine=divine, shiny=shiny, points=points
         )
-        embed = await build_loot_embed(active_ppe, user_id=user.id, recently_added=final_key)
 
         quest_lines = []
         for completed_item in quest_update.get("completed_items", []):
@@ -52,15 +52,20 @@ async def command(
         if quest_lines:
             quest_lines.append("Use `/myquests` to view your updated quest list.")
         
-        await interaction.response.send_message(
-            content=f"> ✅ Added **{final_key}** to your active PPE for {points_added} points.",
-            ephemeral=False
+        # Use LootTableMessage to handle response + embed followup
+        loot_message = LootTableMessage(
+            interaction=interaction,
+            message_type="markdown",
+            response=f"> ✅ Added **{final_key}** to your active PPE for {points_added} points.",
+            response_ephemeral=False,
+            ephemeral=True,
+            embed_content=f"Your active PPE now has **{active_ppe.points} total points**."
         )
-        await interaction.followup.send(
-            content=f"Your active PPE now has **{active_ppe.points} total points**.",
-            view=embed,
-            embed=embed.embeds[0],
-            ephemeral=True
+        
+        await loot_message.send_player_loot(
+            active_ppe, 
+            user_id=user.id, 
+            recently_added=final_key
         )
 
         if quest_lines:
