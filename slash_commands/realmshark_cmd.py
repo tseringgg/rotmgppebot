@@ -62,36 +62,17 @@ async def generate_link_token(interaction: discord.Interaction) -> None:
     }
 
     settings["links"] = links
-    saved = await set_realmshark_settings(interaction, settings)
+    await set_realmshark_settings(interaction, settings)
 
-    mode = saved.get("mode", "addloot")
     await interaction.response.send_message(
         "RealmShark link token created. Keep it private.\n"
         f"guild_id: `{interaction.guild.id if interaction.guild else 'unknown'}`\n"
-        f"mode: `{mode}`\n"
         f"link_token: `{token}`\n\n"
         "Set these in RealmShark properties:\n"
         "- realmshark.bridge.enabled=true\n"
         "- realmshark.bridge.guild_id=<your guild id>\n"
         "- realmshark.bridge.link_token=<token>\n"
         "- realmshark.bridge.endpoint=http://<bot-host>:8787/realmshark/ingest",
-        ephemeral=True,
-    )
-
-
-async def set_mode(interaction: discord.Interaction, mode: str) -> None:
-    if mode not in {"addloot", "addseasonloot"}:
-        return await interaction.response.send_message(
-            "Invalid mode. Use `addloot` or `addseasonloot`.",
-            ephemeral=True,
-        )
-
-    settings = await get_realmshark_settings(interaction)
-    settings["mode"] = mode
-    settings = await set_realmshark_settings(interaction, settings)
-
-    await interaction.response.send_message(
-        f"RealmShark mode set to `{settings['mode']}` for this guild.",
         ephemeral=True,
     )
 
@@ -150,7 +131,6 @@ async def status(interaction: discord.Interaction) -> None:
 
     lines = [
         f"enabled: `{settings.get('enabled', False)}`",
-        f"mode: `{settings.get('mode', 'addloot')}`",
         f"announce_channel_id: `{settings.get('announce_channel_id', 0)}`",
         f"link_count: `{len(links)}`",
     ]
@@ -159,8 +139,17 @@ async def status(interaction: discord.Interaction) -> None:
     for token, link_data in links.items():
         if not isinstance(link_data, dict):
             continue
+        user_display = f"user_id={link_data.get('user_id', 'unknown')}"
+        try:
+            linked_user_id = int(link_data.get("user_id"))
+            member = interaction.guild.get_member(linked_user_id) if interaction.guild else None
+            if member is not None:
+                user_display = f"{member.display_name} ({member.mention})"
+        except (TypeError, ValueError):
+            pass
+
         previews.append(
-            f"- `{_token_preview(token)}` user_id=`{link_data.get('user_id', 'unknown')}` last_used_at=`{link_data.get('last_used_at', '')}`"
+            f"- `{_token_preview(token)}` -> {user_display} last_used_at=`{link_data.get('last_used_at', '')}`"
         )
 
     if previews:
@@ -365,59 +354,6 @@ async def bindings(interaction: discord.Interaction) -> None:
     await interaction.response.send_message("RealmShark character bindings:\n" + "\n".join(user_lines), ephemeral=True)
 
 
-async def unbind_character(interaction: discord.Interaction, character_id: int, token: str | None = None) -> None:
-    if character_id <= 0:
-        return await interaction.response.send_message("character_id must be a positive integer.", ephemeral=True)
-
-    settings = await get_realmshark_settings(interaction)
-    links = settings.get("links", {}) if isinstance(settings.get("links"), dict) else {}
-
-    removed_from = 0
-    key = str(character_id)
-    for current_token, link_data in links.items():
-        if not isinstance(link_data, dict):
-            continue
-        if token and current_token != token:
-            continue
-
-        try:
-            linked_user_id = int(link_data.get("user_id"))
-        except (TypeError, ValueError):
-            continue
-        if linked_user_id != interaction.user.id:
-            continue
-
-        character_bindings = _normalize_bindings(link_data)
-        seasonal_ids = _normalize_seasonal_ids(link_data)
-
-        if key in character_bindings:
-            del character_bindings[key]
-            link_data["character_bindings"] = character_bindings
-            seasonal_ids.discard(key)
-            link_data["seasonal_character_ids"] = sorted(seasonal_ids, key=int)
-            links[current_token] = link_data
-            removed_from += 1
-
-        if key in seasonal_ids:
-            seasonal_ids.discard(key)
-            link_data["seasonal_character_ids"] = sorted(seasonal_ids, key=int)
-            links[current_token] = link_data
-            removed_from += 1
-
-    if removed_from == 0:
-        return await interaction.response.send_message(
-            f"No mapping found for character_id `{character_id}` on your linked token(s).",
-            ephemeral=True,
-        )
-
-    settings["links"] = links
-    await set_realmshark_settings(interaction, settings)
-    await interaction.response.send_message(
-        f"Removed character_id `{character_id}` mapping from `{removed_from}` token(s).",
-        ephemeral=True,
-    )
-
-
 async def configure(
     interaction: discord.Interaction,
     action: str,
@@ -503,6 +439,7 @@ async def configure(
 
     changed = 0
     applied_events_total = 0
+    cleared_pending_total = 0
 
     for current_token, link_data in user_links:
         character_bindings = _normalize_bindings(link_data)
@@ -511,11 +448,33 @@ async def configure(
             assert ppe_id is not None
             character_bindings[character_key] = ppe_id
             seasonal_ids.discard(character_key)
+            events = await pop_pending_events_for_character(interaction.guild.id, interaction.user.id, character_id)
+            for event in events:
+                if not isinstance(event, dict):
+                    continue
+                item_name = str(event.get("item_name", "")).strip()
+                if not item_name:
+                    continue
+                item_shiny = bool(event.get("shiny", False))
+                item_divine = bool(event.get("divine", False))
+                await _addloot_for_user_with_ppe(
+                    interaction.guild.id,
+                    interaction.user.id,
+                    item_name,
+                    item_divine,
+                    item_shiny,
+                    ppe_id,
+                )
+                applied_events_total += 1
             changed += 1
         elif action == "set_seasonal":
             seasonal_ids.add(character_key)
             if character_key in character_bindings:
                 del character_bindings[character_key]
+            cleared = await clear_pending_character(interaction.guild.id, interaction.user.id, character_id)
+            if cleared:
+                cleared_pending_total += 1
+                changed += 1
             changed += 1
         elif action == "clear_mapping":
             if character_key in character_bindings:
@@ -594,8 +553,15 @@ async def configure(
     await set_realmshark_settings(interaction, settings)
 
     action_label = {
-        "map_ppe": f"Mapped character_id `{character_id}` to PPE `#{ppe_id}`",
-        "set_seasonal": f"Mapped character_id `{character_id}` to seasonal",
+        "map_ppe": (
+            f"Mapped character_id `{character_id}` to PPE `#{ppe_id}`"
+            + (
+                f" and applied `{applied_events_total}` pending loot event(s)"
+                if applied_events_total > 0
+                else ""
+            )
+        ),
+        "set_seasonal": f"Mapped character_id `{character_id}` to seasonal and cleared pending data",
         "clear_mapping": f"Cleared mapping for character_id `{character_id}`",
         "clear_pending": f"Cleared pending log for character_id `{character_id}`",
         "apply_pending_to_ppe": (
@@ -604,8 +570,11 @@ async def configure(
         ),
     }.get(action, "Updated configuration")
 
+    if action == "set_seasonal" and cleared_pending_total == 0:
+        action_label = f"Mapped character_id `{character_id}` to seasonal"
+
     await interaction.response.send_message(
-        f"✅ {action_label}.\nUse `/realmsharkbindings` to review your mappings.",
+        f"✅ {action_label}.",
         ephemeral=True,
     )
 
@@ -655,6 +624,110 @@ async def admin_view(interaction: discord.Interaction, member: discord.Member) -
             lines.append(f"  pending character_id `{character_id}` events=`{len(events)}`")
 
     await interaction.response.send_message("\n".join(lines), ephemeral=True)
+
+
+async def admin_panel(interaction: discord.Interaction, member: discord.Member) -> None:
+    """Open the RealmShark panel for a specific user (admin viewing another user's panel)."""
+    if not interaction.guild:
+        return await interaction.response.send_message("❌ This command can only be used in a server.", ephemeral=True)
+
+    settings = await get_realmshark_settings(interaction)
+    links = settings.get("links", {}) if isinstance(settings.get("links"), dict) else {}
+    user_links = _iter_user_links(links, user_id=member.id, token=None)
+
+    if not user_links:
+        return await interaction.response.send_message(
+            f"No RealmShark links found for {member.mention}.",
+            ephemeral=True,
+        )
+
+    # Get the last seen character or first pending
+    resolved_character_id: int | None = None
+    pending_data = await load_pending(interaction.guild.id, member.id)
+    pending_chars = pending_data.get("characters", {}) if isinstance(pending_data.get("characters", {}), dict) else {}
+    pending_ids: list[int] = []
+
+    for raw_id in pending_chars.keys():
+        try:
+            parsed = int(raw_id)
+        except (TypeError, ValueError):
+            continue
+        if parsed > 0:
+            pending_ids.append(parsed)
+    pending_ids = sorted(set(pending_ids))
+
+    for _, link_data in user_links:
+        try:
+            last_seen = int(link_data.get("last_seen_character_id", 0) or 0)
+        except (TypeError, ValueError):
+            last_seen = 0
+        if last_seen > 0:
+            resolved_character_id = last_seen
+            break
+
+    if resolved_character_id is None and pending_ids:
+        resolved_character_id = pending_ids[0]
+
+    if resolved_character_id is None:
+        return await interaction.response.send_message(
+            f"{member.mention} has no character activity or pending loot yet.",
+            ephemeral=True,
+        )
+
+    # Get character info
+    detected_name, detected_class = await _detected_character_info(
+        interaction,
+        user_links,
+        resolved_character_id,
+    )
+
+    pending_entry = await get_pending_character_entry(interaction.guild.id, member.id, resolved_character_id)
+    pending_count = 0
+    if isinstance(pending_entry, dict):
+        events = pending_entry.get("events", []) if isinstance(pending_entry.get("events", []), list) else []
+        pending_count = len(events)
+
+    # Get player's PPEs
+    records = await load_player_records(interaction)
+    key = str(member.id)
+    player_data = records.get(key)
+    ppe_list = sorted([ppe.id for ppe in (player_data.ppes if player_data else [])])
+    ppe_text = ", ".join(f"#{ppe_id}" for ppe_id in ppe_list) if ppe_list else "No PPEs yet"
+
+    # Build links summary
+    links_summary: list[str] = []
+    for token, link_data in user_links:
+        bindings = _normalize_bindings(link_data)
+        seasonal_ids = _normalize_seasonal_ids(link_data)
+        links_summary.append(
+            f"`{_token_preview(token)}` - {len(bindings)} PPE bindings, {len(seasonal_ids)} seasonal"
+        )
+
+    links_text = "\n".join(links_summary) if links_summary else "No active links"
+
+    embed = discord.Embed(
+        title=f"RealmShark Admin View for {member.display_name}",
+        description=(
+            f"Character ID: **{resolved_character_id}**\n"
+            f"Detected Character: **{detected_name or 'Unknown'}**\n"
+            f"Detected Class: **{detected_class or 'Unknown'}**\n"
+            f"Pending Loot Events: **{pending_count}**"
+        ),
+        color=discord.Color.blurple(),
+    )
+    embed.add_field(
+        name=f"{member.display_name}'s PPE IDs",
+        value=ppe_text,
+        inline=False,
+    )
+    embed.add_field(
+        name="RealmShark Links",
+        value=links_text,
+        inline=False,
+    )
+    embed.set_footer(text="This is a read-only admin view.")
+
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 async def _resolve_character_id_for_panel(
@@ -778,15 +851,108 @@ async def _build_panel_embed(
     embed.add_field(
         name="How to use this panel",
         value=(
-            "0. Use `Prev Pending` / `Next Pending` to cycle pending character IDs.\n"
-            "1. `Map To PPE` to make future loot use addloot for this character.\n"
-            "2. `Set Seasonal` to keep this character as seasonal.\n"
-            "3. `Apply Pending To PPE` if you want already-logged pending seasonal loot moved into a PPE.\n"
-            "4. `Refresh` anytime to reload status."
+            "• Use `Prev` / `Next` to cycle character IDs.\n"
+            "• `Map To PPE` routes this character and auto-applies pending loot.\n"
+            "• `Set Seasonal` keeps this character as seasonal only.\n"
+            "• `Show Pending` displays pending unmapped loot events.\n"
+            "• `Clear Pending` discards all pending events for this character.\n"
+            "• `Refresh` reloads the panel status."
         ),
         inline=False,
     )
     return embed
+
+
+def _format_points(points: float) -> str:
+    return str(int(points)) if points == int(points) else f"{points:.1f}"
+
+
+def _build_pending_loot_summary(events: list[dict[str, Any]]) -> str:
+    if not events:
+        return "No pending unmapped loot for this character yet."
+
+    by_name: Dict[str, int] = {}
+    for event in events:
+        if not isinstance(event, dict):
+            continue
+        item_name = str(event.get("item_name", "")).strip() or "Unknown Item"
+        by_name[item_name] = by_name.get(item_name, 0) + 1
+
+    top_items = sorted(by_name.items(), key=lambda kv: (-kv[1], kv[0]))[:5]
+    top_items_text = ", ".join(f"{name} x{count}" for name, count in top_items)
+
+    recent_names: list[str] = []
+    for event in events[-3:]:
+        if not isinstance(event, dict):
+            continue
+        item_name = str(event.get("item_name", "")).strip() or "Unknown Item"
+        recent_names.append(item_name)
+
+    recent_text = ", ".join(recent_names) if recent_names else "None"
+    return (
+        f"{len(events)} pending drop(s). "
+        f"Top loot: {top_items_text or 'None'}. "
+        f"Most recent: {recent_text}."
+    )
+
+
+class _MapToPPESelect(discord.ui.Select):
+    def __init__(
+        self,
+        owner_id: int,
+        character_id: int,
+        token: str | None,
+        ppe_options: list[tuple[int, str, float]],
+    ) -> None:
+        options: list[discord.SelectOption] = []
+        for ppe_id, ppe_name, ppe_points in ppe_options[:25]:
+            options.append(
+                discord.SelectOption(
+                    label=f"PPE #{ppe_id}: {ppe_name}",
+                    value=str(ppe_id),
+                    description=f"Current points: {_format_points(float(ppe_points))}",
+                )
+            )
+
+        super().__init__(
+            placeholder="Select which PPE this character should map to",
+            min_values=1,
+            max_values=1,
+            options=options,
+        )
+        self.owner_id = owner_id
+        self.character_id = character_id
+        self.token = token
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            return await interaction.response.send_message("This picker belongs to another user.", ephemeral=True)
+
+        try:
+            ppe_id = int(self.values[0])
+        except (TypeError, ValueError, IndexError):
+            return await interaction.response.send_message("Please choose a valid PPE option.", ephemeral=True)
+
+        # Mapping now also auto-applies all pending events for this character.
+        await configure(
+            interaction,
+            "map_ppe",
+            character_id=self.character_id,
+            ppe_id=ppe_id,
+            token=self.token,
+        )
+
+
+class RealmSharkMapToPPEView(discord.ui.View):
+    def __init__(
+        self,
+        owner_id: int,
+        character_id: int,
+        token: str | None,
+        ppe_options: list[tuple[int, str, float]],
+    ) -> None:
+        super().__init__(timeout=300)
+        self.add_item(_MapToPPESelect(owner_id, character_id, token, ppe_options))
 
 
 class _PPEIdModal(discord.ui.Modal):
@@ -849,7 +1015,7 @@ class RealmSharkConfigurePanelView(discord.ui.View):
         )
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Prev Pending", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="Prev", style=discord.ButtonStyle.secondary)
     async def prev_pending(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not await self._check_owner(interaction):
             return
@@ -872,7 +1038,7 @@ class RealmSharkConfigurePanelView(discord.ui.View):
         )
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Next Pending", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.secondary)
     async def next_pending(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not await self._check_owner(interaction):
             return
@@ -905,7 +1071,67 @@ class RealmSharkConfigurePanelView(discord.ui.View):
     async def map_to_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not await self._check_owner(interaction):
             return
-        await interaction.response.send_modal(_PPEIdModal("map_ppe", self.character_id, self.token))
+
+        records = await load_player_records(interaction)
+        key = ensure_player_exists(records, interaction.user.id)
+        player_data = records.get(key)
+        player_ppes = sorted(player_data.ppes if player_data else [], key=lambda ppe: int(ppe.id))
+
+        if not player_ppes:
+            return await interaction.response.send_message(
+                "You do not have any PPEs yet. Create one with `/newppe` first.",
+                ephemeral=True,
+            )
+
+        ppe_options: list[tuple[int, str, float]] = []
+        ppe_lines: list[str] = []
+        for ppe in player_ppes:
+            ppe_id = int(ppe.id)
+            ppe_name = str(getattr(ppe.name, "value", ppe.name))
+            ppe_points = float(getattr(ppe, "points", 0.0))
+            ppe_options.append((ppe_id, ppe_name, ppe_points))
+            ppe_lines.append(f"• PPE #{ppe_id} ({ppe_name}) - {_format_points(ppe_points)} points")
+
+        pending_entry = await get_pending_character_entry(interaction.guild.id, interaction.user.id, self.character_id)
+        pending_events = []
+        if isinstance(pending_entry, dict):
+            pending_events = pending_entry.get("events", []) if isinstance(pending_entry.get("events", []), list) else []
+
+        settings = await get_realmshark_settings(interaction)
+        links = settings.get("links", {}) if isinstance(settings.get("links"), dict) else {}
+        user_links = _iter_user_links(links, user_id=interaction.user.id, token=self.token)
+        detected_name, detected_class = await _detected_character_info(
+            interaction,
+            user_links,
+            self.character_id,
+        )
+
+        embed = discord.Embed(
+            title="Map Character To PPE",
+            description=(
+                f"Character ID: **{self.character_id}**\n"
+                f"Detected Character: **{detected_name or 'Unknown'}**\n"
+                f"Detected Class: **{detected_class or 'Unknown'}**"
+            ),
+            color=discord.Color.green(),
+        )
+        embed.add_field(
+            name="Pending Loot Summary",
+            value=_build_pending_loot_summary(pending_events),
+            inline=False,
+        )
+        embed.add_field(
+            name="Available PPE Options",
+            value="\n".join(ppe_lines[:10]),
+            inline=False,
+        )
+        embed.set_footer(text="Pick a PPE from the dropdown to map this character.")
+
+        await interaction.response.send_message(
+            embed=embed,
+            view=RealmSharkMapToPPEView(self.owner_id, self.character_id, self.token, ppe_options),
+            ephemeral=True,
+        )
 
     @discord.ui.button(label="Set Seasonal", style=discord.ButtonStyle.secondary)
     async def set_seasonal(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -918,12 +1144,6 @@ class RealmSharkConfigurePanelView(discord.ui.View):
         if not await self._check_owner(interaction):
             return
         await configure(interaction, "show_pending", character_id=self.character_id, token=self.token)
-
-    @discord.ui.button(label="Apply Pending To PPE", style=discord.ButtonStyle.success)
-    async def apply_pending_to_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not await self._check_owner(interaction):
-            return
-        await interaction.response.send_modal(_PPEIdModal("apply_pending_to_ppe", self.character_id, self.token))
 
     @discord.ui.button(label="Clear Pending", style=discord.ButtonStyle.danger)
     async def clear_pending(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

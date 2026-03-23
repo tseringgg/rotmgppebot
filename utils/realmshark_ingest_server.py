@@ -44,7 +44,19 @@ def _as_bool(value: str | None, default: bool = True) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
-Notifier = Callable[[int, str, int | None, int | None, str | None], Awaitable[None]]
+Notifier = Callable[
+    [
+        int,
+        str,
+        int | None,
+        int | None,
+        str | None,
+        bool,
+        int | None,
+        bool,
+    ],
+    Awaitable[None],
+]
 
 
 def _build_app(notifier: Notifier | None = None) -> web.Application:

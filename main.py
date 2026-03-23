@@ -9,6 +9,8 @@ from utils.role_checks import require_ppe_roles
 from utils.loot_data import init_loot_data
 from create_loot_table import create_loot_background_and_mapping
 from utils.realmshark_ingest_server import start_realmshark_ingest_server
+from utils.embed_builders import build_loot_embeds
+from utils.player_records import ensure_player_exists, load_player_records
 
 from utils.autocomplete import class_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, target_user_ppe_id_autocomplete, team_name_autocomplete
 
@@ -22,6 +24,28 @@ load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
 class PPEBot(commands.Bot):
+    async def _build_realmshark_ppe_embeds(self, guild_id: int, user_id: int, ppe_id: int) -> list[discord.Embed]:
+        class _SyntheticGuild:
+            def __init__(self, gid: int) -> None:
+                self.id = gid
+
+        class _SyntheticInteraction:
+            def __init__(self, gid: int) -> None:
+                self.guild = _SyntheticGuild(gid)
+
+        interaction = _SyntheticInteraction(guild_id)
+        records = await load_player_records(interaction)
+        key = ensure_player_exists(records, user_id)
+        player_data = records.get(key)
+        if not player_data:
+            return []
+
+        target_ppe = next((ppe for ppe in player_data.ppes if int(ppe.id) == int(ppe_id)), None)
+        if target_ppe is None:
+            return []
+
+        return build_loot_embeds(target_ppe, recently_added="")
+
     async def _send_realmshark_announce(
         self,
         guild_id: int,
@@ -29,6 +53,9 @@ class PPEBot(commands.Bot):
         channel_id: int | None = None,
         user_id: int | None = None,
         image_path: str | None = None,
+        allow_user_ping: bool = False,
+        ppe_id: int | None = None,
+        include_ppe_sheet: bool = False,
     ) -> None:
         guild = self.get_guild(guild_id)
         if guild is None:
@@ -67,28 +94,44 @@ class PPEBot(commands.Bot):
             return
 
         player_name = "Unknown Player"
+        player_mention = ""
         if user_id is not None:
             member = guild.get_member(user_id)
             if member is not None:
                 player_name = member.display_name
+                player_mention = member.mention
             else:
                 player_name = f"User {user_id}"
+                player_mention = f"<@{user_id}>"
 
-        final_message = message.replace("{player}", player_name)
+        final_message = message.replace("{player}", player_name).replace("{mention}", player_mention)
+        allowed_mentions = discord.AllowedMentions.none()
+        if allow_user_ping and user_id is not None:
+            allowed_mentions = discord.AllowedMentions(users=True)
 
         if image_path:
             try:
                 await channel.send(
                     content=f"[RealmShark] {final_message}",
                     file=discord.File(image_path),
+                    allowed_mentions=allowed_mentions,
                 )
+                if include_ppe_sheet and user_id is not None and ppe_id is not None:
+                    ppe_embeds = await self._build_realmshark_ppe_embeds(guild_id, user_id, ppe_id)
+                    if ppe_embeds:
+                        await channel.send(embed=ppe_embeds[0], allowed_mentions=discord.AllowedMentions.none())
                 return
             except Exception as e:
                 print(
                     f"[REALMSHARK] Failed to attach image '{image_path}' for guild {guild_id}: {e}. Sending message without image."
                 )
 
-        await channel.send(f"[RealmShark] {final_message}")
+        await channel.send(f"[RealmShark] {final_message}", allowed_mentions=allowed_mentions)
+
+        if include_ppe_sheet and user_id is not None and ppe_id is not None:
+            ppe_embeds = await self._build_realmshark_ppe_embeds(guild_id, user_id, ppe_id)
+            if ppe_embeds:
+                await channel.send(embed=ppe_embeds[0], allowed_mentions=discord.AllowedMentions.none())
 
     async def setup_hook(self):
 
@@ -589,16 +632,6 @@ async def managequests(
 async def realmsharklink(interaction: discord.Interaction):
     await realmshark_cmd.generate_link_token(interaction)
 
-@bot.tree.command(name="realmsharkmode", description="Set automatic RealmShark loot mode for this guild.", guilds=guilds)
-@app_commands.describe(mode="Choose addloot or addseasonloot")
-@app_commands.choices(mode=[
-    app_commands.Choice(name="addloot", value="addloot"),
-    app_commands.Choice(name="addseasonloot", value="addseasonloot"),
-])
-@require_ppe_roles(admin_required=True)
-async def realmsharkmode(interaction: discord.Interaction, mode: app_commands.Choice[str]):
-    await realmshark_cmd.set_mode(interaction, mode.value)
-
 @bot.tree.command(name="realmsharkenabled", description="Enable or disable RealmShark ingest for this guild.", guilds=guilds)
 @require_ppe_roles(admin_required=True)
 async def realmsharkenabled(interaction: discord.Interaction, enabled: bool):
@@ -615,64 +648,29 @@ async def realmsharkchannel(interaction: discord.Interaction, channel: discord.T
 async def realmsharkstatus(interaction: discord.Interaction):
     await realmshark_cmd.status(interaction)
 
-@bot.tree.command(name="realmsharkbindings", description="Show your RealmShark character-to-PPE mappings.", guilds=guilds)
-@require_ppe_roles(player_required=True)
-async def realmsharkbindings(interaction: discord.Interaction):
-    await realmshark_cmd.bindings(interaction)
-
-@bot.tree.command(name="realmsharkconfigure", description="Configure how a character_id should be logged (PPE or seasonal).", guilds=guilds)
-@app_commands.describe(action="What you want to do")
+@bot.tree.command(name="realmsharkconfigure", description="RealmShark character mapping panel - manage character routing, view mappings, and handle pending loot.", guilds=guilds)
+@app_commands.describe(mode="Panel start mode (defaults to Show All)")
 @app_commands.describe(character_id="Character ID from RealmShark/Tomato (optional: uses last seen)")
-@app_commands.describe(ppe_id="Required for map/apply actions")
-@app_commands.describe(token="Optional full token if you only want to update one token")
-@app_commands.choices(action=[
-    app_commands.Choice(name="show my mappings", value="show"),
-    app_commands.Choice(name="map character to PPE", value="map_ppe"),
-    app_commands.Choice(name="set character as seasonal", value="set_seasonal"),
-    app_commands.Choice(name="clear character mapping", value="clear_mapping"),
-    app_commands.Choice(name="show pending loot for character", value="show_pending"),
-    app_commands.Choice(name="apply pending loot to PPE", value="apply_pending_to_ppe"),
-    app_commands.Choice(name="clear pending loot log", value="clear_pending"),
-])
-@require_ppe_roles(player_required=True)
-async def realmsharkconfigure(
-    interaction: discord.Interaction,
-    action: app_commands.Choice[str],
-    character_id: int | None = None,
-    ppe_id: int | None = None,
-    token: str | None = None,
-):
-    await realmshark_cmd.configure(interaction, action.value, character_id, ppe_id, token)
-
-@bot.tree.command(name="realmsharkpanel", description="Open an interactive panel to map a character to PPE or seasonal.", guilds=guilds)
-@app_commands.describe(mode="Choose whether panel starts from all characters or pending-only")
-@app_commands.describe(character_id="Optional character ID (defaults to your last seen character)")
-@app_commands.describe(token="Optional full token if you want panel actions scoped to one token")
+@app_commands.describe(token="Optional full token if you want panel scoped to one token")
 @app_commands.choices(mode=[
     app_commands.Choice(name="Show All", value="show_all"),
     app_commands.Choice(name="Show Pending", value="show_pending"),
 ])
 @require_ppe_roles(player_required=True)
-async def realmsharkpanel(
+async def realmsharkconfigure(
     interaction: discord.Interaction,
-    mode: app_commands.Choice[str],
+    mode: app_commands.Choice[str] | None = None,
     character_id: int | None = None,
     token: str | None = None,
 ):
-    await realmshark_cmd.open_panel(interaction, mode.value, character_id, token)
+    selected_mode = mode.value if mode is not None else "show_all"
+    await realmshark_cmd.open_panel(interaction, selected_mode, character_id, token)
 
-@bot.tree.command(name="realmsharkadminview", description="Admin view of a player's RealmShark mappings and pending logs.", guilds=guilds)
+@bot.tree.command(name="realmsharkadminview", description="Open RealmShark panel for a specific player (admin only).", guilds=guilds)
 @app_commands.describe(member="Player to inspect")
 @require_ppe_roles(admin_required=True)
 async def realmsharkadminview(interaction: discord.Interaction, member: discord.Member):
-    await realmshark_cmd.admin_view(interaction, member)
-
-@bot.tree.command(name="realmsharkunbindcharacter", description="Remove a RealmShark character_id mapping from your token(s).", guilds=guilds)
-@app_commands.describe(character_id="Character ID from sniffer payload")
-@app_commands.describe(token="Optional full token (leave empty to remove from all your tokens)")
-@require_ppe_roles(player_required=True)
-async def realmsharkunbindcharacter(interaction: discord.Interaction, character_id: int, token: str | None = None):
-    await realmshark_cmd.unbind_character(interaction, character_id, token)
+    await realmshark_cmd.admin_panel(interaction, member)
 
 @bot.tree.command(name="realmsharkunlink", description="Revoke a specific RealmShark link token.", guilds=guilds)
 @require_ppe_roles(admin_required=True)
