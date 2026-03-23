@@ -1,6 +1,7 @@
 import discord
 from utils.player_records import ensure_player_exists, load_player_records
 from utils.embed_builders import build_loot_embed
+from slash_commands.helpers.loot_table_message import LootTableMessage
 
 async def command(interaction: discord.Interaction, user: discord.Member, id: int):
     if not interaction.guild:
@@ -32,15 +33,15 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
         )
     
     try:
-        # Build embed for the target PPE
-        embed = await build_loot_embed(target_ppe, user_id=user.id)
-        
-        await interaction.response.send_message(
-            f"**Loot inspection for {user.display_name}'s PPE #{target_ppe.id} ({target_ppe.name})**",
-            view=embed,
-            embed=embed.embeds[0],
-            ephemeral=True
+        # Use LootTableMessage to handle embed display
+        loot_message = LootTableMessage(
+            interaction=interaction,
+            message_type="markdown",
+            ephemeral=True,
+            embed_content=f"**Loot inspection for {user.display_name}'s PPE #{target_ppe.id} ({target_ppe.name})**"
         )
+        
+        await loot_message.send_player_loot(target_ppe, user_id=user.id)
         
     except Exception as e:
         return await interaction.response.send_message(
