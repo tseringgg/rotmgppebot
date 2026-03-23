@@ -1,0 +1,4654 @@
+{
+  "Tops": {
+    "default_points": 1.0,
+    "items": [
+      {
+        "name": "Dagger of Dire Hatred",
+        "type": "Tier 14 Weapon"
+      },
+      {
+        "name": "Bow of Deep Enchantment",
+        "type": "Tier 14 Weapon"
+      },
+      {
+        "name": "Staff of the Fundamental Core",
+        "type": "Tier 14 Weapon"
+      },
+      {
+        "name": "Wand of Retribution",
+        "type": "Tier 14 Weapon"
+      },
+      {
+        "name": "Sword of Majesty",
+        "type": "Tier 14 Weapon"
+      },
+      {
+        "name": "Kusanagi",
+        "type": "Tier 14 Weapon"
+      },
+      {
+        "name": "Soulforged Blades",
+        "type": "Tier 14 Weapon"
+      },
+      {
+        "name": "Longbow of the Midnight Diamond",
+        "type": "Tier 14 Weapon"
+      },
+      {
+        "name": "Spellblade of the Everlasting Death",
+        "type": "Tier 14 Weapon"
+      },
+      {
+        "name": "Morning Star of Reckoning",
+        "type": "Tier 14 Weapon"
+      },
+      {
+        "name": "Gravelord's Flail",
+        "type": "Tier 14 Weapon"
+      },
+      {
+        "name": "Godslayer Tachi",
+        "type": "Tier 14 Weapon"
+      },
+      {
+        "name": "Cloak of Nightmares",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Quiver of the Autumn King",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Burning Retribution Spell",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Tome of Hallowed Language",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Helm of the Tribune",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Shield of Orcish Regalia",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Seal of Invocation",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Necrofish Poison",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Mindwaster Skull",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Depthchaser Trap",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Dimensiongate Orb",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Prism of Reveries",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Scepter of the Firmament",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Dynastic Star",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Virtuous Wakizashi",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Nebular Lute",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Grandmaster Mace",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Sonic Wave Sheath",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Sigil of the Rhino",
+        "type": "Tier 7 Ability"
+      },
+      {
+        "name": "Leviathan Armor",
+        "type": "Tier 14 Armor"
+      },
+      {
+        "name": "Robe of the Ancient Intellect",
+        "type": "Tier 14 Armor"
+      },
+      {
+        "name": "Annihilation Armor",
+        "type": "Tier 14 Armor"
+      },
+      {
+        "name": "Ring of Transcendent Health",
+        "type": "Tier 7 Ring"
+      },
+      {
+        "name": "Ring of Transcendent Magic",
+        "type": "Tier 7 Ring"
+      },
+      {
+        "name": "Ring of Transcendent Attack",
+        "type": "Tier 7 Ring"
+      },
+      {
+        "name": "Ring of Transcendent Defense",
+        "type": "Tier 7 Ring"
+      },
+      {
+        "name": "Ring of Transcendent Speed",
+        "type": "Tier 7 Ring"
+      },
+      {
+        "name": "Ring of Transcendent Dexterity",
+        "type": "Tier 7 Ring"
+      },
+      {
+        "name": "Ring of Transcendent Vitality",
+        "type": "Tier 7 Ring"
+      },
+      {
+        "name": "Ring of Transcendent Wisdom",
+        "type": "Tier 7 Ring"
+      }
+    ]
+  },
+  "Abyss of Demons": {
+    "default_points": 4.0,
+    "items": [
+      {
+        "name": "Demon Blade",
+        "type": "White or ST"
+      },
+      {
+        "name": "Volcanic Sheath",
+        "type": "White or ST"
+      },
+      {
+        "name": "Berserker's Breastplate",
+        "type": "White or ST"
+      },
+      {
+        "name": "Demon Blade (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Volcanic Sheath (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Staff of Eruption",
+        "type": "White or ST"
+      },
+      {
+        "name": "Scorchium Stone",
+        "type": "White or ST"
+      },
+      {
+        "name": "Molten Mantle",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ring of the Inferno",
+        "type": "White or ST"
+      },
+      {
+        "name": "Horned Wyrm Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Demon Frog Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Infernal Abyss of Demons": {
+    "default_points": 6.0,
+    "items": [
+      {
+        "name": "Sword of Illumination",
+        "type": "White or ST"
+      },
+      {
+        "name": "Adamantine Helm",
+        "type": "White or ST"
+      }
+    ]
+  },
+  "Ancient Ruins": {
+    "default_points": 3.0,
+    "items": [
+      {
+        "name": "Arcane Rapier",
+        "type": "White or ST"
+      },
+      {
+        "name": "Amber Encrusted Helmet",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Sandstone Seal",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Arcane Rapier (shiny)",
+        "type": "White or ST",
+        "points": 6.0
+      },
+      {
+        "name": "Amber Encrusted Helmet (shiny)",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Sandstone Seal (shiny)",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Resplendent Bow",
+        "type": "White or ST"
+      },
+      {
+        "name": "Embellished Quiver",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ornate Armor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Aquamarine Amulet",
+        "type": "White or ST"
+      },
+      {
+        "name": "Sand Wanderer Trickster Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Candyland Hunting Grounds": {
+    "default_points": 3.5,
+    "items": [
+      {
+        "name": "Candy Ring",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Candy-Coated Armor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Bubblegum Bucket",
+        "type": "White or ST"
+      },
+      {
+        "name": "Candy Ring (shiny)",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Candy-Coated Armor (shiny)",
+        "type": "White or ST",
+        "points": 7.0
+      },
+      {
+        "name": "Pixie-Enchanted Sword",
+        "type": "White or ST"
+      },
+      {
+        "name": "Seal of the Enchanted Forest",
+        "type": "White or ST"
+      },
+      {
+        "name": "Fairy Plate",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ring of Pure Wishes",
+        "type": "White or ST"
+      },
+      {
+        "name": "Mini Desire Troll Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Peppermint Snail Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Cnidarian Reef": {
+    "default_points": 5.5,
+    "items": [
+      {
+        "name": "Bottled Medusozoan",
+        "type": "White or ST"
+      },
+      {
+        "name": "Cnidaria Rod",
+        "type": "White or ST"
+      },
+      {
+        "name": "Bottled Medusozoan (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Cnidaria Rod (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Jellyhead Trickster Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Fungal Cavern": {
+    "default_points": 7.5,
+    "items": [
+      {
+        "name": "Fungal Breastplate",
+        "type": "White or ST"
+      },
+      {
+        "name": "Crystallized Worm Spellblade",
+        "type": "White or ST"
+      },
+      {
+        "name": "Crystal Shield",
+        "type": "White or ST"
+      },
+      {
+        "name": "Sporous Spray Spell",
+        "type": "White or ST"
+      },
+      {
+        "name": "Tome of the Mushroom Tribes",
+        "type": "White or ST"
+      },
+      {
+        "name": "Cave Dweller Trap",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ring of Decades",
+        "type": "White or ST"
+      },
+      {
+        "name": "Fungal Breastplate (shiny)",
+        "type": "White or ST",
+        "points": 15.0
+      },
+      {
+        "name": "Crystal Shield (shiny)",
+        "type": "White or ST",
+        "points": 15.0
+      },
+      {
+        "name": "Sporous Spray Spell (shiny)",
+        "type": "White or ST",
+        "points": 15.0
+      },
+      {
+        "name": "Tome of the Mushroom Tribes (shiny)",
+        "type": "White or ST",
+        "points": 15.0
+      },
+      {
+        "name": "Cave Dweller Trap (shiny)",
+        "type": "White or ST",
+        "points": 15.0
+      },
+      {
+        "name": "Ring of Decades (shiny)",
+        "type": "White or ST",
+        "points": 15.0
+      },
+      {
+        "name": "Crystalline Sigil",
+        "type": "White or ST"
+      },
+      {
+        "name": "Quartz Cutter",
+        "type": "White or ST"
+      },
+      {
+        "name": "Crystalline Kunai",
+        "type": "White or ST"
+      },
+      {
+        "name": "Luminous Armor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Radiant Heart",
+        "type": "White or ST"
+      }
+    ]
+  },
+  "Crystal Cavern": {
+    "default_points": 7.5,
+    "items": [
+      {
+        "name": "Irradiance Sheath",
+        "type": "White or ST"
+      },
+      {
+        "name": "Fractal Blades",
+        "type": "White or ST"
+      },
+      {
+        "name": "Cloak of Refraction",
+        "type": "White or ST"
+      },
+      {
+        "name": "Echoes Prism",
+        "type": "White or ST"
+      },
+      {
+        "name": "Fractured Gemstone Wakizashi",
+        "type": "White or ST"
+      },
+      {
+        "name": "Star of Enlightenment",
+        "type": "White or ST"
+      },
+      {
+        "name": "Crystallised Mist",
+        "type": "White or ST"
+      },
+      {
+        "name": "Fractal Blades (shiny)",
+        "type": "White or ST",
+        "points": 15.0
+      },
+      {
+        "name": "Cloak of Refraction (shiny)",
+        "type": "White or ST",
+        "points": 15.0
+      },
+      {
+        "name": "Fractured Gemstone Wakizashi (shiny)",
+        "type": "White or ST",
+        "points": 15.0
+      },
+      {
+        "name": "Star of Enlightenment (shiny)",
+        "type": "White or ST",
+        "points": 15.0
+      },
+      {
+        "name": "Crystal Cobra Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Cursed Library": {
+    "default_points": 4.0,
+    "items": [
+      {
+        "name": "Wand of Hidden Knowledge",
+        "type": "White or ST"
+      },
+      {
+        "name": "Necronomicon",
+        "type": "White or ST"
+      },
+      {
+        "name": "Scholar's Seal",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ronin's Wakizashi",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Corruption Cutter",
+        "type": "White or ST"
+      },
+      {
+        "name": "Necronomicon (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Scholar's Seal (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Ronin's Wakizashi (shiny)",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Corruption Cutter (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Deathless Crossbow",
+        "type": "White or ST"
+      },
+      {
+        "name": "Quiver of Shrieking Specters",
+        "type": "White or ST"
+      },
+      {
+        "name": "Wraith's Brigandine",
+        "type": "White or ST"
+      },
+      {
+        "name": "Revenant Ring",
+        "type": "White or ST"
+      },
+      {
+        "name": "Cultured Bookwyrm Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Enlightened Bookwyrm Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Davy Jones' Locker": {
+    "default_points": 5.0,
+    "items": [
+      {
+        "name": "Quartermaster Scabbard",
+        "type": "White or ST"
+      },
+      {
+        "name": "Spirit Dagger",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ghostly Prism",
+        "type": "White or ST"
+      },
+      {
+        "name": "Spectral Cloth Armor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Captain's Ring",
+        "type": "White or ST"
+      },
+      {
+        "name": "Quartermaster Scabbard (shiny)",
+        "type": "White or ST",
+        "points": 10.0
+      },
+      {
+        "name": "Spirit Dagger (shiny)",
+        "type": "White or ST",
+        "points": 10.0
+      },
+      {
+        "name": "Ghostly Prism (shiny)",
+        "type": "White or ST",
+        "points": 10.0
+      },
+      {
+        "name": "Spectral Cloth Armor (shiny)",
+        "type": "White or ST",
+        "points": 10.0
+      },
+      {
+        "name": "Pearl Necklace",
+        "type": "Item",
+        "points": 0.0
+      },
+      {
+        "name": "Golden Chalice",
+        "type": "Item",
+        "points": 0.0
+      },
+      {
+        "name": "Ruby Gemstone",
+        "type": "Item",
+        "points": 0.0
+      },
+      {
+        "name": "Spirit Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Lil' Davy Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Deadwater Docks": {
+    "default_points": 5.5,
+    "items": [
+      {
+        "name": "Pirate King's Cutlass",
+        "type": "White or ST"
+      },
+      {
+        "name": "Wavecrest Concertina",
+        "type": "White or ST"
+      },
+      {
+        "name": "Pirate King's Cutlass (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Wavecrest Concertina (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Swashbuckler's Sickle",
+        "type": "White or ST"
+      },
+      {
+        "name": "Tricorne of the High Seas",
+        "type": "White or ST"
+      },
+      {
+        "name": "Naval Uniform",
+        "type": "White or ST"
+      },
+      {
+        "name": "First Mate's Hook",
+        "type": "White or ST"
+      },
+      {
+        "name": "Calamity Crab Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Haunted Cemetery": {
+    "default_points": 4.5,
+    "items": [
+      {
+        "name": "Soul's Guidance",
+        "type": "White or ST"
+      },
+      {
+        "name": "Plague Poison",
+        "type": "White or ST"
+      },
+      {
+        "name": "Resurrected Warrior's Armor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Amulet of Dispersion",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Soul's Guidance (shiny)",
+        "type": "White or ST",
+        "points": 9.0
+      },
+      {
+        "name": "Plague Poison (shiny)",
+        "type": "White or ST",
+        "points": 9.0
+      },
+      {
+        "name": "Resurrected Warrior's Armor (shiny)",
+        "type": "White or ST",
+        "points": 9.0
+      },
+      {
+        "name": "Amulet of Dispersion (shiny)",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Etherite Dagger",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ghastly Drape",
+        "type": "White or ST"
+      },
+      {
+        "name": "Mantle of Skuld",
+        "type": "White or ST"
+      },
+      {
+        "name": "Spectral Ring of Horrors",
+        "type": "White or ST"
+      },
+      {
+        "name": "Werewolf Cub Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "High Tech Terror": {
+    "default_points": 6.5,
+    "items": [
+      {
+        "name": "B.O.W.",
+        "type": "White or ST"
+      },
+      {
+        "name": "S.T.A.F.F.",
+        "type": "White or ST"
+      },
+      {
+        "name": "Q.U.I.V.E.R.",
+        "type": "White or ST"
+      },
+      {
+        "name": "S.H.E.A.T.H.",
+        "type": "White or ST"
+      },
+      {
+        "name": "E.Y.E.",
+        "type": "White or ST"
+      },
+      {
+        "name": "B.O.W. (shiny)",
+        "type": "White or ST",
+        "points": 13.0
+      },
+      {
+        "name": "S.T.A.F.F. (shiny)",
+        "type": "White or ST",
+        "points": 13.0
+      },
+      {
+        "name": "Q.U.I.V.E.R. (shiny)",
+        "type": "White or ST",
+        "points": 13.0
+      },
+      {
+        "name": "S.H.E.A.T.H. (shiny)",
+        "type": "White or ST",
+        "points": 13.0
+      },
+      {
+        "name": "E.Y.E. (shiny)",
+        "type": "White or ST",
+        "points": 13.0
+      },
+      {
+        "name": "C.L.A.W.",
+        "type": "White or ST"
+      },
+      {
+        "name": "B.O.O.M.",
+        "type": "White or ST"
+      },
+      {
+        "name": "A.R.M.O.R.",
+        "type": "White or ST"
+      },
+      {
+        "name": "C.O.N.T.R.O.L.L.E.R.",
+        "type": "White or ST",
+        "points": 4.0
+      },
+      {
+        "name": "Blizzard Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Ice Citadel": {
+    "default_points": 7.0,
+    "items": [
+      {
+        "name": "Staff of Esben",
+        "type": "White or ST"
+      },
+      {
+        "name": "Skullish Remains of Esben",
+        "type": "White or ST"
+      },
+      {
+        "name": "Esben's Vows",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ase's Echo",
+        "type": "White or ST"
+      },
+      {
+        "name": "Esben's Wedding Ring",
+        "type": "White or ST"
+      },
+      {
+        "name": "Esben's Twisted Heart",
+        "type": "White or ST"
+      },
+      {
+        "name": "Esben's Shaman Attire",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ase's Echo (shiny)",
+        "type": "White or ST",
+        "points": 14.0
+      },
+      {
+        "name": "Esben's Twisted Heart (shiny)",
+        "type": "White or ST",
+        "points": 14.0
+      },
+      {
+        "name": "Esben's Shaman Attire (shiny)",
+        "type": "White or ST",
+        "points": 14.0
+      },
+      {
+        "name": "Dalvar's Battle Axe",
+        "type": "White or ST"
+      },
+      {
+        "name": "Sunken Buckler",
+        "type": "White or ST"
+      },
+      {
+        "name": "Chainmail Body Armor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Gjallarhorn",
+        "type": "White or ST"
+      },
+      {
+        "name": "Heartsteel Claymore",
+        "type": "White or ST"
+      },
+      {
+        "name": "Symbol of the Lost",
+        "type": "White or ST"
+      },
+      {
+        "name": "Hull of the Tundra",
+        "type": "White or ST"
+      },
+      {
+        "name": "Frozen Heart",
+        "type": "White or ST"
+      },
+      {
+        "name": "Iceborn Arsenal",
+        "type": "White or ST"
+      },
+      {
+        "name": "Sublimation Sidearm",
+        "type": "White or ST"
+      },
+      {
+        "name": "Retainer's Battlesuit",
+        "type": "White or ST"
+      },
+      {
+        "name": "Legacy's Pendant",
+        "type": "White or ST"
+      }
+    ]
+  },
+  "Kogbold Steamworks": {
+    "default_points": 8.0,
+    "items": [
+      {
+        "name": "Overclocking Amulet",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Steam Pipe",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Kogbold Cower Shield",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Chain Dagger",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Laser Pointer",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Scepter of Rust",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Brain Cube",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Kogbold Enhancement Core",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Overclocking Amulet (shiny)",
+        "type": "White or ST",
+        "points": 16.0
+      },
+      {
+        "name": "Steam Pipe (shiny)",
+        "type": "White or ST",
+        "points": 16.0
+      },
+      {
+        "name": "Chain Dagger (shiny)",
+        "type": "White or ST",
+        "points": 16.0
+      },
+      {
+        "name": "Laser Pointer (shiny)",
+        "type": "White or ST",
+        "points": 16.0
+      },
+      {
+        "name": "Scepter of Rust (shiny)",
+        "type": "White or ST",
+        "points": 16.0
+      },
+      {
+        "name": "Brain Cube (shiny)",
+        "type": "White or ST",
+        "points": 16.0
+      },
+      {
+        "name": "Kogbold Enhancement Core (shiny)",
+        "type": "White or ST",
+        "points": 16.0
+      },
+      {
+        "name": "Kogbold Maid Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Kogbold Multitool",
+        "type": "White or ST",
+        "points": 9.5
+      },
+      {
+        "name": "Kogbold Multitool (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      }
+    ]
+  },
+  "Lair of Draconis": {
+    "default_points": 6.0,
+    "items": [
+      {
+        "name": "Celestial Blade",
+        "type": "White or ST"
+      },
+      {
+        "name": "Leaf Dragon Hide Armor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Water Dragon Silk Robe",
+        "type": "White or ST"
+      },
+      {
+        "name": "Fire Dragon Battle Armor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Midnight Star",
+        "type": "White or ST"
+      },
+      {
+        "name": "Vision of Draconis",
+        "type": "White or ST"
+      },
+      {
+        "name": "Draconic Insignia",
+        "type": "White or ST"
+      },
+      {
+        "name": "Celestial Blade (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Leaf Dragon Hide Armor (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Water Dragon Silk Robe (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Fire Dragon Battle Armor (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Midnight Star (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Vision of Draconis (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Hailstorm",
+        "type": "White or ST"
+      },
+      {
+        "name": "Thundering Chorus",
+        "type": "White or ST"
+      },
+      {
+        "name": "Wind Dancer Robe",
+        "type": "White or ST"
+      },
+      {
+        "name": "Augur of the Tempest",
+        "type": "White or ST"
+      },
+      {
+        "name": "Earthen Ward",
+        "type": "White or ST"
+      },
+      {
+        "name": "Stonemould Mace",
+        "type": "White or ST"
+      },
+      {
+        "name": "Rocky Robe",
+        "type": "White or ST"
+      },
+      {
+        "name": "Steadfast Glyph",
+        "type": "White or ST"
+      },
+      {
+        "name": "Saif of the Deep",
+        "type": "White or ST"
+      },
+      {
+        "name": "Loch Sheath",
+        "type": "White or ST"
+      },
+      {
+        "name": "Barrier Reef",
+        "type": "White or ST"
+      },
+      {
+        "name": "Alexander's Band",
+        "type": "White or ST"
+      },
+      {
+        "name": "Indomptable",
+        "type": "White or ST"
+      },
+      {
+        "name": "Helm of Draconic Dominance",
+        "type": "White or ST"
+      },
+      {
+        "name": "Zaarvox's Heart",
+        "type": "White or ST"
+      },
+      {
+        "name": "Amulet of Drakefyre",
+        "type": "White or ST"
+      },
+      {
+        "name": "Mini Nikao Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Lair of Shaitan": {
+    "default_points": 6.0,
+    "items": [
+      {
+        "name": "Wakizashi of Crossing Fires",
+        "type": "White or ST"
+      },
+      {
+        "name": "Skull of Endless Torment",
+        "type": "White or ST"
+      },
+      {
+        "name": "Igneous Starblossom",
+        "type": "White or ST"
+      },
+      {
+        "name": "Skull of Endless Torment (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Igneous Starblossom (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Fiery Katana",
+        "type": "White or ST"
+      },
+      {
+        "name": "Pyro Sheath",
+        "type": "White or ST"
+      },
+      {
+        "name": "Flame Guard",
+        "type": "White or ST"
+      },
+      {
+        "name": "Firelight Necklace",
+        "type": "White or ST"
+      }
+    ]
+  },
+  "Lost Halls": {
+    "default_points": 8.0,
+    "items": [
+      {
+        "name": "Sword of the Colossus",
+        "type": "White or ST"
+      },
+      {
+        "name": "Marble Seal",
+        "type": "White or ST"
+      },
+      {
+        "name": "Breastplate of New Life",
+        "type": "White or ST"
+      },
+      {
+        "name": "Magical Lodestone",
+        "type": "White or ST"
+      },
+      {
+        "name": "Sword of the Colossus (shiny)",
+        "type": "White or ST",
+        "points": 16.0
+      },
+      {
+        "name": "Marble Seal (shiny)",
+        "type": "White or ST",
+        "points": 16.0
+      },
+      {
+        "name": "Breastplate of New Life (shiny)",
+        "type": "White or ST",
+        "points": 16.0
+      },
+      {
+        "name": "Carved Golem Remains",
+        "type": "White or ST"
+      },
+      {
+        "name": "Brain of the Golem",
+        "type": "White or ST"
+      },
+      {
+        "name": "Golem Garments",
+        "type": "White or ST"
+      },
+      {
+        "name": "Rusty Cuffs",
+        "type": "White or ST"
+      }
+    ]
+  },
+  "Cultist Hideout": {
+    "default_points": 7.0,
+    "items": [
+      {
+        "name": "Burial Blades",
+        "type": "White or ST"
+      },
+      {
+        "name": "Staff of Unholy Sacrifice",
+        "type": "White or ST"
+      },
+      {
+        "name": "Skull of Corrupted Souls",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ritual Robe",
+        "type": "White or ST"
+      },
+      {
+        "name": "Bloodshed Ring",
+        "type": "White or ST"
+      },
+      {
+        "name": "Burial Blades (shiny)",
+        "type": "White or ST",
+        "points": 14.0
+      },
+      {
+        "name": "Skull of Corrupted Souls (shiny)",
+        "type": "White or ST",
+        "points": 14.0
+      },
+      {
+        "name": "Ritual Robe (shiny)",
+        "type": "White or ST",
+        "points": 14.0
+      },
+      {
+        "name": "Vial of Pure Darkness",
+        "type": "Item",
+        "points": 0.0
+      },
+      {
+        "name": "Mini Malus Sorcerer Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "The Void": {
+    "default_points": 8.5,
+    "items": [
+      {
+        "name": "Bow of the Void",
+        "type": "White or ST"
+      },
+      {
+        "name": "Quiver of Shadows",
+        "type": "White or ST"
+      },
+      {
+        "name": "Armor of Nil",
+        "type": "White or ST"
+      },
+      {
+        "name": "Sourcestone",
+        "type": "White or ST"
+      },
+      {
+        "name": "Omnipotence Ring",
+        "type": "White or ST"
+      },
+      {
+        "name": "Bow of the Void (shiny)",
+        "type": "White or ST",
+        "points": 17.0
+      },
+      {
+        "name": "Quiver of Shadows (shiny)",
+        "type": "White or ST",
+        "points": 17.0
+      },
+      {
+        "name": "Armor of Nil (shiny)",
+        "type": "White or ST",
+        "points": 17.0
+      }
+    ]
+  },
+  "Mad Lab": {
+    "default_points": 4.0,
+    "items": [
+      {
+        "name": "Conducting Wand",
+        "type": "White or ST"
+      },
+      {
+        "name": "Scepter of Fulmination",
+        "type": "White or ST"
+      },
+      {
+        "name": "Robe of the Mad Scientist",
+        "type": "White or ST"
+      },
+      {
+        "name": "Experimental Ring",
+        "type": "White or ST"
+      },
+      {
+        "name": "Conducting Wand (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Scepter of Fulmination (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Robe of the Mad Scientist (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Experimental Ring (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Abomination's Wrath",
+        "type": "White or ST"
+      },
+      {
+        "name": "Grotesque Scepter",
+        "type": "White or ST"
+      },
+      {
+        "name": "Garment of the Beast",
+        "type": "White or ST"
+      },
+      {
+        "name": "Horrific Claws",
+        "type": "White or ST"
+      },
+      {
+        "name": "Golden Nut",
+        "type": "Item",
+        "points": 0.0
+      },
+      {
+        "name": "Golden Bolt",
+        "type": "Item",
+        "points": 0.0
+      },
+      {
+        "name": "Robobuddy Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Magic Woods": {
+    "default_points": 3.0,
+    "items": [
+      {
+        "name": "Spirit Staff",
+        "type": "White or ST"
+      },
+      {
+        "name": "Enchantment Orb",
+        "type": "White or ST"
+      },
+      {
+        "name": "Woodland Robe",
+        "type": "White or ST"
+      },
+      {
+        "name": "Fairy Ring",
+        "type": "White or ST"
+      },
+      {
+        "name": "Shield of Flowing Clarity",
+        "type": "White or ST"
+      },
+      {
+        "name": "Spirit Staff (shiny)",
+        "type": "White or ST",
+        "points": 6.0
+      },
+      {
+        "name": "Enchantment Orb (shiny)",
+        "type": "White or ST",
+        "points": 6.0
+      },
+      {
+        "name": "Fairy Ring (shiny)",
+        "type": "White or ST",
+        "points": 6.0
+      },
+      {
+        "name": "Woodland Robe (shiny)",
+        "type": "White or ST",
+        "points": 6.0
+      },
+      {
+        "name": "Shield of Flowing Clarity (shiny)",
+        "type": "White or ST",
+        "points": 6.0
+      },
+      {
+        "name": "Bergenia Bow",
+        "type": "White or ST"
+      },
+      {
+        "name": "Lifebringing Lotus",
+        "type": "White or ST"
+      },
+      {
+        "name": "Hollyhock Hide",
+        "type": "White or ST"
+      },
+      {
+        "name": "Chrysanthemum Corsage",
+        "type": "White or ST"
+      },
+      {
+        "name": "Fountain Child Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Manor of the Immortals": {
+    "default_points": 4.0,
+    "items": [
+      {
+        "name": "Bone Dagger",
+        "type": "White or ST"
+      },
+      {
+        "name": "Kyuuketsuki Hitogoroshi",
+        "type": "White or ST"
+      },
+      {
+        "name": "St. Abraham's Wand",
+        "type": "White or ST"
+      },
+      {
+        "name": "Tome of Purification",
+        "type": "White or ST"
+      },
+      {
+        "name": "Chasuble of Holy Light",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ring of Divine Faith",
+        "type": "White or ST"
+      },
+      {
+        "name": "Bone Dagger (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "St. Abraham's Wand (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Tome of Purification (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Chasuble of Holy Light (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Ring of Divine Faith (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Soulcursed Scythe",
+        "type": "White or ST"
+      },
+      {
+        "name": "Vampiric Cape",
+        "type": "White or ST"
+      },
+      {
+        "name": "Hallowed Hide",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ruthven's Rosary",
+        "type": "White or ST"
+      },
+      {
+        "name": "Golden Candelabra",
+        "type": "Item",
+        "points": 0.0
+      },
+      {
+        "name": "Holy Cross",
+        "type": "Item",
+        "points": 0.0
+      },
+      {
+        "name": "Vampire Lord Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Moonlight Village": {
+    "default_points": 9.0,
+    "items": [
+      {
+        "name": "Sage's Wakibiki",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ethereal Happi",
+        "type": "White or ST"
+      },
+      {
+        "name": "Flowering Kimono",
+        "type": "White or ST"
+      },
+      {
+        "name": "Rain Maker",
+        "type": "White or ST"
+      },
+      {
+        "name": "Taiko Drums",
+        "type": "White or ST"
+      },
+      {
+        "name": "Elegant Parasol",
+        "type": "White or ST"
+      },
+      {
+        "name": "Makakoyumi",
+        "type": "White or ST"
+      },
+      {
+        "name": "Tezutsu Hanabi",
+        "type": "White or ST"
+      },
+      {
+        "name": "Kagenohikari",
+        "type": "White or ST"
+      },
+      {
+        "name": "Concentrated Soul Fire",
+        "type": "White or ST"
+      },
+      {
+        "name": "Makakoyumi (shiny)",
+        "type": "White or ST",
+        "points": 18.0
+      },
+      {
+        "name": "Master Fishing Rod",
+        "type": "White or ST"
+      },
+      {
+        "name": "Expert Fishing Rod",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Intermediate Fishing Rod",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Mysterious Crate",
+        "type": "Item",
+        "points": 0.0
+      },
+      {
+        "name": "Festival Enjoyer Kensei",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Festival Enjoyer Bard",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Mountain Temple": {
+    "default_points": 6.0,
+    "items": [
+      {
+        "name": "Wand of the Fallen",
+        "type": "White or ST"
+      },
+      {
+        "name": "Orb of Aether",
+        "type": "White or ST"
+      },
+      {
+        "name": "Jade Storm",
+        "type": "White or ST"
+      },
+      {
+        "name": "Kaiken",
+        "type": "White or ST"
+      },
+      {
+        "name": "Wand of the Fallen (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Orb of Aether (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Jade Storm (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Kaiken (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Kazekiri",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ryu's Blade",
+        "type": "White or ST"
+      },
+      {
+        "name": "Kamishimo",
+        "type": "White or ST"
+      },
+      {
+        "name": "Akuma's Tear",
+        "type": "White or ST"
+      },
+      {
+        "name": "Possessed Lantern Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Ocean Trench": {
+    "default_points": 5.0,
+    "items": [
+      {
+        "name": "Coral Bow",
+        "type": "White or ST"
+      },
+      {
+        "name": "Coral Venom Trap",
+        "type": "White or ST"
+      },
+      {
+        "name": "Coral Silk Armor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Coral Ring",
+        "type": "White or ST"
+      },
+      {
+        "name": "Sharktooth Sigil",
+        "type": "White or ST"
+      },
+      {
+        "name": "Coral Bow (shiny)",
+        "type": "White or ST",
+        "points": 10.0
+      },
+      {
+        "name": "Coral Venom Trap (shiny)",
+        "type": "White or ST",
+        "points": 10.0
+      },
+      {
+        "name": "Coral Silk Armor (shiny)",
+        "type": "White or ST",
+        "points": 10.0
+      },
+      {
+        "name": "Coral Ring (shiny)",
+        "type": "White or ST",
+        "points": 10.0
+      },
+      {
+        "name": "Tideturner Trident",
+        "type": "White or ST"
+      },
+      {
+        "name": "Slurpian Sea Scroll",
+        "type": "White or ST"
+      },
+      {
+        "name": "Oceanic Apparel",
+        "type": "White or ST"
+      },
+      {
+        "name": "Imperial Keepsake",
+        "type": "White or ST"
+      },
+      {
+        "name": "Sea Slurp Skin Unlocker",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Oryx's Castle": {
+    "default_points": 4.5,
+    "items": [
+      {
+        "name": "Ancient Stone Sword",
+        "type": "White or ST"
+      },
+      {
+        "name": "Spiteful Scutum",
+        "type": "White or ST"
+      },
+      {
+        "name": "Cloak of the Mad God",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ancient Stone Sword (shiny)",
+        "type": "White or ST",
+        "points": 9.0
+      },
+      {
+        "name": "Spiteful Scutum (shiny)",
+        "type": "White or ST",
+        "points": 9.0
+      },
+      {
+        "name": "Cloak of the Mad God (shiny)",
+        "type": "White or ST",
+        "points": 9.0
+      },
+      {
+        "name": "Theurgy Wand",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ceremonial Merlot",
+        "type": "White or ST"
+      },
+      {
+        "name": "Anointed Robe",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ring of Pagan Favor",
+        "type": "White or ST"
+      }
+    ]
+  },
+  "Wine Cellar": {
+    "default_points": 6.0,
+    "items": [
+      {
+        "name": "Tome of Holy Furor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Oryx's Greatsword",
+        "type": "White or ST"
+      },
+      {
+        "name": "Champion's Bastion",
+        "type": "White or ST"
+      },
+      {
+        "name": "Mercy's Bane",
+        "type": "White or ST"
+      },
+      {
+        "name": "Bloodstone Ring",
+        "type": "White or ST"
+      }
+    ]
+  },
+  "Oryx's Sanctuary": {
+    "default_points": 9.5,
+    "items": [
+      {
+        "name": "Superior",
+        "type": "White or ST"
+      },
+      {
+        "name": "Genesis Spell",
+        "type": "White or ST"
+      },
+      {
+        "name": "Diplomatic Robe",
+        "type": "White or ST"
+      },
+      {
+        "name": "Chancellor's Cranium",
+        "type": "White or ST"
+      },
+      {
+        "name": "Superior (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Genesis Spell (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Diplomatic Robe (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Chancellor's Cranium (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Avarice",
+        "type": "White or ST"
+      },
+      {
+        "name": "Gambler's Fate",
+        "type": "White or ST"
+      },
+      {
+        "name": "Turncoat Cape",
+        "type": "White or ST"
+      },
+      {
+        "name": "Collector's Monocle",
+        "type": "White or ST"
+      },
+      {
+        "name": "Avarice (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Gambler's Fate (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Turncoat Cape (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Collector's Monocle (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Lumiaire",
+        "type": "White or ST"
+      },
+      {
+        "name": "Chaotic Scripture",
+        "type": "White or ST"
+      },
+      {
+        "name": "Vesture of Duality",
+        "type": "White or ST"
+      },
+      {
+        "name": "Divine Coronation",
+        "type": "White or ST"
+      },
+      {
+        "name": "Lumiaire (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Chaotic Scripture (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Vesture of Duality (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Divine Coronation (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Enforcer",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ballistic Star",
+        "type": "White or ST"
+      },
+      {
+        "name": "Centaur's Shielding",
+        "type": "White or ST"
+      },
+      {
+        "name": "Battalion Banner",
+        "type": "White or ST"
+      },
+      {
+        "name": "Enforcer (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Ballistic Star (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Centaur's Shielding (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Battalion Banner (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Divinity",
+        "type": "White or ST"
+      },
+      {
+        "name": "Oryx's Escutcheon",
+        "type": "White or ST"
+      },
+      {
+        "name": "Gladiator Guard",
+        "type": "White or ST"
+      },
+      {
+        "name": "Exalted God's Horn",
+        "type": "White or ST"
+      },
+      {
+        "name": "Divinity (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Oryx's Escutcheon (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Gladiator Guard (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Exalted God's Horn (shiny)",
+        "type": "White or ST",
+        "points": 19.0
+      },
+      {
+        "name": "Harmonious Harp",
+        "type": "White or ST"
+      },
+      {
+        "name": "Angel's Fanfare",
+        "type": "White or ST"
+      },
+      {
+        "name": "Wings of Sanctity",
+        "type": "White or ST"
+      },
+      {
+        "name": "Heavenly Halo",
+        "type": "White or ST"
+      }
+    ]
+  },
+  "Parasite Chambers": {
+    "default_points": 5.5,
+    "items": [
+      {
+        "name": "Maw of Malignance",
+        "type": "White or ST"
+      },
+      {
+        "name": "Recurring Terror Spell",
+        "type": "White or ST"
+      },
+      {
+        "name": "Scepter of Devastation",
+        "type": "White or ST"
+      },
+      {
+        "name": "Tome of Pain",
+        "type": "White or ST"
+      },
+      {
+        "name": "Recurring Terror Spell (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Scepter of Devastation (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Tome of Pain (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Symbiotic Ripper",
+        "type": "White or ST"
+      },
+      {
+        "name": "Parasitic Concoction",
+        "type": "White or ST"
+      },
+      {
+        "name": "Rags of the Host",
+        "type": "White or ST"
+      },
+      {
+        "name": "Hivemind Circlet",
+        "type": "White or ST"
+      }
+    ]
+  },
+  "Puppet Master's Theatre": {
+    "default_points": 4.0,
+    "items": [
+      {
+        "name": "Marionette Ravager",
+        "type": "White or ST"
+      },
+      {
+        "name": "Prism of Dancing Swords",
+        "type": "White or ST"
+      },
+      {
+        "name": "Harlequin Armor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Marionette Ravager (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Prism of Dancing Swords (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Harlequin Armor (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Magic Wand",
+        "type": "White or ST"
+      },
+      {
+        "name": "Lightshow Scepter",
+        "type": "White or ST"
+      },
+      {
+        "name": "Magician's Robe",
+        "type": "White or ST"
+      },
+      {
+        "name": "Performer's Hat",
+        "type": "White or ST"
+      },
+      {
+        "name": "Puppet Master Skin",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Jester Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Puppet Master's Encore": {
+    "default_points": 5.5,
+    "items": [
+      {
+        "name": "Thousand Shot",
+        "type": "White or ST"
+      },
+      {
+        "name": "Prism of Dire Instability",
+        "type": "White or ST"
+      },
+      {
+        "name": "Thousand Shot (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Prism of Dire Instability (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Jaco Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Secluded Thicket": {
+    "default_points": 6.5,
+    "items": [
+      {
+        "name": "Tlatoani's Shroud",
+        "type": "White or ST"
+      },
+      {
+        "name": "Tezcacoatl's Tail",
+        "type": "White or ST"
+      },
+      {
+        "name": "Sealed Crystal Skull",
+        "type": "White or ST"
+      },
+      {
+        "name": "Penetrating Blast Spell",
+        "type": "White or ST"
+      },
+      {
+        "name": "Tlatoani's Shroud (shiny)",
+        "type": "White or ST",
+        "points": 13.0
+      },
+      {
+        "name": "Tezcacoatl's Tail (shiny)",
+        "type": "White or ST",
+        "points": 13.0
+      },
+      {
+        "name": "Sealed Crystal Skull (shiny)",
+        "type": "White or ST",
+        "points": 13.0
+      },
+      {
+        "name": "Penetrating Blast Spell (shiny)",
+        "type": "White or ST",
+        "points": 13.0
+      },
+      {
+        "name": "Reikoku",
+        "type": "White or ST"
+      },
+      {
+        "name": "Daybreak Chakram",
+        "type": "White or ST"
+      },
+      {
+        "name": "Hirejou Tenne",
+        "type": "White or ST"
+      },
+      {
+        "name": "Heavenly Magatama",
+        "type": "White or ST"
+      },
+      {
+        "name": "Good Mask Spirit Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Evil Mask Spirit Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Snake Pit": {
+    "default_points": 2.5,
+    "items": [
+      {
+        "name": "Snakeskin Shield",
+        "type": "White or ST"
+      },
+      {
+        "name": "Wand of the Bulwark",
+        "type": "White or ST"
+      },
+      {
+        "name": "Snake Charmer Pungi",
+        "type": "White or ST"
+      },
+      {
+        "name": "Snakeskin Armor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Snake Eye Ring",
+        "type": "White or ST"
+      },
+      {
+        "name": "Snakeskin Shield (shiny)",
+        "type": "White or ST",
+        "points": 5.0
+      },
+      {
+        "name": "Wand of the Bulwark (shiny)",
+        "type": "White or ST",
+        "points": 5.0
+      },
+      {
+        "name": "Snake Charmer Pungi (shiny)",
+        "type": "White or ST",
+        "points": 5.0
+      },
+      {
+        "name": "Snakeskin Armor (shiny)",
+        "type": "White or ST",
+        "points": 5.0
+      },
+      {
+        "name": "Snake Eye Ring (shiny)",
+        "type": "White or ST",
+        "points": 5.0
+      },
+      {
+        "name": "Mini Stheno Skin",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Mini Flying Stheno Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Spectral Penitentiary": {
+    "default_points": 8.0,
+    "items": [
+      {
+        "name": "Tools of the Tarnished",
+        "type": "White or ST"
+      },
+      {
+        "name": "Wretched Rags",
+        "type": "White or ST"
+      },
+      {
+        "name": "Sinister Syringes",
+        "type": "White or ST"
+      },
+      {
+        "name": "Cackling Straitjacket",
+        "type": "White or ST"
+      },
+      {
+        "name": "Command Cornea",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ocular Entrapment",
+        "type": "White or ST"
+      },
+      {
+        "name": "Overwhelming Axehead",
+        "type": "White or ST"
+      },
+      {
+        "name": "Motivational Megaphone",
+        "type": "White or ST"
+      },
+      {
+        "name": "Damnation",
+        "type": "White or ST"
+      },
+      {
+        "name": "Vial of Soul Extract",
+        "type": "White or ST"
+      },
+      {
+        "name": "Tools of the Tarnished (shiny)",
+        "type": "White or ST",
+        "points": 16.0
+      },
+      {
+        "name": "Ocular Entrapment (shiny)",
+        "type": "White or ST",
+        "points": 16.0
+      },
+      {
+        "name": "Motivational Megaphone (shiny)",
+        "type": "White or ST",
+        "points": 16.0
+      },
+      {
+        "name": "Damnation (shiny)",
+        "type": "White or ST",
+        "points": 16.0
+      },
+      {
+        "name": "Vial of Soul Extract (shiny)",
+        "type": "White or ST",
+        "points": 16.0
+      },
+      {
+        "name": "Penitent Frog Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Sprite World": {
+    "default_points": 2.5,
+    "items": [
+      {
+        "name": "Staff of Extreme Prejudice",
+        "type": "White or ST"
+      },
+      {
+        "name": "Cloak of the Planewalker",
+        "type": "White or ST"
+      },
+      {
+        "name": "Mace of the Celestial Forest",
+        "type": "White or ST"
+      },
+      {
+        "name": "Sprite Wand",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Staff of Extreme Prejudice (shiny)",
+        "type": "White or ST",
+        "points": 5.0
+      },
+      {
+        "name": "Cloak of the Planewalker (shiny)",
+        "type": "White or ST",
+        "points": 5.0
+      },
+      {
+        "name": "Mace of the Celestial Forest (shiny)",
+        "type": "White or ST",
+        "points": 5.0
+      },
+      {
+        "name": "Sprite Wand (shiny)",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Mini Limon Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Sprite Star Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Sulfurous Wetlands": {
+    "default_points": 6.0,
+    "items": [
+      {
+        "name": "Sulfuric Stone",
+        "type": "White or ST"
+      },
+      {
+        "name": "Bogwood Crook",
+        "type": "White or ST"
+      },
+      {
+        "name": "Brambletooth Tachi",
+        "type": "White or ST"
+      },
+      {
+        "name": "Warped Mantle",
+        "type": "White or ST"
+      },
+      {
+        "name": "Thistleleaf Necklace",
+        "type": "White or ST"
+      },
+      {
+        "name": "Bogwood Crook (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Brambletooth Tachi (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Warped Mantle (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Thistleleaf Necklace (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Swamped Panda Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Bogged Panda Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "The Crawling Depths": {
+    "default_points": 5.5,
+    "items": [
+      {
+        "name": "Silken Sigil",
+        "type": "White or ST"
+      },
+      {
+        "name": "Spider Silk Bow",
+        "type": "White or ST"
+      },
+      {
+        "name": "Doku No Ken",
+        "type": "White or ST"
+      },
+      {
+        "name": "Mace of the Depths",
+        "type": "White or ST"
+      },
+      {
+        "name": "Spider Silk Bow (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Doku No Ken (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Mace of the Depths (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      }
+    ]
+  },
+  "The Nest": {
+    "default_points": 7.0,
+    "items": [
+      {
+        "name": "Blue Beehemoth Armor",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Red Beehemoth Armor",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Yellow Beehemoth Armor",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Queen's Stinger",
+        "type": "White or ST"
+      },
+      {
+        "name": "Combcutter Kunai",
+        "type": "White or ST"
+      },
+      {
+        "name": "Swarmlord's Sigil",
+        "type": "White or ST"
+      },
+      {
+        "name": "Hivemaster Helm",
+        "type": "White or ST"
+      },
+      {
+        "name": "Hivemind Mace",
+        "type": "White or ST"
+      },
+      {
+        "name": "Beekeeper's Flamethrower",
+        "type": "White or ST"
+      },
+      {
+        "name": "Queen's Stinger (shiny)",
+        "type": "White or ST",
+        "points": 14.0
+      },
+      {
+        "name": "Hivemaster Helm (shiny)",
+        "type": "White or ST",
+        "points": 14.0
+      },
+      {
+        "name": "Beekeeper's Flamethrower (shiny)",
+        "type": "White or ST",
+        "points": 14.0
+      },
+      {
+        "name": "Nectar Crossfire",
+        "type": "White or ST"
+      },
+      {
+        "name": "Honeytomb Snare",
+        "type": "White or ST"
+      },
+      {
+        "name": "Apiary Armor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Honey Circlet",
+        "type": "White or ST"
+      },
+      {
+        "name": "Killer Bee Queen Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Plagued Nest": {
+    "default_points": 8.5,
+    "items": [
+      {
+        "name": "Green Beehemoth Armor",
+        "type": "UT",
+        "points": 0.0
+      },
+      {
+        "name": "Green Beehemoth Quiver",
+        "type": "White or ST"
+      },
+      {
+        "name": "Green Beehemoth Quiver (shiny)",
+        "type": "White or ST",
+        "points": 17.0
+      }
+    ]
+  },
+  "The Shatters": {
+    "default_points": 10.0,
+    "items": [
+      {
+        "name": "Royal Guard's Cuirass",
+        "type": "White or ST"
+      },
+      {
+        "name": "Valor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Vanguard's Visage",
+        "type": "White or ST"
+      },
+      {
+        "name": "Sentinel's Sidearm",
+        "type": "White or ST"
+      },
+      {
+        "name": "Bracer of the Guardian",
+        "type": "White or ST"
+      },
+      {
+        "name": "Vest of Abandoned Shadows",
+        "type": "White or ST"
+      },
+      {
+        "name": "Dusky Catalyst",
+        "type": "White or ST"
+      },
+      {
+        "name": "Primal Arcana",
+        "type": "White or ST"
+      },
+      {
+        "name": "Polarity Poison",
+        "type": "White or ST"
+      },
+      {
+        "name": "The Twilight Gemstone",
+        "type": "White or ST"
+      },
+      {
+        "name": "Mantle of the Monarchy",
+        "type": "White or ST"
+      },
+      {
+        "name": "Warmonger",
+        "type": "White or ST"
+      },
+      {
+        "name": "Peacekeeper",
+        "type": "White or ST"
+      },
+      {
+        "name": "Noble Mandolin",
+        "type": "White or ST"
+      },
+      {
+        "name": "The Forgotten Crown",
+        "type": "White or ST"
+      },
+      {
+        "name": "The Forgotten Ring",
+        "type": "White or ST"
+      },
+      {
+        "name": "Chrysalis of Eternity",
+        "type": "White or ST",
+        "points": 20.0
+      },
+      {
+        "name": "Royal Guard's Cuirass (shiny)",
+        "type": "White or ST",
+        "points": 20.0
+      },
+      {
+        "name": "Valor (shiny)",
+        "type": "White or ST",
+        "points": 20.0
+      },
+      {
+        "name": "Vanguard's Visage (shiny)",
+        "type": "White or ST",
+        "points": 20.0
+      },
+      {
+        "name": "Sentinel's Sidearm (shiny)",
+        "type": "White or ST",
+        "points": 20.0
+      },
+      {
+        "name": "Bracer of the Guardian (shiny)",
+        "type": "White or ST",
+        "points": 20.0
+      },
+      {
+        "name": "Vest of Abandoned Shadows (shiny)",
+        "type": "White or ST",
+        "points": 20.0
+      },
+      {
+        "name": "Dusky Catalyst (shiny)",
+        "type": "White or ST",
+        "points": 20.0
+      },
+      {
+        "name": "Primal Arcana (shiny)",
+        "type": "White or ST",
+        "points": 20.0
+      },
+      {
+        "name": "Polarity Poison (shiny)",
+        "type": "White or ST",
+        "points": 20.0
+      },
+      {
+        "name": "The Twilight Gemstone (shiny)",
+        "type": "White or ST",
+        "points": 20.0
+      },
+      {
+        "name": "Warmonger (shiny)",
+        "type": "White or ST",
+        "points": 20.0
+      },
+      {
+        "name": "Peacekeeper (shiny)",
+        "type": "White or ST",
+        "points": 20.0
+      },
+      {
+        "name": "Noble Mandolin (shiny)",
+        "type": "White or ST",
+        "points": 20.0
+      },
+      {
+        "name": "The Forgotten Crown (shiny)",
+        "type": "White or ST",
+        "points": 20.0
+      },
+      {
+        "name": "Corruption Tether",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ancient Eminence",
+        "type": "White or ST"
+      },
+      {
+        "name": "Twilight Shroud",
+        "type": "White or ST"
+      },
+      {
+        "name": "Defiled Equilibrium",
+        "type": "White or ST"
+      },
+      {
+        "name": "Archangel's Judgement",
+        "type": "White or ST"
+      },
+      {
+        "name": "Daevite Progenitor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Seraphim's Guard",
+        "type": "White or ST"
+      },
+      {
+        "name": "Flames of Genesis",
+        "type": "White or ST"
+      },
+      {
+        "name": "Fallen One's Blade",
+        "type": "White or ST"
+      },
+      {
+        "name": "Abyssal Insignia",
+        "type": "White or ST"
+      },
+      {
+        "name": "Vortex Plating",
+        "type": "White or ST"
+      },
+      {
+        "name": "Eye of the Void",
+        "type": "White or ST"
+      },
+      {
+        "name": "Sentinel Watchdog Skin",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Shadow Stormbird Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Royal Void Cat Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "The Tavern": {
+    "default_points": 5.5,
+    "items": [
+      {
+        "name": "The Right Hook",
+        "type": "White or ST"
+      },
+      {
+        "name": "Tipsy Topper",
+        "type": "White or ST"
+      },
+      {
+        "name": "Double Vision Darts",
+        "type": "White or ST"
+      },
+      {
+        "name": "Cask Corslet",
+        "type": "White or ST"
+      },
+      {
+        "name": "Brewer's Bangle",
+        "type": "White or ST"
+      },
+      {
+        "name": "The Right Hook (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Tipsy Topper (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Double Vision Darts (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Cask Corslet (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Brewer's Bangle (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      }
+    ]
+  },
+  "The Third Dimension": {
+    "default_points": 6.0,
+    "items": [
+      {
+        "name": "Shadow Serpent Sidearm",
+        "type": "White or ST"
+      },
+      {
+        "name": "Cloak of Cubic Enigma",
+        "type": "White or ST"
+      },
+      {
+        "name": "Seal of Cubic Conundra",
+        "type": "White or ST"
+      },
+      {
+        "name": "Cloak of Cubic Enigma (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Seal of Cubic Conundra (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Squaroid Staff",
+        "type": "White or ST"
+      },
+      {
+        "name": "Cubic Frame",
+        "type": "White or ST"
+      },
+      {
+        "name": "Polygonal Garbs",
+        "type": "White or ST"
+      },
+      {
+        "name": "Cuband",
+        "type": "White or ST"
+      }
+    ]
+  },
+  "Tomb of the Ancients": {
+    "default_points": 6.0,
+    "items": [
+      {
+        "name": "Ring of the Pyramid",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ring of the Sphinx",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ring of the Nile",
+        "type": "White or ST"
+      },
+      {
+        "name": "Tome of Holy Protection",
+        "type": "White or ST"
+      },
+      {
+        "name": "Pharaoh's Requiem",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ring of the Pyramid (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Ring of the Sphinx (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Ring of the Nile (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Tome of Holy Protection (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Pharaoh's Requiem (shiny)",
+        "type": "White or ST",
+        "points": 12.0
+      },
+      {
+        "name": "Wand of Geb",
+        "type": "White or ST"
+      },
+      {
+        "name": "Book of Geb",
+        "type": "White or ST"
+      },
+      {
+        "name": "Shendyt of Geb",
+        "type": "White or ST"
+      },
+      {
+        "name": "Geb's Ring of Wisdom",
+        "type": "White or ST"
+      },
+      {
+        "name": "Mini Nut Archer Skin",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Mini Geb Skin",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Bes' Artifact",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Nut's Artifact",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Geb's Artifact",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Tomb Snake Skin Unlocker",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Toxic Sewers": {
+    "default_points": 4.0,
+    "items": [
+      {
+        "name": "Void Blade",
+        "type": "White or ST"
+      },
+      {
+        "name": "Murky Toxin",
+        "type": "White or ST"
+      },
+      {
+        "name": "Void Blade (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Murky Toxin (shiny)",
+        "type": "White or ST",
+        "points": 8.0
+      },
+      {
+        "name": "Toxin Tooth",
+        "type": "White or ST"
+      },
+      {
+        "name": "Virulent Venom",
+        "type": "White or ST"
+      },
+      {
+        "name": "Acidic Armor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Pernicious Peridot",
+        "type": "White or ST"
+      },
+      {
+        "name": "Slurp Knight Skin",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Turtle Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Undead Lair": {
+    "default_points": 3.5,
+    "items": [
+      {
+        "name": "Doom Bow",
+        "type": "White or ST"
+      },
+      {
+        "name": "Spectral Sword",
+        "type": "White or ST"
+      },
+      {
+        "name": "Wandering Souls Spell",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ring of Skeletal Specters",
+        "type": "White or ST"
+      },
+      {
+        "name": "Doom Bow (shiny)",
+        "type": "White or ST",
+        "points": 7.0
+      },
+      {
+        "name": "Spectral Sword (shiny)",
+        "type": "White or ST",
+        "points": 7.0
+      },
+      {
+        "name": "Wandering Souls Spell (shiny)",
+        "type": "White or ST",
+        "points": 7.0
+      },
+      {
+        "name": "Ring of Skeletal Specters (shiny)",
+        "type": "White or ST",
+        "points": 7.0
+      },
+      {
+        "name": "Edictum Praetoris",
+        "type": "White or ST"
+      },
+      {
+        "name": "Toga Picta",
+        "type": "White or ST"
+      },
+      {
+        "name": "Memento Mori",
+        "type": "White or ST",
+        "points": 6.0
+      },
+      {
+        "name": "Interregnum",
+        "type": "White or ST",
+        "points": 6.0
+      },
+      {
+        "name": "Possessed Staff Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Heroic Undead Lair": {
+    "default_points": 6.0,
+    "items": [
+      {
+        "name": "Spirit's Bane",
+        "type": "White or ST"
+      },
+      {
+        "name": "Bow of the Morning Star",
+        "type": "White or ST"
+      }
+    ]
+  },
+  "Woodland Labyrinth": {
+    "default_points": 5.5,
+    "items": [
+      {
+        "name": "Leaf Bow",
+        "type": "White or ST",
+        "points": 5.0
+      },
+      {
+        "name": "Elder Heartwood Staff",
+        "type": "White or ST"
+      },
+      {
+        "name": "Wakizashi of Eastern Winds",
+        "type": "White or ST"
+      },
+      {
+        "name": "Labyrinth Dweller's Sheath",
+        "type": "White or ST"
+      },
+      {
+        "name": "Leaf Bow (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Wakizashi of Eastern Winds (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Labyrinth Dweller's Sheath (shiny)",
+        "type": "White or ST",
+        "points": 11.0
+      },
+      {
+        "name": "Woodland Huntress Skin",
+        "type": "Skin",
+        "points": 0.0
+      },
+      {
+        "name": "Blessed Blade Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Pirate Cave": {
+    "default_points": 0.0,
+    "items": [
+      {
+        "name": "Corsair Ring",
+        "type": "UT"
+      },
+      {
+        "name": "Corsair Ring (shiny)",
+        "type": "UT"
+      },
+      {
+        "name": "Scallywag Slurp Pet Skin",
+        "type": "Skin"
+      }
+    ]
+  },
+  "Forest Maze": {
+    "default_points": 0.0,
+    "items": [
+      {
+        "name": "Bramble Bow",
+        "type": "UT"
+      },
+      {
+        "name": "Cocoon Quiver",
+        "type": "UT"
+      },
+      {
+        "name": "Cocoon Quiver (shiny)",
+        "type": "UT"
+      },
+      {
+        "name": "Bramble Bow (shiny)",
+        "type": "UT"
+      },
+      {
+        "name": "Sapling Buddy Pet Skin",
+        "type": "Skin"
+      }
+    ]
+  },
+  "Spider Den": {
+    "default_points": 0.0,
+    "items": [
+      {
+        "name": "Poison Fang Dagger",
+        "type": "UT"
+      },
+      {
+        "name": "Spider Shuriken",
+        "type": "UT"
+      },
+      {
+        "name": "Spider's Eye Ring",
+        "type": "UT"
+      },
+      {
+        "name": "Spider's Eye Ring (shiny)",
+        "type": "UT"
+      },
+      {
+        "name": "Spider Shuriken (shiny)",
+        "type": "UT"
+      },
+      {
+        "name": "Poison Fang Dagger (shiny)",
+        "type": "UT"
+      },
+      {
+        "name": "Eggshell Spider Pet Skin",
+        "type": "Skin"
+      }
+    ]
+  },
+  "Forbidden Jungle": {
+    "default_points": 0.0,
+    "items": [
+      {
+        "name": "Staff of the Crystal Serpent",
+        "type": "UT"
+      },
+      {
+        "name": "Cracked Crystal Skull",
+        "type": "UT"
+      },
+      {
+        "name": "Robe of the Tlatoani",
+        "type": "UT"
+      },
+      {
+        "name": "Crystal Bone Ring",
+        "type": "UT"
+      },
+      {
+        "name": "Crystal Bone Ring (shiny)",
+        "type": "UT"
+      },
+      {
+        "name": "Robe of the Tlatoani (shiny)",
+        "type": "UT"
+      },
+      {
+        "name": "Cracked Crystal Skull (shiny)",
+        "type": "UT"
+      },
+      {
+        "name": "Staff of the Crystal Serpent (shiny)",
+        "type": "UT"
+      },
+      {
+        "name": "Baby Basilisk Pet Skin",
+        "type": "Skin"
+      }
+    ]
+  },
+  "The Hive": {
+    "default_points": 0.0,
+    "items": [
+      {
+        "name": "Orb of Sweet Demise",
+        "type": "UT"
+      },
+      {
+        "name": "Honey Scepter",
+        "type": "UT"
+      },
+      {
+        "name": "Honey Scepter (shiny)",
+        "type": "UT"
+      },
+      {
+        "name": "Orb of Sweet Demise (shiny)",
+        "type": "UT"
+      }
+    ]
+  },
+  "The Realm": {
+    "default_points": 10.0,
+    "items": [
+      {
+        "name": "Barnacle Basher",
+        "type": "Event White"
+      },
+      {
+        "name": "Yellow Beehemoth Quiver",
+        "type": "Event White"
+      },
+      {
+        "name": "Red Beehemoth Quiver",
+        "type": "Event White"
+      },
+      {
+        "name": "Blue Beehemoth Quiver",
+        "type": "Event White"
+      },
+      {
+        "name": "Cloak of Bloody Surprises",
+        "type": "Event White"
+      },
+      {
+        "name": "Crystallised Fang's Venom",
+        "type": "Event White"
+      },
+      {
+        "name": "Dirk of Cronus",
+        "type": "Event White"
+      },
+      {
+        "name": "Hama Yumi",
+        "type": "Event White"
+      },
+      {
+        "name": "Helm of the Juggernaut",
+        "type": "Event White"
+      },
+      {
+        "name": "Jailer's Scythe",
+        "type": "Event White"
+      },
+      {
+        "name": "Kageboshi",
+        "type": "Event White"
+      },
+      {
+        "name": "Orb of Conflict",
+        "type": "Event White"
+      },
+      {
+        "name": "Quiver of Thunder",
+        "type": "Event White"
+      },
+      {
+        "name": "Ray Katana",
+        "type": "Event White"
+      },
+      {
+        "name": "Seal of Blasphemous Prayer",
+        "type": "Event White"
+      },
+      {
+        "name": "Shield of Ogmur",
+        "type": "Event White"
+      },
+      {
+        "name": "Tablet of the King's Avatar",
+        "type": "Event White"
+      },
+      {
+        "name": "Token of Warmth",
+        "type": "Event White"
+      },
+      {
+        "name": "Token of Happiness",
+        "type": "Event White"
+      },
+      {
+        "name": "Trap of the Vile Spirit",
+        "type": "Event White"
+      },
+      {
+        "name": "Mighty Stein",
+        "type": "Event White"
+      },
+      {
+        "name": "Deadly Keg",
+        "type": "Event White"
+      },
+      {
+        "name": "Greaterhosen",
+        "type": "Event White"
+      },
+      {
+        "name": "Crystal Sword",
+        "type": "Event White"
+      },
+      {
+        "name": "Crystal Wand",
+        "type": "Event White"
+      },
+      {
+        "name": "Crystal Sword (shiny)",
+        "type": "Event White",
+        "points": 20.0
+      },
+      {
+        "name": "Quiver of Thunder (shiny)",
+        "type": "Event White",
+        "points": 20.0
+      },
+      {
+        "name": "Orb of Conflict (shiny)",
+        "type": "Event White",
+        "points": 20.0
+      },
+      {
+        "name": "Dirk of Cronus (shiny)",
+        "type": "Event White",
+        "points": 20.0
+      },
+      {
+        "name": "Trap of the Vile Spirit (shiny)",
+        "type": "Event White",
+        "points": 20.0
+      },
+      {
+        "name": "Greaterhosen (shiny)",
+        "type": "Event White",
+        "points": 20.0
+      },
+      {
+        "name": "Helm of the Juggernaut (shiny)",
+        "type": "Event White",
+        "points": 20.0
+      },
+      {
+        "name": "Ray Katana (shiny)",
+        "type": "Event White",
+        "points": 20.0
+      },
+      {
+        "name": "Seal of Blasphemous Prayer (shiny)",
+        "type": "Event White",
+        "points": 20.0
+      },
+      {
+        "name": "Deadly Keg (shiny)",
+        "type": "Event White",
+        "points": 20.0
+      },
+      {
+        "name": "Mighty Stein (shiny)",
+        "type": "Event White",
+        "points": 20.0
+      },
+      {
+        "name": "Barnacle Basher (shiny)",
+        "type": "Event White",
+        "points": 20.0
+      },
+      {
+        "name": "Jailer's Scythe (shiny)",
+        "type": "Event White",
+        "points": 20.0
+      },
+      {
+        "name": "Cloak of Bloody Surprises (shiny)",
+        "type": "Event White",
+        "points": 20.0
+      },
+      {
+        "name": "Yellow Beehemoth Quiver (shiny)",
+        "type": "Event White",
+        "points": 20.0
+      },
+      {
+        "name": "Red Beehemoth Quiver (shiny)",
+        "type": "Event White",
+        "points": 20.0
+      },
+      {
+        "name": "Blue Beehemoth Quiver (shiny)",
+        "type": "Event White",
+        "points": 20.0
+      },
+      {
+        "name": "Adventurer's Scarf",
+        "type": "Biome White"
+      },
+      {
+        "name": "Torrential Staff",
+        "type": "Biome White"
+      },
+      {
+        "name": "Celestial Recurve",
+        "type": "Biome White"
+      },
+      {
+        "name": "Mace of the Pumpkin Effigy",
+        "type": "Biome White"
+      },
+      {
+        "name": "Pirate's Artillery",
+        "type": "Biome White"
+      },
+      {
+        "name": "Skull of Restless Souls",
+        "type": "Biome White"
+      },
+      {
+        "name": "Doom's Emblem",
+        "type": "Biome White"
+      },
+      {
+        "name": "Cavalry Lance",
+        "type": "Biome White"
+      },
+      {
+        "name": "Cloak of the Deep",
+        "type": "Biome White"
+      },
+      {
+        "name": "Evolutionary Records",
+        "type": "Biome White"
+      },
+      {
+        "name": "Pollen Incendiary",
+        "type": "Biome White"
+      },
+      {
+        "name": "Bloodbath Blade",
+        "type": "Biome White"
+      },
+      {
+        "name": "Runes of Knowledge",
+        "type": "Biome White"
+      },
+      {
+        "name": "Kendo Stick",
+        "type": "Item",
+        "points": 0.0
+      },
+      {
+        "name": "Kendo Stick (shiny)",
+        "type": "Event White",
+        "points": 100.0
+      },
+      {
+        "name": "Jewel Eye Katana (shiny)",
+        "type": "Event White",
+        "points": 100.0
+      },
+      {
+        "name": "Watarimono",
+        "type": "White or ST"
+      },
+      {
+        "name": "Kiritsukeru",
+        "type": "White or ST"
+      },
+      {
+        "name": "Reinforced Root Armor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Traveler's Trinket",
+        "type": "White or ST"
+      },
+      {
+        "name": "The Phylactery",
+        "type": "White or ST"
+      },
+      {
+        "name": "Soul of the Bearer",
+        "type": "White or ST"
+      },
+      {
+        "name": "Soulless Robe",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ring of the Covetous Heart",
+        "type": "White or ST"
+      }
+    ]
+  },
+  "The Machine": {
+    "default_points": 4.5,
+    "items": [
+      {
+        "name": "Mister Mango",
+        "type": "White or ST"
+      },
+      {
+        "name": "Butter Bow",
+        "type": "White or ST"
+      },
+      {
+        "name": "K.I.D.D. Force",
+        "type": "White or ST"
+      },
+      {
+        "name": "Caduceus of Current Craziness",
+        "type": "White or ST"
+      },
+      {
+        "name": "MMace MMurderer",
+        "type": "White or ST"
+      },
+      {
+        "name": "Blade of Ages",
+        "type": "White or ST"
+      },
+      {
+        "name": "Groovy Mango",
+        "type": "White or ST"
+      },
+      {
+        "name": "Baked Bow",
+        "type": "White or ST"
+      },
+      {
+        "name": "Caduceus Of Enlightened Chaos",
+        "type": "White or ST"
+      },
+      {
+        "name": "K.I.D.D. Force 2.0",
+        "type": "White or ST"
+      },
+      {
+        "name": "FFabulous FFlail",
+        "type": "White or ST"
+      },
+      {
+        "name": "Blade of Blooming",
+        "type": "White or ST"
+      },
+      {
+        "name": "Mirror Cloak",
+        "type": "White or ST"
+      },
+      {
+        "name": "Archerang",
+        "type": "White or ST"
+      },
+      {
+        "name": "Spelling Spell",
+        "type": "White or ST"
+      },
+      {
+        "name": "Tome of Moral Support",
+        "type": "White or ST"
+      },
+      {
+        "name": "Challenger Helm",
+        "type": "White or ST"
+      },
+      {
+        "name": "Shield of Pogmur",
+        "type": "White or ST"
+      },
+      {
+        "name": "Seal of Eternal Life",
+        "type": "White or ST"
+      },
+      {
+        "name": "Lightning in a Bottle",
+        "type": "White or ST"
+      },
+      {
+        "name": "Epiphany Skull",
+        "type": "White or ST"
+      },
+      {
+        "name": "Helium Trap",
+        "type": "White or ST"
+      },
+      {
+        "name": "Karma Orb",
+        "type": "White or ST"
+      },
+      {
+        "name": "Fool's Prism",
+        "type": "White or ST"
+      },
+      {
+        "name": "Honey Scepter Supreme",
+        "type": "White or ST"
+      },
+      {
+        "name": "Unshuriken",
+        "type": "White or ST"
+      },
+      {
+        "name": "NSFWakizashi",
+        "type": "White or ST"
+      },
+      {
+        "name": "Lullaby",
+        "type": "White or ST"
+      },
+      {
+        "name": "Recursion Mace",
+        "type": "White or ST"
+      },
+      {
+        "name": "Paper Machete",
+        "type": "White or ST"
+      },
+      {
+        "name": "Cheater Light Armor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Cheater Robe",
+        "type": "White or ST"
+      },
+      {
+        "name": "Cheater Heavy Armor",
+        "type": "White or ST"
+      },
+      {
+        "name": "Omni-Impotence Ring",
+        "type": "White or ST"
+      },
+      {
+        "name": "Brilliance Bow",
+        "type": "White or ST"
+      },
+      {
+        "name": "Quintessential Quiver",
+        "type": "White or ST"
+      },
+      {
+        "name": "Luxurious Leather",
+        "type": "White or ST"
+      },
+      {
+        "name": "Regal Ring",
+        "type": "White or ST"
+      },
+      {
+        "name": "Toaster Pet Skin",
+        "type": "Skin",
+        "points": 0.0
+      }
+    ]
+  },
+  "Malogia": {
+    "default_points": 5.0,
+    "items": [
+      {
+        "name": "Sun's Judgement",
+        "type": "White or ST"
+      },
+      {
+        "name": "Fire Blade",
+        "type": "White or ST"
+      },
+      {
+        "name": "Comet of Calamity",
+        "type": "White or ST"
+      },
+      {
+        "name": "Fire Blade (shiny)",
+        "type": "White or ST",
+        "points": 10.0
+      },
+      {
+        "name": "Alien Core Power",
+        "type": "White or ST"
+      }
+    ]
+  },
+  "Forax": {
+    "default_points": 5.0,
+    "items": [
+      {
+        "name": "Foramite Staff",
+        "type": "White or ST"
+      },
+      {
+        "name": "Acidic Slasher",
+        "type": "White or ST"
+      },
+      {
+        "name": "Corrosion Cutter",
+        "type": "White or ST"
+      },
+      {
+        "name": "Foramite Staff (shiny)",
+        "type": "White or ST",
+        "points": 10.0
+      },
+      {
+        "name": "Alien Core Corrosion",
+        "type": "White or ST"
+      }
+    ]
+  },
+  "Katalund": {
+    "default_points": 5.0,
+    "items": [
+      {
+        "name": "Warlord Wand",
+        "type": "White or ST"
+      },
+      {
+        "name": "Gaseous Glaive",
+        "type": "White or ST"
+      },
+      {
+        "name": "Blazon Bow",
+        "type": "White or ST"
+      },
+      {
+        "name": "Blazon Bow (shiny)",
+        "type": "White or ST",
+        "points": 10.0
+      },
+      {
+        "name": "Alien Core Warp",
+        "type": "White or ST"
+      }
+    ]
+  },
+  "Untaris": {
+    "default_points": 5.0,
+    "items": [
+      {
+        "name": "Moonbeam Blade",
+        "type": "White or ST"
+      },
+      {
+        "name": "Dueling Daggers",
+        "type": "White or ST"
+      },
+      {
+        "name": "Snowblind Wand",
+        "type": "White or ST"
+      },
+      {
+        "name": "Dueling Daggers (shiny)",
+        "type": "White or ST",
+        "points": 10.0
+      },
+      {
+        "name": "Alien Core Dark Matter",
+        "type": "White or ST"
+      }
+    ]
+  },
+  "The Realm (Rat Extermination)": {
+    "default_points": 10.0,
+    "items": [
+      {
+        "name": "Piper's Pan Flute",
+        "type": "White or ST"
+      },
+      {
+        "name": "Mouse Trap",
+        "type": "White or ST"
+      }
+    ]
+  },
+  "Hidden Interregnum": {
+    "default_points": 7.0,
+    "items": [
+      {
+        "name": "Mystic Syndicate Attire",
+        "type": "White or ST"
+      },
+      {
+        "name": "Heavy Syndicate Attire",
+        "type": "White or ST"
+      },
+      {
+        "name": "Light Syndicate Attire",
+        "type": "White or ST"
+      },
+      {
+        "name": "Sunken Fire Opal Ring",
+        "type": "White or ST"
+      },
+      {
+        "name": "Faded Heart Scarab",
+        "type": "White or ST"
+      },
+      {
+        "name": "Fractured Hannya",
+        "type": "White or ST"
+      },
+      {
+        "name": "Storied Blades",
+        "type": "White or ST"
+      },
+      {
+        "name": "Forbidden Artifact",
+        "type": "White or ST"
+      },
+      {
+        "name": "Sheath of Thunderous Rites",
+        "type": "White or ST"
+      },
+      {
+        "name": "Storm Caller",
+        "type": "White or ST"
+      },
+      {
+        "name": "Corsair's Crown Jewel",
+        "type": "White or ST"
+      },
+      {
+        "name": "Rusted Barrel",
+        "type": "White or ST"
+      },
+      {
+        "name": "Royal Sekhem",
+        "type": "White or ST"
+      },
+      {
+        "name": "Frangible Longbow",
+        "type": "White or ST"
+      },
+      {
+        "name": "Gilded Chain Scythe",
+        "type": "White or ST"
+      },
+      {
+        "name": "Ritual Khopesh",
+        "type": "White or ST"
+      },
+      {
+        "name": "Pirate's Sidearms",
+        "type": "White or ST"
+      },
+      {
+        "name": "Obsidian Macuahuitl",
+        "type": "White or ST"
+      },
+      {
+        "name": "Mystic Syndicate Attire (shiny)",
+        "type": "White or ST",
+        "points": 14.0
+      },
+      {
+        "name": "Heavy Syndicate Attire (shiny)",
+        "type": "White or ST",
+        "points": 14.0
+      },
+      {
+        "name": "Light Syndicate Attire (shiny)",
+        "type": "White or ST",
+        "points": 14.0
+      }
+    ]
+  },
+  "Mad God Mayhem": {
+    "default_points": 6.0,
+    "items": [
+      {
+        "name": "Unstable Anomaly",
+        "type": "Limited"
+      },
+      {
+        "name": "Lethargic Sentience",
+        "type": "Limited"
+      },
+      {
+        "name": "Toy Knife",
+        "type": "Limited"
+      },
+      {
+        "name": "Barely Attuned Magic Thingy",
+        "type": "Limited"
+      },
+      {
+        "name": "Precisely Calibrated Stringstick",
+        "type": "Limited"
+      },
+      {
+        "name": "Random Spell Extraction Device",
+        "type": "Limited"
+      },
+      {
+        "name": "Krathana",
+        "type": "Limited"
+      },
+      {
+        "name": "Silex's Hammer",
+        "type": "Limited"
+      },
+      {
+        "name": "Mimicry Trap",
+        "type": "Limited",
+        "points": 10.0
+      }
+    ]
+  },
+  "Ice Tomb": {
+    "default_points": 6.0,
+    "items": [
+      {
+        "name": "Arctic Bow",
+        "type": "Limited"
+      },
+      {
+        "name": "Freezing Quiver",
+        "type": "Limited"
+      },
+      {
+        "name": "Frimarra",
+        "type": "Limited"
+      },
+      {
+        "name": "Enchanted Ice Shard",
+        "type": "Limited"
+      },
+      {
+        "name": "Ring of the Northern Light",
+        "type": "Limited"
+      },
+      {
+        "name": "Tome of Frigid Protection",
+        "type": "Limited"
+      },
+      {
+        "name": "Ice Crown",
+        "type": "Limited",
+        "points": 10.0
+      }
+    ]
+  },
+  "The Realm (Jack Frost)": {
+    "default_points": 7.5,
+    "items": [
+      {
+        "name": "Candy Katana",
+        "type": "Limited",
+        "points": 5.0
+      },
+      {
+        "name": "Sleigh Bell Staff",
+        "type": "Limited",
+        "points": 5.0
+      },
+      {
+        "name": "Garland Bow",
+        "type": "Limited",
+        "points": 5.0
+      },
+      {
+        "name": "Evergreen Dagger",
+        "type": "Limited",
+        "points": 5.0
+      },
+      {
+        "name": "Brass Chamberstick",
+        "type": "Limited",
+        "points": 5.0
+      },
+      {
+        "name": "Cheerful Chipper",
+        "type": "Limited",
+        "points": 5.0
+      },
+      {
+        "name": "Candy Katana (shiny)",
+        "type": "Limited",
+        "points": 10.0
+      },
+      {
+        "name": "Sleigh Bell Staff (shiny)",
+        "type": "Limited",
+        "points": 10.0
+      },
+      {
+        "name": "Garland Bow (shiny)",
+        "type": "Limited",
+        "points": 10.0
+      },
+      {
+        "name": "Evergreen Dagger (shiny)",
+        "type": "Limited",
+        "points": 10.0
+      },
+      {
+        "name": "Brass Chamberstick (shiny)",
+        "type": "Limited",
+        "points": 10.0
+      },
+      {
+        "name": "Cheerful Chipper (shiny)",
+        "type": "Limited",
+        "points": 10.0
+      }
+    ]
+  },
+  "Oryxmas Event Chest": {
+    "default_points": 5.0,
+    "items": [
+      {
+        "name": "Snow Branch",
+        "type": "Limited"
+      },
+      {
+        "name": "Snowflake Blade",
+        "type": "Limited"
+      },
+      {
+        "name": "Frost Storm Bow",
+        "type": "Limited"
+      },
+      {
+        "name": "Enchanted Ice Blade",
+        "type": "Limited"
+      },
+      {
+        "name": "Frozen Wand",
+        "type": "Limited"
+      }
+    ]
+  },
+  "Tinkerer Thanksgiving Quests": {
+    "default_points": 5.0,
+    "items": [
+      {
+        "name": "Splatter-proof Apron",
+        "type": "Limited"
+      }
+    ]
+  },
+  "Giant Oryx Chicken": {
+    "default_points": 4.5,
+    "items": [
+      {
+        "name": "Chicken Leg of Doom",
+        "type": "Limited"
+      },
+      {
+        "name": "Anatis Staff",
+        "type": "Limited"
+      },
+      {
+        "name": "Apocalypse Feather",
+        "type": "Limited"
+      }
+    ]
+  },
+  "The Shatters (Rehearsal)": {
+    "default_points": 5.0,
+    "items": [
+      {
+        "name": "Mantle of the Monarchy (Rehearsal)",
+        "type": "Limited"
+      },
+      {
+        "name": "The Forgotten Ring (Rehearsal)",
+        "type": "Limited"
+      },
+      {
+        "name": "Royal Guard's Cuirass (Rehearsal)",
+        "type": "Limited"
+      },
+      {
+        "name": "Valor (Rehearsal)",
+        "type": "Limited"
+      },
+      {
+        "name": "Vanguard's Visage (Rehearsal)",
+        "type": "Limited"
+      },
+      {
+        "name": "Sentinel's Sidearm (Rehearsal)",
+        "type": "Limited"
+      },
+      {
+        "name": "Bracer of the Guardian (Rehearsal)",
+        "type": "Limited"
+      },
+      {
+        "name": "Vest of Abandoned Shadows (Rehearsal)",
+        "type": "Limited"
+      },
+      {
+        "name": "Warmonger (Rehearsal)",
+        "type": "Limited"
+      },
+      {
+        "name": "Peacekeeper (Rehearsal)",
+        "type": "Limited"
+      },
+      {
+        "name": "Noble Mandolin (Rehearsal)",
+        "type": "Limited"
+      },
+      {
+        "name": "The Forgotten Crown (Rehearsal)",
+        "type": "Limited"
+      },
+      {
+        "name": "The Twilight Gemstone (Rehearsal)",
+        "type": "Limited"
+      },
+      {
+        "name": "Polarity Poison (Rehearsal)",
+        "type": "Limited"
+      },
+      {
+        "name": "Primal Arcana (Rehearsal)",
+        "type": "Limited"
+      },
+      {
+        "name": "Dusky Catalyst (Rehearsal)",
+        "type": "Limited"
+      }
+    ]
+  },
+  "Janus (Halloween)": {
+    "default_points": 4.5,
+    "items": [
+      {
+        "name": "Esoteric Buckler",
+        "type": "Limited"
+      }
+    ]
+  },
+  "Halloween T11 Reskins": {
+    "default_points": 0.0,
+    "items": [
+      {
+        "name": "Corrupted Cleaver",
+        "type": "Limited"
+      },
+      {
+        "name": "Bow of Nightmares",
+        "type": "Limited"
+      },
+      {
+        "name": "Staff of Horrific Knowledge",
+        "type": "Limited"
+      },
+      {
+        "name": "Wand of Ancient Terror",
+        "type": "Limited"
+      },
+      {
+        "name": "Dagger of the Terrible Talon",
+        "type": "Limited"
+      },
+      {
+        "name": "Skull-Splitter Sword",
+        "type": "Limited"
+      }
+    ]
+  },
+  "Valentine's T11 Reskins": {
+    "default_points": 0.0,
+    "items": [
+      {
+        "name": "Heartfind Dagger",
+        "type": "Limited"
+      },
+      {
+        "name": "Wand of Budding Romance",
+        "type": "Limited"
+      },
+      {
+        "name": "Cupid's Bow",
+        "type": "Limited"
+      },
+      {
+        "name": "Vinesword",
+        "type": "Limited"
+      },
+      {
+        "name": "Staff of Adoration",
+        "type": "Limited"
+      },
+      {
+        "name": "Diamond-Bladed Katana",
+        "type": "Limited"
+      },
+      {
+        "name": "Heart Jewel Blades",
+        "type": "Limited"
+      },
+      {
+        "name": "Morning Star of Sweet Miracles",
+        "type": "Limited"
+      },
+      {
+        "name": "Anteros Longbow",
+        "type": "Limited"
+      },
+      {
+        "name": "Lovestruck Yoyo",
+        "type": "Limited"
+      },
+      {
+        "name": "Love Heart Spellblade",
+        "type": "Limited"
+      },
+      {
+        "name": "Sweetheart Taichi",
+        "type": "Limited"
+      }
+    ]
+  },
+  "Valentine's UT Reskins": {
+    "default_points": 5.0,
+    "items": [
+      {
+        "name": "Quiver of Dazing Love",
+        "type": "Limited"
+      },
+      {
+        "name": "Heartstruck Bow",
+        "type": "Limited"
+      },
+      {
+        "name": "Cupid's Garments",
+        "type": "Limited"
+      },
+      {
+        "name": "Ring of Unbound Love",
+        "type": "Limited"
+      },
+      {
+        "name": "Heartseeker Katana",
+        "type": "Limited"
+      },
+      {
+        "name": "Eternal Star",
+        "type": "Limited"
+      },
+      {
+        "name": "Chocolate Armor",
+        "type": "Limited"
+      },
+      {
+        "name": "Sweetener Ring",
+        "type": "Limited"
+      },
+      {
+        "name": "Ever Green Skull",
+        "type": "Limited"
+      },
+      {
+        "name": "Floral Corset",
+        "type": "Limited"
+      },
+      {
+        "name": "Lovebite Armor",
+        "type": "Limited"
+      },
+      {
+        "name": "Sweetcut Wakizashi",
+        "type": "Limited"
+      },
+      {
+        "name": "Spring Rose",
+        "type": "Limited"
+      },
+      {
+        "name": "Rose Brooch",
+        "type": "Limited"
+      }
+    ]
+  },
+  "Christmas Event (Jotunn)": {
+    "default_points": 5.0,
+    "items": [
+      {
+        "name": "Elderfrost Heirloom",
+        "type": "Limited"
+      },
+      {
+        "name": "Frozen Whisper",
+        "type": "Limited"
+      },
+      {
+        "name": "Winter's Dire Kiss",
+        "type": "Limited"
+      },
+      {
+        "name": "Icebreaker Maul",
+        "type": "Limited"
+      },
+      {
+        "name": "Frostfall Rod",
+        "type": "Limited"
+      }
+    ]
+  },
+  "Belladonna's Garden": {
+    "default_points": 5.5,
+    "items": [
+      {
+        "name": "Perennial Cranium",
+        "type": "Limited"
+      },
+      {
+        "name": "Hanagasaku",
+        "type": "Limited"
+      },
+      {
+        "name": "Perennial Cranium (shiny)",
+        "type": "Limited",
+        "points": 11.0
+      }
+    ]
+  },
+  "Valentine's Event": {
+    "default_points": 10.0,
+    "items": [
+      {
+        "name": "Gem of Tenderness",
+        "type": "Limited"
+      },
+      {
+        "name": "Gem of Adoration",
+        "type": "Limited"
+      },
+      {
+        "name": "Soulful Affection",
+        "type": "Limited"
+      },
+      {
+        "name": "Soulful Affection (shiny)",
+        "type": "Limited",
+        "points": 20.0
+      },
+      {
+        "name": "Gem of Adoration (shiny)",
+        "type": "Limited",
+        "points": 20.0
+      },
+      {
+        "name": "Gem of Tenderness (shiny)",
+        "type": "Limited",
+        "points": 20.0
+      },
+      {
+        "name": "Heart of Gold Prism",
+        "type": "Limited",
+        "points": 5.0
+      }
+    ]
+  },
+  "Eternal Phoenix": {
+    "default_points": 5.0,
+    "items": [
+      {
+        "name": "Solar Flare Igniter",
+        "type": "Limited"
+      },
+      {
+        "name": "Crest of the Rising Sun",
+        "type": "Limited"
+      },
+      {
+        "name": "Bloom-Fire Scepter",
+        "type": "Limited"
+      },
+      {
+        "name": "Ashen Talon Dagger",
+        "type": "Limited"
+      },
+      {
+        "name": "Sovereign Cinder-Blade",
+        "type": "Limited"
+      },
+      {
+        "name": "Blade of Eternal Rebirth",
+        "type": "Limited"
+      },
+      {
+        "name": "Heart of the Eternal Pyre",
+        "type": "Limited",
+        "points": 10.0
+      },
+      {
+        "name": "Flying Eyeball Pet Skin",
+        "type": "Limited",
+        "points": 0.0
+      },
+      {
+        "name": "Corrupted Tinkerer Pet Skin",
+        "type": "Limited",
+        "points": 0.0
+      }
+    ]
+  },
+  "Rainbow Road": {
+    "default_points": 5.0,
+    "items": [
+      {
+        "name": "Prismatic Slasher",
+        "type": "Limited"
+      },
+      {
+        "name": "Rainbow Rod",
+        "type": "Limited"
+      },
+      {
+        "name": "Staff of the Saint",
+        "type": "Limited"
+      },
+      {
+        "name": "Sword of the Rainbow's End",
+        "type": "Limited"
+      },
+      {
+        "name": "Clover Bow",
+        "type": "Limited"
+      },
+      {
+        "name": "Katana of Good Fortune",
+        "type": "Limited"
+      },
+      {
+        "name": "Painbow",
+        "type": "Limited"
+      },
+      {
+        "name": "Clover Star",
+        "type": "Limited"
+      },
+      {
+        "name": "Miss Shamrock Wizard Skin",
+        "type": "Limited",
+        "points": 0.0
+      },
+      {
+        "name": "Leprechaun's Walking Hat Pet Skin",
+        "type": "Limited",
+        "points": 0.0
+      },
+      {
+        "name": "Green Hat Bunny Pet Skin",
+        "type": "Limited",
+        "points": 0.0
+      },
+      {
+        "name": "Mini Pot of Gold Pet Skin",
+        "type": "Limited",
+        "points": 0.0
+      }
+    ]
+  },
+  "Incubation Mace": {
+    "default_points": 15.0,
+    "items": [
+      {
+        "name": "Incubation Mace",
+        "type": "Limited",
+        "points": 10.0
+      },
+      {
+        "name": "Incubation Mace (shiny)",
+        "type": "Limited",
+        "points": 20.0
+      }
+    ]
+  },
+  "The Realm (The Keyper)": {
+    "default_points": 7.5,
+    "items": [
+      {
+        "name": "Crystal Key",
+        "type": "Limited",
+        "points": 5.0
+      },
+      {
+        "name": "Keychain Cutlass",
+        "type": "Limited",
+        "points": 10.0
+      }
+    ]
+  },
+  "The Tinkerer (Oryxmas)": {
+    "default_points": 12.5,
+    "items": [
+      {
+        "name": "Ornaments of Unity",
+        "type": "Limited",
+        "points": 10.0
+      },
+      {
+        "name": "Eternal Echo",
+        "type": "Limited",
+        "points": 10.0
+      },
+      {
+        "name": "Eden's Embrace",
+        "type": "Limited",
+        "points": 15.0
+      },
+      {
+        "name": "Nightmatter Circlet",
+        "type": "Limited",
+        "points": 15.0
+      }
+    ]
+  }
+}
