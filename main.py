@@ -22,7 +22,14 @@ load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
 class PPEBot(commands.Bot):
-    async def _send_realmshark_announce(self, guild_id: int, message: str, channel_id: int | None = None) -> None:
+    async def _send_realmshark_announce(
+        self,
+        guild_id: int,
+        message: str,
+        channel_id: int | None = None,
+        user_id: int | None = None,
+        image_path: str | None = None,
+    ) -> None:
         guild = self.get_guild(guild_id)
         if guild is None:
             print(f"[REALMSHARK] Could not announce test event: guild {guild_id} not found in bot cache.")
@@ -59,7 +66,29 @@ class PPEBot(commands.Bot):
             print(f"[REALMSHARK] Could not announce test event: no writable text channel in guild {guild_id}.")
             return
 
-        await channel.send(f"[RealmShark] {message}")
+        player_name = "Unknown Player"
+        if user_id is not None:
+            member = guild.get_member(user_id)
+            if member is not None:
+                player_name = member.display_name
+            else:
+                player_name = f"User {user_id}"
+
+        final_message = message.replace("{player}", player_name)
+
+        if image_path:
+            try:
+                await channel.send(
+                    content=f"[RealmShark] {final_message}",
+                    file=discord.File(image_path),
+                )
+                return
+            except Exception as e:
+                print(
+                    f"[REALMSHARK] Failed to attach image '{image_path}' for guild {guild_id}: {e}. Sending message without image."
+                )
+
+        await channel.send(f"[RealmShark] {final_message}")
 
     async def setup_hook(self):
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import glob
 import json
 import os
 import re
@@ -42,7 +43,10 @@ class _SyntheticInteraction:
 
 _DEBUG = os.getenv("REALMSHARK_DEBUG", "false").strip().lower() in {"1", "true", "yes", "on"}
 _MISSING_ITEMS_LOG_PATH = "/data/realmshark_not_logged_items.jsonl"
-Notifier = Callable[[int, str, int | None], Awaitable[None]]
+_DUNGEONS_PATH = os.getenv("REALMSHARK_DUNGEONS_PATH", "dungeons")
+_ITEM_IMAGE_INDEX: Dict[str, str] = {}
+_ITEM_IMAGE_INDEX_READY = False
+Notifier = Callable[[int, str, int | None, int | None, str | None], Awaitable[None]]
 
 
 def _utc_iso_now() -> str:
@@ -62,6 +66,63 @@ def _token_preview(token: str) -> str:
     if len(token) <= 10:
         return token
     return f"{token[:6]}...{token[-4:]}"
+
+
+def _strip_shiny_suffix(raw_item_name: str) -> tuple[str, bool]:
+    trimmed = raw_item_name.strip()
+    if trimmed.lower().endswith("(shiny)"):
+        return trimmed[: -len("(shiny)")].strip(), True
+    return trimmed, False
+
+
+def _build_item_image_index_if_needed() -> None:
+    global _ITEM_IMAGE_INDEX_READY
+    if _ITEM_IMAGE_INDEX_READY:
+        return
+
+    _ITEM_IMAGE_INDEX.clear()
+    pattern = os.path.join(_DUNGEONS_PATH, "**", "*.png")
+    png_files = glob.glob(pattern, recursive=True)
+
+    for png_file in png_files:
+        base_name = os.path.splitext(os.path.basename(png_file))[0]
+        normalized = normalize_item_name(base_name).lower()
+        if not normalized:
+            continue
+        # Keep first occurrence to preserve deterministic routing.
+        if normalized not in _ITEM_IMAGE_INDEX:
+            _ITEM_IMAGE_INDEX[normalized] = png_file
+
+    _ITEM_IMAGE_INDEX_READY = True
+    _info_log(
+        f"Built item image index: entries={len(_ITEM_IMAGE_INDEX)} source={_DUNGEONS_PATH}"
+    )
+
+
+def _resolve_item_image_path(item_name: str, shiny: bool) -> str | None:
+    _build_item_image_index_if_needed()
+
+    candidates = []
+    base = item_name.strip()
+    if not base:
+        return None
+
+    lower_base = base.lower()
+    if shiny:
+        if lower_base.endswith("(shiny)"):
+            candidates.append(base)
+        else:
+            candidates.append(f"{base} (shiny)")
+    else:
+        candidates.append(base)
+
+    for candidate in candidates:
+        key = normalize_item_name(candidate).lower()
+        path = _ITEM_IMAGE_INDEX.get(key)
+        if path:
+            return path
+
+    return None
 
 
 def _is_known_csv_item(raw_item_name: str) -> str | None:
@@ -249,6 +310,14 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     divine = _as_bool(payload.get("divine", False))
     shiny = _as_bool(payload.get("shiny", False))
 
+    normalized_item_name, suffix_shiny = _strip_shiny_suffix(raw_item_name)
+    if suffix_shiny and not shiny:
+        shiny = True
+        _info_log(
+            f"Detected '(shiny)' suffix in item_name; forcing shiny=True for guild_id={guild_id} item='{raw_item_name}'"
+        )
+    raw_item_name = normalized_item_name
+
     _debug_log(f"Ingest request received guild_id={guild_id} item='{raw_item_name}' shiny={shiny} divine={divine}")
     _info_log(
         "Payload accepted "
@@ -303,7 +372,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
         if notifier is not None:
             try:
                 _info_log(f"Dispatching bridge settings test announcement for guild_id={guild_id}")
-                await notifier(guild_id, test_message, announce_channel_id)
+                await notifier(guild_id, test_message, announce_channel_id, linked_user_id, None)
                 _info_log(f"Bridge settings test announcement sent for guild_id={guild_id}")
             except Exception as e:
                 _info_log(f"Bridge test notifier error for guild_id={guild_id}: {e}")
@@ -390,17 +459,36 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     result["user_id"] = linked_user_id
 
     if notifier is not None:
+        image_path = _resolve_item_image_path(item_name, shiny)
+        image_missing = image_path is None
+        if image_path:
+            _info_log(
+                f"Resolved loot image for announcement: guild_id={guild_id} item='{item_name}' shiny={shiny} path={image_path}"
+            )
+        else:
+            _info_log(
+                f"No loot image found for announcement: guild_id={guild_id} item='{item_name}' shiny={shiny}"
+            )
+
+        announced_item = str(result.get("item", item_name))
+        if shiny and "(shiny)" not in announced_item.lower():
+            announced_item = f"{announced_item} (shiny)"
+
         announcement = (
             "RealmShark loot logged: "
-            f"{result.get('item', item_name)} "
-            f"for <@{linked_user_id}> "
+            f"{announced_item} "
+            f"for {{player}} "
             f"(mode={mode}, guild_id={guild_id})"
         )
+
+        if image_missing:
+            announcement += " | image missing"
+
         try:
             _info_log(
                 f"Dispatching loot announcement guild_id={guild_id} user_id={linked_user_id} item={result.get('item', item_name)}"
             )
-            await notifier(guild_id, announcement, announce_channel_id)
+            await notifier(guild_id, announcement, announce_channel_id, linked_user_id, image_path)
             _info_log(
                 f"Loot announcement sent guild_id={guild_id} user_id={linked_user_id} item={result.get('item', item_name)}"
             )
