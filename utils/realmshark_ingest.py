@@ -381,6 +381,41 @@ async def _addseasonloot_for_user(guild_id: int, user_id: int, item_name: str, s
     }
 
 
+async def _get_season_unique_total_for_user(guild_id: int, user_id: int) -> int:
+    interaction = _SyntheticInteraction(guild=_SyntheticGuild(guild_id), user=_SyntheticUser(user_id))
+    records = await load_player_records(interaction)
+    key = ensure_player_exists(records, user_id)
+    player_data: PlayerData | None = records.get(key)
+    if player_data is None:
+        return 0
+    return player_data.get_unique_item_count()
+
+
+async def _addseasonloot_with_duplicate_ok(
+    guild_id: int,
+    user_id: int,
+    item_name: str,
+    shiny: bool,
+) -> Dict[str, Any]:
+    try:
+        result = await _addseasonloot_for_user(guild_id, user_id, item_name, shiny)
+        result["already_present"] = False
+        return result
+    except IngestValidationError as e:
+        if e.error_code != "duplicate_season_item":
+            raise
+
+        total = await _get_season_unique_total_for_user(guild_id, user_id)
+        return {
+            "mode": "addseasonloot",
+            "item": f"{item_name}{' (shiny)' if shiny else ''}",
+            "season_unique_total": total,
+            "already_present": True,
+            "logged": False,
+            "reason": "duplicate_season_item",
+        }
+
+
 async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None = None) -> Dict[str, Any]:
     try:
         guild_id = int(payload.get("guild_id"))
@@ -551,7 +586,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
                 f"Character_id={character_id} explicitly mapped to seasonal. "
                 f"Routing to addseasonloot guild_id={guild_id} user_id={linked_user_id}"
             )
-            result = await _addseasonloot_for_user(guild_id, linked_user_id, item_name, shiny)
+            result = await _addseasonloot_with_duplicate_ok(guild_id, linked_user_id, item_name, shiny)
         elif bound_ppe_id is not None:
             try:
                 mode = "addloot"
@@ -576,7 +611,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
                 )
                 mode = "addseasonloot"
                 routing_reason = "mapped_character_fallback_to_season"
-                result = await _addseasonloot_for_user(guild_id, linked_user_id, item_name, shiny)
+                result = await _addseasonloot_with_duplicate_ok(guild_id, linked_user_id, item_name, shiny)
         else:
             mode = "addseasonloot"
             routing_reason = "unmapped_character"
@@ -584,7 +619,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
                 f"Unmapped character_id={character_id}; routing to addseasonloot "
                 f"guild_id={guild_id} user_id={linked_user_id}"
             )
-            result = await _addseasonloot_for_user(guild_id, linked_user_id, item_name, shiny)
+            result = await _addseasonloot_with_duplicate_ok(guild_id, linked_user_id, item_name, shiny)
 
             is_first_unmapped = await append_pending_event(
                 guild_id,
@@ -614,7 +649,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
             f"Dispatching loot event using legacy mode={mode} guild_id={guild_id} user_id={linked_user_id}"
         )
         if mode == "addseasonloot":
-            result = await _addseasonloot_for_user(guild_id, linked_user_id, item_name, shiny)
+            result = await _addseasonloot_with_duplicate_ok(guild_id, linked_user_id, item_name, shiny)
         else:
             result = await _addloot_for_user(guild_id, linked_user_id, item_name, divine, shiny)
 
@@ -661,6 +696,19 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
             f"for {{player}} "
             f"(mode={mode}, guild_id={guild_id})"
         )
+
+        if bool(result.get("already_present", False)):
+            announcement = (
+                "RealmShark loot received but already tracked: "
+                f"{display_rarity} {announced_item} "
+                f"for {{player}} "
+                f"(mode={mode}, guild_id={guild_id})"
+            )
+            if routing_reason == "unmapped_character":
+                announcement += (
+                    " | new character is still unmapped, use /realmsharkpanel "
+                    "or /realmsharkconfigure to choose PPE vs seasonal"
+                )
 
         if image_missing:
             announcement += " | image missing"
