@@ -58,6 +58,7 @@ async def generate_link_token(interaction: discord.Interaction) -> None:
         "last_seen_character_id": 0,
         "character_bindings": {},
         "seasonal_character_ids": [],
+        "character_metadata": {},
     }
 
     settings["links"] = links
@@ -222,6 +223,73 @@ def _normalize_seasonal_ids(link_data: Dict[str, Any]) -> set[str]:
     return result
 
 
+def _normalize_character_metadata(link_data: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
+    raw = link_data.get("character_metadata", {})
+    if not isinstance(raw, dict):
+        return {}
+
+    normalized: Dict[str, Dict[str, str]] = {}
+    for raw_character_id, raw_entry in raw.items():
+        try:
+            character_id = int(raw_character_id)
+        except (TypeError, ValueError):
+            continue
+        if character_id <= 0 or not isinstance(raw_entry, dict):
+            continue
+
+        normalized[str(character_id)] = {
+            "character_name": str(raw_entry.get("character_name", "")).strip(),
+            "character_class": str(raw_entry.get("character_class", "")).strip(),
+        }
+    return normalized
+
+
+def _normalized_class_name(value: Any) -> str:
+    if value is None:
+        return ""
+    raw = str(value).strip()
+    return raw.casefold()
+
+
+def _player_ppe_classes(player_data: Any) -> Dict[int, str]:
+    classes: Dict[int, str] = {}
+    if not player_data:
+        return classes
+
+    for ppe in player_data.ppes:
+        ppe_name = getattr(ppe.name, "value", ppe.name)
+        classes[int(ppe.id)] = str(ppe_name)
+    return classes
+
+
+async def _detected_character_info(
+    interaction: discord.Interaction,
+    user_links: list[tuple[str, Dict[str, Any]]],
+    character_id: int,
+) -> tuple[str, str]:
+    key = str(character_id)
+
+    # Prefer metadata sent directly by RealmShark/Tomato.
+    for _, link_data in user_links:
+        metadata = _normalize_character_metadata(link_data)
+        entry = metadata.get(key)
+        if isinstance(entry, dict):
+            character_name = str(entry.get("character_name", "")).strip()
+            character_class = str(entry.get("character_class", "")).strip()
+            if character_name or character_class:
+                return character_name, character_class
+
+    # Fallback to pending store metadata if this ID is pending.
+    pending_entry = await get_pending_character_entry(interaction.guild.id, interaction.user.id, character_id)
+    if isinstance(pending_entry, dict):
+        return (
+            str(pending_entry.get("character_name", "")).strip(),
+            str(pending_entry.get("character_class", "")).strip(),
+        )
+
+    return "", ""
+
+
 async def _migrate_legacy_pending_for_user(
     guild_id: int,
     user_links: list[tuple[str, Dict[str, Any]]],
@@ -265,6 +333,7 @@ async def bindings(interaction: discord.Interaction) -> None:
 
         character_bindings = _normalize_bindings(link_data)
         seasonal_ids = _normalize_seasonal_ids(link_data)
+        metadata = _normalize_character_metadata(link_data)
 
         raw_last_seen = link_data.get("last_seen_character_id", 0)
         try:
@@ -277,9 +346,15 @@ async def bindings(interaction: discord.Interaction) -> None:
             f"ppe_bindings=`{len(character_bindings)}` seasonal_ids=`{len(seasonal_ids)}` pending_unmapped=`{len(pending_chars)}`"
         )
         for character_id, ppe_id in sorted(character_bindings.items(), key=lambda kv: str(kv[0]))[:20]:
-            user_lines.append(f"  character_id `{character_id}` -> PPE `#{ppe_id}`")
+            meta = metadata.get(str(character_id), {})
+            class_suffix = f" class=`{meta.get('character_class', '')}`" if meta.get("character_class", "") else ""
+            name_suffix = f" name=`{meta.get('character_name', '')}`" if meta.get("character_name", "") else ""
+            user_lines.append(f"  character_id `{character_id}` -> PPE `#{ppe_id}`{class_suffix}{name_suffix}")
         for character_id in sorted(seasonal_ids, key=int)[:20]:
-            user_lines.append(f"  character_id `{character_id}` -> seasonal")
+            meta = metadata.get(str(character_id), {})
+            class_suffix = f" class=`{meta.get('character_class', '')}`" if meta.get("character_class", "") else ""
+            name_suffix = f" name=`{meta.get('character_name', '')}`" if meta.get("character_name", "") else ""
+            user_lines.append(f"  character_id `{character_id}` -> seasonal{class_suffix}{name_suffix}")
 
     if not user_lines:
         return await interaction.response.send_message(
@@ -396,6 +471,12 @@ async def configure(
     key = ensure_player_exists(records, interaction.user.id)
     player_data = records.get(key)
     user_ppe_ids = {ppe.id for ppe in (player_data.ppes if player_data else [])}
+    ppe_class_by_id = _player_ppe_classes(player_data)
+    detected_character_name, detected_character_class = await _detected_character_info(
+        interaction,
+        user_links,
+        character_id,
+    )
 
     if action in {"map_ppe", "apply_pending_to_ppe"}:
         if ppe_id is None or ppe_id <= 0:
@@ -405,6 +486,20 @@ async def configure(
                 f"You do not own PPE #{ppe_id}. Use `/myppes` to check your IDs.",
                 ephemeral=True,
             )
+
+        if detected_character_class:
+            ppe_class = ppe_class_by_id.get(int(ppe_id), "")
+            if _normalized_class_name(ppe_class) and _normalized_class_name(detected_character_class):
+                if _normalized_class_name(ppe_class) != _normalized_class_name(detected_character_class):
+                    return await interaction.response.send_message(
+                        (
+                            "❌ Class mismatch. "
+                            f"Character `{character_id}` is `{detected_character_class}`"
+                            + (f" ({detected_character_name})" if detected_character_name else "")
+                            + f", but PPE `#{ppe_id}` is `{ppe_class}`."
+                        ),
+                        ephemeral=True,
+                    )
 
     changed = 0
     applied_events_total = 0
@@ -466,6 +561,8 @@ async def configure(
                 f"token `{_token_preview(current_token)}` pending events: `{len(events)}`",
                 f"first_seen: `{entry.get('first_seen_at', '')}`",
                 f"last_seen: `{entry.get('last_seen_at', '')}`",
+                f"character_name: `{entry.get('character_name', '')}`",
+                f"character_class: `{entry.get('character_class', '')}`",
             ]
             for event in events[-20:]:
                 if not isinstance(event, dict):
@@ -537,15 +634,22 @@ async def admin_view(interaction: discord.Interaction, member: discord.Member) -
     for token, link_data in user_links:
         bindings = _normalize_bindings(link_data)
         seasonal_ids = _normalize_seasonal_ids(link_data)
+        metadata = _normalize_character_metadata(link_data)
         lines.append(
             f"- token `{_token_preview(token)}` ppe_bindings=`{len(bindings)}` "
             f"seasonal=`{len(seasonal_ids)}` pending=`{len(pending_chars)}` "
             f"last_seen=`{link_data.get('last_seen_character_id', 0)}`"
         )
         for character_id, ppe_id in sorted(bindings.items(), key=lambda kv: str(kv[0]))[:10]:
-            lines.append(f"  character_id `{character_id}` -> PPE `#{ppe_id}`")
+            meta = metadata.get(str(character_id), {})
+            class_suffix = f" class=`{meta.get('character_class', '')}`" if meta.get("character_class", "") else ""
+            name_suffix = f" name=`{meta.get('character_name', '')}`" if meta.get("character_name", "") else ""
+            lines.append(f"  character_id `{character_id}` -> PPE `#{ppe_id}`{class_suffix}{name_suffix}")
         for character_id in sorted(seasonal_ids, key=int)[:10]:
-            lines.append(f"  character_id `{character_id}` -> seasonal")
+            meta = metadata.get(str(character_id), {})
+            class_suffix = f" class=`{meta.get('character_class', '')}`" if meta.get("character_class", "") else ""
+            name_suffix = f" name=`{meta.get('character_name', '')}`" if meta.get("character_name", "") else ""
+            lines.append(f"  character_id `{character_id}` -> seasonal{class_suffix}{name_suffix}")
         for character_id, entry in sorted(pending_chars.items(), key=lambda kv: int(kv[0]))[:10]:
             events = entry.get("events", []) if isinstance(entry.get("events", []), list) else []
             lines.append(f"  pending character_id `{character_id}` events=`{len(events)}`")
@@ -609,13 +713,19 @@ async def _build_panel_embed(
 
     mapped_ppe: int | None = None
     seasonal = False
+    detected_name = ""
+    detected_class = ""
     for _, link_data in user_links:
         bindings = _normalize_bindings(link_data)
         seasonal_ids = _normalize_seasonal_ids(link_data)
+        metadata = _normalize_character_metadata(link_data)
         key = str(character_id)
         if key in bindings:
             mapped_ppe = bindings[key]
-            break
+        meta = metadata.get(key)
+        if isinstance(meta, dict):
+            detected_name = detected_name or str(meta.get("character_name", "")).strip()
+            detected_class = detected_class or str(meta.get("character_class", "")).strip()
         if key in seasonal_ids:
             seasonal = True
 
@@ -624,6 +734,8 @@ async def _build_panel_embed(
     if isinstance(pending_entry, dict):
         events = pending_entry.get("events", []) if isinstance(pending_entry.get("events", []), list) else []
         pending_count = len(events)
+        detected_name = detected_name or str(pending_entry.get("character_name", "")).strip()
+        detected_class = detected_class or str(pending_entry.get("character_class", "")).strip()
 
     records = await load_player_records(interaction)
     key = ensure_player_exists(records, interaction.user.id)
@@ -650,6 +762,8 @@ async def _build_panel_embed(
         title="RealmShark Character Mapping Panel",
         description=(
             f"Character ID: **{character_id}**\n"
+            f"Detected Character: **{detected_name or 'Unknown'}**\n"
+            f"Detected Class: **{detected_class or 'Unknown'}**\n"
             f"Current status: **{status}**\n"
             f"Pending unmapped loot events: **{pending_count}**\n"
             f"Pending queue position: **{pending_position}**"

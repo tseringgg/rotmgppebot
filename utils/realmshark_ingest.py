@@ -428,6 +428,8 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
 
     event_type = str(payload.get("event_type", "")).strip().lower()
     character_id = _parse_positive_int(payload.get("character_id"))
+    character_name = str(payload.get("character_name", "")).strip()
+    character_class = str(payload.get("character_class", "")).strip()
 
     raw_item_name = str(payload.get("item_name", "")).strip()
     divine = _as_bool(payload.get("divine", False))
@@ -447,7 +449,8 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
         "Payload accepted "
         f"guild_id={guild_id} token={_token_preview(token)} item='{raw_item_name}' "
         f"shiny={shiny} divine={divine} rarity={item_rarity} "
-        f"event_type={event_type or 'loot'} character_id={character_id or 0}"
+        f"event_type={event_type or 'loot'} character_id={character_id or 0} "
+        f"character_class='{character_class or 'unknown'}'"
     )
 
     settings = await get_realmshark_settings_by_id(guild_id)
@@ -481,6 +484,17 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
 
     if character_id is not None:
         link_data["last_seen_character_id"] = character_id
+        raw_meta = link_data.get("character_metadata", {})
+        metadata = raw_meta if isinstance(raw_meta, dict) else {}
+        key = str(character_id)
+        entry = metadata.get(key, {}) if isinstance(metadata.get(key, {}), dict) else {}
+        if character_name:
+            entry["character_name"] = character_name
+        if character_class:
+            entry["character_class"] = character_class
+        if entry:
+            metadata[key] = entry
+            link_data["character_metadata"] = metadata
 
     announce_channel_id: int | None = None
     announce_channel_raw = settings.get("announce_channel_id", 0)
@@ -629,6 +643,8 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
                 item_rarity=_normalize_rarity(item_rarity),
                 shiny=shiny,
                 divine=divine,
+                character_name=character_name,
+                character_class=character_class,
             )
 
             if is_first_unmapped and notifier is not None:

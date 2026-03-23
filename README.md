@@ -160,6 +160,7 @@ When Tomato sends loot with `character_id`, routing is policy-driven:
 
 Use `/realmsharkconfigure` to map an unseen character to a PPE, keep it seasonal, review pending loot, apply pending loot to a PPE, or clear pending logs.
 `/realmsharkpanel` requires choosing either `Show All` or `Show Pending` and includes `Prev Pending`/`Next Pending` buttons to cycle all pending character IDs.
+The panel/config view shows detected in-game character name/class when available, and mapping is class-validated: a character cannot be mapped to a PPE of a different class.
 
 Pending unmapped character events are stored in per-player files so main guild config files stay compact.
 

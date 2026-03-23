@@ -73,6 +73,8 @@ def _normalize_pending(raw: Dict[str, Any]) -> Dict[str, Any]:
             "first_seen_at": str(raw_entry.get("first_seen_at", "")),
             "last_seen_at": str(raw_entry.get("last_seen_at", "")),
             "prompted": bool(raw_entry.get("prompted", False)),
+            "character_name": str(raw_entry.get("character_name", "")),
+            "character_class": str(raw_entry.get("character_class", "")),
             "events": _normalize_events(raw_entry.get("events", [])),
         }
         characters[character_id] = entry
@@ -119,6 +121,8 @@ async def append_pending_event(
     item_rarity: str,
     shiny: bool,
     divine: bool,
+    character_name: str = "",
+    character_class: str = "",
 ) -> bool:
     data = await load_pending(guild_id, user_id)
     key = _as_positive_int_str(character_id)
@@ -137,6 +141,10 @@ async def append_pending_event(
         entry["first_seen_at"] = now
     entry["last_seen_at"] = now
     entry["prompted"] = bool(entry.get("prompted", False))
+    if character_name:
+        entry["character_name"] = str(character_name)
+    if character_class:
+        entry["character_class"] = str(character_class)
 
     events = _normalize_events(entry.get("events", []))
     events.append(
@@ -227,6 +235,8 @@ async def migrate_legacy_pending_map(guild_id: int, user_id: int, pending_map: D
             "first_seen_at": first_seen,
             "last_seen_at": last_seen,
             "prompted": bool(existing.get("prompted", False) or raw_entry.get("prompted", False)),
+            "character_name": str(existing.get("character_name", "")) or str(raw_entry.get("character_name", "")),
+            "character_class": str(existing.get("character_class", "")) or str(raw_entry.get("character_class", "")),
             "events": merged_events,
         }
 

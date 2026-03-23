@@ -102,6 +102,7 @@ def _normalized_realmshark_settings(config: Dict[str, Any]) -> Dict[str, Any]:
                 "last_seen_character_id": last_seen_character_id,
                 "character_bindings": {},
                 "seasonal_character_ids": [],
+                "character_metadata": {},
             }
 
             raw_bindings = link_data.get("character_bindings", {})
@@ -130,6 +131,23 @@ def _normalized_realmshark_settings(config: Dict[str, Any]) -> Dict[str, Any]:
                     continue
                 normalized_seasonal_ids.append(str(character_id))
             links[token]["seasonal_character_ids"] = sorted(set(normalized_seasonal_ids), key=int)
+
+            raw_metadata = link_data.get("character_metadata", {})
+            metadata: Dict[str, Dict[str, str]] = {}
+            if isinstance(raw_metadata, dict):
+                for raw_character_id, raw_entry in raw_metadata.items():
+                    try:
+                        character_id = int(raw_character_id)
+                    except (TypeError, ValueError):
+                        continue
+                    if character_id <= 0 or not isinstance(raw_entry, dict):
+                        continue
+
+                    metadata[str(character_id)] = {
+                        "character_name": str(raw_entry.get("character_name", "")),
+                        "character_class": str(raw_entry.get("character_class", "")),
+                    }
+            links[token]["character_metadata"] = metadata
 
     announce_channel_raw = settings.get("announce_channel_id", _DEFAULT_CONFIG["realmshark_settings"]["announce_channel_id"])
     try:
