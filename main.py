@@ -452,6 +452,11 @@ async def showseasonloot(interaction: discord.Interaction):
 async def viewquestsfor(interaction: discord.Interaction, member: discord.Member):
     await viewquestsfor_cmd.command(interaction, member)
 
+@bot.tree.command(name="resetquests", description="Reset sections of your own quests.", guilds=guilds)
+@require_ppe_roles(player_required=True)
+async def resetquests(interaction: discord.Interaction):
+    await resetquestfor_cmd.command_self(interaction)
+
 @bot.tree.command(name="resetquestfor", description="Reset quests for a specific player. Admin only.", guilds=guilds)
 @app_commands.describe(member="The player whose quests to reset")
 @require_ppe_roles(admin_required=True)
@@ -468,6 +473,7 @@ async def resetallquests(interaction: discord.Interaction):
 @app_commands.describe(regular_quests="Target number of active regular item quests")
 @app_commands.describe(shiny_quests="Target number of active shiny item quests")
 @app_commands.describe(skin_quests="Target number of active skin quests")
+@app_commands.describe(num_resets="How many quest resets each player gets")
 @app_commands.describe(regular_points="Points per completed regular quest on /questleaderboard")
 @app_commands.describe(shiny_points="Points per completed shiny quest on /questleaderboard")
 @app_commands.describe(skin_points="Points per completed skin quest on /questleaderboard")
@@ -477,6 +483,7 @@ async def managequests(
     regular_quests: int | None = None,
     shiny_quests: int | None = None,
     skin_quests: int | None = None,
+    num_resets: int | None = None,
     regular_points: int | None = None,
     shiny_points: int | None = None,
     skin_points: int | None = None,
@@ -486,6 +493,7 @@ async def managequests(
         regular_quests,
         shiny_quests,
         skin_quests,
+        num_resets,
         regular_points,
         shiny_points,
         skin_points,

@@ -40,6 +40,11 @@ async def command(
         final_key, points_added, active_ppe, quest_update = await player_manager.add_loot_and_points(
             interaction, user=user, ppe_id=ppe_id, item_name=item_name, divine=divine, shiny=shiny, points=points
         )
+        display_item_name = final_key
+        if shiny:
+            display_item_name = f"Shiny {display_item_name}"
+        if divine:
+            display_item_name = f"Divine {display_item_name}"
 
         quest_lines = []
         for completed_item in quest_update.get("completed_items", []):
@@ -56,7 +61,7 @@ async def command(
         loot_message = LootTableMessage(
             interaction=interaction,
             message_type="markdown",
-            response=f"> ✅ Added **{final_key}** to your active PPE for {points_added} points.",
+            response=f"> ✅ Added **{display_item_name}** to your active PPE for {points_added} points.",
             response_ephemeral=False,
             ephemeral=True,
             embed_content=f"Your active PPE now has **{active_ppe.points} total points**."

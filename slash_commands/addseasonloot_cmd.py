@@ -11,6 +11,8 @@ async def command(
         item_name: str,
         shiny: bool = False
     ):
+    display_item_name = f"Shiny {item_name}" if shiny else item_name
+
     if item_name not in LOOT:
         return await interaction.response.send_message(
             f"❌ `{item_name}` is not a recognized item name.\n"
@@ -45,7 +47,7 @@ async def command(
         # Check if already exists
         if item_key in player_data.unique_items:
             return await interaction.response.send_message(
-                f"⚠️ **{item_name}{'(shiny)' if shiny else ''}** is already in your season loot collection!",
+                f"⚠️ **{display_item_name}** is already in your season loot collection!",
                 ephemeral=True
             )
         
@@ -66,7 +68,7 @@ async def command(
         total_count = player_data.get_unique_item_count()
         
         response_lines = [
-            f"✅ Added **{item_name}{' (shiny)' if shiny else ''}** to your season loot!\n"
+            f"✅ Added **{display_item_name}** to your season loot!\n"
             f"You now have **{total_count}** unique items collected."
         ]
 

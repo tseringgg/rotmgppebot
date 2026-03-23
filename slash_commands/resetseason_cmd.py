@@ -1,5 +1,6 @@
 import discord
 from utils.player_records import load_player_records, save_player_records, load_teams, save_teams
+from utils.guild_config import load_guild_config
 
 
 class ConfirmView(discord.ui.View):
@@ -48,6 +49,8 @@ async def command(interaction: discord.Interaction):
             return
         
         records = await load_player_records(interaction)
+        config = await load_guild_config(interaction)
+        default_reset_limit = config["quest_settings"]["num_resets"]
         teams = await load_teams(interaction)
         
         # Get team role names before clearing teams
@@ -81,6 +84,7 @@ async def command(interaction: discord.Interaction):
             player_data.quests.completed_items.clear()
             player_data.quests.completed_shinies.clear()
             player_data.quests.completed_skins.clear()
+            player_data.quest_resets_remaining = default_reset_limit
             
             # Clear team associations
             player_data.team_name = None
@@ -107,6 +111,7 @@ async def command(interaction: discord.Interaction):
             f"✅ Season reset complete!\n"
             f"**Cleared:** {ppes_cleared} PPE characters, {items_cleared} unique items, {quest_entries_cleared} quest entries\n"
             f"**Deleted:** {teams_deleted} teams and their roles\n"
+            f"**Reset quest attempts to:** {default_reset_limit}\n"
             f"**Preserved:** Player member status and PPE roles",
             ephemeral=False
         )

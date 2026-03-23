@@ -15,6 +15,7 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
         "regular_points": 5,
         "shiny_points": 10,
         "skin_points": 15,
+        "num_resets": 3,
     }
 }
 
@@ -55,6 +56,7 @@ def _normalized_targets(config: Dict[str, Any]) -> Dict[str, int]:
         "regular_points": _as_non_negative_int(settings.get("regular_points"), _DEFAULT_CONFIG["quest_settings"]["regular_points"]),
         "shiny_points": _as_non_negative_int(settings.get("shiny_points"), _DEFAULT_CONFIG["quest_settings"]["shiny_points"]),
         "skin_points": _as_non_negative_int(settings.get("skin_points"), _DEFAULT_CONFIG["quest_settings"]["skin_points"]),
+        "num_resets": _as_non_negative_int(settings.get("num_resets"), _DEFAULT_CONFIG["quest_settings"]["num_resets"]),
     }
 
 
