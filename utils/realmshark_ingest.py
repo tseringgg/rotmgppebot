@@ -47,6 +47,7 @@ _DUNGEONS_PATH = os.getenv("REALMSHARK_DUNGEONS_PATH", "dungeons")
 _ITEM_IMAGE_INDEX: Dict[str, str] = {}
 _ITEM_IMAGE_INDEX_READY = False
 Notifier = Callable[[int, str, int | None, int | None, str | None], Awaitable[None]]
+_ALLOWED_RARITIES = {"common", "uncommon", "rare", "legendary", "divine"}
 
 
 def _utc_iso_now() -> str:
@@ -157,6 +158,25 @@ def _as_bool(value: Any) -> bool:
 
     normalized = str(value).strip().lower()
     return normalized in {"1", "true", "yes", "on"}
+
+
+def _normalize_rarity(value: Any) -> str:
+    if value is None:
+        return "rare"
+
+    raw = str(value).strip().lower()
+    if not raw:
+        return "rare"
+
+    if raw in _ALLOWED_RARITIES:
+        return raw
+
+    return "rare"
+
+
+def _display_rarity(rarity: str) -> str:
+    normalized = _normalize_rarity(rarity)
+    return normalized[:1].upper() + normalized[1:]
 
 
 def _append_missing_utst_log(guild_id: int, item_name: str, payload: Dict[str, Any]) -> None:
@@ -309,6 +329,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     raw_item_name = str(payload.get("item_name", "")).strip()
     divine = _as_bool(payload.get("divine", False))
     shiny = _as_bool(payload.get("shiny", False))
+    item_rarity = _normalize_rarity(payload.get("item_rarity", "rare"))
 
     normalized_item_name, suffix_shiny = _strip_shiny_suffix(raw_item_name)
     if suffix_shiny and not shiny:
@@ -322,7 +343,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     _info_log(
         "Payload accepted "
         f"guild_id={guild_id} token={_token_preview(token)} item='{raw_item_name}' "
-        f"shiny={shiny} divine={divine} event_type={event_type or 'loot'}"
+        f"shiny={shiny} divine={divine} rarity={item_rarity} event_type={event_type or 'loot'}"
     )
 
     settings = await get_realmshark_settings_by_id(guild_id)
@@ -457,6 +478,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
 
     result["guild_id"] = guild_id
     result["user_id"] = linked_user_id
+    result["item_rarity"] = item_rarity
 
     if notifier is not None:
         image_path = _resolve_item_image_path(item_name, shiny)
@@ -474,9 +496,11 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
         if shiny and "(shiny)" not in announced_item.lower():
             announced_item = f"{announced_item} (shiny)"
 
+        display_rarity = _display_rarity(item_rarity)
+
         announcement = (
             "RealmShark loot logged: "
-            f"{announced_item} "
+            f"{display_rarity} {announced_item} "
             f"for {{player}} "
             f"(mode={mode}, guild_id={guild_id})"
         )
