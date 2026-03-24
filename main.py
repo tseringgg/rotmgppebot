@@ -9,8 +9,7 @@ from utils.role_checks import require_ppe_roles
 from utils.loot_data import init_loot_data
 from create_loot_table import create_loot_background_and_mapping
 from utils.realmshark_ingest_server import start_realmshark_ingest_server
-from utils.embed_builders import build_loot_embeds
-from utils.player_records import ensure_player_exists, load_player_records
+from utils.realmshark_notifier import build_realmshark_notifier
 
 from utils.autocomplete import class_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, target_user_ppe_id_autocomplete, team_name_autocomplete
 
@@ -24,115 +23,6 @@ load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
 class PPEBot(commands.Bot):
-    async def _build_realmshark_ppe_embeds(self, guild_id: int, user_id: int, ppe_id: int) -> list[discord.Embed]:
-        class _SyntheticGuild:
-            def __init__(self, gid: int) -> None:
-                self.id = gid
-
-        class _SyntheticInteraction:
-            def __init__(self, gid: int) -> None:
-                self.guild = _SyntheticGuild(gid)
-
-        interaction = _SyntheticInteraction(guild_id)
-        records = await load_player_records(interaction)
-        key = ensure_player_exists(records, user_id)
-        player_data = records.get(key)
-        if not player_data:
-            return []
-
-        target_ppe = next((ppe for ppe in player_data.ppes if int(ppe.id) == int(ppe_id)), None)
-        if target_ppe is None:
-            return []
-
-        return build_loot_embeds(target_ppe, recently_added="")
-
-    async def _send_realmshark_announce(
-        self,
-        guild_id: int,
-        message: str,
-        channel_id: int | None = None,
-        user_id: int | None = None,
-        image_path: str | None = None,
-        allow_user_ping: bool = False,
-        ppe_id: int | None = None,
-        include_ppe_sheet: bool = False,
-    ) -> None:
-        guild = self.get_guild(guild_id)
-        if guild is None:
-            print(f"[REALMSHARK] Could not announce test event: guild {guild_id} not found in bot cache.")
-            return
-
-        me = guild.me
-        if me is None and self.user is not None:
-            me = guild.get_member(self.user.id)
-
-        channel = None
-        if channel_id is not None and channel_id > 0:
-            configured_channel = guild.get_channel(channel_id)
-            if isinstance(configured_channel, discord.TextChannel):
-                if me is not None and configured_channel.permissions_for(me).send_messages:
-                    channel = configured_channel
-                else:
-                    print(
-                        f"[REALMSHARK] Configured announce channel {channel_id} is not writable for guild {guild_id}, falling back."
-                    )
-            else:
-                print(
-                    f"[REALMSHARK] Configured announce channel {channel_id} not found in guild {guild_id}, falling back."
-                )
-
-        if channel is None:
-            channel = guild.system_channel
-            if channel is None or me is None or not channel.permissions_for(me).send_messages:
-                channel = next(
-                    (c for c in guild.text_channels if me is not None and c.permissions_for(me).send_messages),
-                    None,
-                )
-
-        if channel is None:
-            print(f"[REALMSHARK] Could not announce test event: no writable text channel in guild {guild_id}.")
-            return
-
-        player_name = "Unknown Player"
-        player_mention = ""
-        if user_id is not None:
-            member = guild.get_member(user_id)
-            if member is not None:
-                player_name = member.display_name
-                player_mention = member.mention
-            else:
-                player_name = f"User {user_id}"
-                player_mention = f"<@{user_id}>"
-
-        final_message = message.replace("{player}", player_name).replace("{mention}", player_mention)
-        allowed_mentions = discord.AllowedMentions.none()
-        if allow_user_ping and user_id is not None:
-            allowed_mentions = discord.AllowedMentions(users=True)
-
-        if image_path:
-            try:
-                await channel.send(
-                    content=f"[RealmShark] {final_message}",
-                    file=discord.File(image_path),
-                    allowed_mentions=allowed_mentions,
-                )
-                if include_ppe_sheet and user_id is not None and ppe_id is not None:
-                    ppe_embeds = await self._build_realmshark_ppe_embeds(guild_id, user_id, ppe_id)
-                    if ppe_embeds:
-                        await channel.send(embed=ppe_embeds[0], allowed_mentions=discord.AllowedMentions.none())
-                return
-            except Exception as e:
-                print(
-                    f"[REALMSHARK] Failed to attach image '{image_path}' for guild {guild_id}: {e}. Sending message without image."
-                )
-
-        await channel.send(f"[RealmShark] {final_message}", allowed_mentions=allowed_mentions)
-
-        if include_ppe_sheet and user_id is not None and ppe_id is not None:
-            ppe_embeds = await self._build_realmshark_ppe_embeds(guild_id, user_id, ppe_id)
-            if ppe_embeds:
-                await channel.send(embed=ppe_embeds[0], allowed_mentions=discord.AllowedMentions.none())
-
     async def setup_hook(self):
 
         # Initialize global loot data for autocomplete
@@ -159,7 +49,7 @@ class PPEBot(commands.Bot):
 
         print("Guild commands synced!")
         self.realmshark_ingest_runner = await start_realmshark_ingest_server(
-            notifier=self._send_realmshark_announce
+            notifier=build_realmshark_notifier(self)
         )
 
     async def close(self):

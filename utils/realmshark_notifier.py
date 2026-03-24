@@ -1,0 +1,177 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Awaitable, Callable
+
+import discord
+
+from utils.embed_builders import build_loot_embeds
+from utils.player_records import ensure_player_exists, load_player_records
+
+
+def _discord_relative_now() -> str:
+    return f"<t:{int(datetime.now(timezone.utc).timestamp())}:R>"
+
+
+def _with_optional_timestamp(message: str) -> str:
+    is_bound_message = message.startswith("RealmShark is successfully bound to")
+    is_loot_message = ("It was logged to" in message) or ("It was already logged to" in message)
+
+    if is_bound_message or is_loot_message:
+        return f"{message} | {_discord_relative_now()}"
+
+    return message
+
+
+async def _get_target_ppe(
+    guild_id: int,
+    user_id: int,
+    ppe_id: int,
+):
+    class _SyntheticGuild:
+        def __init__(self, gid: int) -> None:
+            self.id = gid
+
+    class _SyntheticInteraction:
+        def __init__(self, gid: int) -> None:
+            self.guild = _SyntheticGuild(gid)
+
+    interaction = _SyntheticInteraction(guild_id)
+    records = await load_player_records(interaction)
+    key = ensure_player_exists(records, user_id)
+    player_data = records.get(key)
+    if not player_data:
+        return None
+
+    return next((ppe for ppe in player_data.ppes if int(ppe.id) == int(ppe_id)), None)
+
+
+async def _send_private_ppe_sheet(
+    bot: discord.Client,
+    guild: discord.Guild,
+    user_id: int,
+    embed: discord.Embed,
+) -> None:
+    recipient: discord.abc.Messageable | None = guild.get_member(user_id)
+    if recipient is None:
+        recipient = bot.get_user(user_id)
+
+    if recipient is None:
+        try:
+            recipient = await bot.fetch_user(user_id)
+        except Exception as e:
+            print(f"[REALMSHARK] Could not resolve user {user_id} for private PPE sheet: {e}")
+            return
+
+    try:
+        await recipient.send(
+            "RealmShark updated your mapped PPE. Here is your current loot list.",
+            embed=embed,
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
+    except Exception as e:
+        print(f"[REALMSHARK] Could not send private PPE sheet to user {user_id}: {e}")
+
+
+def build_realmshark_notifier(
+    bot: discord.Client,
+) -> Callable[[int, str, int | None, int | None, str | None, bool, int | None, bool], Awaitable[None]]:
+    async def notifier(
+        guild_id: int,
+        message: str,
+        channel_id: int | None = None,
+        user_id: int | None = None,
+        image_path: str | None = None,
+        allow_user_ping: bool = False,
+        ppe_id: int | None = None,
+        include_ppe_sheet: bool = False,
+    ) -> None:
+        guild = bot.get_guild(guild_id)
+        if guild is None:
+            print(f"[REALMSHARK] Could not announce test event: guild {guild_id} not found in bot cache.")
+            return
+
+        me = guild.me
+        if me is None and bot.user is not None:
+            me = guild.get_member(bot.user.id)
+
+        channel = None
+        if channel_id is not None and channel_id > 0:
+            configured_channel = guild.get_channel(channel_id)
+            if isinstance(configured_channel, discord.TextChannel):
+                if me is not None and configured_channel.permissions_for(me).send_messages:
+                    channel = configured_channel
+                else:
+                    print(
+                        f"[REALMSHARK] Configured announce channel {channel_id} is not writable for guild {guild_id}, falling back."
+                    )
+            else:
+                print(
+                    f"[REALMSHARK] Configured announce channel {channel_id} not found in guild {guild_id}, falling back."
+                )
+
+        if channel is None:
+            channel = guild.system_channel
+            if channel is None or me is None or not channel.permissions_for(me).send_messages:
+                channel = next(
+                    (c for c in guild.text_channels if me is not None and c.permissions_for(me).send_messages),
+                    None,
+                )
+
+        if channel is None:
+            print(f"[REALMSHARK] Could not announce test event: no writable text channel in guild {guild_id}.")
+            return
+
+        player_name = "Unknown Player"
+        player_mention = ""
+        if user_id is not None:
+            member = guild.get_member(user_id)
+            if member is not None:
+                player_name = member.display_name
+                player_mention = member.mention
+            else:
+                player_name = f"User {user_id}"
+                player_mention = f"<@{user_id}>"
+
+        final_message = message.replace("{player}", player_name).replace("{mention}", player_mention)
+        final_message = _with_optional_timestamp(final_message)
+        allowed_mentions = discord.AllowedMentions.none()
+        if allow_user_ping and user_id is not None:
+            allowed_mentions = discord.AllowedMentions(users=True)
+
+        private_ppe_embed: discord.Embed | None = None
+        if include_ppe_sheet and user_id is not None and ppe_id is not None:
+            target_ppe = await _get_target_ppe(guild_id, user_id, ppe_id)
+            if target_ppe is not None:
+                ppe_embeds = build_loot_embeds(target_ppe, recently_added="")
+                if ppe_embeds:
+                    private_ppe_embed = ppe_embeds[0]
+
+                class_name = str(getattr(target_ppe.name, "value", target_ppe.name)).strip()
+                if class_name:
+                    final_message = final_message.replace(
+                        f"PPE #{ppe_id}.",
+                        f"PPE #{ppe_id} - {class_name} PPE.",
+                    )
+
+        sent_public_message = False
+        if image_path:
+            try:
+                await channel.send(
+                    content=f"[RealmShark] {final_message}",
+                    file=discord.File(image_path),
+                    allowed_mentions=allowed_mentions,
+                )
+                sent_public_message = True
+            except Exception as e:
+                print(
+                    f"[REALMSHARK] Failed to attach image '{image_path}' for guild {guild_id}: {e}. Sending message without image."
+                )
+
+        if not sent_public_message:
+            await channel.send(f"[RealmShark] {final_message}", allowed_mentions=allowed_mentions)
+
+        if private_ppe_embed is not None and user_id is not None:
+            await _send_private_ppe_sheet(bot, guild, user_id, private_ppe_embed)
+
+    return notifier
