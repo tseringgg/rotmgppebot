@@ -98,7 +98,7 @@ async def command(interaction: discord.Interaction):
     }
     
     owner_cmds = {
-        "resetseason": "Clear season data, teams, and RealmShark links/settings.",
+        "resetseason": "Clear season data and teams; optionally unlink all RealmShark links/mappings.",
         "giveppeadminrole": "Grant PPE Admin role.",
         "removeppeadminrole": "Remove PPE Admin role.",
         "setuproles": "Create required roles.",

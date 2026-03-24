@@ -10,6 +10,7 @@ from utils.guild_config import get_realmshark_settings, set_realmshark_settings
 from utils.player_records import ensure_player_exists, load_player_records
 from utils.realmshark_ingest import _addloot_for_user_with_ppe
 from utils.realmshark_pending_store import (
+    clear_all_pending_for_guild,
     clear_pending_character,
     get_pending_character_entry,
     load_pending,
@@ -255,6 +256,7 @@ async def _detected_character_info(
     interaction: discord.Interaction,
     user_links: list[tuple[str, Dict[str, Any]]],
     character_id: int,
+    target_user_id: int | None = None,
 ) -> tuple[str, str]:
     key = str(character_id)
 
@@ -269,7 +271,8 @@ async def _detected_character_info(
                 return character_name, character_class
 
     # Fallback to pending store metadata if this ID is pending.
-    pending_entry = await get_pending_character_entry(interaction.guild.id, interaction.user.id, character_id)
+    resolved_user_id = target_user_id if target_user_id is not None else interaction.user.id
+    pending_entry = await get_pending_character_entry(interaction.guild.id, resolved_user_id, character_id)
     if isinstance(pending_entry, dict):
         return (
             str(pending_entry.get("character_name", "")).strip(),
@@ -626,6 +629,137 @@ async def admin_view(interaction: discord.Interaction, member: discord.Member) -
     await interaction.response.send_message("\n".join(lines), ephemeral=True)
 
 
+async def _admin_clear_all_mappings_for_member(
+    interaction: discord.Interaction,
+    member_id: int,
+) -> tuple[int, int, int, int]:
+    settings = await get_realmshark_settings(interaction)
+    links = settings.get("links", {}) if isinstance(settings.get("links"), dict) else {}
+
+    tokens_updated = 0
+    ppe_mappings_removed = 0
+    seasonal_mappings_removed = 0
+    metadata_entries_removed = 0
+
+    for token, link_data in links.items():
+        if not isinstance(link_data, dict):
+            continue
+
+        try:
+            linked_user_id = int(link_data.get("user_id"))
+        except (TypeError, ValueError):
+            continue
+        if linked_user_id != member_id:
+            continue
+
+        character_bindings = _normalize_bindings(link_data)
+        seasonal_ids = _normalize_seasonal_ids(link_data)
+        metadata = _normalize_character_metadata(link_data)
+
+        removed_for_token = len(character_bindings) + len(seasonal_ids) + len(metadata)
+        if removed_for_token <= 0:
+            continue
+
+        ppe_mappings_removed += len(character_bindings)
+        seasonal_mappings_removed += len(seasonal_ids)
+        metadata_entries_removed += len(metadata)
+
+        link_data["character_bindings"] = {}
+        link_data["seasonal_character_ids"] = []
+        link_data["character_metadata"] = {}
+        links[token] = link_data
+        tokens_updated += 1
+
+    if tokens_updated > 0:
+        settings["links"] = links
+        await set_realmshark_settings(interaction, settings)
+
+    return tokens_updated, ppe_mappings_removed, seasonal_mappings_removed, metadata_entries_removed
+
+
+class _RealmSharkAdminConfirmClearMappingsView(discord.ui.View):
+    def __init__(self, owner_id: int, target_member_id: int) -> None:
+        super().__init__(timeout=60)
+        self.owner_id = owner_id
+        self.target_member_id = target_member_id
+
+    async def _ensure_owner(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This confirmation belongs to another admin.", ephemeral=True)
+            return False
+        return True
+
+    @discord.ui.button(label="Confirm Remove All Mappings", style=discord.ButtonStyle.danger)
+    async def confirm(
+        self,
+        interaction: discord.Interaction,
+        _button: discord.ui.Button,
+    ) -> None:
+        if not await self._ensure_owner(interaction):
+            return
+
+        tokens_updated, ppe_removed, seasonal_removed, metadata_removed = await _admin_clear_all_mappings_for_member(
+            interaction,
+            self.target_member_id,
+        )
+
+        if tokens_updated <= 0:
+            await interaction.response.edit_message(
+                content="No mappings were found to remove for this player.",
+                view=None,
+            )
+            return
+
+        await interaction.response.edit_message(
+            content=(
+                "✅ Removed all RealmShark mappings for this player.\n"
+                f"Tokens updated: `{tokens_updated}`\n"
+                f"PPE mappings removed: `{ppe_removed}`\n"
+                f"Seasonal mappings removed: `{seasonal_removed}`\n"
+                f"Character metadata entries removed: `{metadata_removed}`"
+            ),
+            view=None,
+        )
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary)
+    async def cancel(
+        self,
+        interaction: discord.Interaction,
+        _button: discord.ui.Button,
+    ) -> None:
+        if not await self._ensure_owner(interaction):
+            return
+        await interaction.response.edit_message(content="Cancelled mapping removal.", view=None)
+
+
+class RealmSharkAdminPanelView(discord.ui.View):
+    def __init__(self, owner_id: int, target_member_id: int) -> None:
+        super().__init__(timeout=300)
+        self.owner_id = owner_id
+        self.target_member_id = target_member_id
+
+    async def _ensure_owner(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This admin panel belongs to another admin.", ephemeral=True)
+            return False
+        return True
+
+    @discord.ui.button(label="Remove All Mappings", style=discord.ButtonStyle.danger)
+    async def remove_all_mappings(
+        self,
+        interaction: discord.Interaction,
+        _button: discord.ui.Button,
+    ) -> None:
+        if not await self._ensure_owner(interaction):
+            return
+
+        await interaction.response.send_message(
+            "⚠️ This will remove all PPE/seasonal character mappings and stored character metadata for this player across all linked tokens.",
+            view=_RealmSharkAdminConfirmClearMappingsView(self.owner_id, self.target_member_id),
+            ephemeral=True,
+        )
+
+
 async def admin_panel(interaction: discord.Interaction, member: discord.Member) -> None:
     """Open the RealmShark panel for a specific user (admin viewing another user's panel)."""
     if not interaction.guild:
@@ -679,6 +813,7 @@ async def admin_panel(interaction: discord.Interaction, member: discord.Member) 
         interaction,
         user_links,
         resolved_character_id,
+        target_user_id=member.id,
     )
 
     pending_entry = await get_pending_character_entry(interaction.guild.id, member.id, resolved_character_id)
@@ -725,9 +860,13 @@ async def admin_panel(interaction: discord.Interaction, member: discord.Member) 
         value=links_text,
         inline=False,
     )
-    embed.set_footer(text="This is a read-only admin view.")
+    embed.set_footer(text="Use the button below to remove all mappings for this player.")
 
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.response.send_message(
+        embed=embed,
+        view=RealmSharkAdminPanelView(interaction.user.id, member.id),
+        ephemeral=True,
+    )
 
 
 async def _resolve_character_id_for_panel(
@@ -1200,12 +1339,19 @@ async def open_panel(
 
 
 async def reset_all(interaction: discord.Interaction) -> None:
+    settings = await get_realmshark_settings(interaction)
+    links = settings.get("links", {}) if isinstance(settings.get("links"), dict) else {}
+    links_cleared = len(links)
+    pending_files_cleared = await clear_all_pending_for_guild(interaction.guild.id)
+
     saved = await set_realmshark_settings(interaction, dict(_REALMSHARK_DEFAULTS))
     await interaction.response.send_message(
         "Reset all RealmShark data for this guild.\n"
         f"enabled: `{saved.get('enabled', False)}`\n"
         f"mode: `{saved.get('mode', 'addloot')}`\n"
         f"announce_channel_id: `{saved.get('announce_channel_id', 0)}`\n"
-        f"link_count: `{len(saved.get('links', {}))}`",
+        f"link_count: `{len(saved.get('links', {}))}`\n"
+        f"revoked_links: `{links_cleared}`\n"
+        f"pending_files_removed: `{pending_files_cleared}`",
         ephemeral=True,
     )

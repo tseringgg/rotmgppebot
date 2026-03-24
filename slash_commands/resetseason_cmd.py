@@ -1,6 +1,7 @@
 import discord
 from utils.guild_config import get_realmshark_settings, set_realmshark_settings
 from utils.player_records import load_player_records, save_player_records, load_teams, save_teams
+from utils.realmshark_pending_store import clear_all_pending_for_guild
 
 
 class ConfirmView(discord.ui.View):
@@ -21,7 +22,7 @@ class ConfirmView(discord.ui.View):
         self.stop()
 
 
-async def command(interaction: discord.Interaction):
+async def command(interaction: discord.Interaction, clear_realmshark_links: bool = False):
     """
     Reset the season by clearing all unique items and quest data for all players,
     deleting all teams, and resetting RealmShark integration state.
@@ -34,9 +35,15 @@ async def command(interaction: discord.Interaction):
     try:
         # Ask for confirmation
         view = ConfirmView()
+        reset_mode_line = (
+            "WARNING: This will unlink all RealmShark integrations and clear all character mappings."
+            if clear_realmshark_links
+            else "RealmShark links will be kept. Existing PPE character mappings will be converted to seasonal mappings."
+        )
         await interaction.response.send_message(
             "⚠️ **Are you sure you want to reset the season?**\n"
-            "This will clear all unique items and quest data for all players, delete all teams, and reset RealmShark links/settings.\n"
+            "This will clear all unique items and quest data for all players, delete all teams, and reset RealmShark season state.\n"
+            f"{reset_mode_line}\n"
             "Member status and PPE roles will be preserved.",
             view=view,
             ephemeral=True
@@ -95,18 +102,87 @@ async def command(interaction: discord.Interaction):
         teams.clear()
         await save_teams(interaction, teams)
 
-        # Reset RealmShark state (disable integration, default mode, and clear all links).
+        # Reset RealmShark pending state for new season.
+        pending_files_cleared = await clear_all_pending_for_guild(interaction.guild.id)
+
+        # Reset RealmShark state according to selected mode.
         realmshark_settings = await get_realmshark_settings(interaction)
         realmshark_links = realmshark_settings.get("links", {}) if isinstance(realmshark_settings.get("links"), dict) else {}
         realmshark_links_cleared = len(realmshark_links)
-        await set_realmshark_settings(
-            interaction,
-            {
-                "enabled": False,
-                "mode": "addloot",
-                "links": {},
-            },
-        )
+
+        realmshark_summary = ""
+        if clear_realmshark_links:
+            await set_realmshark_settings(
+                interaction,
+                {
+                    "enabled": False,
+                    "mode": "addloot",
+                    "links": {},
+                    "announce_channel_id": 0,
+                },
+            )
+            realmshark_summary = (
+                f"**RealmShark:** Fully reset, revoked {realmshark_links_cleared} link tokens, "
+                f"and removed {pending_files_cleared} pending file(s)"
+            )
+        else:
+            converted_bindings = 0
+            tokens_updated = 0
+
+            migrated_links = {}
+            for token, link_data in realmshark_links.items():
+                if not isinstance(link_data, dict):
+                    continue
+
+                raw_bindings = link_data.get("character_bindings", {})
+                bindings = raw_bindings if isinstance(raw_bindings, dict) else {}
+                seasonal_raw = link_data.get("seasonal_character_ids", [])
+                seasonal_ids: set[str] = set()
+                if isinstance(seasonal_raw, list):
+                    for value in seasonal_raw:
+                        try:
+                            parsed = int(value)
+                        except (TypeError, ValueError):
+                            continue
+                        if parsed > 0:
+                            seasonal_ids.add(str(parsed))
+
+                binding_ids: list[str] = []
+                for character_id in bindings.keys():
+                    try:
+                        parsed = int(character_id)
+                    except (TypeError, ValueError):
+                        continue
+                    if parsed > 0:
+                        binding_ids.append(str(parsed))
+
+                if binding_ids:
+                    converted_bindings += len(binding_ids)
+                    seasonal_ids.update(binding_ids)
+                    link_data["character_bindings"] = {}
+                    link_data["seasonal_character_ids"] = sorted(seasonal_ids, key=int)
+                    tokens_updated += 1
+
+                migrated_links[token] = link_data
+
+            await set_realmshark_settings(
+                interaction,
+                {
+                    "enabled": bool(realmshark_settings.get("enabled", False)),
+                    "mode": "addloot",
+                    "links": migrated_links,
+                    "announce_channel_id": (
+                        int(realmshark_settings.get("announce_channel_id", 0) or 0)
+                        if str(realmshark_settings.get("announce_channel_id", 0) or "0").lstrip("-").isdigit()
+                        else 0
+                    ),
+                },
+            )
+
+            realmshark_summary = (
+                f"**RealmShark:** Kept {realmshark_links_cleared} link token(s), converted {converted_bindings} PPE mapping(s) "
+                f"to seasonal across {tokens_updated} token(s), and removed {pending_files_cleared} pending file(s)"
+            )
         
         # Delete team roles using the actual team names we had
         for team_name in team_names:
@@ -122,7 +198,7 @@ async def command(interaction: discord.Interaction):
             f"✅ Season reset complete!\n"
             f"**Cleared:** {ppes_cleared} PPE characters, {items_cleared} unique items, {quest_entries_cleared} quest entries\n"
             f"**Deleted:** {teams_deleted} teams and their roles\n"
-            f"**RealmShark:** Reset to defaults and revoked {realmshark_links_cleared} link tokens\n"
+            f"{realmshark_summary}\n"
             f"**Preserved:** Player member status and PPE roles",
             ephemeral=False
         )

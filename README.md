@@ -144,7 +144,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/realmsharkconfigure` | Open interactive panel to manage character mappings, view PPE bindings, and handle pending loot |
 | `/realmsharkadminview` | Display RealmShark panel information for a specific player (admin only) |
 | `/realmsharkunlink` | Revoke a specific RealmShark link token |
-| `/realmsharkreset` | Reset all RealmShark settings/tokens for the guild |
+| `/realmsharkreset` | Reset all RealmShark settings/tokens and clear pending logs for the guild |
 
 ## RealmShark Character-Aware Routing
 

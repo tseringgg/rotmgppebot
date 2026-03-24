@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import glob
 import json
 import os
 from datetime import datetime, timezone
@@ -242,3 +243,40 @@ async def migrate_legacy_pending_map(guild_id: int, user_id: int, pending_map: D
 
     data["characters"] = characters
     await save_pending(guild_id, user_id, data)
+
+
+async def clear_pending_for_user(guild_id: int, user_id: int) -> bool:
+    path = _pending_path(guild_id, user_id)
+    deleted = False
+
+    async with get_lock(guild_id):
+        if os.path.exists(path):
+            await asyncio.to_thread(os.remove, path)
+            deleted = True
+
+        temp_path = f"{path}.tmp"
+        if os.path.exists(temp_path):
+            await asyncio.to_thread(os.remove, temp_path)
+
+    return deleted
+
+
+async def clear_all_pending_for_guild(guild_id: int) -> int:
+    pattern = os.path.join(DATA_DIR, f"{guild_id}_*_realmshark_pending.json")
+    temp_pattern = os.path.join(DATA_DIR, f"{guild_id}_*_realmshark_pending.json.tmp")
+    deleted = 0
+
+    async with get_lock(guild_id):
+        paths = await asyncio.to_thread(glob.glob, pattern)
+        temp_paths = await asyncio.to_thread(glob.glob, temp_pattern)
+
+        for path in paths:
+            if os.path.exists(path):
+                await asyncio.to_thread(os.remove, path)
+                deleted += 1
+
+        for temp_path in temp_paths:
+            if os.path.exists(temp_path):
+                await asyncio.to_thread(os.remove, temp_path)
+
+    return deleted

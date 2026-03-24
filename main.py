@@ -697,9 +697,10 @@ async def questleaderboard(interaction: discord.Interaction):
     await questleaderboard_cmd.command(interaction)
 
 @bot.tree.command(name="resetseason", description="Reset season data, teams, and RealmShark links/settings. Server owner/admin only.", guilds=guilds)
+@app_commands.describe(clear_realmshark_links="If true, unlink all RealmShark integrations and remove all mappings")
 @commands.has_permissions(administrator=True)
-async def resetseason(interaction: discord.Interaction):
-    await resetseason_cmd.command(interaction)
+async def resetseason(interaction: discord.Interaction, clear_realmshark_links: bool = False):
+    await resetseason_cmd.command(interaction, clear_realmshark_links)
 
 # --- Migrate apostrophes ---
 @bot.tree.command(name="migrateapostrophes", description="Normalize all apostrophes in player records. Admin only.", guilds=guilds)
