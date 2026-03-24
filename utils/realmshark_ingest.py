@@ -230,6 +230,12 @@ def _display_rarity(rarity: str) -> str:
     return normalized[:1].upper() + normalized[1:]
 
 
+def _format_points(value: float) -> str:
+    if float(value).is_integer():
+        return str(int(value))
+    return f"{value:.1f}"
+
+
 def _append_missing_utst_log(guild_id: int, item_name: str, payload: Dict[str, Any]) -> None:
     # Avoid persisting link tokens in plaintext audit files.
     payload_safe = dict(payload)
@@ -743,6 +749,14 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
             f"{{player}} got {display_rarity} {announced_item}. "
             f"It was logged to {destination}."
         )
+
+        if mode == "addloot" and mapped_ppe_id is not None:
+            points_added = float(result.get("points_added", 0) or 0)
+            new_points = float(result.get("total_points", 0) or 0)
+            old_points = new_points - points_added
+            announcement += (
+                f" Points: {_format_points(old_points)} -> {_format_points(new_points)}"
+            )
 
         if bool(result.get("already_present", False)):
             announcement = (

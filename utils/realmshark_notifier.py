@@ -5,12 +5,11 @@ from typing import Awaitable, Callable
 
 import discord
 
-from utils.embed_builders import build_loot_embeds
 from utils.player_records import ensure_player_exists, load_player_records
 
 
-def _discord_relative_now() -> str:
-    return f"<t:{int(datetime.now(timezone.utc).timestamp())}:R>"
+def _discord_absolute_now() -> str:
+    return f"<t:{int(datetime.now(timezone.utc).timestamp())}:f>"
 
 
 def _with_optional_timestamp(message: str) -> str:
@@ -18,7 +17,7 @@ def _with_optional_timestamp(message: str) -> str:
     is_loot_message = ("It was logged to" in message) or ("It was already logged to" in message)
 
     if is_bound_message or is_loot_message:
-        return f"{message} | {_discord_relative_now()}"
+        return f"{message} | {_discord_absolute_now()}"
 
     return message
 
@@ -44,33 +43,6 @@ async def _get_target_ppe(
         return None
 
     return next((ppe for ppe in player_data.ppes if int(ppe.id) == int(ppe_id)), None)
-
-
-async def _send_private_ppe_sheet(
-    bot: discord.Client,
-    guild: discord.Guild,
-    user_id: int,
-    embed: discord.Embed,
-) -> None:
-    recipient: discord.abc.Messageable | None = guild.get_member(user_id)
-    if recipient is None:
-        recipient = bot.get_user(user_id)
-
-    if recipient is None:
-        try:
-            recipient = await bot.fetch_user(user_id)
-        except Exception as e:
-            print(f"[REALMSHARK] Could not resolve user {user_id} for private PPE sheet: {e}")
-            return
-
-    try:
-        await recipient.send(
-            "RealmShark updated your mapped PPE. Here is your current loot list.",
-            embed=embed,
-            allowed_mentions=discord.AllowedMentions.none(),
-        )
-    except Exception as e:
-        print(f"[REALMSHARK] Could not send private PPE sheet to user {user_id}: {e}")
 
 
 def build_realmshark_notifier(
@@ -139,14 +111,9 @@ def build_realmshark_notifier(
         if allow_user_ping and user_id is not None:
             allowed_mentions = discord.AllowedMentions(users=True)
 
-        private_ppe_embed: discord.Embed | None = None
         if include_ppe_sheet and user_id is not None and ppe_id is not None:
             target_ppe = await _get_target_ppe(guild_id, user_id, ppe_id)
             if target_ppe is not None:
-                ppe_embeds = build_loot_embeds(target_ppe, recently_added="")
-                if ppe_embeds:
-                    private_ppe_embed = ppe_embeds[0]
-
                 class_name = str(getattr(target_ppe.name, "value", target_ppe.name)).strip()
                 if class_name:
                     final_message = final_message.replace(
@@ -170,8 +137,5 @@ def build_realmshark_notifier(
 
         if not sent_public_message:
             await channel.send(f"[RealmShark] {final_message}", allowed_mentions=allowed_mentions)
-
-        if private_ppe_embed is not None and user_id is not None:
-            await _send_private_ppe_sheet(bot, guild, user_id, private_ppe_embed)
 
     return notifier
