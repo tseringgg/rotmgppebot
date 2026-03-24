@@ -48,31 +48,34 @@ async def command(interaction: discord.Interaction):
         reset_counters_updated = 0
 
         for player_data in records.values():
+            # Calculate quest entries before clearing
+            player_entries = (
+                len(player_data.quests.current_items)
+                + len(player_data.quests.current_shinies)
+                + len(player_data.quests.current_skins)
+                + len(player_data.quests.completed_items)
+                + len(player_data.quests.completed_shinies)
+                + len(player_data.quests.completed_skins)
+            )
+
             if player_entries > 0:
                 quest_entries_cleared += player_entries
                 players_updated += 1
-                player_data.quests.current_items.clear()
-                player_data.quests.current_shinies.clear()
-                player_data.quests.current_skins.clear()
-                player_data.quests.completed_items.clear()
-                player_data.quests.completed_shinies.clear()
-                player_data.quests.completed_skins.clear()
 
-            if player_data.quest_resets_remaining != default_reset_limit:
-                player_data.quest_resets_remaining = default_reset_limit
-                reset_counters_updated += 1
-            quest_entries_cleared += player_entries
-        if players_updated == 0 and reset_counters_updated == 0:
-
+            # Clear all quest data
             player_data.quests.current_items.clear()
             player_data.quests.current_shinies.clear()
             player_data.quests.current_skins.clear()
             player_data.quests.completed_items.clear()
             player_data.quests.completed_shinies.clear()
             player_data.quests.completed_skins.clear()
-            player_data.quest_resets_remaining = default_reset_limit
 
-        if players_updated == 0:
+            # Reset quest resets to default
+            if player_data.quest_resets_remaining != default_reset_limit:
+                player_data.quest_resets_remaining = default_reset_limit
+                reset_counters_updated += 1
+
+        if players_updated == 0 and reset_counters_updated == 0:
             return await interaction.followup.send(
                 "ℹ️ No quest data found to reset.",
                 ephemeral=True,

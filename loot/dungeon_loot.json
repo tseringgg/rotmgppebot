@@ -3731,6 +3731,10 @@
         "type": "White or ST"
       },
       {
+        "name": "Sigil of the Rubber Duck",
+        "type": "White or ST"
+      },
+      {
         "name": "Honey Scepter Supreme",
         "type": "White or ST"
       },
@@ -4596,9 +4600,33 @@
       }
     ]
   },
-  "Incubation Mace": {
-    "default_points": 15.0,
+  "Biff" : {
+    "default_points": 5.0,
     "items": [
+      {
+        "name": "Vitamine Buster",
+        "type": "Limited"
+      },
+      {
+        "name": "Sunny Side Bow",
+        "type": "Limited"
+      },
+      {
+        "name": "Helm of the Swift Bunny",
+        "type": "Limited"
+      },
+      {
+        "name": "Botany Book",
+        "type": "Limited"
+      },
+      {
+        "name": "Sakura Wakizashi",
+        "type": "Limited"
+      },
+      {
+        "name": "Eggsponential Scepter",
+        "type": "Limited"
+      },
       {
         "name": "Incubation Mace",
         "type": "Limited",
@@ -4608,6 +4636,129 @@
         "name": "Incubation Mace (shiny)",
         "type": "Limited",
         "points": 20.0
+      }
+    ]
+  },
+  "Alien Biff" : {
+    "default_points": 0,
+    "items": [
+      {
+        "name": "Alien Ear Tachi",
+        "type": "Limited",
+        "points": 0.0
+      },
+      {
+        "name": "Caramel Spellblade",
+        "type": "Limited",
+        "points": 0.0
+      },
+      {
+        "name": "Shard Launcher",
+        "type": "Limited",
+        "points": 0.0
+      },
+      {
+        "name": "Egg Basher",
+        "type": "Limited",
+        "points": 0.0
+      },
+      {
+        "name": "Chocolate Ovipositor",
+        "type": "Limited",
+        "points": 0.0
+      },
+      {
+        "name": "Hatchling Blades",
+        "type": "Limited",
+        "points": 0.0
+      },
+    {
+      "name": "Carrotroot Vestments",
+      "type": "Limited",
+      "points": 0.0
+    },
+    {
+      "name": "Eggshell Carapace",
+      "type": "Limited",
+      "points": 0.0
+    },
+    {
+      "name": "Fudgeclad Armor",
+      "type": "Limited",
+      "points": 0.0
+    }
+    ]
+  },
+  "Easter": {
+    "default_points": 5.0,
+    "items": [
+      {
+        "name": "Eggstatic Conductor",
+        "type": "Limited"
+      },
+      {
+        "name":"Eternal Graved Great Sword",
+        "type":"Limited"
+      },
+      {
+        "name":"Spriteful Shield",
+        "type":"Limited"
+      },
+      {
+        "name":"Eggre Battle Armor",
+        "type":"Limited"
+      },
+      {
+        "name":"Tiara of Eggscellent Sturdiness",
+        "type":"Limited"
+      },
+      {
+        "name":"Spring Wonder Bow",
+        "type":"Limited"
+      },
+      {
+        "name":"Fresh Breeze Quiver",
+        "type":"Limited"
+      },
+      {
+        "name":"Painted Eggshell Armor",
+        "type":"Limited"
+      },
+      {
+        "name":"Painted Egg Amulet",
+        "type":"Limited"
+      },
+      {
+        "name":"Nutrient Rich Carrot Blade",
+        "type":"Limited"
+      },
+      {
+        "name":"Carrot Cake Crest",
+        "type":"Limited"
+      },
+      {
+        "name":"Hardened Carrot Armor",
+        "type":"Limited"
+      },
+      {
+        "name":"Sun Bathed Straw Hat",
+        "type":"Limited"
+      },
+      {
+        "name":"Sweet Desire Wand",
+        "type":"Limited"
+      },
+      {
+        "name":"Chocolate Egg Mace",
+        "type":"Limited"
+      },
+      {
+        "name":"Chocolate Glazed Robe",
+        "type":"Limited"
+      },
+      {
+        "name":"Chocolate Bunny Ears",
+        "type":"Limited"
       }
     ]
   },
