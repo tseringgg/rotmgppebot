@@ -3,6 +3,7 @@
 import discord
 
 from utils.player_records import load_player_records, save_player_records
+from utils.realmshark_cleanup import clear_member_character_links
 from utils.team_manager import team_manager
 
 
@@ -56,7 +57,10 @@ async def command(
             del records[key]
         
         await save_player_records(interaction, records)
-        
+
+        # Also sever RealmShark character mappings/pending state for this user.
+        realmshark_cleanup = await clear_member_character_links(interaction, target_id)
+
         # Remove the PPE Player role if they still exist in the guild.
         if target_member and role in target_member.roles:
             await target_member.remove_roles(role)
@@ -78,8 +82,21 @@ async def command(
                 ephemeral=True
             )
 
+        realmshark_note = ""
+        if (
+            realmshark_cleanup.tokens_updated > 0
+            or realmshark_cleanup.pending_file_removed
+        ):
+            realmshark_note = (
+                f" RealmShark links cleaned: tokens=`{realmshark_cleanup.tokens_updated}`"
+                f", ppe_mappings=`{realmshark_cleanup.ppe_mappings_removed}`"
+                f", seasonal=`{realmshark_cleanup.seasonal_mappings_removed}`"
+                f", metadata=`{realmshark_cleanup.metadata_entries_removed}`"
+                f", pending_file_removed=`{realmshark_cleanup.pending_file_removed}`"
+            )
+
         return await interaction.response.send_message(
-            f"✅ Removed `{target_name}` (`{target_id}`) from the PPE contest. All PPE data has been deleted."
+            f"✅ Removed `{target_name}` (`{target_id}`) from the PPE contest. All PPE data has been deleted.{realmshark_note}"
         )
     except discord.Forbidden:
         await interaction.response.send_message("❌ I don't have permission to manage that role. Move my bot role higher in the hierarchy.")

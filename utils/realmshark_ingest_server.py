@@ -63,7 +63,7 @@ def _build_app(notifier: Notifier | None = None) -> web.Application:
     app = web.Application()
 
     async def health(_request: web.Request) -> web.Response:
-        _info_log("Health check received")
+        _debug_log("Health check received")
         return web.json_response({"ok": True, "service": "realmshark-ingest"})
 
     async def ingest(request: web.Request) -> web.Response:
@@ -76,7 +76,7 @@ def _build_app(notifier: Notifier | None = None) -> web.Application:
                 status=400,
             )
 
-        _info_log(
+        _debug_log(
             "Ingest request received "
             f"from={request.remote} method={request.method} path={request.path} "
             + _summarize_payload(payload)
@@ -136,5 +136,5 @@ async def start_realmshark_ingest_server(notifier: Notifier | None = None) -> we
     await site.start()
 
     _info_log(f"RealmShark ingest server listening on http://{host}:{port}/realmshark/ingest")
-    _info_log(f"Notifier attached={notifier is not None}")
+    _debug_log(f"Notifier attached={notifier is not None}")
     return runner

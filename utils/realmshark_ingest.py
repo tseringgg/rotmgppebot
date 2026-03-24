@@ -197,6 +197,16 @@ def _parse_positive_int(value: Any) -> int | None:
     return parsed
 
 
+def _is_explicit_invalid_character_id(value: Any) -> bool:
+    if value is None:
+        return False
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return False
+    return parsed <= 0
+
+
 def _normalized_character_bindings(link_data: Dict[str, Any]) -> Dict[str, int]:
     raw = link_data.get("character_bindings", {})
     if not isinstance(raw, dict):
@@ -445,7 +455,9 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
         raise IngestValidationError("link_token is required.", status_code=401, error_code="missing_link_token")
 
     event_type = str(payload.get("event_type", "")).strip().lower()
+    raw_character_id = payload.get("character_id")
     character_id = _parse_positive_int(payload.get("character_id"))
+    has_explicit_invalid_character_id = _is_explicit_invalid_character_id(raw_character_id)
     character_name = str(payload.get("character_name", "")).strip()
     character_class = str(payload.get("character_class", "")).strip()
 
@@ -472,11 +484,6 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     )
 
     settings = await get_realmshark_settings_by_id(guild_id)
-    _info_log(
-        "Loaded guild settings "
-        f"guild_id={guild_id} enabled={settings.get('enabled', False)} "
-        f"mode={settings.get('mode', 'addloot')}"
-    )
     if not settings.get("enabled", False):
         raise IngestValidationError("RealmShark integration is disabled for this guild.", status_code=403, error_code="disabled")
 
@@ -491,7 +498,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     except (TypeError, ValueError):
         raise IngestValidationError("Linked token is misconfigured.", status_code=500, error_code="broken_link")
 
-    _info_log(
+    _debug_log(
         f"Token resolved guild_id={guild_id} token={_token_preview(token)} linked_user_id={linked_user_id}"
     )
 
@@ -523,7 +530,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     if parsed_announce_channel_id > 0:
         announce_channel_id = parsed_announce_channel_id
 
-    _info_log(
+    _debug_log(
         f"Announcement routing guild_id={guild_id} announce_channel_id={announce_channel_id or 0}"
     )
 
@@ -532,7 +539,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
 
         if notifier is not None:
             try:
-                _info_log(f"Dispatching bridge settings test announcement for guild_id={guild_id}")
+                _debug_log(f"Dispatching bridge settings test announcement for guild_id={guild_id}")
                 await notifier(
                     guild_id,
                     test_message,
@@ -543,18 +550,18 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
                     None,
                     False,
                 )
-                _info_log(f"Bridge settings test announcement sent for guild_id={guild_id}")
+                _debug_log(f"Bridge settings test announcement sent for guild_id={guild_id}")
             except Exception as e:
                 _info_log(f"Bridge test notifier error for guild_id={guild_id}: {e}")
                 _debug_log(f"Bridge test notifier error for guild={guild_id}: {e}")
         else:
-            _info_log(f"Bridge settings test received for guild_id={guild_id} but notifier is not configured")
+            _debug_log(f"Bridge settings test received for guild_id={guild_id} but notifier is not configured")
 
         link_data["last_used_at"] = _utc_iso_now()
         links[token] = link_data
         settings["links"] = links
         await set_realmshark_settings_by_id(guild_id, settings)
-        _info_log(f"Updated last_used_at for bridge settings test token in guild_id={guild_id}")
+        _debug_log(f"Updated last_used_at for bridge settings test token in guild_id={guild_id}")
 
         return {
             "mode": "none",
@@ -588,7 +595,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
             }
 
         _debug_log(f"Skipped non-tracked non-UT/ST item '{raw_item_name}'")
-        _info_log(
+        _debug_log(
             f"Skipped non-tracked non-UT/ST item: guild_id={guild_id} item='{raw_item_name}'"
         )
         return {
@@ -602,7 +609,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
         }
 
     _validate_shiny_variant(item_name, shiny)
-    _info_log(
+    _debug_log(
         f"Resolved tracked item for logging: guild_id={guild_id} item='{item_name}' shiny={shiny}"
     )
 
@@ -610,6 +617,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     routing_reason = "legacy_mode"
     used_character_binding = False
     mapped_ppe_id: int | None = None
+    ingest_warning: str | None = None
 
     if character_id is not None:
         key = str(character_id)
@@ -620,7 +628,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
         if key in seasonal_ids:
             mode = "addseasonloot"
             routing_reason = "mapped_seasonal_character"
-            _info_log(
+            _debug_log(
                 f"Character_id={character_id} explicitly mapped to seasonal. "
                 f"Routing to addseasonloot guild_id={guild_id} user_id={linked_user_id}"
             )
@@ -631,7 +639,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
                 routing_reason = "mapped_character"
                 used_character_binding = True
                 mapped_ppe_id = bound_ppe_id
-                _info_log(
+                _debug_log(
                     f"Routing via mapped character_id={character_id} ppe_id={bound_ppe_id} "
                     f"guild_id={guild_id} user_id={linked_user_id}"
                 )
@@ -654,7 +662,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
         else:
             mode = "addseasonloot"
             routing_reason = "unmapped_character"
-            _info_log(
+            _debug_log(
                 f"Unmapped character_id={character_id}; routing to addseasonloot "
                 f"guild_id={guild_id} user_id={linked_user_id}"
             )
@@ -695,12 +703,28 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
                         f"user_id={linked_user_id} character_id={character_id}: {e}"
                     )
     else:
-        _info_log(
-            f"Dispatching loot event using legacy mode={mode} guild_id={guild_id} user_id={linked_user_id}"
-        )
-        if mode == "addseasonloot":
+        if has_explicit_invalid_character_id:
+            mode = "addseasonloot"
+            routing_reason = "invalid_character_id"
+            ingest_warning = (
+                "RealmShark sent an invalid character_id (0 or negative). "
+                "Loot was logged to seasonal to prevent misrouting. "
+                "Please update your sniffer and/or reach out to the bot devs to investigate this issue."
+            )
+            _info_log(
+                f"Invalid character_id received; forcing addseasonloot guild_id={guild_id} "
+                f"user_id={linked_user_id} raw_character_id={raw_character_id!r}"
+            )
+            result = await _addseasonloot_with_duplicate_ok(guild_id, linked_user_id, item_name, shiny)
+        elif mode == "addseasonloot":
+            _debug_log(
+                f"Dispatching loot event using legacy mode={mode} guild_id={guild_id} user_id={linked_user_id}"
+            )
             result = await _addseasonloot_with_duplicate_ok(guild_id, linked_user_id, item_name, shiny)
         else:
+            _debug_log(
+                f"Dispatching loot event using legacy mode={mode} guild_id={guild_id} user_id={linked_user_id}"
+            )
             result = await _addloot_for_user(guild_id, linked_user_id, item_name, divine, shiny)
 
     _debug_log(
@@ -711,7 +735,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     links[token] = link_data
     settings["links"] = links
     await set_realmshark_settings_by_id(guild_id, settings)
-    _info_log(
+    _debug_log(
         f"Updated last_used_at after loot logging: guild_id={guild_id} user_id={linked_user_id} item='{item_name}'"
     )
 
@@ -722,16 +746,18 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     result["routing_reason"] = routing_reason
     result["used_character_binding"] = used_character_binding
     result["mapped_ppe_id"] = mapped_ppe_id
+    if ingest_warning is not None:
+        result["warning"] = ingest_warning
 
     if notifier is not None:
         image_path = _resolve_item_image_path(item_name, shiny)
         image_missing = image_path is None
         if image_path:
-            _info_log(
+            _debug_log(
                 f"Resolved loot image for announcement: guild_id={guild_id} item='{item_name}' shiny={shiny} path={image_path}"
             )
         else:
-            _info_log(
+            _debug_log(
                 f"No loot image found for announcement: guild_id={guild_id} item='{item_name}' shiny={shiny}"
             )
 
@@ -768,11 +794,17 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
                     " | new character is still unmapped, use /realmsharkconfigure to choose PPE vs seasonal"
                 )
 
+        if ingest_warning is not None:
+            announcement += (
+                " | warning: invalid character_id from sniffer. "
+                "Please update sniffer and/or contact bot devs to investigate."
+            )
+
         if image_missing:
             announcement += " | image missing"
 
         try:
-            _info_log(
+            _debug_log(
                 f"Dispatching loot announcement guild_id={guild_id} user_id={linked_user_id} item={result.get('item', item_name)}"
             )
             await notifier(
@@ -785,7 +817,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
                 mapped_ppe_id,
                 mode == "addloot" and mapped_ppe_id is not None,
             )
-            _info_log(
+            _debug_log(
                 f"Loot announcement sent guild_id={guild_id} user_id={linked_user_id} item={result.get('item', item_name)}"
             )
         except Exception as e:
