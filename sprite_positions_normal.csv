@@ -676,107 +676,110 @@ Mighty Stein (shiny),1,24,40,960
 Barnacle Basher (shiny),2,24,80,960
 Jailer's Scythe (shiny),3,24,120,960
 Cloak of Bloody Surprises (shiny),4,24,160,960
-Adventurer's Scarf,5,24,200,960
-Torrential Staff,6,24,240,960
-Celestial Recurve,7,24,280,960
-Mace of the Pumpkin Effigy,8,24,320,960
-Pirate's Artillery,9,24,360,960
-Skull of Restless Souls,10,24,400,960
-Doom's Emblem,11,24,440,960
-Cavalry Lance,12,24,480,960
-Cloak of the Deep,13,24,520,960
-Evolutionary Records,14,24,560,960
-Pollen Incendiary,15,24,600,960
-Bloodbath Blade,16,24,640,960
-Runes of Knowledge,17,24,680,960
-Kendo Stick (shiny),18,24,720,960
-Jewel Eye Katana (shiny),19,24,760,960
-Watarimono,20,24,800,960
-Kiritsukeru,21,24,840,960
-Reinforced Root Armor,22,24,880,960
-Traveler's Trinket,23,24,920,960
-The Phylactery,24,24,960,960
-Soul of the Bearer,25,24,1000,960
-Soulless Robe,26,24,1040,960
-Ring of the Covetous Heart,27,24,1080,960
-Mister Mango,0,25,0,1000
-Butter Bow,1,25,40,1000
-K.I.D.D. Force,2,25,80,1000
-Caduceus of Current Craziness,3,25,120,1000
-MMace MMurderer,4,25,160,1000
-Blade of Ages,5,25,200,1000
-Groovy Mango,6,25,240,1000
-Baked Bow,7,25,280,1000
-Caduceus Of Enlightened Chaos,8,25,320,1000
-K.I.D.D. Force 2.0,9,25,360,1000
-FFabulous FFlail,10,25,400,1000
-Blade of Blooming,11,25,440,1000
-Mirror Cloak,12,25,480,1000
-Archerang,13,25,520,1000
-Spelling Spell,14,25,560,1000
-Tome of Moral Support,15,25,600,1000
-Challenger Helm,16,25,640,1000
-Shield of Pogmur,17,25,680,1000
-Seal of Eternal Life,18,25,720,1000
-Lightning in a Bottle,19,25,760,1000
-Epiphany Skull,20,25,800,1000
-Helium Trap,21,25,840,1000
-Karma Orb,22,25,880,1000
-Fool's Prism,23,25,920,1000
-Honey Scepter Supreme,24,25,960,1000
-Unshuriken,25,25,1000,1000
-NSFWakizashi,26,25,1040,1000
-Lullaby,27,25,1080,1000
-Recursion Mace,0,26,0,1040
-Paper Machete,1,26,40,1040
-Cheater Light Armor,2,26,80,1040
-Cheater Robe,3,26,120,1040
-Cheater Heavy Armor,4,26,160,1040
-Omni-Impotence Ring,5,26,200,1040
-Brilliance Bow,6,26,240,1040
-Quintessential Quiver,7,26,280,1040
-Luxurious Leather,8,26,320,1040
-Regal Ring,9,26,360,1040
-Sun's Judgement,10,26,400,1040
-Fire Blade,11,26,440,1040
-Comet of Calamity,12,26,480,1040
-Fire Blade (shiny),13,26,520,1040
-Foramite Staff,14,26,560,1040
-Acidic Slasher,15,26,600,1040
-Corrosion Cutter,16,26,640,1040
-Foramite Staff (shiny),17,26,680,1040
-Warlord Wand,18,26,720,1040
-Gaseous Glaive,19,26,760,1040
-Blazon Bow,20,26,800,1040
-Blazon Bow (shiny),21,26,840,1040
-Moonbeam Blade,22,26,880,1040
-Dueling Daggers,23,26,920,1040
-Snowblind Wand,24,26,960,1040
-Dueling Daggers (shiny),25,26,1000,1040
-Alien Core Warp,26,26,1040,1040
-Alien Core Dark Matter,27,26,1080,1040
-Alien Core Power,0,27,0,1080
-Alien Core Corrosion,1,27,40,1080
-Piper's Pan Flute,2,27,80,1080
-Mouse Trap,3,27,120,1080
-Mystic Syndicate Attire,4,27,160,1080
-Heavy Syndicate Attire,5,27,200,1080
-Light Syndicate Attire,6,27,240,1080
-Sunken Fire Opal Ring,7,27,280,1080
-Faded Heart Scarab,8,27,320,1080
-Fractured Hannya,9,27,360,1080
-Storied Blades,10,27,400,1080
-Forbidden Artifact,11,27,440,1080
-Sheath of Thunderous Rites,12,27,480,1080
-Storm Caller,13,27,520,1080
-Corsair's Crown Jewel,14,27,560,1080
-Rusted Barrel,15,27,600,1080
-Royal Sekhem,16,27,640,1080
-Frangible Longbow,17,27,680,1080
-Gilded Chain Scythe,18,27,720,1080
-Ritual Khopesh,19,27,760,1080
-Pirate's Sidearms,20,27,800,1080
-Obsidian Macuahuitl,21,27,840,1080
-Mystic Syndicate Attire (shiny),22,27,880,1080
-Heavy Syndicate Attire (shiny),23,27,920,1080
-Light Syndicate Attire (shiny),24,27,960,1080
+Yellow Beehemoth Quiver (shiny),5,24,200,960
+Red Beehemoth Quiver (shiny),6,24,240,960
+Blue Beehemoth Quiver (shiny),7,24,280,960
+Adventurer's Scarf,8,24,320,960
+Torrential Staff,9,24,360,960
+Celestial Recurve,10,24,400,960
+Mace of the Pumpkin Effigy,11,24,440,960
+Pirate's Artillery,12,24,480,960
+Skull of Restless Souls,13,24,520,960
+Doom's Emblem,14,24,560,960
+Cavalry Lance,15,24,600,960
+Cloak of the Deep,16,24,640,960
+Evolutionary Records,17,24,680,960
+Pollen Incendiary,18,24,720,960
+Bloodbath Blade,19,24,760,960
+Runes of Knowledge,20,24,800,960
+Kendo Stick (shiny),21,24,840,960
+Jewel Eye Katana (shiny),22,24,880,960
+Watarimono,23,24,920,960
+Kiritsukeru,24,24,960,960
+Reinforced Root Armor,25,24,1000,960
+Traveler's Trinket,26,24,1040,960
+The Phylactery,27,24,1080,960
+Soul of the Bearer,0,25,0,1000
+Soulless Robe,1,25,40,1000
+Ring of the Covetous Heart,2,25,80,1000
+Mister Mango,3,25,120,1000
+Butter Bow,4,25,160,1000
+K.I.D.D. Force,5,25,200,1000
+Caduceus of Current Craziness,6,25,240,1000
+MMace MMurderer,7,25,280,1000
+Blade of Ages,8,25,320,1000
+Groovy Mango,9,25,360,1000
+Baked Bow,10,25,400,1000
+Caduceus Of Enlightened Chaos,11,25,440,1000
+K.I.D.D. Force 2.0,12,25,480,1000
+FFabulous FFlail,13,25,520,1000
+Blade of Blooming,14,25,560,1000
+Mirror Cloak,15,25,600,1000
+Archerang,16,25,640,1000
+Spelling Spell,17,25,680,1000
+Tome of Moral Support,18,25,720,1000
+Challenger Helm,19,25,760,1000
+Shield of Pogmur,20,25,800,1000
+Seal of Eternal Life,21,25,840,1000
+Lightning in a Bottle,22,25,880,1000
+Epiphany Skull,23,25,920,1000
+Helium Trap,24,25,960,1000
+Karma Orb,25,25,1000,1000
+Fool's Prism,26,25,1040,1000
+Honey Scepter Supreme,27,25,1080,1000
+Unshuriken,0,26,0,1040
+NSFWakizashi,1,26,40,1040
+Lullaby,2,26,80,1040
+Recursion Mace,3,26,120,1040
+Paper Machete,4,26,160,1040
+Cheater Light Armor,5,26,200,1040
+Cheater Robe,6,26,240,1040
+Cheater Heavy Armor,7,26,280,1040
+Omni-Impotence Ring,8,26,320,1040
+Brilliance Bow,9,26,360,1040
+Quintessential Quiver,10,26,400,1040
+Luxurious Leather,11,26,440,1040
+Regal Ring,12,26,480,1040
+Sun's Judgement,13,26,520,1040
+Fire Blade,14,26,560,1040
+Comet of Calamity,15,26,600,1040
+Fire Blade (shiny),16,26,640,1040
+Foramite Staff,17,26,680,1040
+Acidic Slasher,18,26,720,1040
+Corrosion Cutter,19,26,760,1040
+Foramite Staff (shiny),20,26,800,1040
+Warlord Wand,21,26,840,1040
+Gaseous Glaive,22,26,880,1040
+Blazon Bow,23,26,920,1040
+Blazon Bow (shiny),24,26,960,1040
+Moonbeam Blade,25,26,1000,1040
+Dueling Daggers,26,26,1040,1040
+Snowblind Wand,27,26,1080,1040
+Dueling Daggers (shiny),0,27,0,1080
+Alien Core Warp,1,27,40,1080
+Alien Core Dark Matter,2,27,80,1080
+Alien Core Power,3,27,120,1080
+Alien Core Corrosion,4,27,160,1080
+Piper's Pan Flute,5,27,200,1080
+Mouse Trap,6,27,240,1080
+Mystic Syndicate Attire,7,27,280,1080
+Heavy Syndicate Attire,8,27,320,1080
+Light Syndicate Attire,9,27,360,1080
+Sunken Fire Opal Ring,10,27,400,1080
+Faded Heart Scarab,11,27,440,1080
+Fractured Hannya,12,27,480,1080
+Storied Blades,13,27,520,1080
+Forbidden Artifact,14,27,560,1080
+Sheath of Thunderous Rites,15,27,600,1080
+Storm Caller,16,27,640,1080
+Corsair's Crown Jewel,17,27,680,1080
+Rusted Barrel,18,27,720,1080
+Royal Sekhem,19,27,760,1080
+Frangible Longbow,20,27,800,1080
+Gilded Chain Scythe,21,27,840,1080
+Ritual Khopesh,22,27,880,1080
+Pirate's Sidearms,23,27,920,1080
+Obsidian Macuahuitl,24,27,960,1080
+Mystic Syndicate Attire (shiny),25,27,1000,1080
+Heavy Syndicate Attire (shiny),26,27,1040,1080
+Light Syndicate Attire (shiny),27,27,1080,1080

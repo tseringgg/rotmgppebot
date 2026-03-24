@@ -1,17 +1,30 @@
 
 
 import discord
+import os
 
-from utils.embed_builders import build_loot_embed
+from utils.loot_table_md_builder import create_loot_markdown_file
 from utils.player_records import get_active_ppe_of_user
+from slash_commands.helpers.loot_table_message import LootTableMessage
 
 
 async def command(interaction: discord.Interaction):
+    """
+    Show all loot for user's active PPE as a downloadable markdown file.
+    Now using the centralized LootTableMessage class.
+    """
     try:
         active_ppe = await get_active_ppe_of_user(interaction)
-        embed = await build_loot_embed(active_ppe=active_ppe, user_id=interaction.user.id)
+        
+        # Create and configure loot table message
+        loot_message = LootTableMessage(
+            interaction=interaction,
+            message_type="markdown",
+            ephemeral=True
+        )
+        
+        # Send the loot table
+        await loot_message.send_player_loot(active_ppe)
+        
     except (ValueError, KeyError) as e:
         return await interaction.response.send_message(str(e), ephemeral=True)
-
-    await interaction.response.send_message(view=embed,
-            embed=embed.embeds[0], ephemeral=True) # public response, not ephemeral

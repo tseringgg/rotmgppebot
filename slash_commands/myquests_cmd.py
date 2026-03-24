@@ -3,7 +3,7 @@ import discord
 from utils.player_records import load_player_records, save_player_records, ensure_player_exists
 from utils.quest_manager import refresh_player_quests
 from utils.pagination import chunk_lines_to_pages, LootPaginationView
-from utils.guild_config import get_quest_targets
+from utils.guild_config import get_quest_targets, load_guild_config
 
 
 async def command(interaction: discord.Interaction):
@@ -16,6 +16,14 @@ async def command(interaction: discord.Interaction):
             raise KeyError("❌ You're not part of the PPE contest.")
 
         player_data = records[key]
+        config = await load_guild_config(interaction)
+        default_reset_limit = config["quest_settings"]["num_resets"]
+        if player_data.quest_resets_remaining is None:
+            player_data.quest_resets_remaining = default_reset_limit
+        try:
+            resets_remaining = max(0, int(player_data.quest_resets_remaining))
+        except (TypeError, ValueError):
+            resets_remaining = default_reset_limit
 
         regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
 
@@ -27,10 +35,15 @@ async def command(interaction: discord.Interaction):
         )
         if changed:
             await save_player_records(interaction, records)
+        elif player_data.quest_resets_remaining != resets_remaining:
+            player_data.quest_resets_remaining = resets_remaining
+            await save_player_records(interaction, records)
 
         quests = player_data.quests
 
         lines = [
+            f"**Quest Resets Remaining:** {resets_remaining}",
+            "",
             "**Current Quests:**",
             "- Items To Find:",
             *([f"• {item}" for item in quests.current_items] or ["• None"]),

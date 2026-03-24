@@ -117,7 +117,9 @@ def build_loot_embeds(active_ppe: PPEData, recently_added: str = "") -> List[dis
     if not loot_dict:
         loot_lines.append("• _No loot recorded yet._")
     else:
-        for loot in loot_dict:
+        # Sort loot alphabetically by item name
+        sorted_loot = sorted(loot_dict, key=lambda loot: loot.item_name.lower())
+        for loot in sorted_loot:
             name_with_tags = loot.item_name
             if loot.divine:
                 name_with_tags += " (divine)"
@@ -142,7 +144,9 @@ def build_loot_embeds(active_ppe: PPEData, recently_added: str = "") -> List[dis
     bonus_lines = []
     if active_ppe.bonuses:
         bonus_lines.append("\n** Bonuses:**")
-        for bonus in active_ppe.bonuses:
+        # Sort bonuses alphabetically by name
+        sorted_bonuses = sorted(active_ppe.bonuses, key=lambda bonus: bonus.name.lower())
+        for bonus in sorted_bonuses:
             # Format points display
             if bonus.points == int(bonus.points):
                 points_text = f"{int(bonus.points * bonus.quantity)}"

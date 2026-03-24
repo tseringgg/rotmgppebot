@@ -84,6 +84,15 @@ def normalize_ppe(ppe: dict) -> PPEData:
 def normalize_player(player: dict) -> PlayerData:
     ppes = [normalize_ppe(p) for p in player.get("ppes", [])]
 
+    def safe_optional_non_negative_int(value) -> int | None:
+        if value is None:
+            return None
+        try:
+            parsed = int(value)
+        except (TypeError, ValueError):
+            return None
+        return max(0, parsed)
+
     def safe_str_list(value) -> List[str]:
         """Coerce unknown/legacy values into a clean list of strings."""
         if value is None:
@@ -122,7 +131,8 @@ def normalize_player(player: dict) -> PlayerData:
         is_member=bool(player.get("is_member", False)),
         unique_items=unique_items,
         team_name=player.get("team_name", None),
-        quests=normalized_quests
+        quests=normalized_quests,
+        quest_resets_remaining=safe_optional_non_negative_int(player.get("quest_resets_remaining")),
     )
 
 async def load_player_records(interaction: discord.Interaction) -> Dict[int, PlayerData]:
@@ -194,6 +204,7 @@ async def save_player_records(interaction: discord.Interaction, records: Dict[in
             "active_ppe": data.active_ppe,
             "unique_items": list(data.unique_items),  # Convert set to list for JSON
             "team_name": data.team_name,
+            "quest_resets_remaining": data.quest_resets_remaining,
             "quests": {
                 "current_items": data.quests.current_items,
                 "current_shinies": data.quests.current_shinies,

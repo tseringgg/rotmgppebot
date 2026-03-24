@@ -2,6 +2,7 @@ import discord
 from utils.guild_config import get_realmshark_settings, set_realmshark_settings
 from utils.player_records import load_player_records, save_player_records, load_teams, save_teams
 from utils.realmshark_pending_store import clear_all_pending_for_guild
+from utils.guild_config import load_guild_config
 
 
 class ConfirmView(discord.ui.View):
@@ -57,6 +58,8 @@ async def command(interaction: discord.Interaction, clear_realmshark_links: bool
             return
         
         records = await load_player_records(interaction)
+        config = await load_guild_config(interaction)
+        default_reset_limit = config["quest_settings"]["num_resets"]
         teams = await load_teams(interaction)
         
         # Get team role names before clearing teams
@@ -90,6 +93,7 @@ async def command(interaction: discord.Interaction, clear_realmshark_links: bool
             player_data.quests.completed_items.clear()
             player_data.quests.completed_shinies.clear()
             player_data.quests.completed_skins.clear()
+            player_data.quest_resets_remaining = default_reset_limit
             
             # Clear team associations
             player_data.team_name = None
@@ -199,6 +203,7 @@ async def command(interaction: discord.Interaction, clear_realmshark_links: bool
             f"**Cleared:** {ppes_cleared} PPE characters, {items_cleared} unique items, {quest_entries_cleared} quest entries\n"
             f"**Deleted:** {teams_deleted} teams and their roles\n"
             f"{realmshark_summary}\n"
+            f"**Reset quest attempts to:** {default_reset_limit}\n"
             f"**Preserved:** Player member status and PPE roles",
             ephemeral=False
         )

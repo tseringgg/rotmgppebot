@@ -78,6 +78,7 @@ class PlayerData:
     unique_items: Set[tuple] = field(default_factory=set)  # (item_name, shiny)
     team_name: Optional[str] = None  # Name of the team this player is on (None if not on a team)
     quests: QuestData = field(default_factory=QuestData)
+    quest_resets_remaining: Optional[int] = None
     
     def get_unique_item_count(self) -> int:
         """Get the count of unique items across all PPEs."""
