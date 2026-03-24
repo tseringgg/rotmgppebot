@@ -141,8 +141,8 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/realmsharkenabled` | Enable/disable RealmShark ingest for the guild |
 | `/realmsharkchannel` | Set/reset RealmShark announcement channel |
 | `/realmsharkstatus` | Show RealmShark config status and which account is linked to each token |
-| `/realmsharkconfigure` | Open interactive panel to manage character mappings, view PPE bindings, and handle pending loot |
-| `/realmsharkadminview` | Display RealmShark panel information for a specific player (admin only) |
+| `/realmsharkconfigure` | Open interactive mapping panel (`Show All` or `Show Pending`) |
+| `/realmsharkadminview` | Open admin RealmShark panel for a user (`Show All` or `Show Pending`) |
 | `/realmsharkunlink` | Revoke a specific RealmShark link token |
 | `/realmsharkreset` | Reset all RealmShark settings/tokens and clear pending logs for the guild |
 
@@ -154,7 +154,7 @@ When Tomato sends loot with `character_id`, routing is policy-driven:
 2. If `character_id` is mapped as seasonal, the bot logs through `/addseasonloot` behavior.
 3. If `character_id` is unseen/unmapped, the bot logs through `/addseasonloot`, pings the player, and stores a pending loot log (item + rarity + flags) for review.
 
-Use `/realmsharkconfigure` to manage all character mappings and pending loot through an interactive panel. Map characters to PPEs (which automatically applies pending loot), set characters as seasonal, view pending events, or clear pending logs.
+Use `/realmsharkconfigure` to manage all character mappings and pending loot through an interactive panel. Start in `Show All` (all known characters) or `Show Pending` (only pending unmapped characters), then use the panel buttons to map characters to PPEs (which automatically applies pending loot), set characters as seasonal, clear pending logs, and navigate between entries.
 The panel is intuitive with `Prev` / `Next` buttons to cycle through characters, and all destructive actions require explicit confirmation.
 The panel/config view shows detected in-game character name/class when available, and mapping is class-validated: a character cannot be mapped to a PPE of a different class.
 

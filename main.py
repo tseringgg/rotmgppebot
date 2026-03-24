@@ -540,8 +540,6 @@ async def realmsharkstatus(interaction: discord.Interaction):
 
 @bot.tree.command(name="realmsharkconfigure", description="RealmShark character mapping panel - manage character routing, view mappings, and handle pending loot.", guilds=guilds)
 @app_commands.describe(mode="Panel start mode (defaults to Show All)")
-@app_commands.describe(character_id="Character ID from RealmShark/Tomato (optional: uses last seen)")
-@app_commands.describe(token="Optional full token if you want panel scoped to one token")
 @app_commands.choices(mode=[
     app_commands.Choice(name="Show All", value="show_all"),
     app_commands.Choice(name="Show Pending", value="show_pending"),
@@ -550,17 +548,25 @@ async def realmsharkstatus(interaction: discord.Interaction):
 async def realmsharkconfigure(
     interaction: discord.Interaction,
     mode: app_commands.Choice[str] | None = None,
-    character_id: int | None = None,
-    token: str | None = None,
 ):
     selected_mode = mode.value if mode is not None else "show_all"
-    await realmshark_cmd.open_panel(interaction, selected_mode, character_id, token)
+    await realmshark_cmd.open_panel(interaction, selected_mode)
 
-@bot.tree.command(name="realmsharkadminview", description="Open RealmShark panel for a specific player (admin only).", guilds=guilds)
-@app_commands.describe(member="Player to inspect")
+@bot.tree.command(name="realmsharkadminview", description="Open RealmShark admin panel for a user (show pending or all).", guilds=guilds)
+@app_commands.describe(member="Player to manage")
+@app_commands.describe(mode="Panel start mode (defaults to Show All)")
+@app_commands.choices(mode=[
+    app_commands.Choice(name="Show All", value="show_all"),
+    app_commands.Choice(name="Show Pending", value="show_pending"),
+])
 @require_ppe_roles(admin_required=True)
-async def realmsharkadminview(interaction: discord.Interaction, member: discord.Member):
-    await realmshark_cmd.admin_panel(interaction, member)
+async def realmsharkadminview(
+    interaction: discord.Interaction,
+    member: discord.Member,
+    mode: app_commands.Choice[str] | None = None,
+):
+    selected_mode = mode.value if mode is not None else "show_all"
+    await realmshark_cmd.admin_panel(interaction, member, selected_mode)
 
 @bot.tree.command(name="realmsharkunlink", description="Revoke a specific RealmShark link token.", guilds=guilds)
 @require_ppe_roles(admin_required=True)
