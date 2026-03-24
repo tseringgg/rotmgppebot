@@ -538,7 +538,7 @@ async def realmsharkchannel(interaction: discord.Interaction, channel: discord.T
 async def realmsharkstatus(interaction: discord.Interaction):
     await realmshark_cmd.status(interaction)
 
-@bot.tree.command(name="realmsharkconfigure", description="RealmShark character mapping panel - manage character routing, view mappings, and handle pending loot.", guilds=guilds)
+@bot.tree.command(name="realmsharkconfigure", description="Manage RealmShark character mappings and pending loot.", guilds=guilds)
 @app_commands.describe(mode="Panel start mode (defaults to Show All)")
 @app_commands.choices(mode=[
     app_commands.Choice(name="Show All", value="show_all"),
@@ -552,7 +552,7 @@ async def realmsharkconfigure(
     selected_mode = mode.value if mode is not None else "show_all"
     await realmshark_cmd.open_panel(interaction, selected_mode)
 
-@bot.tree.command(name="realmsharkadminview", description="Open RealmShark admin panel for a user (show pending or all).", guilds=guilds)
+@bot.tree.command(name="realmsharkadminview", description="Manage a user's RealmShark mappings and pending loot.", guilds=guilds)
 @app_commands.describe(member="Player to manage")
 @app_commands.describe(mode="Panel start mode (defaults to Show All)")
 @app_commands.choices(mode=[
