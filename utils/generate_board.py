@@ -65,7 +65,7 @@ def generate_quest_board(
     
     # --- Measure Text & Calculate Responsive Width ---
     # Use a large but practical default title size.
-    title_font = _load_font(92)
+    title_font = _load_font(40)
     
     dummy_draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
     title_bbox = dummy_draw.textbbox((0, 0), title, font=title_font)
