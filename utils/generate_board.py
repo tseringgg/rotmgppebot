@@ -62,7 +62,7 @@ def generate_quest_board(
     
     # --- Measure Text & Calculate Responsive Width ---
     # Increased font size, removed the fake bold stroke later
-    title_font = _load_font(56) 
+    title_font = _load_font(90) 
     
     dummy_draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
     title_bbox = dummy_draw.textbbox((0, 0), title, font=title_font)
