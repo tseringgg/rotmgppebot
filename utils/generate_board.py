@@ -11,18 +11,14 @@ from PIL import Image, ImageDraw, ImageFont
 def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     # Look for a custom pixel font, or fallback to standard ones
     for candidate in (
-        "pixel_font.ttf",      
         "PressStart2P.ttf",
-        "impact.ttf",
-        "arialbd.ttf",
-        "DejaVuSans-Bold.ttf",
-        "arial.ttf",
+        "pixel_font.ttf"
     ):
         try:
             return ImageFont.truetype(candidate, size)
         except OSError:
             continue
-    return ImageFont.load_default()
+    return None
 
 
 def generate_quest_board(
@@ -62,7 +58,7 @@ def generate_quest_board(
     
     # --- Measure Text & Calculate Responsive Width ---
     # Increased font size, removed the fake bold stroke later
-    title_font = _load_font(120) 
+    title_font = _load_font(400) 
     
     dummy_draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
     title_bbox = dummy_draw.textbbox((0, 0), title, font=title_font)
