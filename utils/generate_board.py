@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from io import BytesIO
 from math import ceil
 from typing import Callable, Sequence
@@ -8,10 +9,9 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    # Added a placeholder for a custom pixel font as the first priority
     for candidate in (
-        "DejaVuSansMono-Bold.ttf",
-        "DejaVuSans-Bold.ttf",
-        "arial.ttf",
+        "pixel_font.ttf",
     ):
         try:
             return ImageFont.truetype(candidate, size)
@@ -31,6 +31,8 @@ def generate_quest_board(
 ) -> BytesIO:
     """Render a framed icon grid board for the provided items."""
     items = list(item_names)
+    
+    # --- Grid Math ---
     if columns is None or int(columns) <= 0:
         count = max(1, len(items))
         if count <= 8:
@@ -46,99 +48,90 @@ def generate_quest_board(
 
     rows = max(1, ceil(max(1, len(items)) / safe_columns))
 
-    outer_pad = 26
-    panel_pad = 18
+    # --- Layout & Sizing ---
+    outer_pad = 24
     grid_pad = 16
-    slot_size = icon_size + 11
-    title_gap = 84
-    grid_width = (safe_columns * slot_size) + (grid_pad * 2)
-    grid_height = (rows * slot_size) + (grid_pad * 2)
-    panel_width = grid_width + (panel_pad * 2)
-    panel_height = title_gap + grid_height + panel_pad
-    width = panel_width + (outer_pad * 2)
-    height = panel_height + (outer_pad * 2)
+    slot_size = icon_size + 12
+    title_gap = 70
+    
+    grid_width = (safe_columns * slot_size)
+    grid_height = (rows * slot_size)
+    
+    width = grid_width + (outer_pad * 2) + (grid_pad * 2)
+    height = grid_height + title_gap + (outer_pad * 2) + (grid_pad * 2)
 
-    bg_color = (21, 21, 25, 255)
-    panel_color = (27, 27, 33, 255)
-    frame_color = (76, 79, 92, 255)
-    title_color = (243, 243, 246, 255)
+    # --- Colors (Matched to reference) ---
+    bg_color = (25, 25, 25, 255)       # Solid dark background
+    frame_color = (100, 100, 100, 255) # Clean grey lines
+    title_color = (255, 255, 255, 255) # Pure white for crispness
 
     img = Image.new("RGBA", (width, height), bg_color)
     draw = ImageDraw.Draw(img)
 
-    panel_left = outer_pad
-    panel_top = outer_pad
-    panel_right = panel_left + panel_width
-    panel_bottom = panel_top + panel_height
-
-    draw.rectangle([panel_left, panel_top, panel_right, panel_bottom], fill=panel_color)
-    draw.rectangle([panel_left, panel_top, panel_right, panel_bottom], outline=frame_color, width=3)
-
-    title_font = _load_font(64 if width > 1500 else 50 if width > 1100 else 40)
+    # --- Font & Title Resizing ---
+    title_font = _load_font(32 if width > 1100 else 24)
     title_bbox = draw.textbbox((0, 0), title, font=title_font)
     title_w = title_bbox[2] - title_bbox[0]
     title_h = title_bbox[3] - title_bbox[1]
-    min_panel_for_title = title_w + 180
-    if panel_width < min_panel_for_title:
-        panel_width = min_panel_for_title
-        width = panel_width + (outer_pad * 2)
+    
+    # Ensure canvas is wide enough for the title
+    min_width_for_title = title_w + 120
+    if width < min_width_for_title:
+        width = min_width_for_title
         img = Image.new("RGBA", (width, height), bg_color)
         draw = ImageDraw.Draw(img)
-        panel_left = outer_pad
-        panel_top = outer_pad
-        panel_right = panel_left + panel_width
-        panel_bottom = panel_top + panel_height
-        draw.rectangle([panel_left, panel_top, panel_right, panel_bottom], fill=panel_color)
-        draw.rectangle([panel_left, panel_top, panel_right, panel_bottom], outline=frame_color, width=3)
 
-    title_x = panel_left + (panel_width - title_w) // 2
-    title_y = panel_top + 18
+    # --- Draw Custom Retro Frame ---
+    pad = 16
+    c_len = 16 # Corner bracket length
+    c_gap = 10 # Gap between corner and main line
+    line_w = 2 # Pixel thickness of the frame
+    
+    # 1. Outer Box Lines
+    # Top
+    draw.line([(pad + c_len + c_gap, pad), (width - pad - c_len - c_gap, pad)], fill=frame_color, width=line_w)
+    # Bottom
+    draw.line([(pad + c_len + c_gap, height - pad), (width - pad - c_len - c_gap, height - pad)], fill=frame_color, width=line_w)
+    # Left
+    draw.line([(pad, pad + c_len + c_gap), (pad, height - pad - c_len - c_gap)], fill=frame_color, width=line_w)
+    # Right
+    draw.line([(width - pad, pad + c_len + c_gap), (width - pad, height - pad - c_len - c_gap)], fill=frame_color, width=line_w)
 
-    title_box_left = panel_left + 24
-    title_box_top = panel_top + 12
-    title_box_right = panel_right - 24
-    title_box_bottom = panel_top + title_gap - 20
-    draw.rectangle([title_box_left, title_box_top, title_box_right, title_box_bottom], outline=frame_color, width=3)
-
-    left_sep_start = title_box_left + 18
-    left_sep_end = title_x - 24
-    right_sep_start = title_x + title_w + 24
-    right_sep_end = title_box_right - 18
-    sep_y = title_y + (title_h // 2)
-    if left_sep_end > left_sep_start:
-        draw.line([(left_sep_start, sep_y), (left_sep_end, sep_y)], fill=frame_color, width=6)
-    if right_sep_end > right_sep_start:
-        draw.line([(right_sep_start, sep_y), (right_sep_end, sep_y)], fill=frame_color, width=6)
-    draw.text(
-        (title_x, title_y),
-        title,
-        font=title_font,
-        fill=title_color,
-        stroke_width=2,
-        stroke_fill=(12, 12, 15, 255),
-    )
-
-    divider_y = panel_top + title_gap - 12
-    draw.line([(panel_left + 18, divider_y), (panel_right - 18, divider_y)], fill=frame_color, width=4)
-
-    board_left = panel_left + (panel_width - grid_width) // 2
-    board_top = panel_top + title_gap
-    board_right = board_left + grid_width
-    board_bottom = board_top + grid_height
-
-    draw.rectangle([board_left, board_top, board_right, board_bottom], outline=frame_color, width=3)
-
-    corner_len = 24
-    corner_width = 3
-    corner_points = [
-        ((panel_left + 10, panel_top + 10), (panel_left + 10 + corner_len, panel_top + 10), (panel_left + 10, panel_top + 10 + corner_len)),
-        ((panel_right - 10, panel_top + 10), (panel_right - 10 - corner_len, panel_top + 10), (panel_right - 10, panel_top + 10 + corner_len)),
-        ((panel_left + 10, panel_bottom - 10), (panel_left + 10 + corner_len, panel_bottom - 10), (panel_left + 10, panel_bottom - 10 - corner_len)),
-        ((panel_right - 10, panel_bottom - 10), (panel_right - 10 - corner_len, panel_bottom - 10), (panel_right - 10, panel_bottom - 10 - corner_len)),
+    # 2. Corner Brackets & Inner Dots
+    corners = [
+        # Top-Left
+        ([(pad, pad + c_len), (pad, pad), (pad + c_len, pad)], (pad + 6, pad + 6)),
+        # Top-Right
+        ([(width - pad - c_len, pad), (width - pad, pad), (width - pad, pad + c_len)], (width - pad - 8, pad + 6)),
+        # Bottom-Left
+        ([(pad, height - pad - c_len), (pad, height - pad), (pad + c_len, height - pad)], (pad + 6, height - pad - 8)),
+        # Bottom-Right
+        ([(width - pad - c_len, height - pad), (width - pad, height - pad), (width - pad, height - pad - c_len)], (width - pad - 8, height - pad - 8))
     ]
-    for anchor, horizontal_end, vertical_end in corner_points:
-        draw.line([anchor, horizontal_end], fill=frame_color, width=corner_width)
-        draw.line([anchor, vertical_end], fill=frame_color, width=corner_width)
+    
+    for lines, dot in corners:
+        draw.line(lines, fill=frame_color, width=line_w)
+        draw.rectangle([dot[0], dot[1], dot[0] + 2, dot[1] + 2], fill=frame_color)
+
+    # --- Draw Text & Horizontal Separator ---
+    title_x = (width - title_w) // 2
+    title_y = pad + 16
+    
+    # Text (No stroke, clean retro look)
+    draw.text((title_x, title_y), title, font=title_font, fill=title_color)
+
+    # Horizontal divider below text
+    div_y = title_y + title_h + 16
+    div_pad = pad + 12
+    draw.line([(div_pad + 12, div_y), (width - div_pad - 12, div_y)], fill=frame_color, width=line_w)
+    
+    # Separator endpoints (little squares)
+    draw.rectangle([(div_pad, div_y - 2), (div_pad + 4, div_y + 2)], fill=frame_color)
+    draw.rectangle([(width - div_pad - 4, div_y - 2), (width - div_pad, div_y + 2)], fill=frame_color)
+
+    # --- Draw Grid Items ---
+    board_left = (width - grid_width) // 2
+    board_top = div_y + 16
 
     fallback_icon = None
     if missing_image_path:
@@ -151,8 +144,8 @@ def generate_quest_board(
         row = index // safe_columns
         col = index % safe_columns
 
-        x = board_left + grid_pad + (col * slot_size)
-        y = board_top + grid_pad + (row * slot_size)
+        x = board_left + (col * slot_size) + (slot_size - icon_size) // 2
+        y = board_top + (row * slot_size)
 
         icon = None
         resolved_path = image_path_resolver(item)
@@ -166,13 +159,16 @@ def generate_quest_board(
             icon = fallback_icon
 
         if icon is None:
+            # Fallback red box if completely missing
             draw.rectangle([x, y, x + icon_size, y + icon_size], outline=(180, 70, 70, 255), width=2)
             continue
 
         if icon.size != (icon_size, icon_size):
             icon = icon.resize((icon_size, icon_size), Image.NEAREST)
+            
         img.paste(icon, (x, y), icon)
 
+    # --- Output ---
     buffer = BytesIO()
     img.save(buffer, format="PNG")
     buffer.seek(0)
