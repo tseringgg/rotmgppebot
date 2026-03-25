@@ -60,14 +60,15 @@ def generate_quest_board(
 
     # --- Sizing Base Variables ---
     scaled_icon_size = icon_size * scale
-    pad = 20 * scale
-    slot_size = scaled_icon_size + (12 * scale)
+    pad = 24 * scale  # Increased outer pad slightly
+    
+    # Give the items a little more breathing room from each other
+    slot_size = scaled_icon_size + (16 * scale) 
     
     grid_width = (safe_columns * slot_size)
     grid_height = (rows * slot_size)
     
     # --- Measure Text & Calculate Responsive Width ---
-    # Use a large but practical default title size.
     title_font = _load_font(20 * scale)
     
     dummy_draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
@@ -75,17 +76,17 @@ def generate_quest_board(
     title_w = title_bbox[2] - title_bbox[0]
     title_h = title_bbox[3] - title_bbox[1]
 
-    # Smart Width: Box will fit the grid, UNLESS the title is wider.
-    # We add 80px of padding to ensure the text never touches the walls.
-    width = max(grid_width + 80, title_w + 80)
+    # Smart Width: Ensure massive margins on the left/right 
+    # to protect from cramming and text overflow.
+    width = max(grid_width + (140 * scale), title_w + (160 * scale))
 
-    # Calculate exact vertical placements
-    title_y = pad + 16
-    div_y = title_y + title_h + 20
-    board_top = div_y + 24
+    # Calculate exact vertical placements with scaled breathing room
+    title_y = pad + (16 * scale)
+    div_y = title_y + title_h + (24 * scale)  # More room below text
+    board_top = div_y + (40 * scale)          # More room between line and grid
     
-    # Snug height calculation
-    height = board_top + grid_height + 24 
+    # Snug height calculation with extra padding at the bottom
+    height = board_top + grid_height + (32 * scale) 
 
     # --- Colors ---
     bg_color = (25, 25, 25, 255)       
@@ -109,10 +110,10 @@ def generate_quest_board(
 
     # 2. Corner Brackets & Inner Dots
     corners = [
-        ([(pad, pad + c_len), (pad, pad), (pad + c_len, pad)], (pad + 8, pad + 8)),
-        ([(width - pad - c_len, pad), (width - pad, pad), (width - pad, pad + c_len)], (width - pad - 12, pad + 8)),
-        ([(pad, height - pad - c_len), (pad, height - pad), (pad + c_len, height - pad)], (pad + 8, height - pad - 12)),
-        ([(width - pad - c_len, height - pad), (width - pad, height - pad), (width - pad, height - pad - c_len)], (width - pad - 12, height - pad - 12))
+        ([(pad, pad + c_len), (pad, pad), (pad + c_len, pad)], (pad + 8 * scale, pad + 8 * scale)),
+        ([(width - pad - c_len, pad), (width - pad, pad), (width - pad, pad + c_len)], (width - pad - 12 * scale, pad + 8 * scale)),
+        ([(pad, height - pad - c_len), (pad, height - pad), (pad + c_len, height - pad)], (pad + 8 * scale, height - pad - 12 * scale)),
+        ([(width - pad - c_len, height - pad), (width - pad, height - pad), (width - pad, height - pad - c_len)], (width - pad - 12 * scale, height - pad - 12 * scale))
     ]
     
     dot_size = max(3, 3 * scale)
@@ -132,8 +133,8 @@ def generate_quest_board(
     )
 
     # Horizontal divider below text
-    div_pad = pad + 16
-    draw.line([(div_pad + 16, div_y), (width - div_pad - 16, div_y)], fill=frame_color, width=line_w)
+    div_pad = pad + (16 * scale)
+    draw.line([(div_pad + (16 * scale), div_y), (width - div_pad - (16 * scale), div_y)], fill=frame_color, width=line_w)
     
     # Separator endpoints
     marker_half_h = max(2, 2 * scale)
