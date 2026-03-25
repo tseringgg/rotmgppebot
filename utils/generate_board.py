@@ -60,10 +60,12 @@ def generate_quest_board(
 
     # --- Sizing Base Variables ---
     scaled_icon_size = icon_size * scale
-    pad = 24 * scale  # Increased outer pad slightly
     
-    # Give the items a little more breathing room from each other
-    slot_size = scaled_icon_size + (16 * scale) 
+    # Marginally increased outer padding (up slightly from the original 20)
+    pad = 22 * scale  
+    
+    # Reverted to the original item spacing layout
+    slot_size = scaled_icon_size + (12 * scale) 
     
     grid_width = (safe_columns * slot_size)
     grid_height = (rows * slot_size)
@@ -76,17 +78,16 @@ def generate_quest_board(
     title_w = title_bbox[2] - title_bbox[0]
     title_h = title_bbox[3] - title_bbox[1]
 
-    # Smart Width: Ensure massive margins on the left/right 
-    # to protect from cramming and text overflow.
-    width = max(grid_width + (140 * scale), title_w + (160 * scale))
+    # Smart Width: Keeps overflow protection but reduces the massive gaps from the last iteration.
+    width = max(grid_width + (100 * scale), title_w + (120 * scale))
 
-    # Calculate exact vertical placements with scaled breathing room
-    title_y = pad + (16 * scale)
-    div_y = title_y + title_h + (24 * scale)  # More room below text
-    board_top = div_y + (40 * scale)          # More room between line and grid
+    # Calculate exact vertical placements (tightened up around the text and line)
+    title_y = pad + (12 * scale)
+    div_y = title_y + title_h + (16 * scale)   # Tighter gap below text
+    board_top = div_y + (20 * scale)           # Pulled grid closer to the divider line
     
-    # Snug height calculation with extra padding at the bottom
-    height = board_top + grid_height + (32 * scale) 
+    # Snug height calculation
+    height = board_top + grid_height + (24 * scale) 
 
     # --- Colors ---
     bg_color = (25, 25, 25, 255)       
@@ -97,7 +98,7 @@ def generate_quest_board(
     img = Image.new("RGBA", (width, height), bg_color)
     draw = ImageDraw.Draw(img)
 
-    # --- Draw Thicker Custom Retro Frame ---
+    # --- Draw Custom Retro Frame ---
     line_w = 4 * scale
     c_len = 24 * scale
     c_gap = 12 * scale
@@ -124,7 +125,7 @@ def generate_quest_board(
     # --- Draw Text & Horizontal Separator ---
     title_x = (width - title_w) // 2
     
-    # Clean, larger text with no artificial bold stroke
+    # Clean, larger text
     draw.text(
         (title_x, title_y), 
         title, 
