@@ -9,9 +9,14 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    # Prioritized fatter/bold fonts at the top of the list
+    # Look for a custom pixel font, or fallback to standard ones
     for candidate in (
-        "pixel_font.ttf"
+        "pixel_font.ttf",      
+        "PressStart2P.ttf",
+        "impact.ttf",
+        "arialbd.ttf",
+        "DejaVuSans-Bold.ttf",
+        "arial.ttf",
     ):
         try:
             return ImageFont.truetype(candidate, size)
@@ -55,25 +60,25 @@ def generate_quest_board(
     grid_width = (safe_columns * slot_size)
     grid_height = (rows * slot_size)
     
-    # Set fixed width based ONLY on grid, ignoring title length
-    width = grid_width + 80  
-
-    # --- Pre-calculate Text Height to wrap the canvas tightly ---
-    # We use a large size (48) for a big, fat title
-    title_font = _load_font(48) 
+    # --- Measure Text & Calculate Responsive Width ---
+    # Increased font size, removed the fake bold stroke later
+    title_font = _load_font(56) 
     
-    # Dummy draw just to measure the text before creating the real image
     dummy_draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
     title_bbox = dummy_draw.textbbox((0, 0), title, font=title_font)
     title_w = title_bbox[2] - title_bbox[0]
     title_h = title_bbox[3] - title_bbox[1]
+
+    # Smart Width: Box will fit the grid, UNLESS the title is wider.
+    # We add 80px of padding to ensure the text never touches the walls.
+    width = max(grid_width + 80, title_w + 80)
 
     # Calculate exact vertical placements
     title_y = pad + 16
     div_y = title_y + title_h + 20
     board_top = div_y + 24
     
-    # Snug height calculation: board top + grid height + small bottom gap
+    # Snug height calculation
     height = board_top + grid_height + 24 
 
     # --- Colors ---
@@ -81,65 +86,54 @@ def generate_quest_board(
     frame_color = (100, 100, 100, 255) 
     title_color = (255, 255, 255, 255) 
 
-    # Create the actual image now that we have the tight height bounds
+    # Create the actual image
     img = Image.new("RGBA", (width, height), bg_color)
     draw = ImageDraw.Draw(img)
 
     # --- Draw Thicker Custom Retro Frame ---
-    line_w = 4 # Increased thickness for the lines
-    c_len = 24 # Slightly longer corner brackets to match thickness
+    line_w = 4 
+    c_len = 24 
     c_gap = 12 
     
     # 1. Outer Box Lines
-    # Top
     draw.line([(pad + c_len + c_gap, pad), (width - pad - c_len - c_gap, pad)], fill=frame_color, width=line_w)
-    # Bottom
     draw.line([(pad + c_len + c_gap, height - pad), (width - pad - c_len - c_gap, height - pad)], fill=frame_color, width=line_w)
-    # Left
     draw.line([(pad, pad + c_len + c_gap), (pad, height - pad - c_len - c_gap)], fill=frame_color, width=line_w)
-    # Right
     draw.line([(width - pad, pad + c_len + c_gap), (width - pad, height - pad - c_len - c_gap)], fill=frame_color, width=line_w)
 
     # 2. Corner Brackets & Inner Dots
     corners = [
-        # Top-Left
         ([(pad, pad + c_len), (pad, pad), (pad + c_len, pad)], (pad + 8, pad + 8)),
-        # Top-Right
         ([(width - pad - c_len, pad), (width - pad, pad), (width - pad, pad + c_len)], (width - pad - 12, pad + 8)),
-        # Bottom-Left
         ([(pad, height - pad - c_len), (pad, height - pad), (pad + c_len, height - pad)], (pad + 8, height - pad - 12)),
-        # Bottom-Right
         ([(width - pad - c_len, height - pad), (width - pad, height - pad), (width - pad, height - pad - c_len)], (width - pad - 12, height - pad - 12))
     ]
     
     for lines, dot in corners:
         draw.line(lines, fill=frame_color, width=line_w)
-        # 4x4 square dots to match the 4px line width
         draw.rectangle([dot[0], dot[1], dot[0] + 3, dot[1] + 3], fill=frame_color)
 
     # --- Draw Text & Horizontal Separator ---
     title_x = (width - title_w) // 2
     
-    # Text with a stroke for extra "fatness". 
-    # If the title is wider than the box, it will naturally clip off the edges!
+    # Clean, larger text with no artificial bold stroke
     draw.text(
         (title_x, title_y), 
         title, 
         font=title_font, 
-        fill=title_color, 
-        stroke_width=1, 
-        stroke_fill=title_color
+        fill=title_color
     )
 
     # Horizontal divider below text
     div_pad = pad + 16
     draw.line([(div_pad + 16, div_y), (width - div_pad - 16, div_y)], fill=frame_color, width=line_w)
     
-    # Separator endpoints (little squares)
+    # Separator endpoints
     draw.rectangle([(div_pad, div_y - 2), (div_pad + 3, div_y + 1)], fill=frame_color)
     draw.rectangle([(width - div_pad - 4, div_y - 2), (width - div_pad - 1, div_y + 1)], fill=frame_color)
 
     # --- Draw Grid Items ---
+    # Center the entire grid block relative to the dynamic width
     board_left = (width - grid_width) // 2
 
     fallback_icon = None
@@ -168,7 +162,6 @@ def generate_quest_board(
             icon = fallback_icon
 
         if icon is None:
-            # Fallback red box if completely missing
             draw.rectangle([x, y, x + icon_size, y + icon_size], outline=(180, 70, 70, 255), width=2)
             continue
 
