@@ -128,7 +128,7 @@ def _board_file(item_names: Sequence[str], title: str, filename: str) -> discord
         _resolve_item_image_path,
         title=title,
         missing_image_path=_MISSING_IMAGE_PATH if os.path.exists(_MISSING_IMAGE_PATH) else None,
-        columns=20,
+        columns=None,
         icon_size=34,
     )
     return discord.File(buffer, filename=filename)

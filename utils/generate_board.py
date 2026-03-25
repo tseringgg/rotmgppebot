@@ -8,7 +8,11 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    for candidate in ("DejaVuSans-Bold.ttf", "arial.ttf"):
+    for candidate in (
+        "DejaVuSansMono-Bold.ttf",
+        "DejaVuSans-Bold.ttf",
+        "arial.ttf",
+    ):
         try:
             return ImageFont.truetype(candidate, size)
         except OSError:
@@ -22,12 +26,24 @@ def generate_quest_board(
     *,
     title: str = "Quest Board",
     missing_image_path: str | None = None,
-    columns: int = 20,
+    columns: int | None = None,
     icon_size: int = 34,
 ) -> BytesIO:
     """Render a framed icon grid board for the provided items."""
-    safe_columns = max(1, int(columns))
     items = list(item_names)
+    if columns is None or int(columns) <= 0:
+        count = max(1, len(items))
+        if count <= 8:
+            safe_columns = count
+        elif count <= 24:
+            safe_columns = 8
+        elif count <= 48:
+            safe_columns = 10
+        else:
+            safe_columns = 12
+    else:
+        safe_columns = max(1, int(columns))
+
     rows = max(1, ceil(max(1, len(items)) / safe_columns))
 
     outer_pad = 26
@@ -58,28 +74,54 @@ def generate_quest_board(
     draw.rectangle([panel_left, panel_top, panel_right, panel_bottom], fill=panel_color)
     draw.rectangle([panel_left, panel_top, panel_right, panel_bottom], outline=frame_color, width=3)
 
-    title_font = _load_font(58 if width > 1500 else 42 if width > 1100 else 34)
+    title_font = _load_font(64 if width > 1500 else 50 if width > 1100 else 40)
     title_bbox = draw.textbbox((0, 0), title, font=title_font)
     title_w = title_bbox[2] - title_bbox[0]
     title_h = title_bbox[3] - title_bbox[1]
+    min_panel_for_title = title_w + 180
+    if panel_width < min_panel_for_title:
+        panel_width = min_panel_for_title
+        width = panel_width + (outer_pad * 2)
+        img = Image.new("RGBA", (width, height), bg_color)
+        draw = ImageDraw.Draw(img)
+        panel_left = outer_pad
+        panel_top = outer_pad
+        panel_right = panel_left + panel_width
+        panel_bottom = panel_top + panel_height
+        draw.rectangle([panel_left, panel_top, panel_right, panel_bottom], fill=panel_color)
+        draw.rectangle([panel_left, panel_top, panel_right, panel_bottom], outline=frame_color, width=3)
+
     title_x = panel_left + (panel_width - title_w) // 2
     title_y = panel_top + 18
 
-    left_sep_start = panel_left + 44
+    title_box_left = panel_left + 24
+    title_box_top = panel_top + 12
+    title_box_right = panel_right - 24
+    title_box_bottom = panel_top + title_gap - 20
+    draw.rectangle([title_box_left, title_box_top, title_box_right, title_box_bottom], outline=frame_color, width=3)
+
+    left_sep_start = title_box_left + 18
     left_sep_end = title_x - 24
     right_sep_start = title_x + title_w + 24
-    right_sep_end = panel_right - 44
+    right_sep_end = title_box_right - 18
     sep_y = title_y + (title_h // 2)
     if left_sep_end > left_sep_start:
         draw.line([(left_sep_start, sep_y), (left_sep_end, sep_y)], fill=frame_color, width=6)
     if right_sep_end > right_sep_start:
         draw.line([(right_sep_start, sep_y), (right_sep_end, sep_y)], fill=frame_color, width=6)
-    draw.text((title_x, title_y), title, font=title_font, fill=title_color)
+    draw.text(
+        (title_x, title_y),
+        title,
+        font=title_font,
+        fill=title_color,
+        stroke_width=2,
+        stroke_fill=(12, 12, 15, 255),
+    )
 
     divider_y = panel_top + title_gap - 12
     draw.line([(panel_left + 18, divider_y), (panel_right - 18, divider_y)], fill=frame_color, width=4)
 
-    board_left = panel_left + panel_pad
+    board_left = panel_left + (panel_width - grid_width) // 2
     board_top = panel_top + title_gap
     board_right = board_left + grid_width
     board_bottom = board_top + grid_height
