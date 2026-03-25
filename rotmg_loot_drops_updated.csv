@@ -123,12 +123,12 @@ Skin,Crystal Cobra Pet Skin,0
 White or ST,Wand of Hidden Knowledge,4.0
 White or ST,Necronomicon,4.0
 White or ST,Scholar's Seal,4.0
-UT,Ronin's Wakizashi,0
+UT,Ronin's Wakizashi,4
 White or ST,Corruption Cutter,4.0
 White or ST,Wand of Hidden Knowledge (shiny),8.0
 White or ST,Necronomicon (shiny),8.0
 White or ST,Scholar's Seal (shiny),8
-UT,Ronin's Wakizashi (shiny),0
+UT,Ronin's Wakizashi (shiny),8
 White or ST,Corruption Cutter (shiny),8
 White or ST,Deathless Crossbow,4.0
 White or ST,Quiver of Shrieking Specters,4.0
@@ -1103,6 +1103,19 @@ Limited,Sweet Desire Wand,5
 Limited,Chocolate Egg Mace,5
 Limited,Chocolate Glazed Robe,5
 Limited,Chocolate Bunny Ears,5
+
+Limited,Mithril Sword,10
+Limited,Leave Bow,5
+Limited,Ring of Overwhelming Health,7.5
+Limited,Mood Bow,3.5
+Limited,Reasonable Hour Star,6.0
+Limited,Bottled Medusa,5.5
+Limited,Nice Crown,10.0
+Limited,Non-Fungible Tome,7.5
+Limited,Luminaire,9.5
+Limited,Inferior,9.5
+Limited,Chocolate Cream Sandwich Cookie,10
+Limited,Seal of Blasphemous Prayer,10
 
 Limited,Crystal Key,5
 Limited,Keychain Cutlass,10

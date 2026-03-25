@@ -131,6 +131,11 @@
         "type": "Tier 14 Armor"
       },
       {
+        "name": "BUFFED Hydra Skin Armor",
+        "type": "Limited",
+        "points": 1.0
+      },
+      {
         "name": "Robe of the Ancient Intellect",
         "type": "Tier 14 Armor"
       },
@@ -355,6 +360,11 @@
         "type": "White or ST"
       },
       {
+        "name": "Bottled Medusa",
+        "type": "Limited",
+        "points": 5.5
+      },
+      {
         "name": "Cnidaria Rod",
         "type": "White or ST"
       },
@@ -399,12 +409,22 @@
         "type": "White or ST"
       },
       {
+        "name": "Non-Fungible Tome",
+        "type": "Limited",
+        "points": 7.5
+      },
+      {
         "name": "Cave Dweller Trap",
         "type": "White or ST"
       },
       {
         "name": "Ring of Decades",
         "type": "White or ST"
+      },
+      {
+        "name": "Ring of Overwhelming Health",
+        "type": "Limited",
+        "points": 7.5
       },
       {
         "name": "Fungal Breastplate (shiny)",
@@ -1050,6 +1070,11 @@
       {
         "name": "Midnight Star",
         "type": "White or ST"
+      },
+      {
+        "name": "Reasonable Hour Star",
+        "type": "Limited",
+        "points": 6.0
       },
       {
         "name": "Vision of Draconis",
@@ -1861,6 +1886,11 @@
         "type": "White or ST"
       },
       {
+        "name": "Inferior",
+        "type": "Limited",
+        "points": 9.5
+      },
+      {
         "name": "Genesis Spell",
         "type": "White or ST"
       },
@@ -1931,6 +1961,11 @@
       {
         "name": "Lumiaire",
         "type": "White or ST"
+      },
+      {
+        "name": "Luminaire",
+        "type": "Limited",
+        "points": 9.5
       },
       {
         "name": "Chaotic Scripture",
@@ -3089,6 +3124,11 @@
         "type": "White or ST"
       },
       {
+        "name": "Mood Bow",
+        "type": "Limited",
+        "points": 3.5
+      },
+      {
         "name": "Spectral Sword",
         "type": "White or ST"
       },
@@ -3164,6 +3204,11 @@
       {
         "name": "Leaf Bow",
         "type": "White or ST",
+        "points": 5.0
+      },
+      {
+        "name": "Leave Bow",
+        "type": "Limited",
         "points": 5.0
       },
       {
@@ -3406,6 +3451,16 @@
         "type": "Event White"
       },
       {
+        "name": "Chocolate Cream Sandwich Cookie",
+        "type": "Limited",
+        "points": 10.0
+      },
+      {
+        "name": "Seal of Blasphemous Prayer",
+        "type": "Limited",
+        "points": 10.0
+      },
+      {
         "name": "Shield of Ogmur",
         "type": "Event White"
       },
@@ -3440,6 +3495,11 @@
       {
         "name": "Crystal Sword",
         "type": "Event White"
+      },
+      {
+        "name": "Mithril Sword",
+        "type": "Limited",
+        "points": 10.0
       },
       {
         "name": "Crystal Wand",
@@ -4079,6 +4139,11 @@
         "name": "Ice Crown",
         "type": "Limited",
         "points": 10.0
+      },
+      {
+        "name": "Nice Crown",
+        "type": "Limited",
+        "points": 10.0
       }
     ]
   },
@@ -4672,21 +4737,21 @@
         "type": "Limited",
         "points": 0.0
       },
-    {
-      "name": "Carrotroot Vestments",
-      "type": "Limited",
-      "points": 0.0
-    },
-    {
-      "name": "Eggshell Carapace",
-      "type": "Limited",
-      "points": 0.0
-    },
-    {
-      "name": "Fudgeclad Armor",
-      "type": "Limited",
-      "points": 0.0
-    }
+      {
+        "name": "Carrotroot Vestments",
+        "type": "Limited",
+        "points": 0.0
+      },
+      {
+        "name": "Eggshell Carapace",
+        "type": "Limited",
+        "points": 0.0
+      },
+      {
+        "name": "Fudgeclad Armor",
+        "type": "Limited",
+        "points": 0.0
+      }
     ]
   },
   "Easter": {
@@ -4697,68 +4762,68 @@
         "type": "Limited"
       },
       {
-        "name":"Eternal Graved Great Sword",
-        "type":"Limited"
+        "name": "Eternal Graved Great Sword",
+        "type": "Limited"
       },
       {
-        "name":"Spriteful Shield",
-        "type":"Limited"
+        "name": "Spriteful Shield",
+        "type": "Limited"
       },
       {
-        "name":"Eggre Battle Armor",
-        "type":"Limited"
+        "name": "Eggre Battle Armor",
+        "type": "Limited"
       },
       {
-        "name":"Tiara of Eggscellent Sturdiness",
-        "type":"Limited"
+        "name": "Tiara of Eggscellent Sturdiness",
+        "type": "Limited"
       },
       {
-        "name":"Spring Wonder Bow",
-        "type":"Limited"
+        "name": "Spring Wonder Bow",
+        "type": "Limited"
       },
       {
-        "name":"Fresh Breeze Quiver",
-        "type":"Limited"
+        "name": "Fresh Breeze Quiver",
+        "type": "Limited"
       },
       {
-        "name":"Painted Eggshell Armor",
-        "type":"Limited"
+        "name": "Painted Eggshell Armor",
+        "type": "Limited"
       },
       {
-        "name":"Painted Egg Amulet",
-        "type":"Limited"
+        "name": "Painted Egg Amulet",
+        "type": "Limited"
       },
       {
-        "name":"Nutrient Rich Carrot Blade",
-        "type":"Limited"
+        "name": "Nutrient Rich Carrot Blade",
+        "type": "Limited"
       },
       {
-        "name":"Carrot Cake Crest",
-        "type":"Limited"
+        "name": "Carrot Cake Crest",
+        "type": "Limited"
       },
       {
-        "name":"Hardened Carrot Armor",
-        "type":"Limited"
+        "name": "Hardened Carrot Armor",
+        "type": "Limited"
       },
       {
-        "name":"Sun Bathed Straw Hat",
-        "type":"Limited"
+        "name": "Sun Bathed Straw Hat",
+        "type": "Limited"
       },
       {
-        "name":"Sweet Desire Wand",
-        "type":"Limited"
+        "name": "Sweet Desire Wand",
+        "type": "Limited"
       },
       {
-        "name":"Chocolate Egg Mace",
-        "type":"Limited"
+        "name": "Chocolate Egg Mace",
+        "type": "Limited"
       },
       {
-        "name":"Chocolate Glazed Robe",
-        "type":"Limited"
+        "name": "Chocolate Glazed Robe",
+        "type": "Limited"
       },
       {
-        "name":"Chocolate Bunny Ears",
-        "type":"Limited"
+        "name": "Chocolate Bunny Ears",
+        "type": "Limited"
       }
     ]
   },
