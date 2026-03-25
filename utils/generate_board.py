@@ -13,9 +13,9 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     # Prefer local pixel fonts, then scalable system fallbacks.
-    for candidate in (
-        os.path.join(_THIS_DIR, "PressStart2P.ttf"),
+    for candidate in (        
         os.path.join(_THIS_DIR, "pixel_font.ttf"),
+        os.path.join(_THIS_DIR, "PressStart2P.ttf"),
         "DejaVuSansMono-Bold.ttf",
         "DejaVuSans-Bold.ttf",
     ):
@@ -65,7 +65,7 @@ def generate_quest_board(
     
     # --- Measure Text & Calculate Responsive Width ---
     # Use a large but practical default title size.
-    title_font = _load_font(40)
+    title_font = _load_font(18)
     
     dummy_draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
     title_bbox = dummy_draw.textbbox((0, 0), title, font=title_font)
