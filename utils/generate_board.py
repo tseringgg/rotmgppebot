@@ -30,36 +30,73 @@ def generate_quest_board(
     items = list(item_names)
     rows = max(1, ceil(max(1, len(items)) / safe_columns))
 
-    outer_pad = 24
-    board_pad = 14
-    slot_size = icon_size + 10
-    header_height = 68
-    board_width = (safe_columns * slot_size) + (board_pad * 2)
-    board_height = (rows * slot_size) + (board_pad * 2)
-    width = board_width + (outer_pad * 2)
-    height = header_height + board_height + (outer_pad * 2)
+    outer_pad = 26
+    panel_pad = 18
+    grid_pad = 16
+    slot_size = icon_size + 11
+    title_gap = 84
+    grid_width = (safe_columns * slot_size) + (grid_pad * 2)
+    grid_height = (rows * slot_size) + (grid_pad * 2)
+    panel_width = grid_width + (panel_pad * 2)
+    panel_height = title_gap + grid_height + panel_pad
+    width = panel_width + (outer_pad * 2)
+    height = panel_height + (outer_pad * 2)
 
-    bg_color = (22, 22, 27, 255)
-    line_color = (90, 90, 100, 255)
+    bg_color = (21, 21, 25, 255)
+    panel_color = (27, 27, 33, 255)
+    frame_color = (76, 79, 92, 255)
+    title_color = (243, 243, 246, 255)
+
     img = Image.new("RGBA", (width, height), bg_color)
     draw = ImageDraw.Draw(img)
 
-    title_font = _load_font(20)
+    panel_left = outer_pad
+    panel_top = outer_pad
+    panel_right = panel_left + panel_width
+    panel_bottom = panel_top + panel_height
+
+    draw.rectangle([panel_left, panel_top, panel_right, panel_bottom], fill=panel_color)
+    draw.rectangle([panel_left, panel_top, panel_right, panel_bottom], outline=frame_color, width=3)
+
+    title_font = _load_font(58 if width > 1500 else 42 if width > 1100 else 34)
     title_bbox = draw.textbbox((0, 0), title, font=title_font)
     title_w = title_bbox[2] - title_bbox[0]
-    title_x = (width - title_w) // 2
-    title_y = outer_pad + 4
+    title_h = title_bbox[3] - title_bbox[1]
+    title_x = panel_left + (panel_width - title_w) // 2
+    title_y = panel_top + 18
 
-    draw.line([(outer_pad, title_y - 2), (title_x - 18, title_y - 2)], fill=line_color, width=4)
-    draw.line([(title_x + title_w + 18, title_y - 2), (width - outer_pad, title_y - 2)], fill=line_color, width=4)
-    draw.text((title_x, title_y), title, font=title_font, fill=(240, 240, 245, 255))
+    left_sep_start = panel_left + 44
+    left_sep_end = title_x - 24
+    right_sep_start = title_x + title_w + 24
+    right_sep_end = panel_right - 44
+    sep_y = title_y + (title_h // 2)
+    if left_sep_end > left_sep_start:
+        draw.line([(left_sep_start, sep_y), (left_sep_end, sep_y)], fill=frame_color, width=6)
+    if right_sep_end > right_sep_start:
+        draw.line([(right_sep_start, sep_y), (right_sep_end, sep_y)], fill=frame_color, width=6)
+    draw.text((title_x, title_y), title, font=title_font, fill=title_color)
 
-    board_top = outer_pad + header_height
-    board_left = outer_pad
-    board_right = width - outer_pad
-    board_bottom = board_top + board_height
+    divider_y = panel_top + title_gap - 12
+    draw.line([(panel_left + 18, divider_y), (panel_right - 18, divider_y)], fill=frame_color, width=4)
 
-    draw.rectangle([board_left, board_top, board_right, board_bottom], outline=line_color, width=3)
+    board_left = panel_left + panel_pad
+    board_top = panel_top + title_gap
+    board_right = board_left + grid_width
+    board_bottom = board_top + grid_height
+
+    draw.rectangle([board_left, board_top, board_right, board_bottom], outline=frame_color, width=3)
+
+    corner_len = 24
+    corner_width = 3
+    corner_points = [
+        ((panel_left + 10, panel_top + 10), (panel_left + 10 + corner_len, panel_top + 10), (panel_left + 10, panel_top + 10 + corner_len)),
+        ((panel_right - 10, panel_top + 10), (panel_right - 10 - corner_len, panel_top + 10), (panel_right - 10, panel_top + 10 + corner_len)),
+        ((panel_left + 10, panel_bottom - 10), (panel_left + 10 + corner_len, panel_bottom - 10), (panel_left + 10, panel_bottom - 10 - corner_len)),
+        ((panel_right - 10, panel_bottom - 10), (panel_right - 10 - corner_len, panel_bottom - 10), (panel_right - 10, panel_bottom - 10 - corner_len)),
+    ]
+    for anchor, horizontal_end, vertical_end in corner_points:
+        draw.line([anchor, horizontal_end], fill=frame_color, width=corner_width)
+        draw.line([anchor, vertical_end], fill=frame_color, width=corner_width)
 
     fallback_icon = None
     if missing_image_path:
@@ -72,8 +109,8 @@ def generate_quest_board(
         row = index // safe_columns
         col = index % safe_columns
 
-        x = board_left + board_pad + (col * slot_size)
-        y = board_top + board_pad + (row * slot_size)
+        x = board_left + grid_pad + (col * slot_size)
+        y = board_top + grid_pad + (row * slot_size)
 
         icon = None
         resolved_path = image_path_resolver(item)

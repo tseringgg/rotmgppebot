@@ -170,10 +170,10 @@ def _build_home_embed(
     embed = discord.Embed(
         title=f"My Quests - {display_name}",
         description=(
-            f"Quest resets remaining: **{resets_remaining}/{reset_limit}**\n"
-            "Use the buttons below to switch between quest views."
+            f"Resets remaining: **{resets_remaining}/{reset_limit}**\n"
+            "Use the menu below to view quest boards, completed quests, or reset your quest progress."
         ),
-        color=discord.Color.blurple(),
+        color=discord.Color.from_rgb(54, 57, 63),
     )
     embed.add_field(
         name="Quest Progress",
@@ -194,6 +194,7 @@ def _build_home_embed(
         ),
         inline=False,
     )
+    embed.set_footer(text="Boards render only when selected to keep this panel clean.")
     return embed
 
 
@@ -201,7 +202,7 @@ def _build_category_embed(title: str, item_names: Sequence[str], attachment_name
     embed = discord.Embed(
         title=title,
         description=_build_quest_lines(item_names),
-        color=discord.Color.blurple(),
+        color=discord.Color.from_rgb(88, 101, 242),
     )
     embed.set_image(url=f"attachment://{attachment_name}")
     return embed
@@ -253,21 +254,40 @@ class MyQuestsView(discord.ui.View):
         self,
         *,
         owner_id: int,
+        display_name: str,
         home_embed: discord.Embed,
-        regular_embed: discord.Embed,
-        shiny_embed: discord.Embed,
-        skin_embed: discord.Embed,
-        all_embed: discord.Embed,
+        current_regular: Sequence[str],
+        current_shiny: Sequence[str],
+        current_skin: Sequence[str],
+        current_all: Sequence[str],
         completed_embed: discord.Embed,
     ) -> None:
         super().__init__(timeout=600)
         self.owner_id = owner_id
+        self.display_name = display_name
         self.home_embed = home_embed
-        self.regular_embed = regular_embed
-        self.shiny_embed = shiny_embed
-        self.skin_embed = skin_embed
-        self.all_embed = all_embed
+        self.current_regular = list(current_regular)
+        self.current_shiny = list(current_shiny)
+        self.current_skin = list(current_skin)
+        self.current_all = list(current_all)
         self.completed_embed = completed_embed
+
+    async def _edit_with_board(
+        self,
+        interaction: discord.Interaction,
+        *,
+        embed_title: str,
+        board_title_suffix: str,
+        item_names: Sequence[str],
+        attachment_name: str,
+    ) -> None:
+        board_file = _board_file(
+            item_names,
+            f"{self.display_name}'s {board_title_suffix}",
+            attachment_name,
+        )
+        embed = _build_category_embed(embed_title, item_names, attachment_name)
+        await interaction.response.edit_message(embed=embed, attachments=[board_file], view=self)
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.owner_id:
@@ -277,31 +297,65 @@ class MyQuestsView(discord.ui.View):
 
     @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary)
     async def home(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await interaction.response.edit_message(embed=self.home_embed, view=self)
+        await interaction.response.edit_message(embed=self.home_embed, attachments=[], view=self)
 
     @discord.ui.button(label="Regular", style=discord.ButtonStyle.primary)
     async def regular(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await interaction.response.edit_message(embed=self.regular_embed, view=self)
+        await self._edit_with_board(
+            interaction,
+            embed_title="Regular Quest Targets",
+            board_title_suffix="Missing Regular Quests",
+            item_names=self.current_regular,
+            attachment_name="myquests_regular.png",
+        )
 
     @discord.ui.button(label="Shiny", style=discord.ButtonStyle.primary)
     async def shiny(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await interaction.response.edit_message(embed=self.shiny_embed, view=self)
+        await self._edit_with_board(
+            interaction,
+            embed_title="Shiny Quest Targets",
+            board_title_suffix="Missing Shinies",
+            item_names=self.current_shiny,
+            attachment_name="myquests_shiny.png",
+        )
 
     @discord.ui.button(label="Skins", style=discord.ButtonStyle.primary)
     async def skins(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await interaction.response.edit_message(embed=self.skin_embed, view=self)
+        await self._edit_with_board(
+            interaction,
+            embed_title="Skin Quest Targets",
+            board_title_suffix="Missing Skins",
+            item_names=self.current_skin,
+            attachment_name="myquests_skins.png",
+        )
 
     @discord.ui.button(label="Show All", style=discord.ButtonStyle.success)
     async def show_all(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await interaction.response.edit_message(embed=self.all_embed, view=self)
+        await self._edit_with_board(
+            interaction,
+            embed_title="All Current Quest Targets",
+            board_title_suffix="All Missing Quests",
+            item_names=self.current_all,
+            attachment_name="myquests_all.png",
+        )
 
     @discord.ui.button(label="Completed", style=discord.ButtonStyle.success)
     async def completed(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await interaction.response.edit_message(embed=self.completed_embed, view=self)
+        await interaction.response.edit_message(embed=self.completed_embed, attachments=[], view=self)
 
     @discord.ui.button(label="Reset Quests", style=discord.ButtonStyle.danger)
     async def reset_quests(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await resetquestfor_cmd.command_self(interaction)
+
+    @discord.ui.button(label="Close", style=discord.ButtonStyle.secondary)
+    async def close(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.stop()
+        await interaction.response.edit_message(
+            content="Quest panel closed.",
+            embed=None,
+            attachments=[],
+            view=None,
+        )
 
 
 async def command(interaction: discord.Interaction):
@@ -342,13 +396,6 @@ async def command(interaction: discord.Interaction):
         current_skin = list(quests.current_skins)
         current_all = current_regular + current_shiny + current_skin
 
-        files = [
-            _board_file(current_regular, "Regular Quest Items", "myquests_regular.png"),
-            _board_file(current_shiny, "Shiny Quest Items", "myquests_shiny.png"),
-            _board_file(current_skin, "Skin Quest Items", "myquests_skins.png"),
-            _board_file(current_all, "All Current Quest Items", "myquests_all.png"),
-        ]
-
         home_embed = _build_home_embed(
             interaction.user.display_name,
             quests,
@@ -361,25 +408,21 @@ async def command(interaction: discord.Interaction):
             shiny_target,
             skin_target,
         )
-        regular_embed = _build_category_embed("Regular Quest Targets", current_regular, "myquests_regular.png")
-        shiny_embed = _build_category_embed("Shiny Quest Targets", current_shiny, "myquests_shiny.png")
-        skin_embed = _build_category_embed("Skin Quest Targets", current_skin, "myquests_skins.png")
-        all_embed = _build_category_embed("All Current Quest Targets", current_all, "myquests_all.png")
         completed_embed = _build_completed_embed(quests, regular_points, shiny_points, skin_points)
 
         view = MyQuestsView(
             owner_id=user_id,
+            display_name=interaction.user.display_name,
             home_embed=home_embed,
-            regular_embed=regular_embed,
-            shiny_embed=shiny_embed,
-            skin_embed=skin_embed,
-            all_embed=all_embed,
+            current_regular=current_regular,
+            current_shiny=current_shiny,
+            current_skin=current_skin,
+            current_all=current_all,
             completed_embed=completed_embed,
         )
 
         await interaction.response.send_message(
             embed=home_embed,
-            files=files,
             view=view,
             ephemeral=False,
         )
