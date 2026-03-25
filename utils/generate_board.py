@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    # Prioritizing fatter/bold fonts for better visibility at large sizes
+    # Look for a custom pixel font, or fallback to standard ones
     for candidate in (
         "pixel_font.ttf",      
         "PressStart2P.ttf",
@@ -54,31 +54,32 @@ def generate_quest_board(
     rows = max(1, ceil(max(1, len(items)) / safe_columns))
 
     # --- Sizing Base Variables ---
-    pad = 24  # Increased outer padding slightly for the bigger scale
+    pad = 20
     slot_size = icon_size + 12
     
     grid_width = (safe_columns * slot_size)
     grid_height = (rows * slot_size)
     
     # --- Measure Text & Calculate Responsive Width ---
-    # Cranked the font size way up to 90
-    title_font = _load_font(90) 
+    # Increased font size, removed the fake bold stroke later
+    title_font = _load_font(120) 
     
     dummy_draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
     title_bbox = dummy_draw.textbbox((0, 0), title, font=title_font)
     title_w = title_bbox[2] - title_bbox[0]
     title_h = title_bbox[3] - title_bbox[1]
 
-    # Smart Width: Added more horizontal padding (160px) so the huge text doesn't touch the edges
-    width = max(grid_width + 120, title_w + 160)
+    # Smart Width: Box will fit the grid, UNLESS the title is wider.
+    # We add 80px of padding to ensure the text never touches the walls.
+    width = max(grid_width + 80, title_w + 80)
 
-    # Calculate exact vertical placements with scaled-up gaps
-    title_y = pad + 24
-    div_y = title_y + title_h + 30
-    board_top = div_y + 40
+    # Calculate exact vertical placements
+    title_y = pad + 16
+    div_y = title_y + title_h + 20
+    board_top = div_y + 24
     
     # Snug height calculation
-    height = board_top + grid_height + 32 
+    height = board_top + grid_height + 24 
 
     # --- Colors ---
     bg_color = (25, 25, 25, 255)       
@@ -94,13 +95,13 @@ def generate_quest_board(
     c_len = 24 
     c_gap = 12 
     
-    # Outer Box Lines
+    # 1. Outer Box Lines
     draw.line([(pad + c_len + c_gap, pad), (width - pad - c_len - c_gap, pad)], fill=frame_color, width=line_w)
     draw.line([(pad + c_len + c_gap, height - pad), (width - pad - c_len - c_gap, height - pad)], fill=frame_color, width=line_w)
     draw.line([(pad, pad + c_len + c_gap), (pad, height - pad - c_len - c_gap)], fill=frame_color, width=line_w)
     draw.line([(width - pad, pad + c_len + c_gap), (width - pad, height - pad - c_len - c_gap)], fill=frame_color, width=line_w)
 
-    # Corner Brackets & Inner Dots
+    # 2. Corner Brackets & Inner Dots
     corners = [
         ([(pad, pad + c_len), (pad, pad), (pad + c_len, pad)], (pad + 8, pad + 8)),
         ([(width - pad - c_len, pad), (width - pad, pad), (width - pad, pad + c_len)], (width - pad - 12, pad + 8)),
@@ -115,7 +116,7 @@ def generate_quest_board(
     # --- Draw Text & Horizontal Separator ---
     title_x = (width - title_w) // 2
     
-    # Draw the massive text
+    # Clean, larger text with no artificial bold stroke
     draw.text(
         (title_x, title_y), 
         title, 
@@ -132,6 +133,7 @@ def generate_quest_board(
     draw.rectangle([(width - div_pad - 4, div_y - 2), (width - div_pad - 1, div_y + 1)], fill=frame_color)
 
     # --- Draw Grid Items ---
+    # Center the entire grid block relative to the dynamic width
     board_left = (width - grid_width) // 2
 
     fallback_icon = None
