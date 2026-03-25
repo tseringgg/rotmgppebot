@@ -8,17 +8,24 @@ from typing import Callable, Sequence
 from PIL import Image, ImageDraw, ImageFont
 
 
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
 def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    # Look for a custom pixel font, or fallback to standard ones
+    # Prefer local pixel fonts, then scalable system fallbacks.
     for candidate in (
-        "PressStart2P.ttf",
-        "pixel_font.ttf"
+        os.path.join(_THIS_DIR, "PressStart2P.ttf"),
+        os.path.join(_THIS_DIR, "pixel_font.ttf"),
+        "DejaVuSansMono-Bold.ttf",
+        "DejaVuSans-Bold.ttf",
     ):
         try:
             return ImageFont.truetype(candidate, size)
         except OSError:
             continue
-    return None
+
+    # Last resort bitmap fallback (fixed-size appearance).
+    return ImageFont.load_default()
 
 
 def generate_quest_board(
@@ -57,8 +64,8 @@ def generate_quest_board(
     grid_height = (rows * slot_size)
     
     # --- Measure Text & Calculate Responsive Width ---
-    # Increased font size, removed the fake bold stroke later
-    title_font = _load_font(400) 
+    # Use a large but practical default title size.
+    title_font = _load_font(92)
     
     dummy_draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
     title_bbox = dummy_draw.textbbox((0, 0), title, font=title_font)
