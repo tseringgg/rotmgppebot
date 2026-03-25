@@ -36,8 +36,10 @@ def generate_quest_board(
     missing_image_path: str | None = None,
     columns: int | None = None,
     icon_size: int = 34,
+    resolution_scale: int = 2,
 ) -> BytesIO:
     """Render a framed icon grid board for the provided items."""
+    scale = max(1, int(resolution_scale))
     items = list(item_names)
     
     # --- Grid Math ---
@@ -57,15 +59,16 @@ def generate_quest_board(
     rows = max(1, ceil(max(1, len(items)) / safe_columns))
 
     # --- Sizing Base Variables ---
-    pad = 20
-    slot_size = icon_size + 12
+    scaled_icon_size = icon_size * scale
+    pad = 20 * scale
+    slot_size = scaled_icon_size + (12 * scale)
     
     grid_width = (safe_columns * slot_size)
     grid_height = (rows * slot_size)
     
     # --- Measure Text & Calculate Responsive Width ---
     # Use a large but practical default title size.
-    title_font = _load_font(18)
+    title_font = _load_font(20 * scale)
     
     dummy_draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
     title_bbox = dummy_draw.textbbox((0, 0), title, font=title_font)
@@ -94,9 +97,9 @@ def generate_quest_board(
     draw = ImageDraw.Draw(img)
 
     # --- Draw Thicker Custom Retro Frame ---
-    line_w = 4 
-    c_len = 24 
-    c_gap = 12 
+    line_w = 4 * scale
+    c_len = 24 * scale
+    c_gap = 12 * scale
     
     # 1. Outer Box Lines
     draw.line([(pad + c_len + c_gap, pad), (width - pad - c_len - c_gap, pad)], fill=frame_color, width=line_w)
@@ -112,9 +115,10 @@ def generate_quest_board(
         ([(width - pad - c_len, height - pad), (width - pad, height - pad), (width - pad, height - pad - c_len)], (width - pad - 12, height - pad - 12))
     ]
     
+    dot_size = max(3, 3 * scale)
     for lines, dot in corners:
         draw.line(lines, fill=frame_color, width=line_w)
-        draw.rectangle([dot[0], dot[1], dot[0] + 3, dot[1] + 3], fill=frame_color)
+        draw.rectangle([dot[0], dot[1], dot[0] + dot_size, dot[1] + dot_size], fill=frame_color)
 
     # --- Draw Text & Horizontal Separator ---
     title_x = (width - title_w) // 2
@@ -132,8 +136,19 @@ def generate_quest_board(
     draw.line([(div_pad + 16, div_y), (width - div_pad - 16, div_y)], fill=frame_color, width=line_w)
     
     # Separator endpoints
-    draw.rectangle([(div_pad, div_y - 2), (div_pad + 3, div_y + 1)], fill=frame_color)
-    draw.rectangle([(width - div_pad - 4, div_y - 2), (width - div_pad - 1, div_y + 1)], fill=frame_color)
+    marker_half_h = max(2, 2 * scale)
+    marker_w = max(3, 3 * scale)
+    draw.rectangle(
+        [(div_pad, div_y - marker_half_h), (div_pad + marker_w, div_y + marker_half_h - 1)],
+        fill=frame_color,
+    )
+    draw.rectangle(
+        [
+            (width - div_pad - marker_w - 1, div_y - marker_half_h),
+            (width - div_pad - 1, div_y + marker_half_h - 1),
+        ],
+        fill=frame_color,
+    )
 
     # --- Draw Grid Items ---
     # Center the entire grid block relative to the dynamic width
@@ -142,7 +157,7 @@ def generate_quest_board(
     fallback_icon = None
     if missing_image_path:
         try:
-            fallback_icon = Image.open(missing_image_path).convert("RGBA").resize((icon_size, icon_size), Image.NEAREST)
+            fallback_icon = Image.open(missing_image_path).convert("RGBA").resize((scaled_icon_size, scaled_icon_size), Image.NEAREST)
         except OSError:
             fallback_icon = None
 
@@ -150,7 +165,7 @@ def generate_quest_board(
         row = index // safe_columns
         col = index % safe_columns
 
-        x = board_left + (col * slot_size) + (slot_size - icon_size) // 2
+        x = board_left + (col * slot_size) + (slot_size - scaled_icon_size) // 2
         y = board_top + (row * slot_size)
 
         icon = None
@@ -165,11 +180,15 @@ def generate_quest_board(
             icon = fallback_icon
 
         if icon is None:
-            draw.rectangle([x, y, x + icon_size, y + icon_size], outline=(180, 70, 70, 255), width=2)
+            draw.rectangle(
+                [x, y, x + scaled_icon_size, y + scaled_icon_size],
+                outline=(180, 70, 70, 255),
+                width=max(2, 2 * scale),
+            )
             continue
 
-        if icon.size != (icon_size, icon_size):
-            icon = icon.resize((icon_size, icon_size), Image.NEAREST)
+        if icon.size != (scaled_icon_size, scaled_icon_size):
+            icon = icon.resize((scaled_icon_size, scaled_icon_size), Image.NEAREST)
             
         img.paste(icon, (x, y), icon)
 
