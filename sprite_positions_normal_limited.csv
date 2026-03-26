@@ -29,861 +29,944 @@ Virtuous Wakizashi,26,0,1040,0
 Nebular Lute,27,0,1080,0
 Grandmaster Mace,28,0,1120,0
 Sonic Wave Sheath,29,0,1160,0
-Sigil of the Rhino,0,1,0,40
-Leviathan Armor,1,1,40,40
-Robe of the Ancient Intellect,2,1,80,40
-Annihilation Armor,3,1,120,40
-Ring of Transcendent Health,4,1,160,40
-Ring of Transcendent Magic,5,1,200,40
-Ring of Transcendent Attack,6,1,240,40
-Ring of Transcendent Defense,7,1,280,40
-Ring of Transcendent Speed,8,1,320,40
-Ring of Transcendent Dexterity,9,1,360,40
-Ring of Transcendent Vitality,10,1,400,40
-Ring of Transcendent Wisdom,11,1,440,40
-Demon Blade,12,1,480,40
-Volcanic Sheath,13,1,520,40
-Berserker's Breastplate,14,1,560,40
-Demon Blade (shiny),15,1,600,40
-Volcanic Sheath (shiny),16,1,640,40
-Staff of Eruption,17,1,680,40
-Scorchium Stone,18,1,720,40
-Molten Mantle,19,1,760,40
-Ring of the Inferno,20,1,800,40
-Sword of Illumination,21,1,840,40
-Adamantine Helm,22,1,880,40
-Arcane Rapier,23,1,920,40
-Amber Encrusted Helmet,24,1,960,40
-Sandstone Seal,25,1,1000,40
-Arcane Rapier (shiny),26,1,1040,40
-Amber Encrusted Helmet (shiny),27,1,1080,40
-Sandstone Seal (shiny),28,1,1120,40
-Resplendent Bow,29,1,1160,40
-Embellished Quiver,0,2,0,80
-Ornate Armor,1,2,40,80
-Aquamarine Amulet,2,2,80,80
-Candy Ring,3,2,120,80
-Candy-Coated Armor,4,2,160,80
-Bubblegum Bucket,5,2,200,80
-Candy Ring (shiny),6,2,240,80
-Candy-Coated Armor (shiny),7,2,280,80
-Pixie-Enchanted Sword,8,2,320,80
-Seal of the Enchanted Forest,9,2,360,80
-Fairy Plate,10,2,400,80
-Ring of Pure Wishes,11,2,440,80
-Bottled Medusozoan,12,2,480,80
-Cnidaria Rod,13,2,520,80
-Bottled Medusozoan (shiny),14,2,560,80
-Cnidaria Rod (shiny),15,2,600,80
-Fungal Breastplate,16,2,640,80
-Crystallized Worm Spellblade,17,2,680,80
-Crystal Shield,18,2,720,80
-Sporous Spray Spell,19,2,760,80
-Tome of the Mushroom Tribes,20,2,800,80
-Cave Dweller Trap,21,2,840,80
-Ring of Decades,22,2,880,80
-Fungal Breastplate (shiny),23,2,920,80
-Crystal Shield (shiny),24,2,960,80
-Sporous Spray Spell (shiny),25,2,1000,80
-Tome of the Mushroom Tribes (shiny),26,2,1040,80
-Cave Dweller Trap (shiny),27,2,1080,80
-Ring of Decades (shiny),28,2,1120,80
-Crystalline Sigil,29,2,1160,80
-Quartz Cutter,0,3,0,120
-Crystalline Kunai,1,3,40,120
-Luminous Armor,2,3,80,120
-Radiant Heart,3,3,120,120
-Irradiance Sheath,4,3,160,120
-Fractal Blades,5,3,200,120
-Cloak of Refraction,6,3,240,120
-Echoes Prism,7,3,280,120
-Fractured Gemstone Wakizashi,8,3,320,120
-Star of Enlightenment,9,3,360,120
-Crystallised Mist,10,3,400,120
-Fractal Blades (shiny),11,3,440,120
-Cloak of Refraction (shiny),12,3,480,120
-Fractured Gemstone Wakizashi (shiny),13,3,520,120
-Star of Enlightenment (shiny),14,3,560,120
-Wand of Hidden Knowledge,15,3,600,120
-Necronomicon,16,3,640,120
-Scholar's Seal,17,3,680,120
-Ronin's Wakizashi,18,3,720,120
-Corruption Cutter,19,3,760,120
-Necronomicon (shiny),20,3,800,120
-Scholar's Seal (shiny),21,3,840,120
-Ronin's Wakizashi (shiny),22,3,880,120
-Corruption Cutter (shiny),23,3,920,120
-Deathless Crossbow,24,3,960,120
-Quiver of Shrieking Specters,25,3,1000,120
-Wraith's Brigandine,26,3,1040,120
-Revenant Ring,27,3,1080,120
-Quartermaster Scabbard,28,3,1120,120
-Spirit Dagger,29,3,1160,120
-Ghostly Prism,0,4,0,160
-Spectral Cloth Armor,1,4,40,160
-Captain's Ring,2,4,80,160
-Quartermaster Scabbard (shiny),3,4,120,160
-Spirit Dagger (shiny),4,4,160,160
-Ghostly Prism (shiny),5,4,200,160
-Spectral Cloth Armor (shiny),6,4,240,160
-Pirate King's Cutlass,7,4,280,160
-Wavecrest Concertina,8,4,320,160
-Pirate King's Cutlass (shiny),9,4,360,160
-Wavecrest Concertina (shiny),10,4,400,160
-Swashbuckler's Sickle,11,4,440,160
-Tricorne of the High Seas,12,4,480,160
-Naval Uniform,13,4,520,160
-First Mate's Hook,14,4,560,160
-Soul's Guidance,15,4,600,160
-Plague Poison,16,4,640,160
-Resurrected Warrior's Armor,17,4,680,160
-Amulet of Dispersion,18,4,720,160
-Soul's Guidance (shiny),19,4,760,160
-Plague Poison (shiny),20,4,800,160
-Resurrected Warrior's Armor (shiny),21,4,840,160
-Amulet of Dispersion (shiny),22,4,880,160
-Etherite Dagger,23,4,920,160
-Ghastly Drape,24,4,960,160
-Mantle of Skuld,25,4,1000,160
-Spectral Ring of Horrors,26,4,1040,160
-B.O.W.,27,4,1080,160
-S.T.A.F.F.,28,4,1120,160
-Q.U.I.V.E.R.,29,4,1160,160
-S.H.E.A.T.H.,0,5,0,200
-E.Y.E.,1,5,40,200
-B.O.W. (shiny),2,5,80,200
-S.T.A.F.F. (shiny),3,5,120,200
-Q.U.I.V.E.R. (shiny),4,5,160,200
-S.H.E.A.T.H. (shiny),5,5,200,200
-E.Y.E. (shiny),6,5,240,200
-C.L.A.W.,7,5,280,200
-B.O.O.M.,8,5,320,200
-A.R.M.O.R.,9,5,360,200
-C.O.N.T.R.O.L.L.E.R.,10,5,400,200
-Staff of Esben,11,5,440,200
-Skullish Remains of Esben,12,5,480,200
-Esben's Vows,13,5,520,200
-Ase's Echo,14,5,560,200
-Esben's Wedding Ring,15,5,600,200
-Esben's Twisted Heart,16,5,640,200
-Esben's Shaman Attire,17,5,680,200
-Ase's Echo (shiny),18,5,720,200
-Esben's Twisted Heart (shiny),19,5,760,200
-Esben's Shaman Attire (shiny),20,5,800,200
-Dalvar's Battle Axe,21,5,840,200
-Sunken Buckler,22,5,880,200
-Chainmail Body Armor,23,5,920,200
-Gjallarhorn,24,5,960,200
-Heartsteel Claymore,25,5,1000,200
-Symbol of the Lost,26,5,1040,200
-Hull of the Tundra,27,5,1080,200
-Frozen Heart,28,5,1120,200
-Iceborn Arsenal,29,5,1160,200
-Sublimation Sidearm,0,6,0,240
-Retainer's Battlesuit,1,6,40,240
-Legacy's Pendant,2,6,80,240
-Overclocking Amulet,3,6,120,240
-Steam Pipe,4,6,160,240
-Kogbold Cower Shield,5,6,200,240
-Chain Dagger,6,6,240,240
-Laser Pointer,7,6,280,240
-Scepter of Rust,8,6,320,240
-Brain Cube,9,6,360,240
-Kogbold Enhancement Core,10,6,400,240
-Overclocking Amulet (shiny),11,6,440,240
-Steam Pipe (shiny),12,6,480,240
-Chain Dagger (shiny),13,6,520,240
-Laser Pointer (shiny),14,6,560,240
-Scepter of Rust (shiny),15,6,600,240
-Brain Cube (shiny),16,6,640,240
-Kogbold Enhancement Core (shiny),17,6,680,240
-Kogbold Multitool,18,6,720,240
-Kogbold Multitool (shiny),19,6,760,240
-Celestial Blade,20,6,800,240
-Leaf Dragon Hide Armor,21,6,840,240
-Water Dragon Silk Robe,22,6,880,240
-Fire Dragon Battle Armor,23,6,920,240
-Midnight Star,24,6,960,240
-Vision of Draconis,25,6,1000,240
-Draconic Insignia,26,6,1040,240
-Celestial Blade (shiny),27,6,1080,240
-Leaf Dragon Hide Armor (shiny),28,6,1120,240
-Water Dragon Silk Robe (shiny),29,6,1160,240
-Fire Dragon Battle Armor (shiny),0,7,0,280
-Midnight Star (shiny),1,7,40,280
-Vision of Draconis (shiny),2,7,80,280
-Hailstorm,3,7,120,280
-Thundering Chorus,4,7,160,280
-Wind Dancer Robe,5,7,200,280
-Augur of the Tempest,6,7,240,280
-Earthen Ward,7,7,280,280
-Stonemould Mace,8,7,320,280
-Rocky Robe,9,7,360,280
-Steadfast Glyph,10,7,400,280
-Saif of the Deep,11,7,440,280
-Loch Sheath,12,7,480,280
-Barrier Reef,13,7,520,280
-Alexander's Band,14,7,560,280
-Indomptable,15,7,600,280
-Helm of Draconic Dominance,16,7,640,280
-Zaarvox's Heart,17,7,680,280
-Amulet of Drakefyre,18,7,720,280
-Wakizashi of Crossing Fires,19,7,760,280
-Skull of Endless Torment,20,7,800,280
-Igneous Starblossom,21,7,840,280
-Skull of Endless Torment (shiny),22,7,880,280
-Igneous Starblossom (shiny),23,7,920,280
-Fiery Katana,24,7,960,280
-Pyro Sheath,25,7,1000,280
-Flame Guard,26,7,1040,280
-Firelight Necklace,27,7,1080,280
-Sword of the Colossus,28,7,1120,280
-Marble Seal,29,7,1160,280
-Breastplate of New Life,0,8,0,320
-Magical Lodestone,1,8,40,320
-Sword of the Colossus (shiny),2,8,80,320
-Marble Seal (shiny),3,8,120,320
-Breastplate of New Life (shiny),4,8,160,320
-Carved Golem Remains,5,8,200,320
-Brain of the Golem,6,8,240,320
-Golem Garments,7,8,280,320
-Rusty Cuffs,8,8,320,320
-Burial Blades,9,8,360,320
-Staff of Unholy Sacrifice,10,8,400,320
-Skull of Corrupted Souls,11,8,440,320
-Ritual Robe,12,8,480,320
-Bloodshed Ring,13,8,520,320
-Burial Blades (shiny),14,8,560,320
-Skull of Corrupted Souls (shiny),15,8,600,320
-Ritual Robe (shiny),16,8,640,320
-Bow of the Void,17,8,680,320
-Quiver of Shadows,18,8,720,320
-Armor of Nil,19,8,760,320
-Sourcestone,20,8,800,320
-Omnipotence Ring,21,8,840,320
-Bow of the Void (shiny),22,8,880,320
-Quiver of Shadows (shiny),23,8,920,320
-Armor of Nil (shiny),24,8,960,320
-Conducting Wand,25,8,1000,320
-Scepter of Fulmination,26,8,1040,320
-Robe of the Mad Scientist,27,8,1080,320
-Experimental Ring,28,8,1120,320
-Conducting Wand (shiny),29,8,1160,320
-Scepter of Fulmination (shiny),0,9,0,360
-Robe of the Mad Scientist (shiny),1,9,40,360
-Experimental Ring (shiny),2,9,80,360
-Abomination's Wrath,3,9,120,360
-Grotesque Scepter,4,9,160,360
-Garment of the Beast,5,9,200,360
-Horrific Claws,6,9,240,360
-Spirit Staff,7,9,280,360
-Enchantment Orb,8,9,320,360
-Woodland Robe,9,9,360,360
-Fairy Ring,10,9,400,360
-Shield of Flowing Clarity,11,9,440,360
-Spirit Staff (shiny),12,9,480,360
-Enchantment Orb (shiny),13,9,520,360
-Fairy Ring (shiny),14,9,560,360
-Woodland Robe (shiny),15,9,600,360
-Shield of Flowing Clarity (shiny),16,9,640,360
-Bergenia Bow,17,9,680,360
-Lifebringing Lotus,18,9,720,360
-Hollyhock Hide,19,9,760,360
-Chrysanthemum Corsage,20,9,800,360
-Bone Dagger,21,9,840,360
-Kyuuketsuki Hitogoroshi,22,9,880,360
-St. Abraham's Wand,23,9,920,360
-Tome of Purification,24,9,960,360
-Chasuble of Holy Light,25,9,1000,360
-Ring of Divine Faith,26,9,1040,360
-Bone Dagger (shiny),27,9,1080,360
-St. Abraham's Wand (shiny),28,9,1120,360
-Tome of Purification (shiny),29,9,1160,360
-Chasuble of Holy Light (shiny),0,10,0,400
-Ring of Divine Faith (shiny),1,10,40,400
-Soulcursed Scythe,2,10,80,400
-Vampiric Cape,3,10,120,400
-Hallowed Hide,4,10,160,400
-Ruthven's Rosary,5,10,200,400
-Sage's Wakibiki,6,10,240,400
-Ethereal Happi,7,10,280,400
-Flowering Kimono,8,10,320,400
-Rain Maker,9,10,360,400
-Taiko Drums,10,10,400,400
-Elegant Parasol,11,10,440,400
-Makakoyumi,12,10,480,400
-Tezutsu Hanabi,13,10,520,400
-Kagenohikari,14,10,560,400
-Concentrated Soul Fire,15,10,600,400
-Makakoyumi (shiny),16,10,640,400
-Master Fishing Rod,17,10,680,400
-Expert Fishing Rod,18,10,720,400
-Intermediate Fishing Rod,19,10,760,400
-Wand of the Fallen,20,10,800,400
-Orb of Aether,21,10,840,400
-Jade Storm,22,10,880,400
-Kaiken,23,10,920,400
-Wand of the Fallen (shiny),24,10,960,400
-Orb of Aether (shiny),25,10,1000,400
-Jade Storm (shiny),26,10,1040,400
-Kaiken (shiny),27,10,1080,400
-Kazekiri,28,10,1120,400
-Ryu's Blade,29,10,1160,400
-Kamishimo,0,11,0,440
-Akuma's Tear,1,11,40,440
-Coral Bow,2,11,80,440
-Coral Venom Trap,3,11,120,440
-Coral Silk Armor,4,11,160,440
-Coral Ring,5,11,200,440
-Sharktooth Sigil,6,11,240,440
-Coral Bow (shiny),7,11,280,440
-Coral Venom Trap (shiny),8,11,320,440
-Coral Silk Armor (shiny),9,11,360,440
-Coral Ring (shiny),10,11,400,440
-Tideturner Trident,11,11,440,440
-Slurpian Sea Scroll,12,11,480,440
-Oceanic Apparel,13,11,520,440
-Imperial Keepsake,14,11,560,440
-Ancient Stone Sword,15,11,600,440
-Spiteful Scutum,16,11,640,440
-Cloak of the Mad God,17,11,680,440
-Ancient Stone Sword (shiny),18,11,720,440
-Spiteful Scutum (shiny),19,11,760,440
-Cloak of the Mad God (shiny),20,11,800,440
-Theurgy Wand,21,11,840,440
-Ceremonial Merlot,22,11,880,440
-Anointed Robe,23,11,920,440
-Ring of Pagan Favor,24,11,960,440
-Tome of Holy Furor,25,11,1000,440
-Oryx's Greatsword,26,11,1040,440
-Champion's Bastion,27,11,1080,440
-Mercy's Bane,28,11,1120,440
-Bloodstone Ring,29,11,1160,440
-Superior,0,12,0,480
-Genesis Spell,1,12,40,480
-Diplomatic Robe,2,12,80,480
-Chancellor's Cranium,3,12,120,480
-Superior (shiny),4,12,160,480
-Genesis Spell (shiny),5,12,200,480
-Diplomatic Robe (shiny),6,12,240,480
-Chancellor's Cranium (shiny),7,12,280,480
-Avarice,8,12,320,480
-Gambler's Fate,9,12,360,480
-Turncoat Cape,10,12,400,480
-Collector's Monocle,11,12,440,480
-Avarice (shiny),12,12,480,480
-Gambler's Fate (shiny),13,12,520,480
-Turncoat Cape (shiny),14,12,560,480
-Collector's Monocle (shiny),15,12,600,480
-Lumiaire,16,12,640,480
-Chaotic Scripture,17,12,680,480
-Vesture of Duality,18,12,720,480
-Divine Coronation,19,12,760,480
-Lumiaire (shiny),20,12,800,480
-Chaotic Scripture (shiny),21,12,840,480
-Vesture of Duality (shiny),22,12,880,480
-Divine Coronation (shiny),23,12,920,480
-Enforcer,24,12,960,480
-Ballistic Star,25,12,1000,480
-Centaur's Shielding,26,12,1040,480
-Battalion Banner,27,12,1080,480
-Enforcer (shiny),28,12,1120,480
-Ballistic Star (shiny),29,12,1160,480
-Centaur's Shielding (shiny),0,13,0,520
-Battalion Banner (shiny),1,13,40,520
-Divinity,2,13,80,520
-Oryx's Escutcheon,3,13,120,520
-Gladiator Guard,4,13,160,520
-Exalted God's Horn,5,13,200,520
-Divinity (shiny),6,13,240,520
-Oryx's Escutcheon (shiny),7,13,280,520
-Gladiator Guard (shiny),8,13,320,520
-Exalted God's Horn (shiny),9,13,360,520
-Harmonious Harp,10,13,400,520
-Angel's Fanfare,11,13,440,520
-Wings of Sanctity,12,13,480,520
-Heavenly Halo,13,13,520,520
-Maw of Malignance,14,13,560,520
-Recurring Terror Spell,15,13,600,520
-Scepter of Devastation,16,13,640,520
-Tome of Pain,17,13,680,520
-Recurring Terror Spell (shiny),18,13,720,520
-Scepter of Devastation (shiny),19,13,760,520
-Tome of Pain (shiny),20,13,800,520
-Symbiotic Ripper,21,13,840,520
-Parasitic Concoction,22,13,880,520
-Rags of the Host,23,13,920,520
-Hivemind Circlet,24,13,960,520
-Marionette Ravager,25,13,1000,520
-Prism of Dancing Swords,26,13,1040,520
-Harlequin Armor,27,13,1080,520
-Marionette Ravager (shiny),28,13,1120,520
-Prism of Dancing Swords (shiny),29,13,1160,520
-Harlequin Armor (shiny),0,14,0,560
-Magic Wand,1,14,40,560
-Lightshow Scepter,2,14,80,560
-Magician's Robe,3,14,120,560
-Performer's Hat,4,14,160,560
-Thousand Shot,5,14,200,560
-Prism of Dire Instability,6,14,240,560
-Thousand Shot (shiny),7,14,280,560
-Prism of Dire Instability (shiny),8,14,320,560
-Tlatoani's Shroud,9,14,360,560
-Tezcacoatl's Tail,10,14,400,560
-Sealed Crystal Skull,11,14,440,560
-Penetrating Blast Spell,12,14,480,560
-Tlatoani's Shroud (shiny),13,14,520,560
-Tezcacoatl's Tail (shiny),14,14,560,560
-Sealed Crystal Skull (shiny),15,14,600,560
-Penetrating Blast Spell (shiny),16,14,640,560
-Reikoku,17,14,680,560
-Daybreak Chakram,18,14,720,560
-Hirejou Tenne,19,14,760,560
-Heavenly Magatama,20,14,800,560
-Snakeskin Shield,21,14,840,560
-Wand of the Bulwark,22,14,880,560
-Snake Charmer Pungi,23,14,920,560
-Snakeskin Armor,24,14,960,560
-Snake Eye Ring,25,14,1000,560
-Snakeskin Shield (shiny),26,14,1040,560
-Wand of the Bulwark (shiny),27,14,1080,560
-Snake Charmer Pungi (shiny),28,14,1120,560
-Snakeskin Armor (shiny),29,14,1160,560
-Snake Eye Ring (shiny),0,15,0,600
-Tools of the Tarnished,1,15,40,600
-Wretched Rags,2,15,80,600
-Sinister Syringes,3,15,120,600
-Cackling Straitjacket,4,15,160,600
-Command Cornea,5,15,200,600
-Ocular Entrapment,6,15,240,600
-Overwhelming Axehead,7,15,280,600
-Motivational Megaphone,8,15,320,600
-Damnation,9,15,360,600
-Vial of Soul Extract,10,15,400,600
-Tools of the Tarnished (shiny),11,15,440,600
-Ocular Entrapment (shiny),12,15,480,600
-Motivational Megaphone (shiny),13,15,520,600
-Damnation (shiny),14,15,560,600
-Vial of Soul Extract (shiny),15,15,600,600
-Staff of Extreme Prejudice,16,15,640,600
-Cloak of the Planewalker,17,15,680,600
-Mace of the Celestial Forest,18,15,720,600
-Sprite Wand,19,15,760,600
-Staff of Extreme Prejudice (shiny),20,15,800,600
-Cloak of the Planewalker (shiny),21,15,840,600
-Mace of the Celestial Forest (shiny),22,15,880,600
-Sprite Wand (shiny),23,15,920,600
-Sulfuric Stone,24,15,960,600
-Bogwood Crook,25,15,1000,600
-Brambletooth Tachi,26,15,1040,600
-Warped Mantle,27,15,1080,600
-Thistleleaf Necklace,28,15,1120,600
-Bogwood Crook (shiny),29,15,1160,600
-Brambletooth Tachi (shiny),0,16,0,640
-Warped Mantle (shiny),1,16,40,640
-Thistleleaf Necklace (shiny),2,16,80,640
-Silken Sigil,3,16,120,640
-Spider Silk Bow,4,16,160,640
-Doku No Ken,5,16,200,640
-Mace of the Depths,6,16,240,640
-Spider Silk Bow (shiny),7,16,280,640
-Doku No Ken (shiny),8,16,320,640
-Mace of the Depths (shiny),9,16,360,640
-Blue Beehemoth Armor,10,16,400,640
-Red Beehemoth Armor,11,16,440,640
-Yellow Beehemoth Armor,12,16,480,640
-Queen's Stinger,13,16,520,640
-Combcutter Kunai,14,16,560,640
-Swarmlord's Sigil,15,16,600,640
-Hivemaster Helm,16,16,640,640
-Hivemind Mace,17,16,680,640
-Beekeeper's Flamethrower,18,16,720,640
-Queen's Stinger (shiny),19,16,760,640
-Hivemaster Helm (shiny),20,16,800,640
-Beekeeper's Flamethrower (shiny),21,16,840,640
-Nectar Crossfire,22,16,880,640
-Honeytomb Snare,23,16,920,640
-Apiary Armor,24,16,960,640
-Honey Circlet,25,16,1000,640
-Green Beehemoth Armor,26,16,1040,640
-Green Beehemoth Quiver,27,16,1080,640
-Green Beehemoth Quiver (shiny),28,16,1120,640
-Royal Guard's Cuirass,29,16,1160,640
-Valor,0,17,0,680
-Vanguard's Visage,1,17,40,680
-Sentinel's Sidearm,2,17,80,680
-Bracer of the Guardian,3,17,120,680
-Vest of Abandoned Shadows,4,17,160,680
-Dusky Catalyst,5,17,200,680
-Primal Arcana,6,17,240,680
-Polarity Poison,7,17,280,680
-The Twilight Gemstone,8,17,320,680
-Mantle of the Monarchy,9,17,360,680
-Warmonger,10,17,400,680
-Peacekeeper,11,17,440,680
-Noble Mandolin,12,17,480,680
-The Forgotten Crown,13,17,520,680
-The Forgotten Ring,14,17,560,680
-Chrysalis of Eternity,15,17,600,680
-Royal Guard's Cuirass (shiny),16,17,640,680
-Valor (shiny),17,17,680,680
-Vanguard's Visage (shiny),18,17,720,680
-Sentinel's Sidearm (shiny),19,17,760,680
-Bracer of the Guardian (shiny),20,17,800,680
-Vest of Abandoned Shadows (shiny),21,17,840,680
-Dusky Catalyst (shiny),22,17,880,680
-Primal Arcana (shiny),23,17,920,680
-Polarity Poison (shiny),24,17,960,680
-The Twilight Gemstone (shiny),25,17,1000,680
-Warmonger (shiny),26,17,1040,680
-Peacekeeper (shiny),27,17,1080,680
-Noble Mandolin (shiny),28,17,1120,680
-The Forgotten Crown (shiny),29,17,1160,680
-Corruption Tether,0,18,0,720
-Ancient Eminence,1,18,40,720
-Twilight Shroud,2,18,80,720
-Defiled Equilibrium,3,18,120,720
-Archangel's Judgement,4,18,160,720
-Daevite Progenitor,5,18,200,720
-Seraphim's Guard,6,18,240,720
-Flames of Genesis,7,18,280,720
-Fallen One's Blade,8,18,320,720
-Abyssal Insignia,9,18,360,720
-Vortex Plating,10,18,400,720
-Eye of the Void,11,18,440,720
-The Right Hook,12,18,480,720
-Tipsy Topper,13,18,520,720
-Double Vision Darts,14,18,560,720
-Cask Corslet,15,18,600,720
-Brewer's Bangle,16,18,640,720
-The Right Hook (shiny),17,18,680,720
-Tipsy Topper (shiny),18,18,720,720
-Double Vision Darts (shiny),19,18,760,720
-Cask Corslet (shiny),20,18,800,720
-Brewer's Bangle (shiny),21,18,840,720
-Shadow Serpent Sidearm,22,18,880,720
-Cloak of Cubic Enigma,23,18,920,720
-Seal of Cubic Conundra,24,18,960,720
-Cloak of Cubic Enigma (shiny),25,18,1000,720
-Seal of Cubic Conundra (shiny),26,18,1040,720
-Squaroid Staff,27,18,1080,720
-Cubic Frame,28,18,1120,720
-Polygonal Garbs,29,18,1160,720
-Cuband,0,19,0,760
-Ring of the Pyramid,1,19,40,760
-Ring of the Sphinx,2,19,80,760
-Ring of the Nile,3,19,120,760
-Tome of Holy Protection,4,19,160,760
-Pharaoh's Requiem,5,19,200,760
-Ring of the Pyramid (shiny),6,19,240,760
-Ring of the Sphinx (shiny),7,19,280,760
-Ring of the Nile (shiny),8,19,320,760
-Tome of Holy Protection (shiny),9,19,360,760
-Pharaoh's Requiem (shiny),10,19,400,760
-Wand of Geb,11,19,440,760
-Book of Geb,12,19,480,760
-Shendyt of Geb,13,19,520,760
-Geb's Ring of Wisdom,14,19,560,760
-Void Blade,15,19,600,760
-Murky Toxin,16,19,640,760
-Void Blade (shiny),17,19,680,760
-Murky Toxin (shiny),18,19,720,760
-Toxin Tooth,19,19,760,760
-Virulent Venom,20,19,800,760
-Acidic Armor,21,19,840,760
-Pernicious Peridot,22,19,880,760
-Doom Bow,23,19,920,760
-Spectral Sword,24,19,960,760
-Wandering Souls Spell,25,19,1000,760
-Ring of Skeletal Specters,26,19,1040,760
-Doom Bow (shiny),27,19,1080,760
-Spectral Sword (shiny),28,19,1120,760
-Wandering Souls Spell (shiny),29,19,1160,760
-Ring of Skeletal Specters (shiny),0,20,0,800
-Edictum Praetoris,1,20,40,800
-Toga Picta,2,20,80,800
-Memento Mori,3,20,120,800
-Interregnum,4,20,160,800
-Spirit's Bane,5,20,200,800
-Bow of the Morning Star,6,20,240,800
-Leaf Bow,7,20,280,800
-Elder Heartwood Staff,8,20,320,800
-Wakizashi of Eastern Winds,9,20,360,800
-Labyrinth Dweller's Sheath,10,20,400,800
-Leaf Bow (shiny),11,20,440,800
-Wakizashi of Eastern Winds (shiny),12,20,480,800
-Labyrinth Dweller's Sheath (shiny),13,20,520,800
-Corsair Ring,14,20,560,800
-Corsair Ring (shiny),15,20,600,800
-Bramble Bow,16,20,640,800
-Cocoon Quiver,17,20,680,800
-Cocoon Quiver (shiny),18,20,720,800
-Bramble Bow (shiny),19,20,760,800
-Poison Fang Dagger,20,20,800,800
-Spider Shuriken,21,20,840,800
-Spider's Eye Ring,22,20,880,800
-Spider's Eye Ring (shiny),23,20,920,800
-Spider Shuriken (shiny),24,20,960,800
-Poison Fang Dagger (shiny),25,20,1000,800
-Staff of the Crystal Serpent,26,20,1040,800
-Cracked Crystal Skull,27,20,1080,800
-Robe of the Tlatoani,28,20,1120,800
-Crystal Bone Ring,29,20,1160,800
-Crystal Bone Ring (shiny),0,21,0,840
-Robe of the Tlatoani (shiny),1,21,40,840
-Cracked Crystal Skull (shiny),2,21,80,840
-Staff of the Crystal Serpent (shiny),3,21,120,840
-Orb of Sweet Demise,4,21,160,840
-Honey Scepter,5,21,200,840
-Honey Scepter (shiny),6,21,240,840
-Orb of Sweet Demise (shiny),7,21,280,840
-Barnacle Basher,8,21,320,840
-Yellow Beehemoth Quiver,9,21,360,840
-Red Beehemoth Quiver,10,21,400,840
-Blue Beehemoth Quiver,11,21,440,840
-Cloak of Bloody Surprises,12,21,480,840
-Crystallised Fang's Venom,13,21,520,840
-Dirk of Cronus,14,21,560,840
-Hama Yumi,15,21,600,840
-Helm of the Juggernaut,16,21,640,840
-Jailer's Scythe,17,21,680,840
-Kageboshi,18,21,720,840
-Orb of Conflict,19,21,760,840
-Quiver of Thunder,20,21,800,840
-Ray Katana,21,21,840,840
-Seal of Blasphemous Prayer,22,21,880,840
-Shield of Ogmur,23,21,920,840
-Tablet of the King's Avatar,24,21,960,840
-Token of Warmth,25,21,1000,840
-Token of Happiness,26,21,1040,840
-Trap of the Vile Spirit,27,21,1080,840
-Mighty Stein,28,21,1120,840
-Deadly Keg,29,21,1160,840
-Greaterhosen,0,22,0,880
-Crystal Sword,1,22,40,880
-Crystal Wand,2,22,80,880
-Crystal Sword (shiny),3,22,120,880
-Quiver of Thunder (shiny),4,22,160,880
-Orb of Conflict (shiny),5,22,200,880
-Dirk of Cronus (shiny),6,22,240,880
-Trap of the Vile Spirit (shiny),7,22,280,880
-Greaterhosen (shiny),8,22,320,880
-Helm of the Juggernaut (shiny),9,22,360,880
-Ray Katana (shiny),10,22,400,880
-Seal of Blasphemous Prayer (shiny),11,22,440,880
-Deadly Keg (shiny),12,22,480,880
-Mighty Stein (shiny),13,22,520,880
-Barnacle Basher (shiny),14,22,560,880
-Jailer's Scythe (shiny),15,22,600,880
-Cloak of Bloody Surprises (shiny),16,22,640,880
-Yellow Beehemoth Quiver (shiny),17,22,680,880
-Red Beehemoth Quiver (shiny),18,22,720,880
-Blue Beehemoth Quiver (shiny),19,22,760,880
-Adventurer's Scarf,20,22,800,880
-Torrential Staff,21,22,840,880
-Celestial Recurve,22,22,880,880
-Mace of the Pumpkin Effigy,23,22,920,880
-Pirate's Artillery,24,22,960,880
-Skull of Restless Souls,25,22,1000,880
-Doom's Emblem,26,22,1040,880
-Cavalry Lance,27,22,1080,880
-Cloak of the Deep,28,22,1120,880
-Evolutionary Records,29,22,1160,880
-Pollen Incendiary,0,23,0,920
-Bloodbath Blade,1,23,40,920
-Runes of Knowledge,2,23,80,920
-Kendo Stick (shiny),3,23,120,920
-Jewel Eye Katana (shiny),4,23,160,920
-Watarimono,5,23,200,920
-Kiritsukeru,6,23,240,920
-Reinforced Root Armor,7,23,280,920
-Traveler's Trinket,8,23,320,920
-The Phylactery,9,23,360,920
-Soul of the Bearer,10,23,400,920
-Soulless Robe,11,23,440,920
-Ring of the Covetous Heart,12,23,480,920
-Mister Mango,13,23,520,920
-Butter Bow,14,23,560,920
-K.I.D.D. Force,15,23,600,920
-Caduceus of Current Craziness,16,23,640,920
-MMace MMurderer,17,23,680,920
-Blade of Ages,18,23,720,920
-Groovy Mango,19,23,760,920
-Baked Bow,20,23,800,920
-Caduceus Of Enlightened Chaos,21,23,840,920
-K.I.D.D. Force 2.0,22,23,880,920
-FFabulous FFlail,23,23,920,920
-Blade of Blooming,24,23,960,920
-Mirror Cloak,25,23,1000,920
-Archerang,26,23,1040,920
-Spelling Spell,27,23,1080,920
-Tome of Moral Support,28,23,1120,920
-Challenger Helm,29,23,1160,920
-Shield of Pogmur,0,24,0,960
-Seal of Eternal Life,1,24,40,960
-Lightning in a Bottle,2,24,80,960
-Epiphany Skull,3,24,120,960
-Helium Trap,4,24,160,960
-Karma Orb,5,24,200,960
-Fool's Prism,6,24,240,960
-Honey Scepter Supreme,7,24,280,960
-Unshuriken,8,24,320,960
-NSFWakizashi,9,24,360,960
-Lullaby,10,24,400,960
-Recursion Mace,11,24,440,960
-Paper Machete,12,24,480,960
-Cheater Light Armor,13,24,520,960
-Cheater Robe,14,24,560,960
-Cheater Heavy Armor,15,24,600,960
-Omni-Impotence Ring,16,24,640,960
-Brilliance Bow,17,24,680,960
-Quintessential Quiver,18,24,720,960
-Luxurious Leather,19,24,760,960
-Regal Ring,20,24,800,960
-Sun's Judgement,21,24,840,960
-Fire Blade,22,24,880,960
-Comet of Calamity,23,24,920,960
-Fire Blade (shiny),24,24,960,960
-Foramite Staff,25,24,1000,960
-Acidic Slasher,26,24,1040,960
-Corrosion Cutter,27,24,1080,960
-Foramite Staff (shiny),28,24,1120,960
-Warlord Wand,29,24,1160,960
-Gaseous Glaive,0,25,0,1000
-Blazon Bow,1,25,40,1000
-Blazon Bow (shiny),2,25,80,1000
-Moonbeam Blade,3,25,120,1000
-Dueling Daggers,4,25,160,1000
-Snowblind Wand,5,25,200,1000
-Dueling Daggers (shiny),6,25,240,1000
-Alien Core Warp,7,25,280,1000
-Alien Core Dark Matter,8,25,320,1000
-Alien Core Power,9,25,360,1000
-Alien Core Corrosion,10,25,400,1000
-Piper's Pan Flute,11,25,440,1000
-Mouse Trap,12,25,480,1000
-Mystic Syndicate Attire,13,25,520,1000
-Heavy Syndicate Attire,14,25,560,1000
-Light Syndicate Attire,15,25,600,1000
-Sunken Fire Opal Ring,16,25,640,1000
-Faded Heart Scarab,17,25,680,1000
-Fractured Hannya,18,25,720,1000
-Storied Blades,19,25,760,1000
-Forbidden Artifact,20,25,800,1000
-Sheath of Thunderous Rites,21,25,840,1000
-Storm Caller,22,25,880,1000
-Corsair's Crown Jewel,23,25,920,1000
-Rusted Barrel,24,25,960,1000
-Royal Sekhem,25,25,1000,1000
-Frangible Longbow,26,25,1040,1000
-Gilded Chain Scythe,27,25,1080,1000
-Ritual Khopesh,28,25,1120,1000
-Pirate's Sidearms,29,25,1160,1000
-Obsidian Macuahuitl,0,26,0,1040
-Mystic Syndicate Attire (shiny),1,26,40,1040
-Heavy Syndicate Attire (shiny),2,26,80,1040
-Light Syndicate Attire (shiny),3,26,120,1040
-Unstable Anomaly,4,26,160,1040
-Lethargic Sentience,5,26,200,1040
-Toy Knife,6,26,240,1040
-Barely Attuned Magic Thingy,7,26,280,1040
-Precisely Calibrated Stringstick,8,26,320,1040
-Random Spell Extraction Device,9,26,360,1040
-Krathana,10,26,400,1040
-Silex's Hammer,11,26,440,1040
-Mimicry Trap,12,26,480,1040
-Arctic Bow,13,26,520,1040
-Freezing Quiver,14,26,560,1040
-Frimarra,15,26,600,1040
-Enchanted Ice Shard,16,26,640,1040
-Ring of the Northern Light,17,26,680,1040
-Tome of Frigid Protection,18,26,720,1040
-Ice Crown,19,26,760,1040
-Candy Katana,20,26,800,1040
-Sleigh Bell Staff,21,26,840,1040
-Garland Bow,22,26,880,1040
-Evergreen Dagger,23,26,920,1040
-Brass Chamberstick,24,26,960,1040
-Cheerful Chipper,25,26,1000,1040
-Candy Katana (shiny),26,26,1040,1040
-Sleigh Bell Staff (shiny),27,26,1080,1040
-Garland Bow (shiny),28,26,1120,1040
-Evergreen Dagger (shiny),29,26,1160,1040
-Brass Chamberstick (shiny),0,27,0,1080
-Cheerful Chipper (shiny),1,27,40,1080
-Snow Branch,2,27,80,1080
-Enchanted Ice Blade,3,27,120,1080
-Frozen Wand,4,27,160,1080
-Chicken Leg of Doom,5,27,200,1080
-Esoteric Buckler,6,27,240,1080
-Corrupted Cleaver,7,27,280,1080
-Bow of Nightmares,8,27,320,1080
-Staff of Horrific Knowledge,9,27,360,1080
-Wand of Ancient Terror,10,27,400,1080
-Dagger of the Terrible Talon,11,27,440,1080
-Skull-Splitter Sword,12,27,480,1080
-Heartfind Dagger,13,27,520,1080
-Wand of Budding Romance,14,27,560,1080
-Cupid's Bow,15,27,600,1080
-Vinesword,16,27,640,1080
-Staff of Adoration,17,27,680,1080
-Diamond-Bladed Katana,18,27,720,1080
-Heart Jewel Blades,19,27,760,1080
-Morning Star of Sweet Miracles,20,27,800,1080
-Anteros Longbow,21,27,840,1080
-Lovestruck Yoyo,22,27,880,1080
-Love Heart Spellblade,23,27,920,1080
-Sweetheart Taichi,24,27,960,1080
-Quiver of Dazing Love,25,27,1000,1080
-Heartstruck Bow,26,27,1040,1080
-Cupid's Garments,27,27,1080,1080
-Ring of Unbound Love,28,27,1120,1080
-Heartseeker Katana,29,27,1160,1080
-Eternal Star,0,28,0,1120
-Chocolate Armor,1,28,40,1120
-Sweetener Ring,2,28,80,1120
-Ever Green Skull,3,28,120,1120
-Floral Corset,4,28,160,1120
-Lovebite Armor,5,28,200,1120
-Sweetcut Wakizashi,6,28,240,1120
-Spring Rose,7,28,280,1120
-Rose Brooch,8,28,320,1120
-Elderfrost Heirloom,9,28,360,1120
-Frozen Whisper,10,28,400,1120
-Winter's Dire Kiss,11,28,440,1120
-Icebreaker Maul,12,28,480,1120
-Frostfall Rod,13,28,520,1120
-Perennial Cranium,14,28,560,1120
-Hanagasaku,15,28,600,1120
-Perennial Cranium (shiny),16,28,640,1120
-Gem of Tenderness,17,28,680,1120
-Gem of Adoration,18,28,720,1120
-Soulful Affection,19,28,760,1120
-Soulful Affection (shiny),20,28,800,1120
-Gem of Adoration (shiny),21,28,840,1120
-Gem of Tenderness (shiny),22,28,880,1120
-Heart of Gold Prism,23,28,920,1120
-Solar Flare Igniter,24,28,960,1120
-Crest of the Rising Sun,25,28,1000,1120
-Bloom-Fire Scepter,26,28,1040,1120
-Sovereign Cinder-Blade,27,28,1080,1120
-Blade of Eternal Rebirth,28,28,1120,1120
-Heart of the Eternal Pyre,29,28,1160,1120
-Flying Eyeball Pet Skin,0,29,0,1160
-Corrupted Tinkerer Pet Skin,1,29,40,1160
-Prismatic Slasher,2,29,80,1160
-Rainbow Rod,3,29,120,1160
-Staff of the Saint,4,29,160,1160
-Sword of the Rainbow's End,5,29,200,1160
-Clover Bow,6,29,240,1160
-Katana of Good Fortune,7,29,280,1160
-Painbow,8,29,320,1160
-Clover Star,9,29,360,1160
-Incubation Mace,10,29,400,1160
-Incubation Mace (shiny),11,29,440,1160
-Crystal Key,12,29,480,1160
-Keychain Cutlass,13,29,520,1160
-Ornaments of Unity,14,29,560,1160
-Eternal Echo,15,29,600,1160
-Eden's Embrace,16,29,640,1160
-Nightmatter Circlet,17,29,680,1160
+Sigil of the Rhino,30,0,1200,0
+Leviathan Armor,31,0,1240,0
+Robe of the Ancient Intellect,0,1,0,40
+Annihilation Armor,1,1,40,40
+Ring of Transcendent Health,2,1,80,40
+Ring of Transcendent Magic,3,1,120,40
+Ring of Transcendent Attack,4,1,160,40
+Ring of Transcendent Defense,5,1,200,40
+Ring of Transcendent Speed,6,1,240,40
+Ring of Transcendent Dexterity,7,1,280,40
+Ring of Transcendent Vitality,8,1,320,40
+Ring of Transcendent Wisdom,9,1,360,40
+Demon Blade,10,1,400,40
+Volcanic Sheath,11,1,440,40
+Berserker's Breastplate,12,1,480,40
+Demon Blade (shiny),13,1,520,40
+Volcanic Sheath (shiny),14,1,560,40
+Staff of Eruption,15,1,600,40
+Scorchium Stone,16,1,640,40
+Molten Mantle,17,1,680,40
+Ring of the Inferno,18,1,720,40
+Sword of Illumination,19,1,760,40
+Adamantine Helm,20,1,800,40
+Adamantine Helm (shiny),21,1,840,40
+Arcane Rapier,22,1,880,40
+Amber Encrusted Helmet,23,1,920,40
+Sandstone Seal,24,1,960,40
+Arcane Rapier (shiny),25,1,1000,40
+Amber Encrusted Helmet (shiny),26,1,1040,40
+Sandstone Seal (shiny),27,1,1080,40
+Resplendent Bow,28,1,1120,40
+Embellished Quiver,29,1,1160,40
+Ornate Armor,30,1,1200,40
+Aquamarine Amulet,31,1,1240,40
+Candy Ring,0,2,0,80
+Candy-Coated Armor,1,2,40,80
+Bubblegum Bucket,2,2,80,80
+Candy Ring (shiny),3,2,120,80
+Candy-Coated Armor (shiny),4,2,160,80
+Pixie-Enchanted Sword,5,2,200,80
+Seal of the Enchanted Forest,6,2,240,80
+Fairy Plate,7,2,280,80
+Ring of Pure Wishes,8,2,320,80
+Bottled Medusozoan,9,2,360,80
+Cnidaria Rod,10,2,400,80
+Bottled Medusozoan (shiny),11,2,440,80
+Cnidaria Rod (shiny),12,2,480,80
+Fungal Breastplate,13,2,520,80
+Crystallized Worm Spellblade,14,2,560,80
+Crystal Shield,15,2,600,80
+Sporous Spray Spell,16,2,640,80
+Tome of the Mushroom Tribes,17,2,680,80
+Cave Dweller Trap,18,2,720,80
+Ring of Decades,19,2,760,80
+Fungal Breastplate (shiny),20,2,800,80
+Crystal Shield (shiny),21,2,840,80
+Sporous Spray Spell (shiny),22,2,880,80
+Tome of the Mushroom Tribes (shiny),23,2,920,80
+Cave Dweller Trap (shiny),24,2,960,80
+Ring of Decades (shiny),25,2,1000,80
+Crystalline Sigil,26,2,1040,80
+Quartz Cutter,27,2,1080,80
+Crystalline Kunai,28,2,1120,80
+Luminous Armor,29,2,1160,80
+Radiant Heart,30,2,1200,80
+Irradiance Sheath,31,2,1240,80
+Fractal Blades,0,3,0,120
+Cloak of Refraction,1,3,40,120
+Echoes Prism,2,3,80,120
+Fractured Gemstone Wakizashi,3,3,120,120
+Star of Enlightenment,4,3,160,120
+Crystallised Mist,5,3,200,120
+Fractal Blades (shiny),6,3,240,120
+Cloak of Refraction (shiny),7,3,280,120
+Fractured Gemstone Wakizashi (shiny),8,3,320,120
+Star of Enlightenment (shiny),9,3,360,120
+Wand of Hidden Knowledge,10,3,400,120
+Necronomicon,11,3,440,120
+Scholar's Seal,12,3,480,120
+Ronin's Wakizashi,13,3,520,120
+Corruption Cutter,14,3,560,120
+Wand of Hidden Knowledge (shiny),15,3,600,120
+Necronomicon (shiny),16,3,640,120
+Scholar's Seal (shiny),17,3,680,120
+Ronin's Wakizashi (shiny),18,3,720,120
+Corruption Cutter (shiny),19,3,760,120
+Deathless Crossbow,20,3,800,120
+Quiver of Shrieking Specters,21,3,840,120
+Wraith's Brigandine,22,3,880,120
+Revenant Ring,23,3,920,120
+Quartermaster Scabbard,24,3,960,120
+Spirit Dagger,25,3,1000,120
+Ghostly Prism,26,3,1040,120
+Spectral Cloth Armor,27,3,1080,120
+Captain's Ring,28,3,1120,120
+Quartermaster Scabbard (shiny),29,3,1160,120
+Spirit Dagger (shiny),30,3,1200,120
+Ghostly Prism (shiny),31,3,1240,120
+Spectral Cloth Armor (shiny),0,4,0,160
+Pirate King's Cutlass,1,4,40,160
+Wavecrest Concertina,2,4,80,160
+Pirate King's Cutlass (shiny),3,4,120,160
+Wavecrest Concertina (shiny),4,4,160,160
+Swashbuckler's Sickle,5,4,200,160
+Tricorne of the High Seas,6,4,240,160
+Naval Uniform,7,4,280,160
+First Mate's Hook,8,4,320,160
+Soul's Guidance,9,4,360,160
+Plague Poison,10,4,400,160
+Resurrected Warrior's Armor,11,4,440,160
+Amulet of Dispersion,12,4,480,160
+Soul's Guidance (shiny),13,4,520,160
+Plague Poison (shiny),14,4,560,160
+Resurrected Warrior's Armor (shiny),15,4,600,160
+Amulet of Dispersion (shiny),16,4,640,160
+Etherite Dagger,17,4,680,160
+Ghastly Drape,18,4,720,160
+Mantle of Skuld,19,4,760,160
+Spectral Ring of Horrors,20,4,800,160
+B.O.W.,21,4,840,160
+S.T.A.F.F.,22,4,880,160
+Q.U.I.V.E.R.,23,4,920,160
+S.H.E.A.T.H.,24,4,960,160
+E.Y.E.,25,4,1000,160
+B.O.W. (shiny),26,4,1040,160
+S.T.A.F.F. (shiny),27,4,1080,160
+Q.U.I.V.E.R. (shiny),28,4,1120,160
+S.H.E.A.T.H. (shiny),29,4,1160,160
+E.Y.E. (shiny),30,4,1200,160
+C.L.A.W.,31,4,1240,160
+B.O.O.M.,0,5,0,200
+A.R.M.O.R.,1,5,40,200
+C.O.N.T.R.O.L.L.E.R.,2,5,80,200
+Staff of Esben,3,5,120,200
+Skullish Remains of Esben,4,5,160,200
+Esben's Vows,5,5,200,200
+Ase's Echo,6,5,240,200
+Esben's Wedding Ring,7,5,280,200
+Esben's Twisted Heart,8,5,320,200
+Esben's Shaman Attire,9,5,360,200
+Ase's Echo (shiny),10,5,400,200
+Esben's Twisted Heart (shiny),11,5,440,200
+Esben's Shaman Attire (shiny),12,5,480,200
+Dalvar's Battle Axe,13,5,520,200
+Sunken Buckler,14,5,560,200
+Chainmail Body Armor,15,5,600,200
+Gjallarhorn,16,5,640,200
+Heartsteel Claymore,17,5,680,200
+Symbol of the Lost,18,5,720,200
+Hull of the Tundra,19,5,760,200
+Frozen Heart,20,5,800,200
+Iceborn Arsenal,21,5,840,200
+Sublimation Sidearm,22,5,880,200
+Retainer's Battlesuit,23,5,920,200
+Legacy's Pendant,24,5,960,200
+Overclocking Amulet,25,5,1000,200
+Steam Pipe,26,5,1040,200
+Kogbold Cower Shield,27,5,1080,200
+Chain Dagger,28,5,1120,200
+Laser Pointer,29,5,1160,200
+Scepter of Rust,30,5,1200,200
+Brain Cube,31,5,1240,200
+Kogbold Enhancement Core,0,6,0,240
+Overclocking Amulet (shiny),1,6,40,240
+Steam Pipe (shiny),2,6,80,240
+Chain Dagger (shiny),3,6,120,240
+Laser Pointer (shiny),4,6,160,240
+Scepter of Rust (shiny),5,6,200,240
+Brain Cube (shiny),6,6,240,240
+Kogbold Enhancement Core (shiny),7,6,280,240
+Kogbold Multitool,8,6,320,240
+Kogbold Multitool (shiny),9,6,360,240
+Celestial Blade,10,6,400,240
+Leaf Dragon Hide Armor,11,6,440,240
+Water Dragon Silk Robe,12,6,480,240
+Fire Dragon Battle Armor,13,6,520,240
+Midnight Star,14,6,560,240
+Vision of Draconis,15,6,600,240
+Draconic Insignia,16,6,640,240
+Celestial Blade (shiny),17,6,680,240
+Leaf Dragon Hide Armor (shiny),18,6,720,240
+Water Dragon Silk Robe (shiny),19,6,760,240
+Fire Dragon Battle Armor (shiny),20,6,800,240
+Midnight Star (shiny),21,6,840,240
+Vision of Draconis (shiny),22,6,880,240
+Hailstorm,23,6,920,240
+Thundering Chorus,24,6,960,240
+Wind Dancer Robe,25,6,1000,240
+Augur of the Tempest,26,6,1040,240
+Earthen Ward,27,6,1080,240
+Stonemould Mace,28,6,1120,240
+Rocky Robe,29,6,1160,240
+Steadfast Glyph,30,6,1200,240
+Saif of the Deep,31,6,1240,240
+Loch Sheath,0,7,0,280
+Barrier Reef,1,7,40,280
+Alexander's Band,2,7,80,280
+Indomptable,3,7,120,280
+Helm of Draconic Dominance,4,7,160,280
+Zaarvox's Heart,5,7,200,280
+Amulet of Drakefyre,6,7,240,280
+Wakizashi of Crossing Fires,7,7,280,280
+Skull of Endless Torment,8,7,320,280
+Igneous Starblossom,9,7,360,280
+Skull of Endless Torment (shiny),10,7,400,280
+Igneous Starblossom (shiny),11,7,440,280
+Fiery Katana,12,7,480,280
+Pyro Sheath,13,7,520,280
+Flame Guard,14,7,560,280
+Firelight Necklace,15,7,600,280
+Sword of the Colossus,16,7,640,280
+Marble Seal,17,7,680,280
+Breastplate of New Life,18,7,720,280
+Magical Lodestone,19,7,760,280
+Sword of the Colossus (shiny),20,7,800,280
+Marble Seal (shiny),21,7,840,280
+Breastplate of New Life (shiny),22,7,880,280
+Carved Golem Remains,23,7,920,280
+Brain of the Golem,24,7,960,280
+Golem Garments,25,7,1000,280
+Rusty Cuffs,26,7,1040,280
+Burial Blades,27,7,1080,280
+Staff of Unholy Sacrifice,28,7,1120,280
+Skull of Corrupted Souls,29,7,1160,280
+Ritual Robe,30,7,1200,280
+Bloodshed Ring,31,7,1240,280
+Staff of Unholy Sacrifice (shiny),0,8,0,320
+Burial Blades (shiny),1,8,40,320
+Skull of Corrupted Souls (shiny),2,8,80,320
+Ritual Robe (shiny),3,8,120,320
+Bow of the Void,4,8,160,320
+Quiver of Shadows,5,8,200,320
+Armor of Nil,6,8,240,320
+Sourcestone,7,8,280,320
+Omnipotence Ring,8,8,320,320
+Bow of the Void (shiny),9,8,360,320
+Quiver of Shadows (shiny),10,8,400,320
+Armor of Nil (shiny),11,8,440,320
+Conducting Wand,12,8,480,320
+Scepter of Fulmination,13,8,520,320
+Robe of the Mad Scientist,14,8,560,320
+Experimental Ring,15,8,600,320
+Conducting Wand (shiny),16,8,640,320
+Scepter of Fulmination (shiny),17,8,680,320
+Robe of the Mad Scientist (shiny),18,8,720,320
+Experimental Ring (shiny),19,8,760,320
+Abomination's Wrath,20,8,800,320
+Grotesque Scepter,21,8,840,320
+Garment of the Beast,22,8,880,320
+Horrific Claws,23,8,920,320
+Spirit Staff,24,8,960,320
+Enchantment Orb,25,8,1000,320
+Woodland Robe,26,8,1040,320
+Fairy Ring,27,8,1080,320
+Shield of Flowing Clarity,28,8,1120,320
+Spirit Staff (shiny),29,8,1160,320
+Enchantment Orb (shiny),30,8,1200,320
+Fairy Ring (shiny),31,8,1240,320
+Woodland Robe (shiny),0,9,0,360
+Shield of Flowing Clarity (shiny),1,9,40,360
+Bergenia Bow,2,9,80,360
+Lifebringing Lotus,3,9,120,360
+Hollyhock Hide,4,9,160,360
+Chrysanthemum Corsage,5,9,200,360
+Bone Dagger,6,9,240,360
+Kyuuketsuki Hitogoroshi,7,9,280,360
+St. Abraham's Wand,8,9,320,360
+Tome of Purification,9,9,360,360
+Chasuble of Holy Light,10,9,400,360
+Ring of Divine Faith,11,9,440,360
+Bone Dagger (shiny),12,9,480,360
+St. Abraham's Wand (shiny),13,9,520,360
+Tome of Purification (shiny),14,9,560,360
+Chasuble of Holy Light (shiny),15,9,600,360
+Ring of Divine Faith (shiny),16,9,640,360
+Soulcursed Scythe,17,9,680,360
+Vampiric Cape,18,9,720,360
+Hallowed Hide,19,9,760,360
+Ruthven's Rosary,20,9,800,360
+Sage's Wakibiki,21,9,840,360
+Ethereal Happi,22,9,880,360
+Flowering Kimono,23,9,920,360
+Rain Maker,24,9,960,360
+Taiko Drums,25,9,1000,360
+Elegant Parasol,26,9,1040,360
+Makakoyumi,27,9,1080,360
+Tezutsu Hanabi,28,9,1120,360
+Kagenohikari,29,9,1160,360
+Concentrated Soul Fire,30,9,1200,360
+Makakoyumi (shiny),31,9,1240,360
+Master Fishing Rod,0,10,0,400
+Expert Fishing Rod,1,10,40,400
+Intermediate Fishing Rod,2,10,80,400
+Wand of the Fallen,3,10,120,400
+Orb of Aether,4,10,160,400
+Jade Storm,5,10,200,400
+Kaiken,6,10,240,400
+Wand of the Fallen (shiny),7,10,280,400
+Orb of Aether (shiny),8,10,320,400
+Jade Storm (shiny),9,10,360,400
+Kaiken (shiny),10,10,400,400
+Kazekiri,11,10,440,400
+Ryu's Blade,12,10,480,400
+Kamishimo,13,10,520,400
+Akuma's Tear,14,10,560,400
+Coral Bow,15,10,600,400
+Coral Venom Trap,16,10,640,400
+Coral Silk Armor,17,10,680,400
+Coral Ring,18,10,720,400
+Sharktooth Sigil,19,10,760,400
+Coral Bow (shiny),20,10,800,400
+Coral Venom Trap (shiny),21,10,840,400
+Coral Silk Armor (shiny),22,10,880,400
+Coral Ring (shiny),23,10,920,400
+Tideturner Trident,24,10,960,400
+Slurpian Sea Scroll,25,10,1000,400
+Oceanic Apparel,26,10,1040,400
+Imperial Keepsake,27,10,1080,400
+Ancient Stone Sword,28,10,1120,400
+Spiteful Scutum,29,10,1160,400
+Cloak of the Mad God,30,10,1200,400
+Ancient Stone Sword (shiny),31,10,1240,400
+Spiteful Scutum (shiny),0,11,0,440
+Cloak of the Mad God (shiny),1,11,40,440
+Theurgy Wand,2,11,80,440
+Ceremonial Merlot,3,11,120,440
+Anointed Robe,4,11,160,440
+Ring of Pagan Favor,5,11,200,440
+Tome of Holy Furor,6,11,240,440
+Oryx's Greatsword,7,11,280,440
+Champion's Bastion,8,11,320,440
+Mercy's Bane,9,11,360,440
+Bloodstone Ring,10,11,400,440
+Superior,11,11,440,440
+Genesis Spell,12,11,480,440
+Diplomatic Robe,13,11,520,440
+Chancellor's Cranium,14,11,560,440
+Superior (shiny),15,11,600,440
+Genesis Spell (shiny),16,11,640,440
+Diplomatic Robe (shiny),17,11,680,440
+Chancellor's Cranium (shiny),18,11,720,440
+Avarice,19,11,760,440
+Gambler's Fate,20,11,800,440
+Turncoat Cape,21,11,840,440
+Collector's Monocle,22,11,880,440
+Avarice (shiny),23,11,920,440
+Gambler's Fate (shiny),24,11,960,440
+Turncoat Cape (shiny),25,11,1000,440
+Collector's Monocle (shiny),26,11,1040,440
+Lumiaire,27,11,1080,440
+Chaotic Scripture,28,11,1120,440
+Vesture of Duality,29,11,1160,440
+Divine Coronation,30,11,1200,440
+Lumiaire (shiny),31,11,1240,440
+Chaotic Scripture (shiny),0,12,0,480
+Vesture of Duality (shiny),1,12,40,480
+Divine Coronation (shiny),2,12,80,480
+Enforcer,3,12,120,480
+Ballistic Star,4,12,160,480
+Centaur's Shielding,5,12,200,480
+Battalion Banner,6,12,240,480
+Enforcer (shiny),7,12,280,480
+Ballistic Star (shiny),8,12,320,480
+Centaur's Shielding (shiny),9,12,360,480
+Battalion Banner (shiny),10,12,400,480
+Divinity,11,12,440,480
+Oryx's Escutcheon,12,12,480,480
+Gladiator Guard,13,12,520,480
+Exalted God's Horn,14,12,560,480
+Divinity (shiny),15,12,600,480
+Oryx's Escutcheon (shiny),16,12,640,480
+Gladiator Guard (shiny),17,12,680,480
+Exalted God's Horn (shiny),18,12,720,480
+Harmonious Harp,19,12,760,480
+Angel's Fanfare,20,12,800,480
+Wings of Sanctity,21,12,840,480
+Heavenly Halo,22,12,880,480
+Maw of Malignance,23,12,920,480
+Recurring Terror Spell,24,12,960,480
+Scepter of Devastation,25,12,1000,480
+Tome of Pain,26,12,1040,480
+Recurring Terror Spell (shiny),27,12,1080,480
+Scepter of Devastation (shiny),28,12,1120,480
+Tome of Pain (shiny),29,12,1160,480
+Symbiotic Ripper,30,12,1200,480
+Parasitic Concoction,31,12,1240,480
+Rags of the Host,0,13,0,520
+Hivemind Circlet,1,13,40,520
+Marionette Ravager,2,13,80,520
+Prism of Dancing Swords,3,13,120,520
+Harlequin Armor,4,13,160,520
+Marionette Ravager (shiny),5,13,200,520
+Prism of Dancing Swords (shiny),6,13,240,520
+Harlequin Armor (shiny),7,13,280,520
+Magic Wand,8,13,320,520
+Lightshow Scepter,9,13,360,520
+Magician's Robe,10,13,400,520
+Performer's Hat,11,13,440,520
+Thousand Shot,12,13,480,520
+Prism of Dire Instability,13,13,520,520
+Thousand Shot (shiny),14,13,560,520
+Prism of Dire Instability (shiny),15,13,600,520
+Tlatoani's Shroud,16,13,640,520
+Tezcacoatl's Tail,17,13,680,520
+Sealed Crystal Skull,18,13,720,520
+Penetrating Blast Spell,19,13,760,520
+Tlatoani's Shroud (shiny),20,13,800,520
+Tezcacoatl's Tail (shiny),21,13,840,520
+Sealed Crystal Skull (shiny),22,13,880,520
+Penetrating Blast Spell (shiny),23,13,920,520
+Reikoku,24,13,960,520
+Daybreak Chakram,25,13,1000,520
+Hirejou Tenne,26,13,1040,520
+Heavenly Magatama,27,13,1080,520
+Snakeskin Shield,28,13,1120,520
+Wand of the Bulwark,29,13,1160,520
+Snake Charmer Pungi,30,13,1200,520
+Snakeskin Armor,31,13,1240,520
+Snake Eye Ring,0,14,0,560
+Snakeskin Shield (shiny),1,14,40,560
+Wand of the Bulwark (shiny),2,14,80,560
+Snake Charmer Pungi (shiny),3,14,120,560
+Snakeskin Armor (shiny),4,14,160,560
+Snake Eye Ring (shiny),5,14,200,560
+Tools of the Tarnished,6,14,240,560
+Wretched Rags,7,14,280,560
+Sinister Syringes,8,14,320,560
+Cackling Straitjacket,9,14,360,560
+Command Cornea,10,14,400,560
+Ocular Entrapment,11,14,440,560
+Overwhelming Axehead,12,14,480,560
+Motivational Megaphone,13,14,520,560
+Damnation,14,14,560,560
+Vial of Soul Extract,15,14,600,560
+Wretched Rags (shiny),16,14,640,560
+Tools of the Tarnished (shiny),17,14,680,560
+Ocular Entrapment (shiny),18,14,720,560
+Motivational Megaphone (shiny),19,14,760,560
+Damnation (shiny),20,14,800,560
+Vial of Soul Extract (shiny),21,14,840,560
+Staff of Extreme Prejudice,22,14,880,560
+Cloak of the Planewalker,23,14,920,560
+Mace of the Celestial Forest,24,14,960,560
+Sprite Wand,25,14,1000,560
+Staff of Extreme Prejudice (shiny),26,14,1040,560
+Cloak of the Planewalker (shiny),27,14,1080,560
+Mace of the Celestial Forest (shiny),28,14,1120,560
+Sprite Wand (shiny),29,14,1160,560
+Sulfuric Stone,30,14,1200,560
+Bogwood Crook,31,14,1240,560
+Brambletooth Tachi,0,15,0,600
+Warped Mantle,1,15,40,600
+Thistleleaf Necklace,2,15,80,600
+Bogwood Crook (shiny),3,15,120,600
+Brambletooth Tachi (shiny),4,15,160,600
+Warped Mantle (shiny),5,15,200,600
+Thistleleaf Necklace (shiny),6,15,240,600
+Silken Sigil,7,15,280,600
+Spider Silk Bow,8,15,320,600
+Doku No Ken,9,15,360,600
+Mace of the Depths,10,15,400,600
+Spider Silk Bow (shiny),11,15,440,600
+Doku No Ken (shiny),12,15,480,600
+Mace of the Depths (shiny),13,15,520,600
+Blue Beehemoth Armor,14,15,560,600
+Red Beehemoth Armor,15,15,600,600
+Yellow Beehemoth Armor,16,15,640,600
+Queen's Stinger,17,15,680,600
+Combcutter Kunai,18,15,720,600
+Swarmlord's Sigil,19,15,760,600
+Hivemaster Helm,20,15,800,600
+Hivemind Mace,21,15,840,600
+Beekeeper's Flamethrower,22,15,880,600
+Queen's Stinger (shiny),23,15,920,600
+Hivemaster Helm (shiny),24,15,960,600
+Beekeeper's Flamethrower (shiny),25,15,1000,600
+Nectar Crossfire,26,15,1040,600
+Honeytomb Snare,27,15,1080,600
+Apiary Armor,28,15,1120,600
+Honey Circlet,29,15,1160,600
+Green Beehemoth Armor,30,15,1200,600
+Green Beehemoth Quiver,31,15,1240,600
+Green Beehemoth Quiver (shiny),0,16,0,640
+Royal Guard's Cuirass,1,16,40,640
+Valor,2,16,80,640
+Vanguard's Visage,3,16,120,640
+Sentinel's Sidearm,4,16,160,640
+Bracer of the Guardian,5,16,200,640
+Vest of Abandoned Shadows,6,16,240,640
+Dusky Catalyst,7,16,280,640
+Primal Arcana,8,16,320,640
+Polarity Poison,9,16,360,640
+The Twilight Gemstone,10,16,400,640
+Mantle of the Monarchy,11,16,440,640
+Warmonger,12,16,480,640
+Peacekeeper,13,16,520,640
+Noble Mandolin,14,16,560,640
+The Forgotten Crown,15,16,600,640
+The Forgotten Ring,16,16,640,640
+Chrysalis of Eternity,17,16,680,640
+Royal Guard's Cuirass (shiny),18,16,720,640
+Valor (shiny),19,16,760,640
+Vanguard's Visage (shiny),20,16,800,640
+Sentinel's Sidearm (shiny),21,16,840,640
+Bracer of the Guardian (shiny),22,16,880,640
+Vest of Abandoned Shadows (shiny),23,16,920,640
+Dusky Catalyst (shiny),24,16,960,640
+Primal Arcana (shiny),25,16,1000,640
+Polarity Poison (shiny),26,16,1040,640
+The Twilight Gemstone (shiny),27,16,1080,640
+Warmonger (shiny),28,16,1120,640
+Peacekeeper (shiny),29,16,1160,640
+Noble Mandolin (shiny),30,16,1200,640
+The Forgotten Crown (shiny),31,16,1240,640
+Corruption Tether,0,17,0,680
+Ancient Eminence,1,17,40,680
+Twilight Shroud,2,17,80,680
+Defiled Equilibrium,3,17,120,680
+Archangel's Judgement,4,17,160,680
+Daevite Progenitor,5,17,200,680
+Seraphim's Guard,6,17,240,680
+Flames of Genesis,7,17,280,680
+Fallen One's Blade,8,17,320,680
+Abyssal Insignia,9,17,360,680
+Vortex Plating,10,17,400,680
+Eye of the Void,11,17,440,680
+The Right Hook,12,17,480,680
+Tipsy Topper,13,17,520,680
+Double Vision Darts,14,17,560,680
+Cask Corslet,15,17,600,680
+Brewer's Bangle,16,17,640,680
+The Right Hook (shiny),17,17,680,680
+Tipsy Topper (shiny),18,17,720,680
+Double Vision Darts (shiny),19,17,760,680
+Cask Corslet (shiny),20,17,800,680
+Brewer's Bangle (shiny),21,17,840,680
+Shadow Serpent Sidearm,22,17,880,680
+Cloak of Cubic Enigma,23,17,920,680
+Seal of Cubic Conundra,24,17,960,680
+Cloak of Cubic Enigma (shiny),25,17,1000,680
+Seal of Cubic Conundra (shiny),26,17,1040,680
+Squaroid Staff,27,17,1080,680
+Cubic Frame,28,17,1120,680
+Polygonal Garbs,29,17,1160,680
+Cuband,30,17,1200,680
+Morning Square,31,17,1240,680
+The Triangle,0,18,0,720
+Ring of Cubed Wisdom,1,18,40,720
+Shadow Serpent Sidearm (shiny),2,18,80,720
+Ring of the Pyramid,3,18,120,720
+Ring of the Sphinx,4,18,160,720
+Ring of the Nile,5,18,200,720
+Tome of Holy Protection,6,18,240,720
+Pharaoh's Requiem,7,18,280,720
+Ring of the Pyramid (shiny),8,18,320,720
+Ring of the Sphinx (shiny),9,18,360,720
+Ring of the Nile (shiny),10,18,400,720
+Tome of Holy Protection (shiny),11,18,440,720
+Pharaoh's Requiem (shiny),12,18,480,720
+Wand of Geb,13,18,520,720
+Book of Geb,14,18,560,720
+Shendyt of Geb,15,18,600,720
+Geb's Ring of Wisdom,16,18,640,720
+Void Blade,17,18,680,720
+Murky Toxin,18,18,720,720
+Void Blade (shiny),19,18,760,720
+Murky Toxin (shiny),20,18,800,720
+Toxin Tooth,21,18,840,720
+Virulent Venom,22,18,880,720
+Acidic Armor,23,18,920,720
+Pernicious Peridot,24,18,960,720
+Doom Bow,25,18,1000,720
+Spectral Sword,26,18,1040,720
+Wandering Souls Spell,27,18,1080,720
+Ring of Skeletal Specters,28,18,1120,720
+Doom Bow (shiny),29,18,1160,720
+Spectral Sword (shiny),30,18,1200,720
+Wandering Souls Spell (shiny),31,18,1240,720
+Ring of Skeletal Specters (shiny),0,19,0,760
+Edictum Praetoris,1,19,40,760
+Toga Picta,2,19,80,760
+Memento Mori,3,19,120,760
+Interregnum,4,19,160,760
+Spirit's Bane,5,19,200,760
+Bow of the Morning Star,6,19,240,760
+Leaf Bow,7,19,280,760
+Elder Heartwood Staff,8,19,320,760
+Wakizashi of Eastern Winds,9,19,360,760
+Labyrinth Dweller's Sheath,10,19,400,760
+Leaf Bow (shiny),11,19,440,760
+Wakizashi of Eastern Winds (shiny),12,19,480,760
+Labyrinth Dweller's Sheath (shiny),13,19,520,760
+Corsair Ring,14,19,560,760
+Corsair Ring (shiny),15,19,600,760
+Bramble Bow,16,19,640,760
+Cocoon Quiver,17,19,680,760
+Cocoon Quiver (shiny),18,19,720,760
+Bramble Bow (shiny),19,19,760,760
+Poison Fang Dagger,20,19,800,760
+Spider Shuriken,21,19,840,760
+Spider's Eye Ring,22,19,880,760
+Spider's Eye Ring (shiny),23,19,920,760
+Spider Shuriken (shiny),24,19,960,760
+Poison Fang Dagger (shiny),25,19,1000,760
+Staff of the Crystal Serpent,26,19,1040,760
+Cracked Crystal Skull,27,19,1080,760
+Robe of the Tlatoani,28,19,1120,760
+Crystal Bone Ring,29,19,1160,760
+Crystal Bone Ring (shiny),30,19,1200,760
+Robe of the Tlatoani (shiny),31,19,1240,760
+Cracked Crystal Skull (shiny),0,20,0,800
+Staff of the Crystal Serpent (shiny),1,20,40,800
+Orb of Sweet Demise,2,20,80,800
+Honey Scepter,3,20,120,800
+Honey Scepter (shiny),4,20,160,800
+Orb of Sweet Demise (shiny),5,20,200,800
+Barnacle Basher,6,20,240,800
+Yellow Beehemoth Quiver,7,20,280,800
+Red Beehemoth Quiver,8,20,320,800
+Blue Beehemoth Quiver,9,20,360,800
+Cloak of Bloody Surprises,10,20,400,800
+Crystallised Fang's Venom,11,20,440,800
+Dirk of Cronus,12,20,480,800
+Hama Yumi,13,20,520,800
+Helm of the Juggernaut,14,20,560,800
+Jailer's Scythe,15,20,600,800
+Kageboshi,16,20,640,800
+Orb of Conflict,17,20,680,800
+Quiver of Thunder,18,20,720,800
+Ray Katana,19,20,760,800
+Seal of Blasphemous Prayer,20,20,800,800
+Shield of Ogmur,21,20,840,800
+Tablet of the King's Avatar,22,20,880,800
+Token of Warmth,23,20,920,800
+Token of Happiness,24,20,960,800
+Trap of the Vile Spirit,25,20,1000,800
+Mighty Stein,26,20,1040,800
+Deadly Keg,27,20,1080,800
+Greaterhosen,28,20,1120,800
+Crystal Sword,29,20,1160,800
+Crystal Wand,30,20,1200,800
+Crystal Sword (shiny),31,20,1240,800
+Quiver of Thunder (shiny),0,21,0,840
+Orb of Conflict (shiny),1,21,40,840
+Dirk of Cronus (shiny),2,21,80,840
+Trap of the Vile Spirit (shiny),3,21,120,840
+Greaterhosen (shiny),4,21,160,840
+Helm of the Juggernaut (shiny),5,21,200,840
+Ray Katana (shiny),6,21,240,840
+Seal of Blasphemous Prayer (shiny),7,21,280,840
+Deadly Keg (shiny),8,21,320,840
+Mighty Stein (shiny),9,21,360,840
+Barnacle Basher (shiny),10,21,400,840
+Jailer's Scythe (shiny),11,21,440,840
+Cloak of Bloody Surprises (shiny),12,21,480,840
+Yellow Beehemoth Quiver (shiny),13,21,520,840
+Red Beehemoth Quiver (shiny),14,21,560,840
+Blue Beehemoth Quiver (shiny),15,21,600,840
+Adventurer's Scarf,16,21,640,840
+Torrential Staff,17,21,680,840
+Celestial Recurve,18,21,720,840
+Mace of the Pumpkin Effigy,19,21,760,840
+Pirate's Artillery,20,21,800,840
+Skull of Restless Souls,21,21,840,840
+Doom's Emblem,22,21,880,840
+Cavalry Lance,23,21,920,840
+Cloak of the Deep,24,21,960,840
+Evolutionary Records,25,21,1000,840
+Pollen Incendiary,26,21,1040,840
+Bloodbath Blade,27,21,1080,840
+Runes of Knowledge,28,21,1120,840
+Kendo Stick (shiny),29,21,1160,840
+Jewel Eye Katana (shiny),30,21,1200,840
+Watarimono,31,21,1240,840
+Kiritsukeru,0,22,0,880
+Reinforced Root Armor,1,22,40,880
+Traveler's Trinket,2,22,80,880
+The Phylactery,3,22,120,880
+Soul of the Bearer,4,22,160,880
+Soulless Robe,5,22,200,880
+Ring of the Covetous Heart,6,22,240,880
+Mister Mango,7,22,280,880
+Butter Bow,8,22,320,880
+K.I.D.D. Force,9,22,360,880
+Caduceus of Current Craziness,10,22,400,880
+MMace MMurderer,11,22,440,880
+Blade of Ages,12,22,480,880
+Groovy Mango,13,22,520,880
+Baked Bow,14,22,560,880
+Caduceus Of Enlightened Chaos,15,22,600,880
+K.I.D.D. Force 2.0,16,22,640,880
+FFabulous FFlail,17,22,680,880
+Blade of Blooming,18,22,720,880
+Mirror Cloak,19,22,760,880
+Archerang,20,22,800,880
+Spelling Spell,21,22,840,880
+Tome of Moral Support,22,22,880,880
+Challenger Helm,23,22,920,880
+Shield of Pogmur,24,22,960,880
+Seal of Eternal Life,25,22,1000,880
+Lightning in a Bottle,26,22,1040,880
+Epiphany Skull,27,22,1080,880
+Helium Trap,28,22,1120,880
+Karma Orb,29,22,1160,880
+Fool's Prism,30,22,1200,880
+Honey Scepter Supreme,31,22,1240,880
+Unshuriken,0,23,0,920
+NSFWakizashi,1,23,40,920
+Sigil of the Rubber Duck,2,23,80,920
+Lullaby,3,23,120,920
+Recursion Mace,4,23,160,920
+Paper Machete,5,23,200,920
+Cheater Light Armor,6,23,240,920
+Cheater Robe,7,23,280,920
+Cheater Heavy Armor,8,23,320,920
+Omni-Impotence Ring,9,23,360,920
+Brilliance Bow,10,23,400,920
+Quintessential Quiver,11,23,440,920
+Luxurious Leather,12,23,480,920
+Regal Ring,13,23,520,920
+Sun's Judgement,14,23,560,920
+Fire Blade,15,23,600,920
+Comet of Calamity,16,23,640,920
+Fire Blade (shiny),17,23,680,920
+Foramite Staff,18,23,720,920
+Acidic Slasher,19,23,760,920
+Corrosion Cutter,20,23,800,920
+Foramite Staff (shiny),21,23,840,920
+Warlord Wand,22,23,880,920
+Gaseous Glaive,23,23,920,920
+Blazon Bow,24,23,960,920
+Blazon Bow (shiny),25,23,1000,920
+Moonbeam Blade,26,23,1040,920
+Dueling Daggers,27,23,1080,920
+Snowblind Wand,28,23,1120,920
+Dueling Daggers (shiny),29,23,1160,920
+Alien Core Warp,30,23,1200,920
+Alien Core Dark Matter,31,23,1240,920
+Alien Core Power,0,24,0,960
+Alien Core Corrosion,1,24,40,960
+Piper's Pan Flute,2,24,80,960
+Mouse Trap,3,24,120,960
+Mystic Syndicate Attire,4,24,160,960
+Heavy Syndicate Attire,5,24,200,960
+Light Syndicate Attire,6,24,240,960
+Sunken Fire Opal Ring,7,24,280,960
+Faded Heart Scarab,8,24,320,960
+Fractured Hannya,9,24,360,960
+Storied Blades,10,24,400,960
+Forbidden Artifact,11,24,440,960
+Sheath of Thunderous Rites,12,24,480,960
+Storm Caller,13,24,520,960
+Corsair's Crown Jewel,14,24,560,960
+Rusted Barrel,15,24,600,960
+Royal Sekhem,16,24,640,960
+Frangible Longbow,17,24,680,960
+Gilded Chain Scythe,18,24,720,960
+Ritual Khopesh,19,24,760,960
+Pirate's Sidearms,20,24,800,960
+Obsidian Macuahuitl,21,24,840,960
+Mystic Syndicate Attire (shiny),22,24,880,960
+Heavy Syndicate Attire (shiny),23,24,920,960
+Light Syndicate Attire (shiny),24,24,960,960
+Unstable Anomaly,25,24,1000,960
+Lethargic Sentience,26,24,1040,960
+Toy Knife,27,24,1080,960
+Barely Attuned Magic Thingy,28,24,1120,960
+Precisely Calibrated Stringstick,29,24,1160,960
+Random Spell Extraction Device,30,24,1200,960
+Krathana,31,24,1240,960
+Silex's Hammer,0,25,0,1000
+Mimicry Trap,1,25,40,1000
+Arctic Bow,2,25,80,1000
+Freezing Quiver,3,25,120,1000
+Frimarra,4,25,160,1000
+Enchanted Ice Shard,5,25,200,1000
+Ring of the Northern Light,6,25,240,1000
+Tome of Frigid Protection,7,25,280,1000
+Ice Crown,8,25,320,1000
+Candy Katana,9,25,360,1000
+Sleigh Bell Staff,10,25,400,1000
+Garland Bow,11,25,440,1000
+Evergreen Dagger,12,25,480,1000
+Brass Chamberstick,13,25,520,1000
+Cheerful Chipper,14,25,560,1000
+Candy Katana (shiny),15,25,600,1000
+Sleigh Bell Staff (shiny),16,25,640,1000
+Garland Bow (shiny),17,25,680,1000
+Evergreen Dagger (shiny),18,25,720,1000
+Brass Chamberstick (shiny),19,25,760,1000
+Cheerful Chipper (shiny),20,25,800,1000
+Snow Branch,21,25,840,1000
+Snowflake Blade,22,25,880,1000
+Frost Storm Bow,23,25,920,1000
+Enchanted Ice Blade,24,25,960,1000
+Frozen Wand,25,25,1000,1000
+Splatter-proof Apron,26,25,1040,1000
+Chicken Leg of Doom,27,25,1080,1000
+Anatis Staff,28,25,1120,1000
+Apocalypse Feather,29,25,1160,1000
+Mantle of the Monarchy (Rehearsal),30,25,1200,1000
+The Forgotten Ring (Rehearsal),31,25,1240,1000
+Royal Guard's Cuirass (Rehearsal),0,26,0,1040
+Valor (Rehearsal),1,26,40,1040
+Vanguard's Visage (Rehearsal),2,26,80,1040
+Sentinel's Sidearm (Rehearsal),3,26,120,1040
+Bracer of the Guardian (Rehearsal),4,26,160,1040
+Vest of Abandoned Shadows (Rehearsal),5,26,200,1040
+Warmonger (Rehearsal),6,26,240,1040
+Peacekeeper (Rehearsal),7,26,280,1040
+Noble Mandolin (Rehearsal),8,26,320,1040
+The Forgotten Crown (Rehearsal),9,26,360,1040
+The Twilight Gemstone (Rehearsal),10,26,400,1040
+Polarity Poison (Rehearsal),11,26,440,1040
+Primal Arcana (Rehearsal),12,26,480,1040
+Dusky Catalyst (Rehearsal),13,26,520,1040
+Esoteric Buckler,14,26,560,1040
+Corrupted Cleaver,15,26,600,1040
+Bow of Nightmares,16,26,640,1040
+Staff of Horrific Knowledge,17,26,680,1040
+Wand of Ancient Terror,18,26,720,1040
+Dagger of the Terrible Talon,19,26,760,1040
+Skull-Splitter Sword,20,26,800,1040
+Heartfind Dagger,21,26,840,1040
+Wand of Budding Romance,22,26,880,1040
+Cupid's Bow,23,26,920,1040
+Vinesword,24,26,960,1040
+Staff of Adoration,25,26,1000,1040
+Diamond-Bladed Katana,26,26,1040,1040
+Heart Jewel Blades,27,26,1080,1040
+Morning Star of Sweet Miracles,28,26,1120,1040
+Anteros Longbow,29,26,1160,1040
+Lovestruck Yoyo,30,26,1200,1040
+Love Heart Spellblade,31,26,1240,1040
+Sweetheart Taichi,0,27,0,1080
+Quiver of Dazing Love,1,27,40,1080
+Heartstruck Bow,2,27,80,1080
+Cupid's Garments,3,27,120,1080
+Ring of Unbound Love,4,27,160,1080
+Heartseeker Katana,5,27,200,1080
+Eternal Star,6,27,240,1080
+Chocolate Armor,7,27,280,1080
+Sweetener Ring,8,27,320,1080
+Ever Green Skull,9,27,360,1080
+Floral Corset,10,27,400,1080
+Lovebite Armor,11,27,440,1080
+Sweetcut Wakizashi,12,27,480,1080
+Spring Rose,13,27,520,1080
+Rose Brooch,14,27,560,1080
+Elderfrost Heirloom,15,27,600,1080
+Frozen Whisper,16,27,640,1080
+Winter's Dire Kiss,17,27,680,1080
+Icebreaker Maul,18,27,720,1080
+Frostfall Rod,19,27,760,1080
+Perennial Cranium,20,27,800,1080
+Hanagasaku,21,27,840,1080
+Perennial Cranium (shiny),22,27,880,1080
+Gem of Tenderness,23,27,920,1080
+Gem of Adoration,24,27,960,1080
+Soulful Affection,25,27,1000,1080
+Soulful Affection (shiny),26,27,1040,1080
+Gem of Adoration (shiny),27,27,1080,1080
+Gem of Tenderness (shiny),28,27,1120,1080
+Heart of Gold Prism,29,27,1160,1080
+Solar Flare Igniter,30,27,1200,1080
+Crest of the Rising Sun,31,27,1240,1080
+Bloom-Fire Scepter,0,28,0,1120
+Ashen Talon Dagger,1,28,40,1120
+Sovereign Cinder-Blade,2,28,80,1120
+Blade of Eternal Rebirth,3,28,120,1120
+Heart of the Eternal Pyre,4,28,160,1120
+Flying Eyeball Pet Skin,5,28,200,1120
+Corrupted Tinkerer Pet Skin,6,28,240,1120
+Prismatic Slasher,7,28,280,1120
+Rainbow Rod,8,28,320,1120
+Staff of the Saint,9,28,360,1120
+Sword of the Rainbow's End,10,28,400,1120
+Clover Bow,11,28,440,1120
+Katana of Good Fortune,12,28,480,1120
+Painbow,13,28,520,1120
+Clover Star,14,28,560,1120
+Miss Shamrock Wizard Skin,15,28,600,1120
+Leprechaun's Walking Hat Pet Skin,16,28,640,1120
+Green Hat Bunny Pet Skin,17,28,680,1120
+Mini Pot of Gold Pet Skin,18,28,720,1120
+Wand of Egg-cellence,19,28,760,1120
+Dagger of the Hasteful Rabbit,20,28,800,1120
+Incubation Mace,21,28,840,1120
+Eggstatic Conductor,22,28,880,1120
+Vitamine Buster,23,28,920,1120
+Sunny Side Bow,24,28,960,1120
+Helm of the Swift Bunny,25,28,1000,1120
+Botany Book,26,28,1040,1120
+Sakura Wakizashi,27,28,1080,1120
+Eggsponential Scepter,28,28,1120,1120
+Incubation Mace (shiny),29,28,1160,1120
+Bunny Trickster Skin,30,28,1200,1120
+Moon Bunny Pet Skin,31,28,1240,1120
+Bunny Ear Tachi,0,29,0,1160
+Caramel Spellblade,1,29,40,1160
+Shard Launcher,2,29,80,1160
+Egg Basher,3,29,120,1160
+Chocolate Ovipositor,4,29,160,1160
+Hatchling Blades,5,29,200,1160
+Carrotroot Vestments,6,29,240,1160
+Eggshell Carapace,7,29,280,1160
+Fudgeclad Armor,8,29,320,1160
+Eternal Graved Great Sword,9,29,360,1160
+Spriteful Shield,10,29,400,1160
+Eggre Battle Armor,11,29,440,1160
+Tiara of Eggscellent Sturdiness,12,29,480,1160
+Spring Wonder Bow,13,29,520,1160
+Fresh Breeze Quiver,14,29,560,1160
+Painted Eggshell Armor,15,29,600,1160
+Painted Egg Amulet,16,29,640,1160
+Nutrient Rich Carrot Blade,17,29,680,1160
+Carrot Cake Crest,18,29,720,1160
+Hardened Carrot Armor,19,29,760,1160
+Sun Bathed Straw Hat,20,29,800,1160
+Sweet Desire Wand,21,29,840,1160
+Chocolate Egg Mace,22,29,880,1160
+Chocolate Glazed Robe,23,29,920,1160
+Chocolate Bunny Ears,24,29,960,1160
+Mithril Sword,25,29,1000,1160
+Leave Bow,26,29,1040,1160
+Ring of Overwhelming Health,27,29,1080,1160
+Mood Bow,28,29,1120,1160
+Reasonable Hour Star,29,29,1160,1160
+Bottled Medusa,30,29,1200,1160
+Nice Crown,31,29,1240,1160
+Non-Fungible Tome,0,30,0,1200
+Luminaire,1,30,40,1200
+Inferior,2,30,80,1200
+Chocolate Cream Sandwich Cookie,3,30,120,1200
+Seal of Blasphemous Prayer,4,30,160,1200
+Crystal Key,5,30,200,1200
+Keychain Cutlass,6,30,240,1200
+Ornaments of Unity,7,30,280,1200
+Eternal Echo,8,30,320,1200
+Eden's Embrace,9,30,360,1200
+Nightmatter Circlet,10,30,400,1200
