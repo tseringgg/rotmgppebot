@@ -102,25 +102,7 @@ def _apply_global_quests_mode(player_data: PlayerData, global_quests: dict | Non
     shiny_pool = _dedupe_preserve_order(list(global_quests.get("shiny", [])))
     skin_pool = _dedupe_preserve_order(list(global_quests.get("skin", [])))
 
-    owned_regular_norms = _owned_regular_norms(player_data)
-    owned_shiny_targets = _owned_shiny_target_norms(player_data)
-
     changed = False
-
-    for item in regular_pool:
-        if normalize_item_name(item).lower() in owned_regular_norms and not _contains_name(quests.completed_items, item):
-            quests.completed_items.append(item)
-            changed = True
-
-    for shiny_item in shiny_pool:
-        if normalize_item_name(shiny_item).lower() in owned_shiny_targets and not _contains_name(quests.completed_shinies, shiny_item):
-            quests.completed_shinies.append(shiny_item)
-            changed = True
-
-    for skin in skin_pool:
-        if normalize_item_name(skin).lower() in owned_regular_norms and not _contains_name(quests.completed_skins, skin):
-            quests.completed_skins.append(skin)
-            changed = True
 
     target_regular = [item for item in regular_pool if not _contains_name(quests.completed_items, item)]
     target_shiny = [item for item in shiny_pool if not _contains_name(quests.completed_shinies, item)]
