@@ -21,7 +21,6 @@ from menus.manageplayer.common import (
 )
 from menus.menu_utils import OwnerBoundView
 from menus.myquests import open_myquests_menu_for_player
-from menus.managequests.reset_actions import open_reset_for_member
 from utils.guild_config import load_guild_config
 from utils.player_records import load_teams
 
@@ -274,6 +273,8 @@ class ManagePlayerHomeView(OwnerBoundView):
                     ephemeral=True,
                 )
                 return
+            from menus.managequests.reset_actions import open_reset_for_member
+
             await open_reset_for_member(reset_interaction, self.target.member, actor_id=interaction.user.id)
 
         await open_myquests_menu_for_player(
@@ -412,6 +413,8 @@ class ManagePlayerHomeView(OwnerBoundView):
                 ephemeral=True,
             )
             return
+        from menus.managequests.reset_actions import open_reset_for_member
+
         await open_reset_for_member(interaction, self.target.member, actor_id=interaction.user.id)
 
     @discord.ui.button(label="Remove from Contest", style=discord.ButtonStyle.danger, row=2)
