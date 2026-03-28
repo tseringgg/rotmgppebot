@@ -64,7 +64,7 @@ async def build_team_embed(
     if members_info_sorted:
         lines: list[str] = []
         for rank, (_member_id, member_name, points, ppe_class) in enumerate(members_info_sorted, start=1):
-            lines.append(f"{rank}. {member_name} - {points:.1f} pts ({_format_class_name(ppe_class)})")
+            lines.append(f"{rank}. {member_name}: {points:.1f} pts ({_format_class_name(ppe_class)})")
 
         members_text = "\n".join(lines)
         if len(members_text) > 1024:

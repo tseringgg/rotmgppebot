@@ -125,7 +125,6 @@ def create_loot_markdown_file(ppe_data: PPEData) -> str:
     builder.add_section(
         heading="Summary",
         lines=[
-            f"Total items: {total_items}",
             f"Loot entries: {total_loot_items}",
             f"Bonus entries: {total_bonus_items}",
         ],

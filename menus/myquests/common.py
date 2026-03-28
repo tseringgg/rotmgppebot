@@ -196,7 +196,7 @@ def build_home_embed(
         title=f"My Quests - {display_name}",
         description=(
             f"Resets remaining: **{resets_remaining}/{reset_limit}**\n"
-            "Use the menu below to view quest boards, completed quests, or reset your quest progress."
+            "Use the menu below to view quest boards, completed quests, or reset any number of your quests."
         ),
         color=discord.Color.from_rgb(54, 57, 63),
     )
