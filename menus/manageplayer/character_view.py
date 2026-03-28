@@ -178,15 +178,26 @@ class ManagePlayerCharactersView(OwnerBoundView):
             guild_config=self.guild_config,
         )
 
-    @discord.ui.button(label="Prev", style=discord.ButtonStyle.secondary, row=0)
+    @discord.ui.button(label="Prev Char", style=discord.ButtonStyle.secondary, row=0)
     async def prev(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.index = (self.index - 1) % len(self.ppes)
         await interaction.response.edit_message(embed=self.current_embed(), view=self)
 
-    @discord.ui.button(label="Next", style=discord.ButtonStyle.secondary, row=0)
+    @discord.ui.button(label="Next Char", style=discord.ButtonStyle.secondary, row=0)
     async def next(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.index = (self.index + 1) % len(self.ppes)
         await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+    @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary, row=0)
+    async def home(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        max_ppes = 5  # Fallback; normally should be loaded
+        try:
+            from utils.guild_config import get_max_ppes
+
+            max_ppes = await get_max_ppes(interaction)
+        except Exception:
+            pass
+        await open_manageplayer_home(interaction, owner_id=interaction.user.id, target=self.target, max_ppes=max_ppes)
 
     @discord.ui.button(label="Show Loot", style=discord.ButtonStyle.primary, row=0)
     async def show_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -210,7 +221,7 @@ class ManagePlayerCharactersView(OwnerBoundView):
         self.player_data.active_ppe = int(selected.id)
         await interaction.response.edit_message(embed=self.current_embed(), view=self)
 
-    @discord.ui.button(label="Manage PPE", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Manage PPE", style=discord.ButtonStyle.success, row=1)
     async def modify_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         selected = self.current_ppe()
         defaults = penalty_input_defaults(selected, self.guild_config)
@@ -234,17 +245,6 @@ class ManagePlayerCharactersView(OwnerBoundView):
             await close_manageplayer_menu(interaction)
         except Exception as e:
             await send_followup_text(interaction, str(e), ephemeral=True)
-
-    @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary, row=2)
-    async def home(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        max_ppes = 5  # Fallback; normally should be loaded
-        try:
-            from utils.guild_config import get_max_ppes
-
-            max_ppes = await get_max_ppes(interaction)
-        except Exception:
-            pass
-        await open_manageplayer_home(interaction, owner_id=interaction.user.id, target=self.target, max_ppes=max_ppes)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -309,23 +309,23 @@ class ManagePlayerCharacterLootView(OwnerBoundView):
         await close_manageplayer_menu(interaction)
         await self._share(interaction, include_skins=include_skins, include_limited=include_limited)
 
-    @discord.ui.button(label="Generate Image: Normal Only", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="Show Image: Normal Only", style=discord.ButtonStyle.primary, row=0)
     async def normal_only(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=False, include_limited=False)
 
-    @discord.ui.button(label="Generate Image: Normal + Limited", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="Show Image: Normal + Limited", style=discord.ButtonStyle.primary, row=0)
     async def normal_limited(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=False, include_limited=True)
 
-    @discord.ui.button(label="Generate Image: Normal + Skins", style=discord.ButtonStyle.primary, row=1)
+    @discord.ui.button(label="Show Image: Normal + Skins", style=discord.ButtonStyle.primary, row=1)
     async def normal_skins(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=True, include_limited=False)
 
-    @discord.ui.button(label="Generate Image: All Loot", style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(label="Show Image: All Loot", style=discord.ButtonStyle.primary, row=1)
     async def all_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=True, include_limited=True)
 
-    @discord.ui.button(label="List Loot", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="List Loot", style=discord.ButtonStyle.primary, row=1)
     async def show_list(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_manageplayer_menu(interaction)
         refreshed = await load_target_player_data(interaction, self.target.user_id)

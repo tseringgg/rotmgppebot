@@ -36,7 +36,7 @@ class MyInfoHomeView(OwnerBoundView):
         await close_myinfo_menu(interaction)
         await open_myquests_menu(interaction)
 
-    @discord.ui.button(label="List PPEs", style=discord.ButtonStyle.secondary, row=0)
+    @discord.ui.button(label="List PPEs", style=discord.ButtonStyle.primary, row=0)
     async def list_ppes(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         records = await load_player_records(interaction)
         key = ensure_player_exists(records, interaction.user.id)

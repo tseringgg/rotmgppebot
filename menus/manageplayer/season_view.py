@@ -46,23 +46,23 @@ class ManagePlayerSeasonLootView(OwnerBoundView):
             error_ephemeral=False,
         )
 
-    @discord.ui.button(label="Generate Image: Normal Only", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="Show Image: Normal Only", style=discord.ButtonStyle.primary, row=0)
     async def normal_only(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=False, include_limited=False)
 
-    @discord.ui.button(label="Generate Image: Normal + Limited", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="Show Image: Normal + Limited", style=discord.ButtonStyle.primary, row=0)
     async def normal_limited(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=False, include_limited=True)
 
-    @discord.ui.button(label="Generate Image: Normal + Skins", style=discord.ButtonStyle.primary, row=1)
+    @discord.ui.button(label="Show Image: Normal + Skins", style=discord.ButtonStyle.primary, row=1)
     async def normal_skins(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=True, include_limited=False)
 
-    @discord.ui.button(label="Generate Image: All Loot", style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(label="Show Image: All Loot", style=discord.ButtonStyle.primary, row=1)
     async def all_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=True, include_limited=True)
 
-    @discord.ui.button(label="List Loot", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="List Loot", style=discord.ButtonStyle.primary, row=1)
     async def list_season_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_manageplayer_menu(interaction)
         player_data = await load_target_player_data(interaction, self.target.user_id)

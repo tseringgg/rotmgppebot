@@ -57,27 +57,27 @@ class SeasonLootVariantView(OwnerBoundView):
         await close_myinfo_menu(interaction)
         await self._share(interaction, include_skins=include_skins, include_limited=include_limited)
 
-    @discord.ui.button(label="Generate Image: Normal Only", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="Show Image: Normal Only", style=discord.ButtonStyle.primary, row=0)
     async def normal_only(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=False, include_limited=False)
 
-    @discord.ui.button(label="Generate Image: Normal + Limited", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="Show Image: Normal + Limited", style=discord.ButtonStyle.primary, row=0)
     async def normal_limited(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=False, include_limited=True)
 
-    @discord.ui.button(label="Generate Image: Normal + Skins", style=discord.ButtonStyle.primary, row=1)
+    @discord.ui.button(label="Show Image: Normal + Skins", style=discord.ButtonStyle.primary, row=1)
     async def normal_skins(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=True, include_limited=False)
 
-    @discord.ui.button(label="Generate Image: All Loot", style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(label="Show Image: All Loot", style=discord.ButtonStyle.primary, row=1)
     async def all_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=True, include_limited=True)
 
-    @discord.ui.button(label="List Loot", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="List Loot", style=discord.ButtonStyle.primary, row=1)
     async def list_season_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_myinfo_menu(interaction)
         await send_season_loot_markdown_followup(interaction)
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_myinfo_menu(interaction)

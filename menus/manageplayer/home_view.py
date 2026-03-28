@@ -151,7 +151,7 @@ class ManagePlayerHomeView(OwnerBoundView):
             reset_callback=_show_target_reset_for_member,
         )
 
-    @discord.ui.button(label="List PPEs", style=discord.ButtonStyle.secondary, row=0)
+    @discord.ui.button(label="List PPEs", style=discord.ButtonStyle.primary, row=0)
     async def list_ppes(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         player_data = await load_target_player_data(interaction, self.target.user_id)
         if not player_data.ppes:
