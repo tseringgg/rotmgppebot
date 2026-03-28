@@ -196,3 +196,53 @@ def create_loot_markdown_file(ppe_data: PPEData) -> str:
         username=display_name,
         temp_dir="temp",
     )
+
+
+def create_season_loot_markdown_file(
+    unique_items: set[tuple[str, bool]],
+    *,
+    display_name: str,
+) -> str:
+    """Create a markdown file for season loot, grouped by dungeon when possible."""
+
+    sorted_items = sorted(unique_items, key=lambda x: (x[0].lower(), x[1]))
+    builder = MarkdownMessageBuilder(f"Season Loot for {display_name}")
+    builder.add_paragraph(f"Total unique items: {len(sorted_items)}")
+
+    dungeon_data, item_to_dungeon = load_dungeon_data()
+
+    if not sorted_items:
+        builder.add_section(heading="Items", lines=["No season loot recorded yet."])
+        return builder.write_temp_file(prefix="season_loot", username=display_name, temp_dir="temp")
+
+    if item_to_dungeon:
+        dungeon_groups: dict[str, list[tuple[str, bool]]] = {}
+        unassigned_items: list[tuple[str, bool]] = []
+
+        for item_name, shiny in sorted_items:
+            dungeon_name = item_to_dungeon.get(item_name)
+            if dungeon_name:
+                dungeon_groups.setdefault(dungeon_name, []).append((item_name, shiny))
+            else:
+                unassigned_items.append((item_name, shiny))
+
+        sorted_dungeons = sorted(
+            [name for name in dungeon_data.keys() if name in dungeon_groups],
+            key=lambda name: dungeon_data[name].get("default_points", 0),
+        )
+
+        for dungeon_name in sorted_dungeons:
+            lines = [
+                f"{item_name}{' [shiny]' if shiny else ''}"
+                for item_name, shiny in sorted(dungeon_groups[dungeon_name], key=lambda entry: (entry[0].lower(), entry[1]))
+            ]
+            builder.add_numbered_list(lines, heading=dungeon_name)
+
+        if unassigned_items:
+            lines = [f"{item_name}{' [shiny]' if shiny else ''}" for item_name, shiny in unassigned_items]
+            builder.add_numbered_list(lines, heading="Unassigned Items")
+    else:
+        lines = [f"{item_name}{' [shiny]' if shiny else ''}" for item_name, shiny in sorted_items]
+        builder.add_numbered_list(lines, heading="Items")
+
+    return builder.write_temp_file(prefix="season_loot", username=display_name, temp_dir="temp")

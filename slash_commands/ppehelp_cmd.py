@@ -22,10 +22,8 @@ async def command(interaction: discord.Interaction):
         "newppe": "Start a new PPE run (max set by server config).",
         "myinfo": "Open the My Info home menu (characters, season loot, quest menu, and utility actions).",
         "setactiveppe": "Set which PPE is active.",
-        "addpenalties": "Apply penalties to active PPE.",
-        "manage ppe addbonus": "Unified menu: add bonus to active PPE.",
-        "manage ppe removebonus": "Unified menu: remove bonus from active PPE.",
-        "manage ppe setpenalties": "Unified menu: set penalties on active PPE.",
+        "addbonus": "Add a bonus to your active PPE.",
+        "removebonus": "Remove a bonus from your active PPE.",
     }
     
     # --- Loot & Bonuses (Player) ---
@@ -71,27 +69,25 @@ async def command(interaction: discord.Interaction):
         "resetquestfor": "Reset quest sections for a player.",
         "resetallquests": "Reset all quest data for all players (with confirmation).",
         "managequests": "View/update quest targets, reset attempts, and quest leaderboard point weights.",
-        "manage ppe addbonusfor": "Unified menu: add bonus to player's PPE.",
-        "manage ppe removebonusfrom": "Unified menu: remove bonus from player's PPE.",
-        "manage ppe addpointsfor": "Unified menu: manually add points to a PPE.",
-        "manage ppe refreshpointsfor": "Unified menu: recalculate one PPE's points.",
-        "manage ppe refreshallpoints": "Unified menu: recalculate all PPE points.",
-        "manage pointsettings view": "View guild points modifier settings.",
-        "manage pointsettings setglobal": "Set global percent modifiers for loot/bonus/penalty/total.",
-        "manage pointsettings setclass": "Set class-specific percent modifiers and minimum total.",
+        "pointsettings": "View guild points modifier settings.",
+        "pointsettingsglobal": "Set global percent modifiers for loot/bonus/penalty/total.",
+        "pointsettingsclass": "Set class-specific percent modifiers and minimum total.",
     }
     
     # --- Admin: Team Management ---
     admin_team_cmds = {
         "addteam": "Create new team.",
         "deleteteam": "Delete team.",
-        "leaveteam": "Remove player from team (works even if player was removed from contest).",
+        "manageplayer": "Use Manage Player -> Team actions to add/remove a player from teams.",
     }
     
     # --- Team Leader Commands ---
     leader_cmds = {
-        "addplayer_team": "Add player to team (Leader/Admin).",
         "updateteam": "Rename team (Leader/Admin).",
+    }
+
+    admin_util_cmds = {
+        "removeppeadminrole": "Remove PPE Admin role from a member.",
     }
     
     owner_cmds = {

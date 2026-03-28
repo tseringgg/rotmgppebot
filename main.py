@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, manage_cmd, manageplayer_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, seasonleaderboard_cmd, questleaderboard_cmd, resetseason_cmd, addteam_cmd, addplayer_team_cmd, leaveteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, resetquestfor_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, manageplayer_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, seasonleaderboard_cmd, questleaderboard_cmd, resetseason_cmd, addteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, resetquestfor_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd, pointsettings_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -37,7 +37,6 @@ class PPEBot(commands.Bot):
             print(f"[ERROR] Failed to generate loot backgrounds: {e}")
         
         # Print to confirm commands are loaded BEFORE syncing
-        self.tree.add_command(manage_cmd.manage_group, guilds=guilds)
         print("Loaded commands:", [cmd.name for cmd in self.tree.get_commands()])
 
         # Sync to guilds (FAST commands)
@@ -295,6 +294,67 @@ async def refreshpointsfor(interaction: discord.Interaction, user: discord.Membe
 async def refreshallpoints(interaction: discord.Interaction):
     await refreshallpoints_cmd.command(interaction)
 
+
+@bot.tree.command(name="pointsettings", description="View current guild point modifier settings. Admin only.", guilds=guilds)
+@require_ppe_roles(admin_required=True)
+async def pointsettings(interaction: discord.Interaction):
+    await pointsettings_cmd.view(interaction)
+
+
+@bot.tree.command(name="pointsettingsglobal", description="Set global point modifiers (%). Admin only.", guilds=guilds)
+@app_commands.describe(
+    loot_percent="Percent modifier for loot points",
+    bonus_percent="Percent modifier for bonus points",
+    penalty_percent="Percent modifier for penalty points",
+    total_percent="Percent modifier for final total points",
+)
+@require_ppe_roles(admin_required=True)
+async def pointsettingsglobal(
+    interaction: discord.Interaction,
+    loot_percent: float | None = None,
+    bonus_percent: float | None = None,
+    penalty_percent: float | None = None,
+    total_percent: float | None = None,
+):
+    await pointsettings_cmd.set_global(
+        interaction,
+        loot_percent=loot_percent,
+        bonus_percent=bonus_percent,
+        penalty_percent=penalty_percent,
+        total_percent=total_percent,
+    )
+
+
+@bot.tree.command(name="pointsettingsclass", description="Set class-specific point modifiers. Admin only.", guilds=guilds)
+@app_commands.describe(
+    class_name="Class to configure",
+    loot_percent="Percent modifier for loot points",
+    bonus_percent="Percent modifier for bonus points",
+    penalty_percent="Percent modifier for penalty points",
+    total_percent="Percent modifier for final total points",
+    minimum_total="Minimum final point total floor for this class",
+)
+@app_commands.autocomplete(class_name=class_autocomplete)
+@require_ppe_roles(admin_required=True)
+async def pointsettingsclass(
+    interaction: discord.Interaction,
+    class_name: str,
+    loot_percent: float | None = None,
+    bonus_percent: float | None = None,
+    penalty_percent: float | None = None,
+    total_percent: float | None = None,
+    minimum_total: float | None = None,
+):
+    await pointsettings_cmd.set_class(
+        interaction,
+        class_name=class_name,
+        loot_percent=loot_percent,
+        bonus_percent=bonus_percent,
+        penalty_percent=penalty_percent,
+        total_percent=total_percent,
+        minimum_total=minimum_total,
+    )
+
 @bot.tree.command(name="listplayers", description="Show all current participants in the PPE contest.", guilds=guilds)
 # @commands.has_role("PPE Admin")
 @require_ppe_roles(admin_required=True)
@@ -528,21 +588,6 @@ async def resetseason(interaction: discord.Interaction, clear_realmshark_links: 
 @require_ppe_roles(admin_required=True)
 async def addteam(interaction: discord.Interaction, team_name: str, team_leader: discord.Member):
     await addteam_cmd.command(interaction, team_name, team_leader)
-
-# --- Add player to team ---
-@bot.tree.command(name="addplayer_team", description="Add a player to a team. Team leaders and admins only.", guilds=guilds)
-@app_commands.describe(player="The player to add to the team", team_name="Name of the team")
-@app_commands.autocomplete(team_name=team_name_autocomplete)
-@require_ppe_roles()
-async def addplayer_team(interaction: discord.Interaction, player: discord.Member, team_name: str):
-    await addplayer_team_cmd.command(interaction, player, team_name)
-
-# --- Remove player from team ---
-@bot.tree.command(name="leaveteam", description="Remove a player from their team. Admin only.", guilds=guilds)
-@app_commands.describe(player="The player to remove from teams")
-@require_ppe_roles(admin_required=True)
-async def leaveteam(interaction: discord.Interaction, player: discord.Member):
-    await leaveteam_cmd.command(interaction, player)
 
 # --- Team leaderboard ---
 @bot.tree.command(name="teamleaderboard", description="Show the team leaderboard.", guilds=guilds)

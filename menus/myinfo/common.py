@@ -9,7 +9,7 @@ import discord
 from dataclass import PPEData, PlayerData
 from utils.guild_config import get_max_ppes, get_realmshark_settings
 from utils.helpers.loot_share_commands import share_active_ppe_loot_image
-from utils.loot_table_md_builder import create_loot_markdown_file
+from utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
 from utils.markdown_message_builder import MarkdownMessageBuilder
 from utils.points_service import penalty_inputs_from_bonuses
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
@@ -212,16 +212,10 @@ async def send_season_loot_markdown_followup(interaction: discord.Interaction) -
         )
         return
 
-    builder = MarkdownMessageBuilder(f"Season Loot for {interaction.user.display_name}")
-    builder.add_paragraph(f"Total unique items: {len(items_list)}")
-
-    lines: list[str] = []
-    for item_name, shiny in items_list:
-        marker = " [shiny]" if shiny else ""
-        lines.append(f"{item_name}{marker}")
-
-    builder.add_numbered_list(lines, heading="Items")
-    temp_file_path = builder.write_temp_file(prefix="season_loot", username=interaction.user.display_name)
+    temp_file_path = create_season_loot_markdown_file(
+        player_data.unique_items,
+        display_name=interaction.user.display_name,
+    )
 
     try:
         await interaction.followup.send(file=discord.File(temp_file_path), ephemeral=True)

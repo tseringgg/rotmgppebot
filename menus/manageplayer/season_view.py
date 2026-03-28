@@ -62,7 +62,7 @@ class ManagePlayerSeasonLootView(OwnerBoundView):
     async def all_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=True, include_limited=True)
 
-    @discord.ui.button(label="List Season Loot", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="List Loot", style=discord.ButtonStyle.secondary, row=2)
     async def list_season_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_manageplayer_menu(interaction)
         player_data = await load_target_player_data(interaction, self.target.user_id)

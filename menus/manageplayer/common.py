@@ -15,6 +15,7 @@ from menus.myinfo.common import (
     penalty_input_defaults,
 )
 from utils.guild_config import get_max_ppes, get_quest_targets, load_guild_config
+from utils.loot_table_md_builder import create_season_loot_markdown_file
 from utils.pagination import LootPaginationView, chunk_lines_to_pages
 from utils.penalty_embed import build_penalty_infographic_embed
 from utils.player_manager import player_manager
@@ -291,12 +292,15 @@ async def send_target_season_loot_markdown_followup(
         await interaction.followup.send(f"{target.display_name} has no season loot tracked yet.", ephemeral=False)
         return
 
-    lines = [f"Season loot for {target.mention_text} ({len(items_list)} total):"]
-    for idx, (item_name, shiny) in enumerate(items_list, start=1):
-        marker = " [shiny]" if shiny else ""
-        lines.append(f"{idx}. {item_name}{marker}")
-
-    await interaction.followup.send("\n".join(lines), ephemeral=False)
+    temp_file_path = create_season_loot_markdown_file(
+        player_data.unique_items,
+        display_name=target.display_name,
+    )
+    try:
+        await interaction.followup.send(file=discord.File(temp_file_path), ephemeral=False)
+    finally:
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
 
 
 async def set_target_ppe_penalties(

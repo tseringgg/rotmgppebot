@@ -12,7 +12,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 - **Personal Dashboard**: Use `/myinfo` as the central hub for season, loot, quest, and character actions
 - **Separate Seasonal Tracking**: View your overall season progress and loot
 - **Account Quests**: Get randomized regular, shiny, and skin quests tied to your account with completion tracking
-- **Team System**: Join teams with team leaders who can manage team members
+- **Team System**: Join teams and track group performance with team leaderboards
 
 ### 🔧 Admin Features
 - **Player Management**: Add/remove contest participants
@@ -21,7 +21,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 - **Bulk Operations**: Mass point recalculation for server-wide fixes
 - **Inspection Tools**: View detailed loot and bonus information
 - **Quest Administration**: View and reset quest progress for any contest player, including global resets and per-server target tuning
-- **Team Management**: Create teams, manage members, and delete teams
+- **Team Management**: Create teams, assign members through `/manageplayer`, and delete teams
 
 ### 📊 Advanced Systems
 - **Smart Autocomplete**: Context-aware suggestions for items, bonuses, and PPE IDs
@@ -86,38 +86,33 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/setactiveppe` | Switch between your PPE characters |
 | `/addloot` | Add items to your active PPE |
 | `/removeloot` | Remove items from your active PPE |
-| `/addpenalties` | Apply retroactive penalties to your PPE |
-| `/manage ppe addbonus` | Add bonus to active PPE (menu utility command) |
-| `/manage ppe removebonus` | Remove bonus from active PPE (menu utility command) |
+| `/addbonus` | Add a bonus to your active PPE |
+| `/removebonus` | Remove a bonus from your active PPE |
+| `/addseasonloot` | Add a unique item to your season collection |
+| `/removeseasonloot` | Remove a unique item from your season collection |
 | `/myquests` | Open the same reusable quest menu available from My Info -> Show Quests |
 
 ### Admin Commands
 | Command | Description |
 |---------|-------------|
 | `/addplayer` | Register a player for the contest |
-| `/removeplayer` | Remove a player and all their data |
 | `/listplayers` | View all contest participants |
-| `/listcharactersfor` | Show all characters and IDs for a specific player |
+| `/manageplayer` | Open the admin menu to manage a player's PPE, season loot, quests, team state, and roles |
 | `/addlootfor` | Add items to any player's specific PPE |
 | `/removelootfrom` | Remove items from any player's PPE |
 | `/addbonusfor` | Add bonuses to any player's PPE |
 | `/removebonusfrom` | Remove bonuses from any player's PPE |
+| `/addpointsfor` | Manually add points to a specific PPE |
 | `/refreshpointsfor` | Recalculate points for a specific PPE |
 | `/refreshallpoints` | Fix all PPE point totals server-wide |
-| `/deleteallppes` | Delete all PPEs for a player |
-| `/deleteppe` | Delete a specific PPE by ID |
-| `/viewquestsfor` | View quest state for any player |
 | `/resetquestfor` | Open an interactive menu to reset quest sections for any player |
 | `/resetallquests` | Reset quest data for all players (with confirmation) |
 | `/managequests` | View or update per-server quest targets (regular/shiny/skin) |
-| `/manage ppe addbonusfor` | Add bonus to a specific player's PPE |
-| `/manage ppe removebonusfrom` | Remove bonus from a specific player's PPE |
-| `/manage ppe addpointsfor` | Manually add points to a specific PPE |
-| `/manage ppe refreshpointsfor` | Recalculate a specific PPE |
-| `/manage ppe refreshallpoints` | Recalculate all PPEs |
-| `/manage pointsettings view` | View guild point modifier settings |
-| `/manage pointsettings setglobal` | Set global point modifiers |
-| `/manage pointsettings setclass` | Set class-specific point modifiers |
+| `/addseasonlootfor` | Add a unique item to another player's season collection |
+| `/removeseasonlootfor` | Remove a unique item from another player's season collection |
+| `/pointsettings` | View guild point modifier settings |
+| `/pointsettingsglobal` | Set global point modifiers |
+| `/pointsettingsclass` | Set class-specific point modifiers |
 
 Legacy standalone commands for `/myloot`, `/myppes`, and `/showseasonloot` were retired in favor of `/myinfo`.
 The `/myquests` command and the My Info -> Show Quests button now use the same shared menu view implementation.
@@ -126,12 +121,12 @@ The `/myquests` command and the My Info -> Show Quests button now use the same s
 | Command | Description |
 |---------|-------------|
 | `/addteam` | Create a new team with a leader (Admin only) |
-| `/addplayer_team` | Add a player to a team (Team leader or Admin) |
-| `/leaveteam` | Remove a player from their team (Admin only); works even if player was removed from contest |
 | `/updateteam` | Rename a team (Team leader or Admin) |
 | `/deleteteam` | Delete a team and remove all members (Admin only) |
 | `/teamleaderboard` | View team rankings by total points |
 | `/myteam` | View your team members and their rankings (optional: specify team name) |
+
+Player team assignment/removal is now handled through `/manageplayer` in the Team actions panel.
 
 ### Utility Commands
 | Command | Description |
@@ -308,14 +303,14 @@ Teams enable collaborative PPE competition where multiple players combine their 
 
 ### Key Features
 - **Team Creation**: Admins create teams with a designated leader
-- **Member Management**: Team leaders and admins can add/remove players
+- **Member Management**: Admins can add/remove players through `/manageplayer`
 - **One Team Per Player**: Players cannot be on multiple teams simultaneously
 - **Team Leaderboard**: Teams ranked by combined points (using each member's best PPE)
 - **Team Viewer**: `/myteam` shows all team members ranked by their best PPE points
 - **Automatic Roles**: Discord roles created automatically for each team
 - **Team Renaming**: Leaders and admins can update team names
 - **Season Reset**: All teams are deleted when season resets
-- **Robust Removal**: `/leaveteam` works even for players no longer in the contest
+- **Robust Removal**: Team removal works even for players no longer in contest records when handled from `/manageplayer`
 
 ### Team Point Calculation
 - Each team member's **highest-scoring PPE** is counted toward the team total
@@ -328,12 +323,11 @@ Teams enable collaborative PPE competition where multiple players combine their 
 - **`/myteam`**: View your team members and their individual rankings (or specify a team name to view any team)
 
 ### Player Removal Behavior
-- **`/removeplayer`**: Removes players by member or raw Discord user ID, clears contest data, and removes team associations
-- **`/leaveteam`**: Can remove players from teams even if they were previously removed from the contest system
+- **`/manageplayer`**: Removes players from teams and/or contest data from a single admin panel
 
 ### Permissions
 - **Admin Only**: Create teams, delete teams, force remove players from teams
-- **Team Leader + Admin**: Add players to team, update team name
+- **Team Leader + Admin**: Update team name
 - **All Players**: View team leaderboard, view own team with `/myteam`
 
 ## �🛠️ Development
