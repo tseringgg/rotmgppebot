@@ -23,6 +23,15 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
         "links": {},
         "announce_channel_id": 0,
     },
+    "points_settings": {
+        "global": {
+            "loot_percent": 0.0,
+            "bonus_percent": 0.0,
+            "penalty_percent": 0.0,
+            "total_percent": 0.0,
+        },
+        "class_overrides": {},
+    },
 }
 
 
@@ -172,7 +181,50 @@ def _merge_defaults(raw: Dict[str, Any]) -> Dict[str, Any]:
     merged = dict(_DEFAULT_CONFIG)
     merged["quest_settings"] = _normalized_targets(raw)
     merged["realmshark_settings"] = _normalized_realmshark_settings(raw)
+    merged["points_settings"] = _normalized_points_settings(raw)
     return merged
+
+
+def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
+    raw = config.get("points_settings", {}) if isinstance(config.get("points_settings", {}), dict) else {}
+    raw_global = raw.get("global", {}) if isinstance(raw.get("global", {}), dict) else {}
+
+    def _as_float(value: Any, fallback: float = 0.0) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return fallback
+
+    normalized_global = {
+        "loot_percent": _as_float(raw_global.get("loot_percent"), _DEFAULT_CONFIG["points_settings"]["global"]["loot_percent"]),
+        "bonus_percent": _as_float(raw_global.get("bonus_percent"), _DEFAULT_CONFIG["points_settings"]["global"]["bonus_percent"]),
+        "penalty_percent": _as_float(raw_global.get("penalty_percent"), _DEFAULT_CONFIG["points_settings"]["global"]["penalty_percent"]),
+        "total_percent": _as_float(raw_global.get("total_percent"), _DEFAULT_CONFIG["points_settings"]["global"]["total_percent"]),
+    }
+
+    normalized_overrides: Dict[str, Dict[str, Any]] = {}
+    class_overrides = raw.get("class_overrides", {})
+    if isinstance(class_overrides, dict):
+        for class_name, override in class_overrides.items():
+            if not isinstance(class_name, str) or not isinstance(override, dict):
+                continue
+
+            minimum_total = override.get("minimum_total")
+            if minimum_total is not None:
+                minimum_total = _as_float(minimum_total, 0.0)
+
+            normalized_overrides[class_name] = {
+                "loot_percent": _as_float(override.get("loot_percent"), 0.0),
+                "bonus_percent": _as_float(override.get("bonus_percent"), 0.0),
+                "penalty_percent": _as_float(override.get("penalty_percent"), 0.0),
+                "total_percent": _as_float(override.get("total_percent"), 0.0),
+                "minimum_total": minimum_total,
+            }
+
+    return {
+        "global": normalized_global,
+        "class_overrides": normalized_overrides,
+    }
 
 
 async def load_guild_config_by_id(guild_id: int) -> Dict[str, Any]:
@@ -294,3 +346,78 @@ async def set_realmshark_settings_by_id(guild_id: int, settings: Dict[str, Any])
     config["realmshark_settings"] = settings
     saved = await save_guild_config_by_id(guild_id, config)
     return dict(saved["realmshark_settings"])
+
+
+async def get_points_settings(interaction: discord.Interaction) -> Dict[str, Any]:
+    config = await load_guild_config(interaction)
+    return dict(config["points_settings"])
+
+
+async def set_points_settings(interaction: discord.Interaction, settings: Dict[str, Any]) -> Dict[str, Any]:
+    config = await load_guild_config(interaction)
+    config["points_settings"] = settings
+    saved = await save_guild_config(interaction, config)
+    return dict(saved["points_settings"])
+
+
+async def update_global_points_modifiers(
+    interaction: discord.Interaction,
+    *,
+    loot_percent: float | None = None,
+    bonus_percent: float | None = None,
+    penalty_percent: float | None = None,
+    total_percent: float | None = None,
+) -> Dict[str, Any]:
+    settings = await get_points_settings(interaction)
+    global_settings = dict(settings.get("global", {}))
+
+    if loot_percent is not None:
+        global_settings["loot_percent"] = float(loot_percent)
+    if bonus_percent is not None:
+        global_settings["bonus_percent"] = float(bonus_percent)
+    if penalty_percent is not None:
+        global_settings["penalty_percent"] = float(penalty_percent)
+    if total_percent is not None:
+        global_settings["total_percent"] = float(total_percent)
+
+    settings["global"] = global_settings
+    return await set_points_settings(interaction, settings)
+
+
+async def update_class_points_modifiers(
+    interaction: discord.Interaction,
+    *,
+    class_name: str,
+    loot_percent: float | None = None,
+    bonus_percent: float | None = None,
+    penalty_percent: float | None = None,
+    total_percent: float | None = None,
+    minimum_total: float | None = None,
+) -> Dict[str, Any]:
+    settings = await get_points_settings(interaction)
+    class_overrides = dict(settings.get("class_overrides", {}))
+    override = dict(class_overrides.get(class_name, {}))
+
+    if loot_percent is not None:
+        override["loot_percent"] = float(loot_percent)
+    if bonus_percent is not None:
+        override["bonus_percent"] = float(bonus_percent)
+    if penalty_percent is not None:
+        override["penalty_percent"] = float(penalty_percent)
+    if total_percent is not None:
+        override["total_percent"] = float(total_percent)
+    if minimum_total is not None:
+        override["minimum_total"] = float(minimum_total)
+
+    if not override:
+        class_overrides.pop(class_name, None)
+    else:
+        override.setdefault("loot_percent", 0.0)
+        override.setdefault("bonus_percent", 0.0)
+        override.setdefault("penalty_percent", 0.0)
+        override.setdefault("total_percent", 0.0)
+        override.setdefault("minimum_total", None)
+        class_overrides[class_name] = override
+
+    settings["class_overrides"] = class_overrides
+    return await set_points_settings(interaction, settings)

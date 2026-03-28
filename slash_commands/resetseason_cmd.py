@@ -1,26 +1,9 @@
 import discord
+from menus.menu_utils import ConfirmCancelView
 from utils.guild_config import get_realmshark_settings, set_realmshark_settings
 from utils.player_records import load_player_records, save_player_records, load_teams, save_teams
 from utils.realmshark_pending_store import clear_all_pending_for_guild
 from utils.guild_config import load_guild_config
-
-
-class ConfirmView(discord.ui.View):
-    def __init__(self, timeout=60):
-        super().__init__(timeout=timeout)
-        self.confirmed = False
-    
-    @discord.ui.button(label="Confirm Reset", style=discord.ButtonStyle.red)
-    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.confirmed = True
-        await interaction.response.defer()
-        self.stop()
-    
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
-    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.confirmed = False
-        await interaction.response.defer()
-        self.stop()
 
 
 async def command(interaction: discord.Interaction, clear_realmshark_links: bool = False):
@@ -35,7 +18,15 @@ async def command(interaction: discord.Interaction, clear_realmshark_links: bool
     
     try:
         # Ask for confirmation
-        view = ConfirmView()
+        view = ConfirmCancelView(
+            owner_id=interaction.user.id,
+            timeout=60,
+            confirm_label="Confirm Reset",
+            cancel_label="Cancel",
+            confirm_style=discord.ButtonStyle.danger,
+            cancel_style=discord.ButtonStyle.secondary,
+            owner_error="This confirmation belongs to another user.",
+        )
         reset_mode_line = (
             "WARNING: This will unlink all RealmShark integrations and clear all character mappings."
             if clear_realmshark_links

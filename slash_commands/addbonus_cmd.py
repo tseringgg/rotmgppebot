@@ -3,6 +3,8 @@ from dataclass import Bonus
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.bonus_data import load_bonuses
 from utils.embed_builders import build_loot_embed
+from utils.guild_config import load_guild_config
+from utils.points_service import recompute_ppe_points
 
 async def command(interaction: discord.Interaction, bonus_name: str):
     if not interaction.guild:
@@ -61,7 +63,6 @@ async def command(interaction: discord.Interaction, bonus_name: str):
             )
         # Increment quantity for repeatable bonus
         existing_bonus.quantity += 1
-        active_ppe.points += bonus_data.points
         quantity_text = f" (quantity: {existing_bonus.quantity})"
     else:
         # Create new bonus instance
@@ -73,8 +74,10 @@ async def command(interaction: discord.Interaction, bonus_name: str):
         )
         # Add bonus to PPE
         active_ppe.bonuses.append(new_bonus)
-        active_ppe.points += bonus_data.points
         quantity_text = ""
+
+    guild_config = await load_guild_config(interaction)
+    recompute_ppe_points(active_ppe, guild_config)
     
     # Save records
     await save_player_records(interaction=interaction, records=records)

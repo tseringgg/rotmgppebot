@@ -7,6 +7,7 @@ from typing import Dict, Sequence
 
 import discord
 
+from menus.menu_utils import OwnerBoundView
 from slash_commands import resetquestfor_cmd
 from utils.calc_points import normalize_item_name
 from utils.generate_board import generate_quest_board
@@ -249,7 +250,7 @@ def _build_completed_embed(quests, points_regular: int, points_shiny: int, point
     return embed
 
 
-class MyQuestsView(discord.ui.View):
+class MyQuestsView(OwnerBoundView):
     def __init__(
         self,
         *,
@@ -262,8 +263,11 @@ class MyQuestsView(discord.ui.View):
         current_all: Sequence[str],
         completed_embed: discord.Embed,
     ) -> None:
-        super().__init__(timeout=600)
-        self.owner_id = owner_id
+        super().__init__(
+            owner_id=owner_id,
+            timeout=600,
+            owner_error="This panel belongs to another user.",
+        )
         self.display_name = display_name
         self.home_embed = home_embed
         self.current_regular = list(current_regular)
@@ -288,12 +292,6 @@ class MyQuestsView(discord.ui.View):
         )
         embed = _build_category_embed(embed_title, item_names, attachment_name)
         await interaction.response.edit_message(embed=embed, attachments=[board_file], view=self)
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        if interaction.user.id != self.owner_id:
-            await interaction.response.send_message("This panel belongs to another user.", ephemeral=True)
-            return False
-        return True
 
     @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary)
     async def home(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

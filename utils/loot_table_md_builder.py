@@ -4,8 +4,7 @@ import tempfile
 import json
 from datetime import datetime
 from dataclass import PPEData
-from utils.calc_points import load_loot_points
-import math
+from utils.points_service import calculate_item_points as calculate_item_points_service
 
 
 def load_dungeon_data():
@@ -30,30 +29,7 @@ def load_dungeon_data():
 
 
 def calculate_item_points(item_name: str, divine: bool, shiny: bool, quantity: int) -> float:
-    """Calculate total points for an item based on its properties and quantity (duplicates)"""
-    loot_points = load_loot_points()
-    
-    # Get base points from CSV
-    if shiny:
-        base_points = loot_points.get(item_name + " (shiny)", 0)
-    else:
-        base_points = loot_points.get(item_name, 0)
-    
-    if base_points <= 0:
-        return 0.0
-    
-    # Apply divine multiplier
-    final_points = base_points
-    if divine:
-        final_points = final_points * 2
-
-    if quantity > 1 and final_points > 1:
-        # For multiple quantities, each additional item is worth half points
-        total_points = final_points + math.floor(final_points) / 2 * (quantity - 1)
-    else:
-        total_points = final_points * quantity
-    
-    return total_points
+    return calculate_item_points_service(item_name, divine, shiny, quantity)
 
 
 def create_loot_markdown_file(ppe_data: PPEData) -> str:

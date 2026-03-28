@@ -1,8 +1,10 @@
 import discord
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
-from utils.embed_builders import calculate_item_points, build_loot_embed
+from utils.embed_builders import build_loot_embed
+from utils.guild_config import load_guild_config
 from utils.calc_points import load_loot_points, normalize_item_name
 from utils.pagination import chunk_lines_to_pages
+from utils.points_service import recompute_ppe_points
 
 async def command(interaction: discord.Interaction, user: discord.Member, id: int):
     if not interaction.guild:
@@ -69,22 +71,8 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     # Update the loot list with only valid items
     target_ppe.loot = valid_loot
     
-    # Recalculate points from loot
-    total_loot_points = 0.0
-    for loot_item in target_ppe.loot:
-        item_points = calculate_item_points(
-            loot_item.item_name, 
-            loot_item.divine, 
-            loot_item.shiny, 
-            loot_item.quantity
-        )
-        total_loot_points += item_points
-    
-    # Recalculate points from bonuses
-    total_bonus_points = 0.0
-    for bonus in target_ppe.bonuses:
-        bonus_points = bonus.points * bonus.quantity
-        total_bonus_points += bonus_points
+    guild_config = await load_guild_config(interaction)
+    points_summary = recompute_ppe_points(target_ppe, guild_config)
 
     # Clean invalid season cache entries for this player.
     removed_unique_items = []
@@ -96,9 +84,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     for item_name, shiny in removed_unique_items:
         player_data.unique_items.discard((item_name, shiny))
     
-    # Set the corrected total
-    corrected_total = total_loot_points + total_bonus_points
-    target_ppe.points = corrected_total
+    corrected_total = points_summary["total"]
     
     # Save records
     await save_player_records(interaction=interaction, records=records)
@@ -120,8 +106,9 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     response_lines.append("")
     response_lines.append(f"**Old Total:** {old_points:.1f} points")
     response_lines.append(f"**New Total:** {corrected_total:.1f} points")
-    response_lines.append(f"**From Loot:** {total_loot_points:.1f} points")
-    response_lines.append(f"**From Bonuses:** {total_bonus_points:.1f} points")
+    response_lines.append(f"**From Loot:** {points_summary['loot_raw']:.1f} points")
+    response_lines.append(f"**From Bonuses:** {points_summary['bonus_raw']:.1f} points")
+    response_lines.append(f"**From Penalties:** {points_summary['penalty_raw']:.1f} points")
     response_lines.append(f"**Correction:** {difference_text}")
     
     if removed_items_by_item:

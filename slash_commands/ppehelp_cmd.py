@@ -20,27 +20,26 @@ async def command(interaction: discord.Interaction):
     # --- PPE Management (Player) ---
     ppe_mgmt_cmds = {
         "newppe": "Start a new PPE run (max 10).",
+        "myinfo": "Open your personal dashboard for loot, season, quests, and character management.",
         "setactiveppe": "Set which PPE is active.",
-        "myppes": "View all your PPEs.",
         "addpenalties": "Apply penalties to active PPE.",
+        "manage ppe addbonus": "Unified menu: add bonus to active PPE.",
+        "manage ppe removebonus": "Unified menu: remove bonus from active PPE.",
+        "manage ppe setpenalties": "Unified menu: set penalties on active PPE.",
     }
     
     # --- Loot & Bonuses (Player) ---
     loot_cmds = {
         "addloot": "Add item to active PPE.",
         "removeloot": "Remove item from active PPE.",
-        "myloot": "Show active PPE's loot.",
-        "shareloot": "Generate visual loot table.",
-        "addbonus": "Add bonus to active PPE.",
-        "removebonus": "Remove bonus from active PPE.",
+        "myinfo": "Use Manage Characters -> Show Loot / Modify PPE for loot display and bonus updates (replaces old /myloot flow).",
     }
     
     # --- Season Tracking (Player) ---
     season_cmds = {
         "addseasonloot": "Add unique item to season collection.",
         "removeseasonloot": "Remove unique item from season.",
-        "showseasonloot": "Show all season unique items.",
-        "shareseasonloot": "Generate season loot table.",
+        "myinfo": "Use Show Season Loot to share image + view your season list (replaces old /showseasonloot flow).",
         "myquests": "Show your current and completed quests.",
         "resetquests": "Reset parts of your own quests (limited attempts).",
     }
@@ -78,6 +77,15 @@ async def command(interaction: discord.Interaction):
         "resetquestfor": "Reset quest sections for a player.",
         "resetallquests": "Reset all quest data for all players (with confirmation).",
         "managequests": "View/update quest targets, reset attempts, and quest leaderboard point weights.",
+        "manage ppe addbonusfor": "Unified menu: add bonus to player's PPE.",
+        "manage ppe removebonusfrom": "Unified menu: remove bonus from player's PPE.",
+        "manage ppe setpenaltiesfor": "Unified menu: set penalties on player's PPE.",
+        "manage ppe addpointsfor": "Unified menu: manually add points to a PPE.",
+        "manage ppe refreshpointsfor": "Unified menu: recalculate one PPE's points.",
+        "manage ppe refreshallpoints": "Unified menu: recalculate all PPE points.",
+        "manage pointsettings view": "View guild points modifier settings.",
+        "manage pointsettings setglobal": "Set global percent modifiers for loot/bonus/penalty/total.",
+        "manage pointsettings setclass": "Set class-specific percent modifiers and minimum total.",
     }
     
     # --- Admin: Team Management ---

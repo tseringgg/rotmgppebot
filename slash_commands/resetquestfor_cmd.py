@@ -1,5 +1,6 @@
 import discord
 from discord import ui
+from menus.menu_utils import OwnerBoundView
 
 from utils.player_records import load_player_records, save_player_records, ensure_player_exists
 from utils.quest_manager import refresh_player_quests
@@ -38,7 +39,7 @@ def _build_active_lines(
     return active_lines or ["- None"]
 
 
-class ResetQuestSelectionView(ui.View):
+class ResetQuestSelectionView(OwnerBoundView):
     def __init__(
         self,
         *,
@@ -51,8 +52,11 @@ class ResetQuestSelectionView(ui.View):
         consume_reset_on_confirm: bool,
         include_reset_counter_option: bool,
     ):
-        super().__init__(timeout=120)
-        self.actor_id = actor_id
+        super().__init__(
+            owner_id=actor_id,
+            timeout=120,
+            owner_error="❌ Only the user who started this action can use these controls.",
+        )
         self.member = member
         self.active_item_quests = list(active_item_quests)
         self.active_shiny_quests = list(active_shiny_quests)
@@ -102,15 +106,6 @@ class ResetQuestSelectionView(ui.View):
         self.omitted_active_options_count = max(0, len(active_options) - max_active_options)
         self.section_select.options = active_options[:max_active_options] + bulk_options
         self.section_select.max_values = len(self.section_select.options)
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        if interaction.user.id != self.actor_id:
-            await interaction.response.send_message(
-                "❌ Only the user who started this action can use these controls.",
-                ephemeral=True,
-            )
-            return False
-        return True
 
     async def on_timeout(self):
         self.confirm_button.disabled = True

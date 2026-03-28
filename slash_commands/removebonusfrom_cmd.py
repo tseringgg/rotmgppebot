@@ -1,6 +1,8 @@
 import discord
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.embed_builders import build_loot_embed
+from utils.guild_config import load_guild_config
+from utils.points_service import recompute_ppe_points
 
 async def command(interaction: discord.Interaction, user: discord.Member, id: int, bonus_name: str):
     if not interaction.guild:
@@ -49,17 +51,18 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     if bonus_to_remove.quantity > 1:
         # Decrement quantity
         bonus_to_remove.quantity -= 1
-        target_ppe.points -= bonus_to_remove.points
         quantity_text = f" (remaining quantity: {bonus_to_remove.quantity})"
         removed_points = bonus_to_remove.points
         removed_name = bonus_to_remove.name
     else:
         # Remove bonus completely
         target_ppe.bonuses.remove(bonus_to_remove)
-        target_ppe.points -= bonus_to_remove.points
         quantity_text = ""
         removed_points = bonus_to_remove.points
         removed_name = bonus_to_remove.name
+
+    guild_config = await load_guild_config(interaction)
+    recompute_ppe_points(target_ppe, guild_config)
     
     # Save records
     await save_player_records(interaction=interaction, records=records)

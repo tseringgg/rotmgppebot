@@ -5,7 +5,7 @@ import discord
 from utils.embed_builders import build_loot_embed
 from utils.loot_data import LOOT
 from utils.player_manager import player_manager
-from utils.calc_points import calc_points
+from utils.points_service import calculate_drop_points
 from utils.player_records import get_active_ppe_of_user
 
 
@@ -23,7 +23,7 @@ async def command(
     #     )
     
     try:
-        points = calc_points(item_name, divine, shiny)
+        points = calculate_drop_points(item_name, divine, shiny)
         ppe_id = (await get_active_ppe_of_user(interaction)).id
         user = interaction.user
         if not isinstance(user, discord.Member):

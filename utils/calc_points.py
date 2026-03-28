@@ -2,6 +2,7 @@
 LOOT_POINTS_CSV = "./rotmg_loot_drops_updated.csv"
 import csv
 import re
+from functools import lru_cache
 
 import discord
 PLAYER_RECORD_FILE = "./guild_loot_records.json"
@@ -32,6 +33,7 @@ def normalize_item_name(name: str) -> str:
     return normalized.strip()
 
 # --- Load points table from CSV ---
+@lru_cache(maxsize=1)
 def load_loot_points():
     loot_points = {}
     with open(LOOT_POINTS_CSV, newline='', encoding="utf-8") as f:

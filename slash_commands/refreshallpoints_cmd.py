@@ -1,8 +1,9 @@
 import discord
 from utils.player_records import load_player_records, save_player_records
-from utils.embed_builders import calculate_item_points
+from utils.guild_config import load_guild_config
 from utils.calc_points import load_loot_points, normalize_item_name
 from utils.pagination import chunk_lines_to_pages
+from utils.points_service import recompute_ppe_points
 
 async def command(interaction: discord.Interaction):
     if not interaction.guild:
@@ -14,6 +15,7 @@ async def command(interaction: discord.Interaction):
     # Load player records and loot data
     records = await load_player_records(interaction)
     loot_points = load_loot_points()
+    guild_config = await load_guild_config(interaction)
     
     total_ppes_processed = 0
     total_corrections = 0
@@ -88,26 +90,8 @@ async def command(interaction: discord.Interaction):
             # Update the loot list with only valid items
             ppe.loot = valid_loot
             
-            # Recalculate points from loot
-            total_loot_points = 0.0
-            for loot_item in ppe.loot:
-                item_points = calculate_item_points(
-                    loot_item.item_name, 
-                    loot_item.divine, 
-                    loot_item.shiny, 
-                    loot_item.quantity
-                )
-                total_loot_points += item_points
-            
-            # Recalculate points from bonuses
-            total_bonus_points = 0.0
-            for bonus in ppe.bonuses:
-                bonus_points = bonus.points * bonus.quantity
-                total_bonus_points += bonus_points
-            
-            # Set the corrected total
-            corrected_total = total_loot_points + total_bonus_points
-            ppe.points = corrected_total
+            points_summary = recompute_ppe_points(ppe, guild_config)
+            corrected_total = points_summary["total"]
             
             # Track corrections
             point_difference = corrected_total - old_points

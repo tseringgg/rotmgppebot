@@ -1,25 +1,8 @@
 import discord
+from menus.menu_utils import ConfirmCancelView
 
 from utils.player_records import load_player_records, save_player_records
 from utils.guild_config import load_guild_config
-
-
-class ConfirmResetAllQuestsView(discord.ui.View):
-    def __init__(self, timeout=60):
-        super().__init__(timeout=timeout)
-        self.confirmed = False
-
-    @discord.ui.button(label="Confirm Reset", style=discord.ButtonStyle.red)
-    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.confirmed = True
-        await interaction.response.defer()
-        self.stop()
-
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
-    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.confirmed = False
-        await interaction.response.defer()
-        self.stop()
 
 
 async def command(interaction: discord.Interaction):
@@ -27,7 +10,15 @@ async def command(interaction: discord.Interaction):
         return await interaction.response.send_message("❌ This command can only be used in a server.", ephemeral=True)
 
     try:
-        view = ConfirmResetAllQuestsView()
+        view = ConfirmCancelView(
+            owner_id=interaction.user.id,
+            timeout=60,
+            confirm_label="Confirm Reset",
+            cancel_label="Cancel",
+            confirm_style=discord.ButtonStyle.danger,
+            cancel_style=discord.ButtonStyle.secondary,
+            owner_error="This confirmation belongs to another user.",
+        )
         await interaction.response.send_message(
             "⚠️ **Are you sure you want to reset ALL quest data?**\n"
             "This will clear current and completed regular, shiny, and skin quests for all players.",

@@ -7,9 +7,9 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 ### 🎮 Player Features
 - **Create & Manage PPEs**: Start new PPE runs with automatic penalty calculations
 - **Loot Tracking**: Add/remove items with divine and shiny variants
-- **Bonus System**: Apply achievement bonuses with quantity tracking
+- **Bonus System**: Manage achievement bonuses from an interactive dashboard
 - **Point Management**: Automated point calculations with duplicate handling
-- **Personal Statistics**: View your PPE progress and loot collections
+- **Personal Dashboard**: Use `/myinfo` for season, loot, quest, and character actions
 - **Separate Seasonal Tracking**: View your overall season progress and loot
 - **Account Quests**: Get randomized regular, shiny, and skin quests tied to your account with completion tracking
 - **Team System**: Join teams with team leaders who can manage team members
@@ -82,14 +82,13 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | Command | Description |
 |---------|-------------|
 | `/newppe` | Create a new PPE with class and penalty setup |
+| `/myinfo` | Open personal dashboard (season loot, quests, character management, bonus editing) |
 | `/setactiveppe` | Switch between your PPE characters |
 | `/addloot` | Add items to your active PPE |
 | `/removeloot` | Remove items from your active PPE |
-| `/addbonus` | Apply achievement bonuses (stackable) |
-| `/removebonus` | Remove bonuses (decrements quantity) |
 | `/addpenalties` | Apply retroactive penalties to your PPE |
-| `/myloot` | View your current PPE's loot and stats |
-| `/myppes` | See all your PPEs and which is active |
+| `/manage ppe addbonus` | Add bonus to active PPE (menu utility command) |
+| `/manage ppe removebonus` | Remove bonus from active PPE (menu utility command) |
 | `/myquests` | View your current and completed account quests |
 
 ### Admin Commands
@@ -113,6 +112,17 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/resetquestfor` | Open an interactive menu to reset quest sections for any player |
 | `/resetallquests` | Reset quest data for all players (with confirmation) |
 | `/managequests` | View or update per-server quest targets (regular/shiny/skin) |
+| `/manage ppe addbonusfor` | Add bonus to a specific player's PPE |
+| `/manage ppe removebonusfrom` | Remove bonus from a specific player's PPE |
+| `/manage ppe setpenaltiesfor` | Set penalties for a specific player's PPE |
+| `/manage ppe addpointsfor` | Manually add points to a specific PPE |
+| `/manage ppe refreshpointsfor` | Recalculate a specific PPE |
+| `/manage ppe refreshallpoints` | Recalculate all PPEs |
+| `/manage pointsettings view` | View guild point modifier settings |
+| `/manage pointsettings setglobal` | Set global point modifiers |
+| `/manage pointsettings setclass` | Set class-specific point modifiers |
+
+Legacy standalone commands for `/myloot`, `/myppes`, and `/showseasonloot` were retired in favor of `/myinfo`.
 
 ### Team Commands (Leaders & Admins)
 | Command | Description |
@@ -336,6 +346,8 @@ rotmgppebot/
 ├── main.py                    # Bot entry point
 ├── dataclass.py              # Data structures
 ├── requirements.txt          # Dependencies
+├── menus/                    # Shared menu/view architecture
+│   └── menu_utils/           # Reusable owner/confirm menu components
 ├── slash_commands/           # Command implementations
 ├── utils/                   # Utility modules
 │   ├── player_records.py    # Data persistence

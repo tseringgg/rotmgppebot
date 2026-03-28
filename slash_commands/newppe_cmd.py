@@ -2,7 +2,9 @@
 
 import discord
 
-from dataclass import Bonus, PPEData, ROTMGClass
+from dataclass import PPEData, ROTMGClass
+from utils.guild_config import load_guild_config
+from utils.points_service import apply_penalties_to_ppe, recompute_ppe_points, validate_penalty_inputs
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 
 
@@ -18,27 +20,9 @@ async def command(interaction: discord.Interaction, class_name: str, pet_level: 
             ephemeral=True
         )
 
-    # --- Validate other inputs ---
-    if not (0 <= pet_level <= 100):
-        return await interaction.response.send_message(
-            "❌ Pet level must be between `0` and `100`.",
-            ephemeral=True
-        )
-    if not (0 <= num_exalts <= 40):
-        return await interaction.response.send_message(
-            "❌ Number of exalts must be between `0` and `40`.",
-            ephemeral=True
-        )
-    if not (0.0 <= percent_loot <= 25.0):
-        return await interaction.response.send_message(
-            "❌ Percent loot boost must be between `0%` and `25%`.",
-            ephemeral=True
-        )
-    if incombat_reduction not in {0.0, 0.2, 0.4, 0.6, 0.8, 1.0}:
-        return await interaction.response.send_message(
-            "❌ In-combat damage reduction must be one of the following values: `0`, `0.2`, `0.4`, `0.6`, `0.8`, `1`.",
-            ephemeral=True
-        )
+    error = validate_penalty_inputs(pet_level, num_exalts, percent_loot, incombat_reduction)
+    if error:
+        return await interaction.response.send_message(error, ephemeral=True)
 
     guild_id = interaction.guild.id
     records = await load_player_records(interaction)
@@ -58,31 +42,30 @@ async def command(interaction: discord.Interaction, class_name: str, pet_level: 
     # --- Create new PPE ---
     next_id = max((ppe.id for ppe in player_data.ppes), default=0) + 1
 
-    # Calculate each handicap component separately for the receipt
-    pet_penalty = -round(pet_level / 4)
-    exalt_penalty = -0.5 * num_exalts
-    loot_penalty = -2 * percent_loot
-    incombat_penalty = -(2 * (incombat_reduction / 0.2))
-    
-    points = pet_penalty + exalt_penalty + loot_penalty + incombat_penalty
-
-    penalties: list[Bonus] = []
-    if pet_penalty != 0:
-        penalties.append(Bonus(name="Pet Level Penalty", points=pet_penalty, repeatable=False))
-    if exalt_penalty != 0:
-        penalties.append(Bonus(name="Exalts Penalty", points=exalt_penalty, repeatable=False))
-    if loot_penalty != 0:
-        penalties.append(Bonus(name="Loot Boost Penalty", points=loot_penalty, repeatable=False))
-    if incombat_penalty != 0:
-        penalties.append(Bonus(name="In-Combat Reduction Penalty", points=incombat_penalty, repeatable=False))
-
     new_ppe = PPEData(
         id=next_id,
         name=class_enum,
-        points=points,
+        points=0.0,
         loot=[],
-        bonuses=penalties
+        bonuses=[]
     )
+
+    penalty_result = apply_penalties_to_ppe(
+        new_ppe,
+        pet_level=pet_level,
+        num_exalts=num_exalts,
+        percent_loot=percent_loot,
+        incombat_reduction=incombat_reduction,
+    )
+    components = penalty_result["components"]
+    pet_penalty = components["Pet Level Penalty"]
+    exalt_penalty = components["Exalts Penalty"]
+    loot_penalty = components["Loot Boost Penalty"]
+    incombat_penalty = components["In-Combat Reduction Penalty"]
+
+    guild_config = await load_guild_config(interaction)
+    points_breakdown = recompute_ppe_points(new_ppe, guild_config)
+    points = points_breakdown["total"]
 
     player_data.ppes.append(new_ppe)
     player_data.active_ppe = next_id

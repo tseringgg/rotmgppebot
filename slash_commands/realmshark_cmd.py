@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict
 
 import discord
+from menus.menu_utils import OwnerBoundView
 
 from utils.guild_config import get_realmshark_settings, set_realmshark_settings
 from utils.player_records import ensure_player_exists, load_player_records
@@ -686,17 +687,14 @@ async def _admin_clear_all_mappings_for_member(
     return tokens_updated, ppe_mappings_removed, seasonal_mappings_removed, metadata_entries_removed
 
 
-class _RealmSharkAdminConfirmClearMappingsView(discord.ui.View):
+class _RealmSharkAdminConfirmClearMappingsView(OwnerBoundView):
     def __init__(self, owner_id: int, target_member_id: int) -> None:
-        super().__init__(timeout=60)
-        self.owner_id = owner_id
+        super().__init__(
+            owner_id=owner_id,
+            timeout=60,
+            owner_error="This confirmation belongs to another admin.",
+        )
         self.target_member_id = target_member_id
-
-    async def _ensure_owner(self, interaction: discord.Interaction) -> bool:
-        if interaction.user.id != self.owner_id:
-            await interaction.response.send_message("This confirmation belongs to another admin.", ephemeral=True)
-            return False
-        return True
 
     @discord.ui.button(label="Confirm Remove All Mappings", style=discord.ButtonStyle.danger)
     async def confirm(
@@ -704,7 +702,7 @@ class _RealmSharkAdminConfirmClearMappingsView(discord.ui.View):
         interaction: discord.Interaction,
         _button: discord.ui.Button,
     ) -> None:
-        if not await self._ensure_owner(interaction):
+        if not await self.ensure_owner(interaction):
             return
 
         tokens_updated, ppe_removed, seasonal_removed, metadata_removed = await _admin_clear_all_mappings_for_member(
@@ -736,7 +734,7 @@ class _RealmSharkAdminConfirmClearMappingsView(discord.ui.View):
         interaction: discord.Interaction,
         _button: discord.ui.Button,
     ) -> None:
-        if not await self._ensure_owner(interaction):
+        if not await self.ensure_owner(interaction):
             return
         await interaction.response.edit_message(content="Cancelled mapping removal.", view=None)
 
@@ -864,19 +862,16 @@ async def _build_admin_panel_embed(
     return embed
 
 
-class RealmSharkAdminPanelView(discord.ui.View):
+class RealmSharkAdminPanelView(OwnerBoundView):
     def __init__(self, owner_id: int, mode: str, entries: list[tuple[int, int]]) -> None:
-        super().__init__(timeout=600)
-        self.owner_id = owner_id
+        super().__init__(
+            owner_id=owner_id,
+            timeout=600,
+            owner_error="This admin panel belongs to another admin.",
+        )
         self.mode = mode
         self.entries = entries
         self.index = 0
-
-    async def _ensure_owner(self, interaction: discord.Interaction) -> bool:
-        if interaction.user.id != self.owner_id:
-            await interaction.response.send_message("This admin panel belongs to another admin.", ephemeral=True)
-            return False
-        return True
 
     async def _refresh_entries(self, interaction: discord.Interaction) -> bool:
         current = self.entries[self.index] if self.entries and 0 <= self.index < len(self.entries) else None
@@ -910,7 +905,7 @@ class RealmSharkAdminPanelView(discord.ui.View):
 
     @discord.ui.button(label="Prev", style=discord.ButtonStyle.secondary)
     async def prev(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not await self._ensure_owner(interaction):
+        if not await self.ensure_owner(interaction):
             return
         if not await self._refresh_entries(interaction):
             return
@@ -919,7 +914,7 @@ class RealmSharkAdminPanelView(discord.ui.View):
 
     @discord.ui.button(label="Next", style=discord.ButtonStyle.secondary)
     async def next(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not await self._ensure_owner(interaction):
+        if not await self.ensure_owner(interaction):
             return
         if not await self._refresh_entries(interaction):
             return
@@ -928,7 +923,7 @@ class RealmSharkAdminPanelView(discord.ui.View):
 
     @discord.ui.button(label="Show Pending", style=discord.ButtonStyle.primary)
     async def show_pending(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not await self._ensure_owner(interaction):
+        if not await self.ensure_owner(interaction):
             return
         self.mode = "show_pending"
         if not await self._refresh_entries(interaction):
@@ -937,7 +932,7 @@ class RealmSharkAdminPanelView(discord.ui.View):
 
     @discord.ui.button(label="Show All", style=discord.ButtonStyle.primary)
     async def show_all(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not await self._ensure_owner(interaction):
+        if not await self.ensure_owner(interaction):
             return
         self.mode = "show_all"
         if not await self._refresh_entries(interaction):
@@ -946,7 +941,7 @@ class RealmSharkAdminPanelView(discord.ui.View):
 
     @discord.ui.button(label="Remove All Mappings", style=discord.ButtonStyle.danger)
     async def remove_all_mappings(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not await self._ensure_owner(interaction):
+        if not await self.ensure_owner(interaction):
             return
         if not self.entries:
             return await interaction.response.send_message("No active player selection to clear.", ephemeral=True)
@@ -960,7 +955,7 @@ class RealmSharkAdminPanelView(discord.ui.View):
 
     @discord.ui.button(label="Refresh", style=discord.ButtonStyle.secondary)
     async def refresh(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not await self._ensure_owner(interaction):
+        if not await self.ensure_owner(interaction):
             return
         if not await self._refresh_entries(interaction):
             return
@@ -1275,10 +1270,13 @@ class RealmSharkMapToPPEView(discord.ui.View):
         self.add_item(_MapToPPESelect(owner_id, target_user_id, character_id, token, ppe_options))
 
 
-class RealmSharkConfigurePanelView(discord.ui.View):
+class RealmSharkConfigurePanelView(OwnerBoundView):
     def __init__(self, owner_id: int, target_user_id: int, character_id: int, token: str | None, mode: str) -> None:
-        super().__init__(timeout=600)
-        self.owner_id = owner_id
+        super().__init__(
+            owner_id=owner_id,
+            timeout=600,
+            owner_error="This panel belongs to another user.",
+        )
         self.target_user_id = target_user_id
         self.character_id = character_id
         self.token = token
@@ -1329,7 +1327,7 @@ class RealmSharkConfigurePanelView(discord.ui.View):
 
     @discord.ui.button(label="Prev", style=discord.ButtonStyle.secondary)
     async def prev_pending(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not await self._check_owner(interaction):
+        if not await self.ensure_owner(interaction):
             return
 
         active_ids, _all_ids, pending_unmapped_ids = await self._active_character_ids(interaction)
@@ -1356,7 +1354,7 @@ class RealmSharkConfigurePanelView(discord.ui.View):
 
     @discord.ui.button(label="Next", style=discord.ButtonStyle.secondary)
     async def next_pending(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not await self._check_owner(interaction):
+        if not await self.ensure_owner(interaction):
             return
 
         active_ids, _all_ids, pending_unmapped_ids = await self._active_character_ids(interaction)
@@ -1381,15 +1379,9 @@ class RealmSharkConfigurePanelView(discord.ui.View):
         )
         await interaction.response.edit_message(embed=embed, view=self)
 
-    async def _check_owner(self, interaction: discord.Interaction) -> bool:
-        if interaction.user.id != self.owner_id:
-            await interaction.response.send_message("This panel belongs to another user.", ephemeral=True)
-            return False
-        return True
-
     @discord.ui.button(label="Map To PPE", style=discord.ButtonStyle.success)
     async def map_to_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not await self._check_owner(interaction):
+        if not await self.ensure_owner(interaction):
             return
 
         records = await load_player_records(interaction)
@@ -1461,7 +1453,7 @@ class RealmSharkConfigurePanelView(discord.ui.View):
 
     @discord.ui.button(label="Set Seasonal", style=discord.ButtonStyle.secondary)
     async def set_seasonal(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not await self._check_owner(interaction):
+        if not await self.ensure_owner(interaction):
             return
         await configure(
             interaction,
@@ -1473,21 +1465,21 @@ class RealmSharkConfigurePanelView(discord.ui.View):
 
     @discord.ui.button(label="Show Pending", style=discord.ButtonStyle.primary)
     async def show_pending(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not await self._check_owner(interaction):
+        if not await self.ensure_owner(interaction):
             return
         self.mode = "show_pending"
         await self._refresh_panel(interaction)
 
     @discord.ui.button(label="Show All", style=discord.ButtonStyle.primary)
     async def show_all(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not await self._check_owner(interaction):
+        if not await self.ensure_owner(interaction):
             return
         self.mode = "show_all"
         await self._refresh_panel(interaction)
 
     @discord.ui.button(label="Clear Pending", style=discord.ButtonStyle.danger)
     async def clear_pending(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not await self._check_owner(interaction):
+        if not await self.ensure_owner(interaction):
             return
         await configure(
             interaction,
@@ -1499,7 +1491,7 @@ class RealmSharkConfigurePanelView(discord.ui.View):
 
     @discord.ui.button(label="Refresh", style=discord.ButtonStyle.secondary)
     async def refresh(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not await self._check_owner(interaction):
+        if not await self.ensure_owner(interaction):
             return
         await self._refresh_panel(interaction)
 

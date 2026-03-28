@@ -1,6 +1,6 @@
 import discord
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
-from utils.calc_points import calc_points
+from utils.points_service import calculate_drop_points
 from utils.player_manager import player_manager
 from utils.embed_builders import build_loot_embed
 from utils.loot_data import LOOT
@@ -43,7 +43,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     
     try:
         # Calculate points for the item
-        points = calc_points(item_name, divine, shiny)
+        points = calculate_drop_points(item_name, divine, shiny)
         
         
         # Remove loot and points using player_manager

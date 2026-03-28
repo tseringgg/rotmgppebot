@@ -1,24 +1,6 @@
 import discord
-from utils.team_manager import team_manager
+from menus.menu_utils import ConfirmCancelView
 from utils.player_records import load_teams, save_teams
-
-
-class ConfirmView(discord.ui.View):
-    def __init__(self, timeout=60):
-        super().__init__(timeout=timeout)
-        self.confirmed = False
-    
-    @discord.ui.button(label="Confirm Delete", style=discord.ButtonStyle.red)
-    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.confirmed = True
-        await interaction.response.defer()
-        self.stop()
-    
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
-    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.confirmed = False
-        await interaction.response.defer()
-        self.stop()
 
 
 async def command(interaction: discord.Interaction, team_name: str):
@@ -27,7 +9,15 @@ async def command(interaction: discord.Interaction, team_name: str):
     
     try:
         # Ask for confirmation
-        view = ConfirmView()
+        view = ConfirmCancelView(
+            owner_id=interaction.user.id,
+            timeout=60,
+            confirm_label="Confirm Delete",
+            cancel_label="Cancel",
+            confirm_style=discord.ButtonStyle.danger,
+            cancel_style=discord.ButtonStyle.secondary,
+            owner_error="This confirmation belongs to another user.",
+        )
         await interaction.response.send_message(
             f"⚠️ **Are you sure you want to delete the team `{team_name}`?**\n"
             "This will remove the team and all its members will be removed from the team.",
