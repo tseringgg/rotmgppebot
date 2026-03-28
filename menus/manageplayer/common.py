@@ -249,7 +249,7 @@ async def open_manageplayer_menu(
 
     target, error = await resolve_target(interaction, member=member, user_id=user_id)
     if error:
-        await interaction.response.send_message(error, ephemeral=False)
+        await interaction.response.send_message(error, ephemeral=True)
         return
 
     assert target is not None
