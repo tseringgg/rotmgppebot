@@ -66,7 +66,6 @@ class ManagePlayerSeasonLootView(OwnerBoundView):
     async def list_season_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_manageplayer_menu(interaction)
         player_data = await load_target_player_data(interaction, self.target.user_id)
-        await interaction.response.defer()
         await send_target_season_loot_markdown_followup(interaction, target=self.target, player_data=player_data)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)

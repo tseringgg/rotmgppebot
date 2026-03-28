@@ -20,6 +20,7 @@ from menus.manageplayer.common import (
 )
 from menus.menu_utils import OwnerBoundView
 from utils.guild_config import load_guild_config
+from utils.helpers.shareloot_image import generate_loot_share_image, variant_image_label
 from utils.penalty_embed import build_penalty_infographic_embed
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.points_service import apply_penalties_to_ppe, parse_penalty_inputs, recompute_ppe_points
@@ -271,14 +272,66 @@ class ManagePlayerCharacterLootView(OwnerBoundView):
         embed.add_field(name="Points", value=f"{format_points(ppe.points)}", inline=True)
         return embed
 
-    @discord.ui.button(label="Show List", style=discord.ButtonStyle.secondary, row=0)
+    async def _share(self, interaction: discord.Interaction, *, include_skins: bool, include_limited: bool) -> None:
+        from menus.manageplayer.common import display_class_name, format_points
+
+        refreshed = await load_target_player_data(interaction, self.target.user_id)
+        selected = find_ppe_or_raise(refreshed, self.ppe_id)
+        source_items = [(loot_item.item_name, bool(loot_item.shiny)) for loot_item in selected.loot]
+
+        await generate_loot_share_image(
+            interaction,
+            source_items=source_items,
+            include_skins=include_skins,
+            include_limited=include_limited,
+            filename_suffix=f"target_{self.target.user_id}_ppe{selected.id}_loot",
+            embed_title="🎒 PPE Loot Share",
+            embed_color=0x00FF00,
+            embed_description=(
+                f"**{self.target.display_name}'s** {display_class_name(selected)} PPE #{selected.id}"
+            ),
+            total_items_label="Total Loot",
+            all_variant_extra_lines=[f"**Points:** {format_points(selected.points)}"],
+        )
+
+        await interaction.followup.send(
+            f"Generated: **{variant_image_label(include_skins, include_limited)}**",
+            ephemeral=False,
+        )
+
+    async def _close_and_share(
+        self,
+        interaction: discord.Interaction,
+        *,
+        include_skins: bool,
+        include_limited: bool,
+    ) -> None:
+        await close_manageplayer_menu(interaction)
+        await self._share(interaction, include_skins=include_skins, include_limited=include_limited)
+
+    @discord.ui.button(label="Generate Image: Normal Only", style=discord.ButtonStyle.primary, row=0)
+    async def normal_only(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await self._close_and_share(interaction, include_skins=False, include_limited=False)
+
+    @discord.ui.button(label="Generate Image: Normal + Limited", style=discord.ButtonStyle.primary, row=0)
+    async def normal_limited(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await self._close_and_share(interaction, include_skins=False, include_limited=True)
+
+    @discord.ui.button(label="Generate Image: Normal + Skins", style=discord.ButtonStyle.primary, row=1)
+    async def normal_skins(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await self._close_and_share(interaction, include_skins=True, include_limited=False)
+
+    @discord.ui.button(label="Generate Image: All Loot", style=discord.ButtonStyle.success, row=1)
+    async def all_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await self._close_and_share(interaction, include_skins=True, include_limited=True)
+
+    @discord.ui.button(label="List Loot", style=discord.ButtonStyle.secondary, row=2)
     async def show_list(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_manageplayer_menu(interaction)
         refreshed = await load_target_player_data(interaction, self.target.user_id)
         selected = find_ppe_or_raise(refreshed, self.ppe_id)
-        await interaction.response.defer()
         await send_target_loot_markdown_followup(interaction, ppe=selected)
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=0)
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_manageplayer_menu(interaction)
