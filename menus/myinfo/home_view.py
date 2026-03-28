@@ -49,7 +49,7 @@ class MyInfoHomeView(OwnerBoundView):
         await close_myinfo_menu(interaction)
         await send_ppe_list_markdown_followup(interaction, records[key])
 
-    @discord.ui.button(label="/myteam", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="My Team", style=discord.ButtonStyle.primary, row=0)
     async def my_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         from slash_commands.myteam_cmd import build_team_embed
 
@@ -60,7 +60,7 @@ class MyInfoHomeView(OwnerBoundView):
         )
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Manage Characters", style=discord.ButtonStyle.success, row=0)
+    @discord.ui.button(label="Manage Characters", style=discord.ButtonStyle.success, row=1)
     async def manage_characters(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         from menus.myinfo.character_view import ManageCharactersView
 
@@ -83,7 +83,7 @@ class MyInfoHomeView(OwnerBoundView):
         )
         await interaction.response.edit_message(embed=view.current_embed(interaction.user), view=view)
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=0)
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await interaction.response.edit_message(content="Closed `/myinfo` menu.", embed=None, view=None)
 

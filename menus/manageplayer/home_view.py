@@ -281,7 +281,7 @@ class ManagePlayerHomeView(OwnerBoundView):
         await interaction.response.defer()
         await send_target_ppe_list_markdown_followup(interaction, target=self.target, player_data=player_data)
 
-    @discord.ui.button(label="/myteam", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="My Team", style=discord.ButtonStyle.primary, row=0)
     async def my_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         from slash_commands.myteam_cmd import build_team_embed
 
