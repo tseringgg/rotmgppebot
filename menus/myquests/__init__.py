@@ -1,3 +1,5 @@
+"""Entry points for the /myquests interactive quest-tracking menu."""
+
 from __future__ import annotations
 
 import discord
@@ -7,6 +9,8 @@ from menus.myquests.view import MyQuestsView
 
 
 async def open_myquests_menu(interaction: discord.Interaction, *, ephemeral: bool = False) -> None:
+    """Build and send the main /myquests panel for the invoking player."""
+
     state = await build_myquests_state(interaction)
 
     view = MyQuestsView(

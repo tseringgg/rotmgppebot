@@ -1,3 +1,5 @@
+"""Shared Discord views for menu ownership and interaction safety."""
+
 from __future__ import annotations
 
 import discord
@@ -18,6 +20,7 @@ class OwnerBoundView(discord.ui.View):
         self.owner_error = owner_error
 
     async def ensure_owner(self, interaction: discord.Interaction) -> bool:
+        # Prevent other users from interacting with someone else's menu panel.
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message(self.owner_error, ephemeral=True)
             return False

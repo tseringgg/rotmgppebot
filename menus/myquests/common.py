@@ -1,3 +1,5 @@
+"""Data loading and embed/board builders used by the /myquests menu."""
+
 from __future__ import annotations
 
 import glob
@@ -53,6 +55,7 @@ def build_item_image_index_if_needed() -> None:
         return
 
     _ITEM_IMAGE_INDEX.clear()
+    # Build once and cache by normalized item name for faster board rendering.
     for png_file in glob.glob(os.path.join(_DUNGEONS_DIR, "**", "*.png"), recursive=True):
         base_name = os.path.splitext(os.path.basename(png_file))[0]
         normalized = normalize_item_name(base_name).lower()
@@ -264,6 +267,8 @@ def build_completed_embed(quests, points_regular: int, points_shiny: int, points
 
 
 async def build_myquests_state(interaction: discord.Interaction):
+    """Assemble all embeds and item lists required to render the quests view."""
+
     records = await load_player_records(interaction)
     user_id = interaction.user.id
     key = ensure_player_exists(records, user_id)

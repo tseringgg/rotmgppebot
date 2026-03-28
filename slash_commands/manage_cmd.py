@@ -14,12 +14,98 @@ from slash_commands import (
 )
 from utils.autocomplete import bonus_autocomplete, class_autocomplete, target_user_bonus_autocomplete, user_bonus_autocomplete
 from utils.guild_config import get_points_settings, update_class_points_modifiers, update_global_points_modifiers
+from utils.player_records import ensure_player_exists, load_player_records
 from utils.role_checks import require_ppe_roles
 
 
 manage_group = app_commands.Group(name="manage", description="Unified PPE management commands")
 ppe_group = app_commands.Group(name="ppe", description="Manage PPE points, bonuses, and penalties", parent=manage_group)
 points_settings_group = app_commands.Group(name="pointsettings", description="Configure points modifiers", parent=manage_group)
+
+
+def _active_ppe_for_user(records, user_id: int):
+    key = ensure_player_exists(records, user_id)
+    player_data = records[key]
+
+    if player_data.active_ppe is None:
+        return None
+
+    for ppe in player_data.ppes:
+        if int(ppe.id) == int(player_data.active_ppe):
+            return ppe
+    return None
+
+
+def _extract_penalty_values(ppe) -> dict[str, float]:
+    pet_penalty = 0.0
+    exalts_penalty = 0.0
+    loot_penalty = 0.0
+    incombat_penalty = 0.0
+
+    for bonus in ppe.bonuses:
+        total = float(bonus.points) * max(1, int(getattr(bonus, "quantity", 1)))
+        if bonus.name == "Pet Level Penalty":
+            pet_penalty += total
+        elif bonus.name == "Exalts Penalty":
+            exalts_penalty += total
+        elif bonus.name == "Loot Boost Penalty":
+            loot_penalty += total
+        elif bonus.name == "In-Combat Reduction Penalty":
+            incombat_penalty += total
+
+    pet_level = int(round(-4.0 * pet_penalty)) if pet_penalty else 0
+    num_exalts = int(round(-2.0 * exalts_penalty)) if exalts_penalty else 0
+    percent_loot = round(-0.5 * loot_penalty, 1) if loot_penalty else 0.0
+    incombat_reduction = round(-0.1 * incombat_penalty, 1) if incombat_penalty else 0.0
+
+    return {
+        "pet_level": max(0, pet_level),
+        "num_exalts": max(0, num_exalts),
+        "percent_loot": max(0.0, percent_loot),
+        "incombat_reduction": max(0.0, incombat_reduction),
+    }
+
+
+class ManagePenaltiesModal(discord.ui.Modal, title="Manage PPE Penalties"):
+    """Modal form for editing penalty stats on the invoking user's active PPE."""
+
+    pet_level = discord.ui.TextInput(label="Pet level (0-100)", required=True, max_length=3)
+    num_exalts = discord.ui.TextInput(label="Number of exalts (0-40)", required=True, max_length=3)
+    percent_loot = discord.ui.TextInput(label="Loot boost percent (0-25)", required=True, max_length=5)
+    incombat_reduction = discord.ui.TextInput(
+        label="In-combat reduction (0, 0.2, 0.4, 0.6, 0.8, 1.0)",
+        required=True,
+        max_length=3,
+    )
+
+    def __init__(self, *, initial: dict[str, float]) -> None:
+        super().__init__()
+        # Prefill the form with the active PPE's current penalty values.
+        self.pet_level.default = str(int(initial["pet_level"]))
+        self.num_exalts.default = str(int(initial["num_exalts"]))
+        self.percent_loot.default = f"{float(initial['percent_loot']):g}"
+        self.incombat_reduction.default = f"{float(initial['incombat_reduction']):g}"
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        try:
+            pet_level = int(str(self.pet_level.value).strip())
+            num_exalts = int(str(self.num_exalts.value).strip())
+            percent_loot = float(str(self.percent_loot.value).strip())
+            incombat_reduction = float(str(self.incombat_reduction.value).strip())
+        except ValueError:
+            await interaction.response.send_message(
+                "❌ All values must be numeric. Use whole numbers for pet/exalts and decimals for loot/in-combat.",
+                ephemeral=True,
+            )
+            return
+
+        await addpenalties_cmd.command(
+            interaction,
+            pet_level=pet_level,
+            num_exalts=num_exalts,
+            percent_loot=percent_loot,
+            incombat_reduction=incombat_reduction,
+        )
 
 
 @ppe_group.command(name="addbonus", description="Add a bonus to your active PPE.")
@@ -54,22 +140,21 @@ async def manage_ppe_removebonusfrom(interaction: discord.Interaction, user: dis
     await removebonusfrom_cmd.command(interaction, user, id, bonus_name)
 
 
-@ppe_group.command(name="setpenalties", description="Set penalty bonuses on your active PPE.")
-@app_commands.describe(
-    pet_level="Pet level (0-100)",
-    num_exalts="Number of exalts (0-40)",
-    percent_loot="Loot boost percentage (0-25)",
-    incombat_reduction="In-combat damage reduction (0, 0.2, 0.4, 0.6, 0.8, 1.0)",
-)
+@ppe_group.command(name="penalties", description="Open a form to view and edit your active PPE penalties.")
 @require_ppe_roles(player_required=True)
-async def manage_ppe_setpenalties(
-    interaction: discord.Interaction,
-    pet_level: int,
-    num_exalts: int,
-    percent_loot: float,
-    incombat_reduction: float,
-):
-    await addpenalties_cmd.command(interaction, pet_level, num_exalts, percent_loot, incombat_reduction)
+async def manage_ppe_penalties(interaction: discord.Interaction):
+    records = await load_player_records(interaction)
+    active_ppe = _active_ppe_for_user(records, interaction.user.id)
+
+    if active_ppe is None:
+        await interaction.response.send_message(
+            "❌ You don't have an active PPE. Create one first with `/newppe`.",
+            ephemeral=True,
+        )
+        return
+
+    initial = _extract_penalty_values(active_ppe)
+    await interaction.response.send_modal(ManagePenaltiesModal(initial=initial))
 
 
 @ppe_group.command(name="setpenaltiesfor", description="Set penalty bonuses on another player's PPE. Admin only.")

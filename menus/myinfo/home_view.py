@@ -1,3 +1,5 @@
+"""Home screen views for the /myinfo dashboard and quick navigation actions."""
+
 from __future__ import annotations
 
 import discord
@@ -15,6 +17,8 @@ from utils.player_records import ensure_player_exists, load_player_records
 
 
 class MyInfoHomeView(OwnerBoundView):
+    """Primary dashboard view for opening loot, quest, and character management flows."""
+
     def __init__(self, owner_id: int, *, max_ppes: int):
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.max_ppes = max_ppes
@@ -65,6 +69,8 @@ class MyInfoHomeView(OwnerBoundView):
 
 
 class NoCharactersView(OwnerBoundView):
+    """Fallback view shown when a player has no PPE characters yet."""
+
     def __init__(self, owner_id: int, *, max_ppes: int):
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.max_ppes = max_ppes

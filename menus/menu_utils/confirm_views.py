@@ -1,3 +1,5 @@
+"""Reusable confirmation views for menu actions that need explicit user consent."""
+
 from __future__ import annotations
 
 import discord
@@ -16,6 +18,7 @@ class _ConfirmActionButton(discord.ui.Button):
             await interaction.response.send_message("Invalid confirmation state.", ephemeral=True)
             return
 
+        # Persist the selected outcome so the caller can read it after wait().
         view.confirmed = self.is_confirm
         await interaction.response.defer()
         view.stop()

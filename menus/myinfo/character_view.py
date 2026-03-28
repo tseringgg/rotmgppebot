@@ -1,3 +1,5 @@
+"""Character-focused /myinfo views for PPE browsing, loot sharing, and bonus edits."""
+
 from __future__ import annotations
 
 import discord
@@ -23,6 +25,8 @@ from utils.points_service import recompute_ppe_points
 
 
 class _BonusChoiceSelect(discord.ui.Select):
+    """Dropdown selector for choosing which bonus to add or remove."""
+
     def __init__(self, owner_id: int, options: list[discord.SelectOption]):
         super().__init__(
             placeholder="Select a bonus",
@@ -44,6 +48,8 @@ class _BonusChoiceSelect(discord.ui.Select):
 
 
 class ModifyPPEView(OwnerBoundView):
+    """Menu view for adding or removing bonuses on a specific PPE."""
+
     def __init__(
         self,
         *,
@@ -219,6 +225,8 @@ class ModifyPPEView(OwnerBoundView):
 
 
 class ManageCharactersView(OwnerBoundView):
+    """Carousel-style character management view for navigating a player's PPE list."""
+
     def __init__(
         self,
         *,
@@ -312,6 +320,8 @@ class ManageCharactersView(OwnerBoundView):
 
 
 class CharacterLootVariantView(OwnerBoundView):
+    """Variant picker view for sharing a PPE's loot image or text exports."""
+
     def __init__(self, *, owner_id: int, ppe_id: int, preferred_ppe_id: int):
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.ppe_id = ppe_id
@@ -346,6 +356,7 @@ class CharacterLootVariantView(OwnerBoundView):
         include_skins: bool,
         include_limited: bool,
     ) -> None:
+        # Close the menu before generating output so this panel doesn't linger.
         await close_myinfo_menu(interaction)
         await self._share(interaction, include_skins=include_skins, include_limited=include_limited)
 

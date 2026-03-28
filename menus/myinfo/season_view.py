@@ -1,3 +1,5 @@
+"""Season loot actions shown from the /myinfo dashboard."""
+
 from __future__ import annotations
 
 import discord
@@ -13,6 +15,8 @@ from utils.player_records import ensure_player_exists, load_player_records
 
 
 class SeasonLootVariantView(OwnerBoundView):
+    """View for selecting season loot output variants and list actions."""
+
     def __init__(self, owner_id: int, *, max_ppes: int):
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.max_ppes = max_ppes

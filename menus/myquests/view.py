@@ -1,3 +1,5 @@
+"""Interactive button view for browsing quest targets and reset actions."""
+
 from __future__ import annotations
 
 from typing import Sequence
@@ -10,6 +12,8 @@ from slash_commands import resetquestfor_cmd
 
 
 class MyQuestsView(OwnerBoundView):
+    """Owner-bound quests menu with category boards and management actions."""
+
     def __init__(
         self,
         *,

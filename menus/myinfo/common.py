@@ -1,3 +1,5 @@
+"""Shared helpers that build embeds and perform actions for the /myinfo menu flow."""
+
 from __future__ import annotations
 
 import os
@@ -20,6 +22,8 @@ async def send_interaction_text(interaction: discord.Interaction, content: str, 
 
 
 async def close_myinfo_menu(interaction: discord.Interaction) -> None:
+    """Safely close an existing myinfo menu message if still editable."""
+
     if interaction.response.is_done():
         return
 
@@ -68,6 +72,8 @@ def get_penalty_map(ppe: PPEData) -> dict[str, float]:
 
 
 def penalty_stats_text(ppe: PPEData) -> str:
+    """Convert stored penalty bonuses into user-friendly stat values."""
+
     penalties = get_penalty_map(ppe)
 
     pet_level = int(round(-4.0 * penalties["pet"])) if penalties["pet"] != 0 else 0
@@ -288,6 +294,7 @@ async def temporarily_switch_active_ppe_and_share(
     include_skins: bool,
     include_limited: bool,
 ) -> None:
+    # Temporarily target the selected PPE so the share helper can reuse active-PPE logic.
     records = await load_player_records(interaction)
     key = ensure_player_exists(records, interaction.user.id)
     player_data = records[key]
@@ -341,6 +348,8 @@ async def open_myinfo_home(interaction: discord.Interaction, *, max_ppes: int) -
 
 
 async def open_myinfo_menu(interaction: discord.Interaction) -> None:
+    """Open the /myinfo dashboard entry menu for the invoking user."""
+
     from menus.myinfo.home_view import MyInfoHomeView
 
     if not interaction.guild:
