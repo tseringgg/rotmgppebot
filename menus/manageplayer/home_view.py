@@ -15,23 +15,95 @@ from menus.manageplayer.common import (
     remove_target_from_contest,
     send_followup_text,
     send_target_ppe_list_markdown_followup,
-    send_target_quests_followup,
-    send_target_season_loot_markdown_followup,
     target_home_embed,
 )
 from menus.menu_utils import OwnerBoundView
-from menus.myquests import open_myquests_menu
-from utils.guild_config import get_max_ppes, load_guild_config
-from utils.player_records import load_player_records
+from menus.myquests import open_myquests_menu_for_player
+from utils.guild_config import load_guild_config
+from utils.player_records import load_teams
+
+
+class _AddToTeamButton(discord.ui.Button):
+    """Open the team selection submenu to assign a player to an existing team."""
+
+    def __init__(self) -> None:
+        super().__init__(label="Add to Team", style=discord.ButtonStyle.success, row=1)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManagePlayerHomeView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+
+        from menus.manageplayer.team_view import ManagePlayerAddToTeamView
+        from utils.autocomplete import team_name_autocomplete
+
+        teams = await load_teams(interaction)
+        team_choices = await team_name_autocomplete(interaction, "")
+        ordered_team_names = [choice.value for choice in team_choices]
+        team_view = ManagePlayerAddToTeamView(
+            owner_id=interaction.user.id,
+            target=view.target,
+            max_ppes=view.max_ppes,
+            teams=teams,
+            ordered_team_names=ordered_team_names,
+        )
+        await interaction.response.edit_message(embed=team_view.current_embed(), view=team_view)
+
+
+class _RemoveFromTeamButton(discord.ui.Button):
+    """Open a confirmation submenu before removing a player from their team."""
+
+    def __init__(self) -> None:
+        super().__init__(label="Remove from Team", style=discord.ButtonStyle.danger, row=1)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManagePlayerHomeView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+
+        player_data = await load_target_player_data(interaction, view.target.user_id)
+        current_team_name = player_data.team_name
+        if not current_team_name:
+            await interaction.response.send_message(
+                f"{view.target.display_name} is not on a team.",
+                ephemeral=True,
+            )
+            return
+
+        from menus.manageplayer.team_view import ManagePlayerRemoveFromTeamConfirmView
+
+        confirm_view = ManagePlayerRemoveFromTeamConfirmView(
+            owner_id=interaction.user.id,
+            target=view.target,
+            max_ppes=view.max_ppes,
+            team_name=current_team_name,
+        )
+        await interaction.response.edit_message(embed=confirm_view.current_embed(), view=confirm_view)
 
 
 class ManagePlayerHomeView(OwnerBoundView):
     """Home dashboard for admin management of a specific player."""
 
-    def __init__(self, owner_id: int, *, target: ManagedPlayerTarget, max_ppes: int):
+    def __init__(
+        self,
+        owner_id: int,
+        *,
+        target: ManagedPlayerTarget,
+        max_ppes: int,
+        target_team_name: str | None,
+    ):
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.target = target
         self.max_ppes = max_ppes
+        self.target_team_name = target_team_name
+
+        # The team action is context-sensitive: add when teamless, remove when already assigned.
+        if self.target_team_name:
+            self.add_item(_RemoveFromTeamButton())
+        else:
+            self.add_item(_AddToTeamButton())
 
     async def refresh_embed(self, interaction: discord.Interaction) -> discord.Embed:
         player_data = await load_target_player_data(interaction, self.target.user_id)
@@ -58,7 +130,26 @@ class ManagePlayerHomeView(OwnerBoundView):
     @discord.ui.button(label="Show Quests", style=discord.ButtonStyle.primary, row=0)
     async def show_quests(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_manageplayer_menu(interaction)
-        await send_target_quests_followup(interaction, self.target)
+
+        async def _show_target_reset_for_member(reset_interaction: discord.Interaction) -> None:
+            if self.target.member is None:
+                await reset_interaction.response.send_message(
+                    "❌ Quest reset is only available when the target is still a member of this server.",
+                    ephemeral=True,
+                )
+                return
+            from slash_commands import resetquestfor_cmd
+
+            await resetquestfor_cmd.command(reset_interaction, self.target.member)
+
+        await open_myquests_menu_for_player(
+            interaction,
+            owner_id=interaction.user.id,
+            target_user_id=self.target.user_id,
+            target_display_name=self.target.display_name,
+            ephemeral=False,
+            reset_callback=_show_target_reset_for_member,
+        )
 
     @discord.ui.button(label="List PPEs", style=discord.ButtonStyle.secondary, row=0)
     async def list_ppes(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -83,7 +174,12 @@ class ManagePlayerHomeView(OwnerBoundView):
                     description=f"{self.target.display_name} has no PPE characters.",
                     color=discord.Color.orange(),
                 ),
-                view=ManagePlayerHomeView(owner_id=interaction.user.id, target=self.target, max_ppes=self.max_ppes),
+                view=ManagePlayerHomeView(
+                    owner_id=interaction.user.id,
+                    target=self.target,
+                    max_ppes=self.max_ppes,
+                    target_team_name=player_data.team_name,
+                ),
             )
             return
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from typing import Sequence
 
 import discord
@@ -25,6 +26,7 @@ class MyQuestsView(OwnerBoundView):
         current_skin: Sequence[str],
         current_all: Sequence[str],
         completed_embed: discord.Embed,
+        reset_callback: Callable[[discord.Interaction], Awaitable[None]] | None = None,
     ) -> None:
         super().__init__(
             owner_id=owner_id,
@@ -38,6 +40,7 @@ class MyQuestsView(OwnerBoundView):
         self.current_skin = list(current_skin)
         self.current_all = list(current_all)
         self.completed_embed = completed_embed
+        self.reset_callback = reset_callback or resetquestfor_cmd.command_self
 
     async def _edit_with_board(
         self,
@@ -102,7 +105,7 @@ class MyQuestsView(OwnerBoundView):
 
     @discord.ui.button(label="Reset Quests", style=discord.ButtonStyle.danger)
     async def reset_quests(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await resetquestfor_cmd.command_self(interaction)
+        await self.reset_callback(interaction)
 
     @discord.ui.button(label="Close", style=discord.ButtonStyle.secondary)
     async def close(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

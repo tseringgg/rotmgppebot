@@ -151,6 +151,7 @@ def target_home_embed(
     embed.add_field(name="Discord ID", value=str(target.user_id), inline=True)
     embed.add_field(name="PPE Role", value="Has PPE Player" if target.has_player_role else "Missing PPE Player", inline=True)
     embed.add_field(name="PPE Count", value=f"{len(player_data.ppes)}/{max_ppes}", inline=True)
+    embed.add_field(name="Team", value=player_data.team_name or "N/A", inline=True)
     embed.add_field(name="Best PPE", value=best_line, inline=False)
     embed.add_field(name="Active PPE", value=active_line, inline=False)
     embed.add_field(name="Season Items", value=str(len(player_data.unique_items)), inline=True)
@@ -203,7 +204,12 @@ async def open_manageplayer_home(
         return
 
     embed = target_home_embed(target=target, player_data=player_data, active_ppe=active_ppe, max_ppes=max_ppes)
-    view = ManagePlayerHomeView(owner_id=owner_id, target=target, max_ppes=max_ppes)
+    view = ManagePlayerHomeView(
+        owner_id=owner_id,
+        target=target,
+        max_ppes=max_ppes,
+        target_team_name=player_data.team_name,
+    )
     await interaction.response.edit_message(embed=embed, view=view)
 
 
@@ -231,7 +237,12 @@ async def open_manageplayer_menu(
         return
 
     embed = target_home_embed(target=target, player_data=player_data, active_ppe=active_ppe, max_ppes=max_ppes)
-    view = ManagePlayerHomeView(owner_id=interaction.user.id, target=target, max_ppes=max_ppes)
+    view = ManagePlayerHomeView(
+        owner_id=interaction.user.id,
+        target=target,
+        max_ppes=max_ppes,
+        target_team_name=player_data.team_name,
+    )
     await interaction.response.send_message(embed=embed, view=view, ephemeral=False)
 
 
@@ -409,6 +420,12 @@ async def remove_target_from_contest(interaction: discord.Interaction, target: M
             f", seasonal={realmshark_cleanup.seasonal_mappings_removed}"
             f", metadata={realmshark_cleanup.metadata_entries_removed}"
             f", pending_file_removed={realmshark_cleanup.pending_file_removed}"
+        )
+
+    if team_name:
+        return (
+            f"✅ Removed {target.mention_text} from the PPE contest and removed them from team `{team_name}`. "
+            f"All PPE data has been deleted.{realmshark_note}"
         )
 
     return f"✅ Removed {target.mention_text} from the PPE contest. All PPE data has been deleted.{realmshark_note}"

@@ -274,15 +274,20 @@ def build_completed_embed(quests, points_regular: int, points_shiny: int, points
     return embed
 
 
-async def build_myquests_state(interaction: discord.Interaction):
-    """Assemble all embeds and item lists required to render the quests view."""
+async def build_myquests_state_for_player(
+    interaction: discord.Interaction,
+    *,
+    player_id: int,
+    display_name: str,
+    not_in_contest_message: str,
+) -> dict:
+    """Assemble all embeds and quest lists needed to render a quests menu for one player."""
 
     records = await load_player_records(interaction)
-    user_id = interaction.user.id
-    key = ensure_player_exists(records, user_id)
+    key = ensure_player_exists(records, player_id)
 
     if key not in records or not records[key].is_member:
-        raise KeyError("❌ You're not part of the PPE contest.")
+        raise KeyError(not_in_contest_message)
 
     player_data = records[key]
     config = await load_guild_config(interaction)
@@ -312,10 +317,10 @@ async def build_myquests_state(interaction: discord.Interaction):
     current_skin = list(quests.current_skins)
 
     return {
-        "user_id": user_id,
-        "display_name": interaction.user.display_name,
+        "user_id": int(player_id),
+        "display_name": display_name,
         "home_embed": build_home_embed(
-            interaction.user.display_name,
+            display_name,
             quests,
             resets_remaining,
             default_reset_limit,
@@ -332,3 +337,14 @@ async def build_myquests_state(interaction: discord.Interaction):
         "current_skin": current_skin,
         "current_all": current_regular + current_shiny + current_skin,
     }
+
+
+async def build_myquests_state(interaction: discord.Interaction):
+    """Assemble all embeds and item lists required to render the quests view for the invoking player."""
+
+    return await build_myquests_state_for_player(
+        interaction,
+        player_id=interaction.user.id,
+        display_name=interaction.user.display_name,
+        not_in_contest_message="❌ You're not part of the PPE contest.",
+    )

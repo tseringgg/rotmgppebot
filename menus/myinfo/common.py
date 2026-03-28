@@ -96,9 +96,11 @@ def build_home_embed(
         description="Everything for your PPE tracking in one place.",
         color=discord.Color.blurple(),
     )
+    team_name = player_data.team_name or "N/A"
     embed.add_field(name="Number of PPEs", value=f"**{len(player_data.ppes)}/{max_ppes}**", inline=True)
     embed.add_field(name="Best PPE", value=best_line, inline=True)
     embed.add_field(name="Number of Season Items", value=f"**{len(player_data.unique_items)}**", inline=True)
+    embed.add_field(name="Team", value=f"**{team_name}**", inline=True)
     embed.add_field(name="Current Active PPE", value=active_line, inline=False)
 
     help_lines = [
