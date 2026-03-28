@@ -22,7 +22,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 - **Bulk Operations**: Mass point recalculation for server-wide fixes
 - **Inspection Tools**: View detailed loot and bonus information
 - **Quest Administration**: View and reset quest progress for any contest player, including global resets and per-server target tuning
-- **Team Management**: Create teams, assign members through `/manageplayer`, and delete teams
+- **Team Management**: Use `/manageteams` to create, update, and delete teams; assign members through `/manageplayer`
 
 ### 📊 Advanced Systems
 - **Smart Autocomplete**: Context-aware suggestions for items, bonuses, and PPE IDs
@@ -120,13 +120,10 @@ Quest reset actions are now menu-integrated:
 - Use `/myquests` -> `Reset Quests` for self resets.
 - Use `/manageplayer` -> `Show Quests` -> `Reset Quests` for admin resets.
 
-### Team Commands (Leaders & Admins)
+### Team Commands
 | Command | Description |
 |---------|-------------|
-| `/addteam` | Create a new team with a leader (Admin only) |
-| `/updateteam` | Rename a team (Team leader or Admin) |
-| `/deleteteam` | Delete a team and remove all members (Admin only) |
-| `/teamleaderboard` | View team rankings by total points |
+| `/manageteams` | Open admin team management menu (create team, add/remove members, set leader, rename, delete, and view team leaderboard) |
 | `/myteam` | View your team members and their rankings (optional: specify team name) |
 
 Player team assignment/removal is now handled through `/manageplayer` in the Team actions panel. Standalone `/removeppeadminrole` was retired; use `/manageplayer` for admin-role toggles.
@@ -134,8 +131,7 @@ Player team assignment/removal is now handled through `/manageplayer` in the Tea
 ### Utility Commands
 | Command | Description |
 |---------|-------------|
-| `/leaderboard` | Show top PPE rankings |
-| `/characterleaderboard` | Show highest point characters of a specific class |
+| `/leaderboard` | Open interactive leaderboard menu (PPE, Quest, Character by class, Season Loot, Team), all with paged embeds |
 | `/ppehelp` | Display all available commands |
 | `/listadmins` | View all PPE admins |
 | `/listroles` | Show server role information |
@@ -305,13 +301,13 @@ SERVER2_ID = another_server_id_here
 Teams enable collaborative PPE competition where multiple players combine their efforts for group rankings.
 
 ### Key Features
-- **Team Creation**: Admins create teams with a designated leader
+- **Team Creation**: Admins create empty teams from `/manageteams` and assign leader/member later
 - **Member Management**: Admins can add/remove players through `/manageplayer`
 - **One Team Per Player**: Players cannot be on multiple teams simultaneously
 - **Team Leaderboard**: Teams ranked by combined points (using each member's best PPE)
 - **Team Viewer**: `/myteam` shows all team members ranked by their best PPE points
 - **Automatic Roles**: Discord roles created automatically for each team
-- **Team Renaming**: Leaders and admins can update team names
+- **Team Renaming**: Admins can rename teams from `/manageteams`
 - **Season Reset**: All teams are deleted when season resets
 - **Robust Removal**: Team removal works even for players no longer in contest records when handled from `/manageplayer`
 
@@ -322,15 +318,14 @@ Teams enable collaborative PPE competition where multiple players combine their 
 - Team leader can be viewed on the team leaderboard
 
 ### Viewing Teams
-- **`/teamleaderboard`**: See all teams ranked by total points
+- **`/manageteams`**: Admin-only menu includes a Team Leaderboard button with paged rankings
 - **`/myteam`**: View your team members and their individual rankings (or specify a team name to view any team)
 
 ### Player Removal Behavior
 - **`/manageplayer`**: Removes players from teams and/or contest data from a single admin panel, and exposes owner-only PPE Admin add/remove actions
 
 ### Permissions
-- **Admin Only**: Create teams, delete teams, force remove players from teams
-- **Team Leader + Admin**: Update team name
+- **Admin Only**: Create teams, delete teams, set leaders, rename teams, force remove players from teams
 - **All Players**: View team leaderboard, view own team with `/myteam`
 
 ## �🛠️ Development

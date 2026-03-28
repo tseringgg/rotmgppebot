@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, myloot_cmd, listplayers_cmd, listroles_cmd, manageplayer_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfrom_cmd, resetseason_cmd, addteam_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd, pointsettings_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, myloot_cmd, listplayers_cmd, listroles_cmd, manageplayer_cmd, manageteams_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfrom_cmd, resetseason_cmd, myteam_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd, pointsettings_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -561,12 +561,10 @@ async def resetseason(interaction: discord.Interaction, clear_realmshark_links: 
 #### TEAMS ####
 ##################
 
-# --- Add team ---
-@bot.tree.command(name="addteam", description="Create a new team for the PPE contest. Admin only.", guilds=guilds)
-@app_commands.describe(team_name="Name of the team", team_leader="The team leader")
+@bot.tree.command(name="manageteams", description="Open admin menu to create and manage teams. Admin only.", guilds=guilds)
 @require_ppe_roles(admin_required=True)
-async def addteam(interaction: discord.Interaction, team_name: str, team_leader: discord.Member):
-    await addteam_cmd.command(interaction, team_name, team_leader)
+async def manageteams(interaction: discord.Interaction):
+    await manageteams_cmd.command(interaction)
 
 # --- My team ---
 @bot.tree.command(name="myteam", description="Show your team members and their rankings. Optional: specify a team name to view.", guilds=guilds)
@@ -574,22 +572,6 @@ async def addteam(interaction: discord.Interaction, team_name: str, team_leader:
 @app_commands.autocomplete(team_name=team_name_autocomplete)
 async def myteam(interaction: discord.Interaction, team_name: str = None):
     await myteam_cmd.command(interaction, team_name)
-
-# --- Update team name ---
-@bot.tree.command(name="updateteam", description="Update a team's name. Team leaders and admins only.", guilds=guilds)
-@app_commands.describe(old_name="Current team name", new_name="New team name")
-@app_commands.autocomplete(old_name=team_name_autocomplete)
-@require_ppe_roles()
-async def updateteam(interaction: discord.Interaction, old_name: str, new_name: str):
-    await updateteam_cmd.command(interaction, old_name, new_name)
-
-# --- Delete team ---
-@bot.tree.command(name="deleteteam", description="Delete a team and remove all its members. Admin only.", guilds=guilds)
-@app_commands.describe(team_name="Name of the team to delete")
-@app_commands.autocomplete(team_name=team_name_autocomplete)
-@require_ppe_roles(admin_required=True)
-async def deleteteam(interaction: discord.Interaction, team_name: str):
-    await deleteteam_cmd.command(interaction, team_name)
 
 ###############
 #### ROLES ####

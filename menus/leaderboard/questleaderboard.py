@@ -1,7 +1,7 @@
 import discord
 
 from utils.guild_config import get_quest_points
-from utils.pagination import LootPaginationView, chunk_lines_to_pages
+from menus.leaderboard.common import build_ranked_entry_lines, send_leaderboard
 from utils.player_records import load_player_records
 
 
@@ -43,38 +43,16 @@ async def command(interaction: discord.Interaction):
             ephemeral=True,
         )
 
-    lines = [
-        "**Quest Points Leaderboard**",
-        f"`Reg {regular_points} | Shiny {shiny_points} | Skin {skin_points}`",
-        "",
-    ]
-    for rank, (player_name, completed_regular, completed_shiny, completed_skin, total_points) in enumerate(leaderboard_data, start=1):
-        if rank == 1:
-            medal = "🥇"
-        elif rank == 2:
-            medal = "🥈"
-        elif rank == 3:
-            medal = "🥉"
-        else:
-            medal = f"{rank}."
-        lines.append(
-            f"{medal} **{player_name}** — {completed_regular} Reg, {completed_shiny} Shiny, {completed_skin} Skin • **{total_points} pts**"
+    rows = []
+    for player_name, completed_regular, completed_shiny, completed_skin, total_points in leaderboard_data:
+        rows.append(
+            f"**{player_name}** — {completed_regular} Reg, {completed_shiny} Shiny, {completed_skin} Skin • **{total_points} pts**"
         )
 
-    pages = chunk_lines_to_pages(lines, 3900)
-    embeds = []
-    for page_num, page_lines in enumerate(pages, start=1):
-        embed = discord.Embed(
-            title="Quest Leaderboard",
-            description="\n".join(page_lines),
-            color=discord.Color.gold(),
-        )
-        if len(pages) > 1:
-            embed.set_footer(text=f"Page {page_num}/{len(pages)}")
-        embeds.append(embed)
-
-    if len(embeds) == 1:
-        await interaction.response.send_message(embed=embeds[0])
-    else:
-        view = LootPaginationView(embeds=embeds, user_id=interaction.user.id)
-        await interaction.response.send_message(embed=embeds[0], view=view)
+    await send_leaderboard(
+        interaction,
+        title="Quest Leaderboard",
+        entries=build_ranked_entry_lines(rows),
+        color=discord.Color.gold(),
+        header_lines=[f"Reg {regular_points} | Shiny {shiny_points} | Skin {skin_points}"],
+    )

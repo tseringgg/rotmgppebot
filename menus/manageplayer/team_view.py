@@ -116,7 +116,7 @@ class ManagePlayerAddToTeamView(OwnerBoundView):
         if not self.teams:
             embed.add_field(
                 name="No Teams Found",
-                value="Create a team first with `/addteam`.",
+                value="Create a team first with `/manageteams`.",
                 inline=False,
             )
             return embed

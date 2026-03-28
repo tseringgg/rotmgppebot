@@ -70,14 +70,8 @@ async def command(interaction: discord.Interaction):
     
     # --- Admin: Team Management ---
     admin_team_cmds = {
-        "addteam": "Create new team.",
-        "deleteteam": "Delete team.",
+        "manageteams": "Open team admin menu (create, rename, set leader, add/remove members, delete, team leaderboard).",
         "manageplayer": "Use Manage Player -> Team actions to add/remove a player from teams.",
-    }
-    
-    # --- Team Leader Commands ---
-    leader_cmds = {
-        "updateteam": "Rename team (Leader/Admin).",
     }
 
     owner_cmds = {
@@ -111,7 +105,6 @@ async def command(interaction: discord.Interaction):
         ("📦 Loot & Bonuses", loot_cmds),
         ("🌟 Season Tracking", season_cmds),
         ("👥 Team Commands", team_cmds),
-        ("👔 Team Leader", leader_cmds),
         ("🔴 Admin: Players", admin_player_cmds),
         ("🔴 Admin: Loot & Data", admin_data_cmds),
         ("🔴 Admin: Teams", admin_team_cmds),

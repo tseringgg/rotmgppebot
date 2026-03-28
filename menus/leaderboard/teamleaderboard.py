@@ -1,5 +1,6 @@
 import discord
 
+from menus.leaderboard.common import build_ranked_entry_lines, send_leaderboard
 from utils.team_manager import team_manager
 
 
@@ -13,12 +14,17 @@ async def command(interaction: discord.Interaction):
         if not leaderboard_data:
             return await interaction.response.send_message("❌ No teams available yet.")
 
-        lines = ["🏆 `Team Leaderboard` 🏆"]
+        rows = []
         for team_name, _leader_id, ppe_points, quest_points, total_points, member_count in leaderboard_data:
-            lines.append(
-                f"`{team_name}` — `{ppe_points:.1f}` ppe points + `{quest_points}` quest points = `{total_points:.1f}` total points (`{member_count}` members)"
+            rows.append(
+                f"**{team_name}** — {ppe_points:.1f} PPE + {quest_points} Quest = **{total_points:.1f}** pts ({member_count} members)"
             )
 
-        await interaction.response.send_message("\n".join(lines))
+        await send_leaderboard(
+            interaction,
+            title="Team Leaderboard",
+            entries=build_ranked_entry_lines(rows),
+            color=discord.Color.gold(),
+        )
     except Exception as e:
         return await interaction.response.send_message(str(e), ephemeral=True)

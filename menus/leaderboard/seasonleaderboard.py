@@ -1,5 +1,6 @@
 import discord
 
+from menus.leaderboard.common import build_ranked_entry_lines, send_leaderboard
 from utils.player_records import load_player_records
 
 
@@ -31,24 +32,10 @@ async def command(interaction: discord.Interaction):
             ephemeral=True,
         )
 
-    lines = ["**Season Loot Leaderboard**\n"]
-
-    for rank, (player, count) in enumerate(leaderboard_data, start=1):
-        if rank == 1:
-            medal = "🥇"
-        elif rank == 2:
-            medal = "🥈"
-        elif rank == 3:
-            medal = "🥉"
-        else:
-            medal = f"{rank}."
-
-        lines.append(f"{medal} **{player}** — {count} unique items")
-
-    embed = discord.Embed(
+    rows = [f"**{player}** — {count} unique items" for player, count in leaderboard_data]
+    await send_leaderboard(
+        interaction,
         title="Season Loot Leaderboard",
-        description="\n".join(lines),
+        entries=build_ranked_entry_lines(rows),
         color=discord.Color.gold(),
     )
-
-    await interaction.response.send_message(embed=embed)
