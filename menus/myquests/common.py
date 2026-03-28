@@ -255,21 +255,21 @@ def build_completed_embed(quests, points_regular: int, points_shiny: int, points
         lines.append("Regular:")
         for item_name in quests.completed_items:
             total_points += points_regular
-            lines.append(f"• {item_name} - +{points_regular} pts")
+            lines.append(f"• {item_name}: +{points_regular} pts")
         lines.append("")
 
     if quests.completed_shinies:
         lines.append("Shiny:")
         for item_name in quests.completed_shinies:
             total_points += points_shiny
-            lines.append(f"• {item_name} - +{points_shiny} pts")
+            lines.append(f"• {item_name}: +{points_shiny} pts")
         lines.append("")
 
     if quests.completed_skins:
         lines.append("Skins:")
         for item_name in quests.completed_skins:
             total_points += points_skin
-            lines.append(f"• {item_name} - +{points_skin} pts")
+            lines.append(f"• {item_name}: +{points_skin} pts")
         lines.append("")
 
     if total_points == 0:
