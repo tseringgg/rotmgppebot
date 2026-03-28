@@ -106,7 +106,6 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/addpointsfor` | Manually add points to a specific PPE |
 | `/refreshpointsfor` | Recalculate points for a specific PPE |
 | `/refreshallpoints` | Fix all PPE point totals server-wide |
-| `/resetquestfor` | Open an interactive menu to reset quest sections for any player |
 | `/resetallquests` | Reset quest data for all players (with confirmation) |
 | `/managequests` | View or update per-server quest targets (regular/shiny/skin) |
 | `/addseasonlootfor` | Add a unique item to another player's season collection |
@@ -117,6 +116,9 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 
 Legacy standalone commands for `/myloot`, `/myppes`, and `/showseasonloot` were retired in favor of `/myinfo`.
 The `/myquests` command and the My Info -> Show Quests button now use the same shared menu view implementation.
+Quest reset actions are now menu-integrated:
+- Use `/myquests` -> `Reset Quests` for self resets.
+- Use `/manageplayer` -> `Show Quests` -> `Reset Quests` for admin resets.
 
 ### Team Commands (Leaders & Admins)
 | Command | Description |

@@ -17,6 +17,7 @@ from menus.myinfo.common import (
 from utils.guild_config import get_max_ppes, get_quest_targets, load_guild_config
 from utils.loot_table_md_builder import create_season_loot_markdown_file
 from utils.pagination import LootPaginationView, chunk_lines_to_pages
+from utils.ppe_list_md_builder import create_ppe_list_markdown_file
 from utils.penalty_embed import build_penalty_infographic_embed
 from utils.player_manager import player_manager
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
@@ -296,24 +297,17 @@ async def send_target_ppe_list_markdown_followup(
     target: ManagedPlayerTarget,
     player_data: PlayerData,
 ) -> None:
-    sorted_ppes = sorted(player_data.ppes, key=lambda p: int(p.id))
-
-    if not sorted_ppes:
-        await interaction.followup.send(f"No PPEs found for {target.display_name}.", ephemeral=True)
-        return
-
-    lines: list[str] = []
-    for ppe in sorted_ppes:
-        labels: list[str] = []
-        if int(ppe.id) == int(player_data.active_ppe or -1):
-            labels.append("ACTIVE")
-        suffix = f" [{' | '.join(labels)}]" if labels else ""
-        lines.append(f"PPE #{ppe.id} | Class: {display_class_name(ppe)} | Points: {format_points(ppe.points)}{suffix}")
-
-    await interaction.followup.send(
-        f"PPE list for {target.mention_text}\n" + "\n".join(lines),
-        ephemeral=True,
-    )
+    temp_file_path = ""
+    try:
+        temp_file_path = create_ppe_list_markdown_file(
+            player_data,
+            display_name=target.display_name,
+            include_best_marker=False,
+        )
+        await interaction.followup.send(file=discord.File(temp_file_path), ephemeral=True)
+    finally:
+        if temp_file_path and os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
 
 
 async def send_target_season_loot_markdown_followup(

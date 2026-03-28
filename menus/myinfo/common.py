@@ -10,7 +10,7 @@ from dataclass import PPEData, PlayerData
 from utils.guild_config import get_max_ppes, get_realmshark_settings
 from utils.helpers.loot_share_commands import share_active_ppe_loot_image
 from utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
-from utils.markdown_message_builder import MarkdownMessageBuilder
+from utils.ppe_list_md_builder import create_ppe_list_markdown_file
 from utils.points_service import penalty_inputs_from_bonuses
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 
@@ -225,32 +225,16 @@ async def send_season_loot_markdown_followup(interaction: discord.Interaction) -
 
 
 async def send_ppe_list_markdown_followup(interaction: discord.Interaction, player_data: PlayerData) -> None:
-    sorted_ppes = sorted(player_data.ppes, key=lambda p: int(p.id))
-    best_ppe = get_best_ppe(player_data)
-    best_ppe_id = int(best_ppe.id) if best_ppe else None
-
-    builder = MarkdownMessageBuilder(f"PPE List for {interaction.user.display_name}")
+    temp_file_path = ""
     try:
-        if not sorted_ppes:
-            builder.add_paragraph("No PPEs found.")
-        else:
-            lines: list[str] = []
-            for ppe in sorted_ppes:
-                labels: list[str] = []
-                if int(ppe.id) == int(player_data.active_ppe or -1):
-                    labels.append("ACTIVE")
-                if best_ppe_id is not None and int(ppe.id) == best_ppe_id:
-                    labels.append("BEST")
-                suffix = f" [{' | '.join(labels)}]" if labels else ""
-                lines.append(
-                    f"PPE #{ppe.id} | Class: {display_class_name(ppe)} | Points: {format_points(ppe.points)}{suffix}"
-                )
-            builder.add_numbered_list(lines, heading="Characters")
-
-        temp_file_path = builder.write_temp_file(prefix="ppe_list", username=interaction.user.display_name)
+        temp_file_path = create_ppe_list_markdown_file(
+            player_data,
+            display_name=interaction.user.display_name,
+            include_best_marker=True,
+        )
         await interaction.followup.send(file=discord.File(temp_file_path), ephemeral=True)
     finally:
-        if "temp_file_path" in locals() and os.path.exists(temp_file_path):
+        if temp_file_path and os.path.exists(temp_file_path):
             os.remove(temp_file_path)
 
 

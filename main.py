@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, myloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, manageplayer_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfrom_cmd, seasonleaderboard_cmd, questleaderboard_cmd, resetseason_cmd, addteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, resetquestfor_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd, pointsettings_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, myloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, manageplayer_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfrom_cmd, seasonleaderboard_cmd, questleaderboard_cmd, resetseason_cmd, addteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd, pointsettings_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -458,17 +458,6 @@ async def removeseasonlootfrom(
 @require_ppe_roles(player_required=True)
 async def myloot(interaction: discord.Interaction):
     await myloot_cmd.command(interaction)
-
-@bot.tree.command(name="resetquests", description="Reset sections of your own quests.", guilds=guilds)
-@require_ppe_roles(player_required=True)
-async def resetquests(interaction: discord.Interaction):
-    await resetquestfor_cmd.command_self(interaction)
-
-@bot.tree.command(name="resetquestfor", description="Reset quests for a specific player. Admin only.", guilds=guilds)
-@app_commands.describe(member="The player whose quests to reset")
-@require_ppe_roles(admin_required=True)
-async def resetquestfor(interaction: discord.Interaction, member: discord.Member):
-    await resetquestfor_cmd.command(interaction, member)
 
 @bot.tree.command(name="resetallquests", description="Reset quest data for all players. Admin only.", guilds=guilds)
 @app_commands.default_permissions(administrator=True)

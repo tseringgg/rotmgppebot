@@ -39,7 +39,6 @@ async def command(interaction: discord.Interaction):
         "removeseasonloot": "Remove unique item from season.",
         "myinfo": "Use My Info -> Show Season Loot to generate season loot images and view your season list.",
         "myquests": "Open your quest menu (same shared menu opened from My Info -> Show Quests).",
-        "resetquests": "Reset parts of your own quests (limited attempts).",
     }
     
     # --- Team Commands (Player/Leader) ---
@@ -66,7 +65,7 @@ async def command(interaction: discord.Interaction):
         "addpointsfor": "Manually add points.",
         "refreshpointsfor": "Recalculate PPE points.",
         "refreshallpoints": "Recalculate all PPE points.",
-        "resetquestfor": "Reset quest sections for a player.",
+        "manageplayer": "Use Manage Player -> Show Quests -> Reset Quests to reset quest sections for a player.",
         "resetallquests": "Reset all quest data for all players (with confirmation).",
         "managequests": "View/update quest targets, reset attempts, and quest leaderboard point weights.",
         "pointsettings": "View guild points modifier settings.",

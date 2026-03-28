@@ -1,11 +1,9 @@
 
 
 import discord
-import os
 
-from utils.loot_table_md_builder import create_loot_markdown_file
 from utils.player_records import get_active_ppe_of_user
-from slash_commands.helpers.loot_table_message import LootTableMessage
+from utils.helpers.loot_table_message import LootTableMessage
 
 
 async def command(interaction: discord.Interaction):

@@ -25,6 +25,30 @@ def load_dungeon_data():
         return {}, {}
 
 
+def _format_points(value: float) -> str:
+    rounded = round(float(value), 2)
+    if rounded.is_integer():
+        return str(int(rounded))
+    return f"{rounded:.2f}".rstrip("0").rstrip(".")
+
+
+def _group_entries_by_dungeon(entries: list, key_name_fn):
+    _, item_to_dungeon = load_dungeon_data()
+    dungeon_groups: dict[str, list] = {}
+    unassigned: list = []
+
+    for entry in entries:
+        item_name = key_name_fn(entry)
+        dungeon_name = item_to_dungeon.get(item_name)
+        if dungeon_name:
+            dungeon_groups.setdefault(dungeon_name, []).append(entry)
+        else:
+            unassigned.append(entry)
+
+    sorted_dungeons = sorted(dungeon_groups.keys(), key=lambda name: name.lower())
+    return sorted_dungeons, dungeon_groups, unassigned
+
+
 def calculate_item_points(item_name: str, divine: bool, shiny: bool, quantity: int) -> float:
     return calculate_item_points_service(item_name, divine, shiny, quantity)
 
@@ -32,164 +56,80 @@ def calculate_item_points(item_name: str, divine: bool, shiny: bool, quantity: i
 def create_loot_markdown_file(ppe_data: PPEData) -> str:
     """Create a temporary markdown file with the loot table and return the file path."""
     display_name = str(getattr(ppe_data.name, "value", ppe_data.name))
-    
-    # Build markdown content
-    content = []
-    
-    total_points_display = int(ppe_data.points) if ppe_data.points == int(ppe_data.points) else f"{ppe_data.points:.1f}"
-    
-    # Loot section
+
+    builder = MarkdownMessageBuilder(f"Loot Table: {display_name} (PPE #{ppe_data.id})")
+    builder.add_paragraph(f"Total Points: {_format_points(ppe_data.points)}")
+
     if ppe_data.loot:
-        # content.append("## Loot Items")
-        
-        # Load dungeon data for grouping
-        dungeon_data, item_to_dungeon = load_dungeon_data()
-        
-        if item_to_dungeon:
-            # Group loot by dungeon
-            dungeon_groups = {}
-            unassigned_items = []
-            
-            for loot in ppe_data.loot:
-                dungeon_name = item_to_dungeon.get(loot.item_name)
-                if dungeon_name:
-                    if dungeon_name not in dungeon_groups:
-                        dungeon_groups[dungeon_name] = []
-                    dungeon_groups[dungeon_name].append(loot)
-                else:
-                    unassigned_items.append(loot)
-            
-            # Sort dungeons by default_points (lowest to highest)
-            sorted_dungeons = sorted(
-                [dungeon for dungeon in dungeon_data.keys() if dungeon in dungeon_groups],
-                key=lambda d: dungeon_data[d]['default_points']
-            )
-            
-            # Add loot organized by dungeon
-            for dungeon_name in sorted_dungeons:
-                # content.append("\n===========================================")
-                content.append(f"\n    ---- {dungeon_name} ----    ")
-                # content.append("\n===========================================")
-                
-                # Sort items within this dungeon alphabetically
-                sorted_loot = sorted(dungeon_groups[dungeon_name], key=lambda loot: loot.item_name.lower())
-                
-                for loot in sorted_loot:
-                    # Calculate points for this item
-                    item_points = calculate_item_points(loot.item_name, loot.divine, loot.shiny, loot.quantity)
-                    
-                    # Format points display
-                    points_display = int(item_points) if item_points == int(item_points) else f"{item_points:.1f}"
-                    
-                    # Build tags
-                    tags = []
-                    if loot.divine:
-                        tags.append("divine")
-                    if loot.shiny:
-                        tags.append("shiny")
-                    
-                    # Format the line
-                    line = f"- {loot.item_name} × {loot.quantity} ({points_display} pts)"
-                    if tags:
-                        tags_display = ", ".join(tags)
-                        line += f" [{tags_display}]"
-                    
-                    content.append(line)
-            
-            # Add unassigned items if any
-            if unassigned_items:
-                content.append(f"\n### Unassigned Items")
-                sorted_unassigned = sorted(unassigned_items, key=lambda loot: loot.item_name.lower())
-                
-                for loot in sorted_unassigned:
-                    # Calculate points for this item
-                    item_points = calculate_item_points(loot.item_name, loot.divine, loot.shiny, loot.quantity)
-                    
-                    # Format points display
-                    points_display = int(item_points) if item_points == int(item_points) else f"{item_points:.1f}"
-                    
-                    # Build tags
-                    tags = []
-                    if loot.divine:
-                        tags.append("divine")
-                    if loot.shiny:
-                        tags.append("shiny")
-                    
-                    # Format the line
-                    line = f"- {loot.item_name} × {loot.quantity} ({points_display} pts)"
-                    if tags:
-                        tags_display = ", ".join(tags)
-                        line += f" [{tags_display}]"
-                    
-                    content.append(line)
-        
-        else:
-            # Fallback to alphabetical sorting if dungeon data not available
-            sorted_loot = sorted(ppe_data.loot, key=lambda loot: loot.item_name.lower())
-            
-            for loot in sorted_loot:
-                # Calculate points for this item
-                item_points = calculate_item_points(loot.item_name, loot.divine, loot.shiny, loot.quantity)
-                
-                # Format points display
-                points_display = int(item_points) if item_points == int(item_points) else f"{item_points:.1f}"
-                
-                # Build tags
-                tags = []
+        sorted_dungeons, dungeon_groups, unassigned_items = _group_entries_by_dungeon(
+            list(ppe_data.loot),
+            key_name_fn=lambda loot_entry: loot_entry.item_name,
+        )
+
+        for dungeon_name in sorted_dungeons:
+            lines: list[str] = []
+            for loot in sorted(dungeon_groups[dungeon_name], key=lambda entry: entry.item_name.lower()):
+                item_points = calculate_item_points(loot.item_name, loot.divine, loot.shiny, int(loot.quantity))
+
+                tags: list[str] = []
                 if loot.divine:
                     tags.append("divine")
                 if loot.shiny:
                     tags.append("shiny")
-                
-                # Format the line
-                line = f"- {loot.item_name} × {loot.quantity} ({points_display} pts)"
+
+                line = f"- {loot.item_name} × {loot.quantity} ({_format_points(item_points)} pts)"
                 if tags:
-                    tags_display = ", ".join(tags)
-                    line += f" [{tags_display}]"
-                
-                content.append(line)
-        
-        content.append("")  # Empty line for spacing
+                    line += f" [{', '.join(tags)}]"
+                lines.append(line)
+
+            builder.add_section(heading=dungeon_name, lines=lines)
+
+        if unassigned_items:
+            lines: list[str] = []
+            for loot in sorted(unassigned_items, key=lambda entry: entry.item_name.lower()):
+                item_points = calculate_item_points(loot.item_name, loot.divine, loot.shiny, int(loot.quantity))
+
+                tags: list[str] = []
+                if loot.divine:
+                    tags.append("divine")
+                if loot.shiny:
+                    tags.append("shiny")
+
+                line = f"- {loot.item_name} × {loot.quantity} ({_format_points(item_points)} pts)"
+                if tags:
+                    line += f" [{', '.join(tags)}]"
+                lines.append(line)
+
+            builder.add_section(heading="Unassigned Items", lines=lines)
     else:
-        content.append("## Loot Items")
-        content.append("*No loot recorded yet.*\n")
-    
-    # Bonuses section
+        builder.add_section(heading="Loot Items", lines=["No loot recorded yet."])
+
     if ppe_data.bonuses:
-        content.append("### Bonuses")
-        
-        # Sort bonuses alphabetically by name
-        sorted_bonuses = sorted(ppe_data.bonuses, key=lambda bonus: bonus.name.lower())
-        
-        for bonus in sorted_bonuses:
-            # Calculate total points for bonus
-            total_bonus_points = bonus.points * bonus.quantity
-            
-            # Format points display
-            points_display = int(total_bonus_points) if total_bonus_points == int(total_bonus_points) else f"{total_bonus_points:.1f}"
+        bonus_lines: list[str] = []
+        for bonus in sorted(ppe_data.bonuses, key=lambda entry: entry.name.lower()):
+            total_bonus_points = float(bonus.points) * int(bonus.quantity)
+            points_display = _format_points(total_bonus_points)
             if total_bonus_points > 0:
                 points_display = f"+{points_display}"
-            
-            # Format the line
-            line = f"{bonus.name} × {bonus.quantity} ({points_display} pts)"
+
+            line = f"- {bonus.name} × {bonus.quantity} ({points_display} pts)"
             if bonus.repeatable:
                 line += " [repeatable]"
-            
-            content.append(line)
-        
-        content.append("")  # Empty line for spacing
-    
-    # Summary
+            bonus_lines.append(line)
+
+        builder.add_section(heading="Bonuses", lines=bonus_lines)
+
     total_loot_items = len(ppe_data.loot) if ppe_data.loot else 0
     total_bonus_items = len(ppe_data.bonuses) if ppe_data.bonuses else 0
     total_items = total_loot_items + total_bonus_items
-    
-    content.append("---")
-    content.append(f"Summary: {total_items} total items ({total_loot_items} loot, {total_bonus_items} bonuses)")
-    
-    builder = MarkdownMessageBuilder(f"Loot Table: {display_name} (PPE #{ppe_data.id})")
-    builder.add_paragraph(f"Total Points: {total_points_display}")
-    builder.add_section(lines=content)
+    builder.add_section(
+        heading="Summary",
+        lines=[
+            f"Total items: {total_items}",
+            f"Loot entries: {total_loot_items}",
+            f"Bonus entries: {total_bonus_items}",
+        ],
+    )
 
     return builder.write_temp_file(
         prefix=f"loot_table_ppe_{ppe_data.id}",
@@ -209,40 +149,27 @@ def create_season_loot_markdown_file(
     builder = MarkdownMessageBuilder(f"Season Loot for {display_name}")
     builder.add_paragraph(f"Total unique items: {len(sorted_items)}")
 
-    dungeon_data, item_to_dungeon = load_dungeon_data()
-
     if not sorted_items:
         builder.add_section(heading="Items", lines=["No season loot recorded yet."])
         return builder.write_temp_file(prefix="season_loot", username=display_name, temp_dir="temp")
 
-    if item_to_dungeon:
-        dungeon_groups: dict[str, list[tuple[str, bool]]] = {}
-        unassigned_items: list[tuple[str, bool]] = []
+    sorted_dungeons, dungeon_groups, unassigned_items = _group_entries_by_dungeon(
+        sorted_items,
+        key_name_fn=lambda item_entry: item_entry[0],
+    )
 
-        for item_name, shiny in sorted_items:
-            dungeon_name = item_to_dungeon.get(item_name)
-            if dungeon_name:
-                dungeon_groups.setdefault(dungeon_name, []).append((item_name, shiny))
-            else:
-                unassigned_items.append((item_name, shiny))
+    for dungeon_name in sorted_dungeons:
+        lines = [
+            f"{item_name}{' [shiny]' if shiny else ''}"
+            for item_name, shiny in sorted(dungeon_groups[dungeon_name], key=lambda entry: (entry[0].lower(), entry[1]))
+        ]
+        builder.add_numbered_list(lines, heading=dungeon_name)
 
-        sorted_dungeons = sorted(
-            [name for name in dungeon_data.keys() if name in dungeon_groups],
-            key=lambda name: dungeon_data[name].get("default_points", 0),
-        )
-
-        for dungeon_name in sorted_dungeons:
-            lines = [
-                f"{item_name}{' [shiny]' if shiny else ''}"
-                for item_name, shiny in sorted(dungeon_groups[dungeon_name], key=lambda entry: (entry[0].lower(), entry[1]))
-            ]
-            builder.add_numbered_list(lines, heading=dungeon_name)
-
-        if unassigned_items:
-            lines = [f"{item_name}{' [shiny]' if shiny else ''}" for item_name, shiny in unassigned_items]
-            builder.add_numbered_list(lines, heading="Unassigned Items")
-    else:
-        lines = [f"{item_name}{' [shiny]' if shiny else ''}" for item_name, shiny in sorted_items]
-        builder.add_numbered_list(lines, heading="Items")
+    if unassigned_items:
+        lines = [
+            f"{item_name}{' [shiny]' if shiny else ''}"
+            for item_name, shiny in sorted(unassigned_items, key=lambda entry: (entry[0].lower(), entry[1]))
+        ]
+        builder.add_numbered_list(lines, heading="Unassigned Items")
 
     return builder.write_temp_file(prefix="season_loot", username=display_name, temp_dir="temp")
