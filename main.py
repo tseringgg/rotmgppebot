@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, inspectloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, manage_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd, addseasonloot_cmd, addseasonlootfor_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, seasonleaderboard_cmd, questleaderboard_cmd, resetseason_cmd, migrateapostrophes_cmd, addteam_cmd, addplayer_team_cmd, leaveteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, listcharactersfor_cmd, viewquestsfor_cmd, resetquestfor_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, inspectloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, manage_cmd, manageplayer_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, addseasonloot_cmd, addseasonlootfor_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, seasonleaderboard_cmd, questleaderboard_cmd, resetseason_cmd, migrateapostrophes_cmd, addteam_cmd, addplayer_team_cmd, leaveteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, resetquestfor_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -250,26 +250,7 @@ async def removebonusfrom(
     ):
     await removebonusfrom_cmd.command(interaction, user, id, bonus_name)
 
-@bot.tree.command(name="addpenaltiesfor", description="Add penalty bonuses to another player's specific PPE. Admin only.", guilds=guilds)
-@app_commands.describe(
-    user="The player whose PPE to add penalties to", 
-    id="The PPE ID to target", 
-    pet_level="Pet level (0-100)", 
-    num_exalts="Number of exalts (0-40)", 
-    percent_loot="Loot boost percentage (0-25)", 
-    incombat_reduction="In-combat damage reduction (0, 0.2, 0.4, 0.6, 0.8, 1.0)"
-)
-@require_ppe_roles(admin_required=True)
-async def addpenaltiesfor(
-        interaction: discord.Interaction,
-        user: discord.Member,
-        id: int,
-        pet_level: int,
-        num_exalts: int,
-        percent_loot: float,
-        incombat_reduction: float
-    ):
-    await addpenaltiesfor_cmd.command(interaction, user, id, pet_level, num_exalts, percent_loot, incombat_reduction)
+
 
 @bot.tree.command(name="removeloot", description="Remove an item from your active PPE's loot.", guilds=guilds)
 @app_commands.describe(item_name="Name of the item to remove", divine="Is the item divine?", shiny="Is the item shiny?")
@@ -320,11 +301,7 @@ async def refreshallpoints(interaction: discord.Interaction):
 async def listplayers(interaction: discord.Interaction):
     await listplayers_cmd.command(interaction)
 
-@bot.tree.command(name="listcharactersfor", description="Show all characters and their IDs for a specific player. Admin only.", guilds=guilds)
-@app_commands.describe(member="The player whose characters to list")
-@require_ppe_roles(admin_required=True)
-async def listcharactersfor(interaction: discord.Interaction, member: discord.Member):
-    await listcharactersfor_cmd.command(interaction, member)
+
 
 @bot.tree.command(name="myquests", description="Show your current and completed account quests.", guilds=guilds)
 @require_ppe_roles(player_required=True)
@@ -335,6 +312,12 @@ async def myquests(interaction: discord.Interaction):
 @require_ppe_roles(player_required=True)
 async def myinfo(interaction: discord.Interaction):
     await myinfo_cmd.command(interaction)
+
+@bot.tree.command(name="manageplayer", description="Open admin menu to manage a player's PPE data. Admin only.", guilds=guilds)
+@app_commands.describe(member="The player to manage (if in server)", user_id="The discord ID of the player to manage (if not in server)")
+@require_ppe_roles(admin_required=True)
+async def manageplayer(interaction: discord.Interaction, member: discord.Member | None = None, user_id: str | None = None):
+    await manageplayer_cmd.command(interaction, member=member, user_id=user_id)
 
 @bot.tree.command(name="inspectloot", description="Inspect the loot of another player's specific PPE. Admin only.", guilds=guilds)
 @app_commands.describe(user="The player to inspect", id="The PPE ID to inspect")
@@ -348,26 +331,11 @@ async def inspectloot(interaction: discord.Interaction, user: discord.Member, id
 async def addplayer(interaction: discord.Interaction, member: discord.Member):
     await addplayer_cmd.command(interaction, member)
 
-@bot.tree.command(name="removeplayer", description="Remove a player and all their PPE data from the contest.", guilds=guilds)
-@app_commands.describe(member="Server member to remove")
-@app_commands.describe(user_id="Discord ID to remove (for users no longer in the server)")
-@require_ppe_roles(admin_required=True)
-async def removeplayer(
-    interaction: discord.Interaction,
-    member: discord.Member | None = None,
-    user_id: str | None = None
-):
-    await removeplayer_cmd.command(interaction, member, user_id)
 
-@bot.tree.command(name="deleteallppes", description="Delete all your PPEs.", guilds=guilds)
-@require_ppe_roles(admin_required=True)
-async def delete_all_ppes(interaction: discord.Interaction, member: discord.Member):
-    await deleteallppes_cmd.command(interaction, member)
 
-@bot.tree.command(name="deleteppe", description="Delete a specific PPE for a member.", guilds=guilds)
-@require_ppe_roles(admin_required=True)
-async def delete_ppe(interaction: discord.Interaction, member: discord.Member, ppe_id: int):
-    await deleteppe_cmd.command(interaction, member, ppe_id)
+
+
+
 
 @bot.tree.command(name="leaderboard", description="Show the best PPE from each player.", guilds=guilds)
 async def leaderboard(interaction: discord.Interaction):
@@ -433,11 +401,7 @@ async def removeseasonlootfor(
     ):
     await removeseasonlootfor_cmd.command(interaction, user, item_name, shiny)
 
-@bot.tree.command(name="viewquestsfor", description="Show quests for a specific player. Admin only.", guilds=guilds)
-@app_commands.describe(member="The player whose quests you want to view")
-@require_ppe_roles(admin_required=True)
-async def viewquestsfor(interaction: discord.Interaction, member: discord.Member):
-    await viewquestsfor_cmd.command(interaction, member)
+
 
 @bot.tree.command(name="resetquests", description="Reset sections of your own quests.", guilds=guilds)
 @require_ppe_roles(player_required=True)
@@ -625,12 +589,7 @@ async def deleteteam(interaction: discord.Interaction, team_name: str):
 #### ROLES ####
 ###############
 
-# --- Give PPE Admin role ---
-@bot.tree.command(name="giveppeadminrole", description="Give the PPE Admin role to a member. Admin only.", guilds=guilds)
-@commands.has_permissions(manage_roles=True)
-@require_ppe_roles()
-async def give_ppe_admin_role(interaction: discord.Interaction, member: discord.Member):
-    await giveppeadminrole_cmd.command(interaction, member)
+# --- Give PPE Admin role moved to /manageplayer ---
 
 # --- Remove PPE Admin role ---
 @bot.tree.command(name="removeppeadminrole", description="Remove the PPE Admin role from a member. Admin only.", guilds=guilds)

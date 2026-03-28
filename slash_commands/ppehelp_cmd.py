@@ -53,11 +53,8 @@ async def command(interaction: discord.Interaction):
     # --- Admin: Player Management ---
     admin_player_cmds = {
         "addplayer": "Add member to contest.",
-        "removeplayer": "Remove member (or Discord user ID) from contest and team data.",
         "listplayers": "List all participants.",
-        "listcharactersfor": "Show all characters for a player.",
-        "deleteallppes": "Delete all PPEs for player.",
-        "deleteppe": "Delete specific PPE.",
+        "manageplayer": "Comprehensive admin menu to manage any player's data: view/edit PPEs, manage penalties, delete PPEs, view quests, manage loot, remove from contest, and assign roles.",
     }
     
     # --- Admin: Loot & Data Management ---
@@ -66,14 +63,12 @@ async def command(interaction: discord.Interaction):
         "removelootfrom": "Remove loot from player's PPE.",
         "addbonusfor": "Add bonus to player's PPE.",
         "removebonusfrom": "Remove bonus from player's PPE.",
-        "addpenaltiesfor": "Add penalties to player's PPE.",
         "addseasonlootfor": "Add to player's season loot.",
         "removeseasonlootfor": "Remove from player's season.",
         "inspectloot": "View player's PPE loot.",
         "addpointsfor": "Manually add points.",
         "refreshpointsfor": "Recalculate PPE points.",
         "refreshallpoints": "Recalculate all PPE points.",
-        "viewquestsfor": "View quest state for a player.",
         "resetquestfor": "Reset quest sections for a player.",
         "resetallquests": "Reset all quest data for all players (with confirmation).",
         "managequests": "View/update quest targets, reset attempts, and quest leaderboard point weights.",
@@ -108,7 +103,6 @@ async def command(interaction: discord.Interaction):
     
     owner_cmds = {
         "resetseason": "Clear season data and teams; optionally unlink all RealmShark links/mappings.",
-        "giveppeadminrole": "Grant PPE Admin role.",
         "removeppeadminrole": "Remove PPE Admin role.",
         "setuproles": "Create required roles.",
     }
