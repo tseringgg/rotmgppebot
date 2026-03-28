@@ -1,0 +1,89 @@
+from __future__ import annotations
+
+import discord
+
+from menus.menu_utils import OwnerBoundView
+from menus.myquests import open_myquests_menu
+from menus.myinfo.common import (
+    build_home_embed,
+    close_myinfo_menu,
+    open_myinfo_home,
+    realmshark_connected_ppe_ids,
+    send_ppe_list_markdown_followup,
+)
+from utils.player_records import ensure_player_exists, load_player_records
+
+
+class MyInfoHomeView(OwnerBoundView):
+    def __init__(self, owner_id: int, *, max_ppes: int):
+        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
+        self.max_ppes = max_ppes
+
+    @discord.ui.button(label="Show Season Loot", style=discord.ButtonStyle.primary, row=0)
+    async def show_season_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        from menus.myinfo.season_view import SeasonLootVariantView
+
+        view = SeasonLootVariantView(owner_id=interaction.user.id, max_ppes=self.max_ppes)
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+    @discord.ui.button(label="Show Quests", style=discord.ButtonStyle.primary, row=0)
+    async def show_quests(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await close_myinfo_menu(interaction)
+        await open_myquests_menu(interaction)
+
+    @discord.ui.button(label="List PPEs", style=discord.ButtonStyle.secondary, row=0)
+    async def list_ppes(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        records = await load_player_records(interaction)
+        key = ensure_player_exists(records, interaction.user.id)
+        await close_myinfo_menu(interaction)
+        await send_ppe_list_markdown_followup(interaction, records[key])
+
+    @discord.ui.button(label="Manage Characters", style=discord.ButtonStyle.success, row=0)
+    async def manage_characters(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        from menus.myinfo.character_view import ManageCharactersView
+
+        records = await load_player_records(interaction)
+        key = ensure_player_exists(records, interaction.user.id)
+        player_data = records[key]
+
+        if not player_data.ppes:
+            view = NoCharactersView(owner_id=interaction.user.id, max_ppes=self.max_ppes)
+            await interaction.response.edit_message(embed=view.current_embed(), view=view)
+            return
+
+        connected_ids = await realmshark_connected_ppe_ids(interaction, interaction.user.id)
+        view = ManageCharactersView(
+            owner_id=interaction.user.id,
+            player_data=player_data,
+            connected_ppe_ids=connected_ids,
+        )
+        await interaction.response.edit_message(embed=view.current_embed(interaction.user), view=view)
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=0)
+    async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await interaction.response.edit_message(content="Closed `/myinfo` menu.", embed=None, view=None)
+
+
+class NoCharactersView(OwnerBoundView):
+    def __init__(self, owner_id: int, *, max_ppes: int):
+        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
+        self.max_ppes = max_ppes
+
+    def current_embed(self) -> discord.Embed:
+        return discord.Embed(
+            title="No Characters",
+            description="Create one with **/newppe** to start tracking a character.",
+            color=discord.Color.orange(),
+        )
+
+    @discord.ui.button(label="Create One", style=discord.ButtonStyle.success, row=0)
+    async def create_one(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await interaction.response.send_message("Use `/newppe` to create your first character.", ephemeral=True)
+
+    @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary, row=0)
+    async def home(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await open_myinfo_home(interaction, max_ppes=self.max_ppes)
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=0)
+    async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await interaction.response.edit_message(content="Closed `/myinfo` menu.", embed=None, view=None)

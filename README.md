@@ -9,7 +9,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 - **Loot Tracking**: Add/remove items with divine and shiny variants
 - **Bonus System**: Manage achievement bonuses from an interactive dashboard
 - **Point Management**: Automated point calculations with duplicate handling
-- **Personal Dashboard**: Use `/myinfo` for season, loot, quest, and character actions
+- **Personal Dashboard**: Use `/myinfo` as the central hub for season, loot, quest, and character actions
 - **Separate Seasonal Tracking**: View your overall season progress and loot
 - **Account Quests**: Get randomized regular, shiny, and skin quests tied to your account with completion tracking
 - **Team System**: Join teams with team leaders who can manage team members
@@ -82,14 +82,14 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | Command | Description |
 |---------|-------------|
 | `/newppe` | Create a new PPE with class and penalty setup |
-| `/myinfo` | Open personal dashboard (season loot, quests, character management, bonus editing) |
+| `/myinfo` | Open the reusable My Info menu (season loot, quests, character management, bonus editing) |
 | `/setactiveppe` | Switch between your PPE characters |
 | `/addloot` | Add items to your active PPE |
 | `/removeloot` | Remove items from your active PPE |
 | `/addpenalties` | Apply retroactive penalties to your PPE |
 | `/manage ppe addbonus` | Add bonus to active PPE (menu utility command) |
 | `/manage ppe removebonus` | Remove bonus from active PPE (menu utility command) |
-| `/myquests` | View your current and completed account quests |
+| `/myquests` | Open the same reusable quest menu available from My Info -> Show Quests |
 
 ### Admin Commands
 | Command | Description |
@@ -123,6 +123,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/manage pointsettings setclass` | Set class-specific point modifiers |
 
 Legacy standalone commands for `/myloot`, `/myppes`, and `/showseasonloot` were retired in favor of `/myinfo`.
+The `/myquests` command and the My Info -> Show Quests button now use the same shared menu view implementation.
 
 ### Team Commands (Leaders & Admins)
 | Command | Description |
@@ -347,6 +348,10 @@ rotmgppebot/
 ├── dataclass.py              # Data structures
 ├── requirements.txt          # Dependencies
 ├── menus/                    # Shared menu/view architecture
+│   ├── myinfo/               # My Info menu package (home/season/character/common)
+│   ├── myquests/             # My Quests menu package (view/common)
+│   ├── myinfo_menu.py        # Compatibility wrapper for older imports
+│   ├── myquests_menu.py      # Compatibility wrapper for older imports
 │   └── menu_utils/           # Reusable owner/confirm menu components
 ├── slash_commands/           # Command implementations
 ├── utils/                   # Utility modules
@@ -357,6 +362,11 @@ rotmgppebot/
 │   └── role_checks.py       # Permission validation
 └── data/                    # CSV and JSON files
 ```
+
+### Menu Reuse Design
+- Slash commands stay thin and delegate to reusable menu modules in `menus/`.
+- The same `MyQuestsView` is used by both `/myquests` and `/myinfo` -> Show Quests.
+- My Info and My Quests are split into focused submodules so each button path maps to a dedicated menu/view class instead of one bloated file.
 
 ### Adding New Commands
 1. Create command file in `slash_commands/`

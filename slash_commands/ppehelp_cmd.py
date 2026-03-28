@@ -20,7 +20,7 @@ async def command(interaction: discord.Interaction):
     # --- PPE Management (Player) ---
     ppe_mgmt_cmds = {
         "newppe": "Start a new PPE run (max set by server config).",
-        "myinfo": "Open your personal dashboard for loot, season, quests, and character management.",
+        "myinfo": "Open the My Info home menu (characters, season loot, quest menu, and utility actions).",
         "setactiveppe": "Set which PPE is active.",
         "addpenalties": "Apply penalties to active PPE.",
         "manage ppe addbonus": "Unified menu: add bonus to active PPE.",
@@ -32,15 +32,15 @@ async def command(interaction: discord.Interaction):
     loot_cmds = {
         "addloot": "Add item to active PPE.",
         "removeloot": "Remove item from active PPE.",
-        "myinfo": "Use Manage Characters -> Show Loot / Modify PPE for loot display and bonus updates (replaces old /myloot flow).",
+        "myinfo": "Use My Info -> Manage Characters -> Show Loot for loot image/list and Modify PPE for bonus edits.",
     }
     
     # --- Season Tracking (Player) ---
     season_cmds = {
         "addseasonloot": "Add unique item to season collection.",
         "removeseasonloot": "Remove unique item from season.",
-        "myinfo": "Use Show Season Loot to share image + view your season list (replaces old /showseasonloot flow).",
-        "myquests": "Show your current and completed quests.",
+        "myinfo": "Use My Info -> Show Season Loot to generate season loot images and view your season list.",
+        "myquests": "Open your quest menu (same shared menu opened from My Info -> Show Quests).",
         "resetquests": "Reset parts of your own quests (limited attempts).",
     }
     
