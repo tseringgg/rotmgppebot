@@ -158,7 +158,7 @@ def build_character_embed(
     embed.add_field(name="Character Type", value=character_type, inline=True)
     embed.add_field(name="Active Status", value="⭐ Active PPE" if is_active else "Not Active", inline=True)
 
-    embed.set_footer(text="Click Manage PPE to edit starting penalties. Set As Active will cause addloot to land on this character.")
+    embed.set_footer(text="Click Manage PPE to edit starting penalties. Set As Active will cause addloot to add items to this PPE.")
     return embed
 
 
