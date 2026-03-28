@@ -99,11 +99,11 @@ class LeaderboardHomeView(OwnerBoundView):
         class_view = CharacterLeaderboardClassView(owner_id=interaction.user.id)
         await interaction.response.edit_message(embed=class_view.current_embed(), view=class_view)
 
-    @discord.ui.button(label="Season Loot Leaderboard", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Season Loot Leaderboard", style=discord.ButtonStyle.primary, row=1)
     async def season(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await seasonleaderboard.command(interaction)
 
-    @discord.ui.button(label="Team Leaderboard", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="Team Leaderboard", style=discord.ButtonStyle.primary, row=2)
     async def team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await teamleaderboard.command(interaction)
 
