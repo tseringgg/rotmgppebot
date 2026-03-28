@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, addtoteam_cmd, myloot_cmd, listplayers_cmd, listroles_cmd, manageplayer_cmd, manageteams_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removefromteam_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfrom_cmd, resetseason_cmd, myteam_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd, pointsettings_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, addtoteam_cmd, myloot_cmd, listplayers_cmd, listroles_cmd, manageplayer_cmd, manageteams_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removefromteam_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfrom_cmd, resetseason_cmd, myteam_cmd, managequests_cmd, realmshark_cmd, pointsettings_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -453,12 +453,6 @@ async def removeseasonlootfrom(
 @require_ppe_roles(player_required=True)
 async def myloot(interaction: discord.Interaction):
     await myloot_cmd.command(interaction)
-
-@bot.tree.command(name="resetallquests", description="Reset quest data for all players. Admin only.", guilds=guilds)
-@app_commands.default_permissions(administrator=True)
-@require_ppe_roles(admin_required=True)
-async def resetallquests(interaction: discord.Interaction):
-    await resetquests_cmd.command(interaction)
 
 @bot.tree.command(name="managequests", description="View or update quest settings and leaderboard points. Admin only.", guilds=guilds)
 @require_ppe_roles(admin_required=True)

@@ -284,7 +284,7 @@ class ResetQuestSelectionView(OwnerBoundView):
             footer_line = "Use /myquests to verify the updated quest state."
         else:
             summary_lines.append(f"- Quest resets remaining: {player_data.quest_resets_remaining}")
-            footer_line = "Use /viewquestsfor to verify the updated quest state."
+            footer_line = "Use /manageplayer or /managequests to view the updated quest state."
 
         self.stop()
         await interaction.response.edit_message(

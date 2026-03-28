@@ -231,6 +231,11 @@ class RemoveGlobalQuestItemsModal(discord.ui.Modal):
         )
 
         await confirm_view.wait()
+        try:
+            await interaction.delete_original_response()
+        except discord.HTTPException:
+            pass
+
         if not confirm_view.confirmed:
             await interaction.followup.send("❌ Removal cancelled.", ephemeral=True)
             return

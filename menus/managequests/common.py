@@ -87,7 +87,17 @@ def build_managequests_home_embed(settings: dict) -> discord.Embed:
         ),
         inline=False,
     )
-    embed.set_footer(text="Use Edit Quest Settings to update targets/points, or Set Global Quests to enforce shared quests.")
+    embed.add_field(
+        name="Reset All Quests",
+        value=(
+            "Clears all current and completed quests for every player, "
+            "then resets each player's reset-attempt counter to the configured default."
+        ),
+        inline=False,
+    )
+    embed.set_footer(
+        text="Use Edit Quest Settings to update targets/points, Set Global Quests to enforce shared quests, or Manage Player's Quests for targeted actions."
+    )
     return embed
 
 

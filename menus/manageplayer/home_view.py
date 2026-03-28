@@ -196,6 +196,9 @@ class ManagePlayerHomeView(OwnerBoundView):
         if self.is_in_contest or self.target.member is None:
             self.remove_item(self.add_to_contest)
 
+        if not self.is_in_contest or self.target.member is None:
+            self.remove_item(self.reset_quests)
+
         if not self.owner_can_manage_admin or self.target.member is None:
             self.remove_item(self.make_admin)
             self.remove_item(self.remove_admin)
@@ -207,21 +210,33 @@ class ManagePlayerHomeView(OwnerBoundView):
         self._reorder_row_two_buttons()
 
     def _reorder_row_two_buttons(self) -> None:
-        ordered_buttons: list[discord.ui.Item] = []
+        row_two_buttons: list[discord.ui.Item] = []
+        row_three_buttons: list[discord.ui.Item] = []
 
-        if isinstance(self.team_action_button, _RemoveFromTeamButton):
-            ordered_buttons.append(self.team_action_button)
-        for candidate in (self.delete_all_ppes, self.remove_admin, self.remove_from_contest, self.cancel):
+        if isinstance(self.team_action_button, _RemoveFromTeamButton) and self.team_action_button in self.children:
+            row_two_buttons.append(self.team_action_button)
+
+        for candidate in (self.reset_quests, self.delete_all_ppes, self.cancel):
             if candidate in self.children:
-                ordered_buttons.append(candidate)
+                row_two_buttons.append(candidate)
 
-        if not ordered_buttons:
+        for candidate in (self.remove_admin, self.remove_from_contest):
+            if candidate in self.children:
+                row_three_buttons.append(candidate)
+
+        if not row_two_buttons and not row_three_buttons:
             return
 
-        for button in ordered_buttons:
+        for button in row_two_buttons + row_three_buttons:
             if button in self.children:
                 self.remove_item(button)
-        for button in ordered_buttons:
+
+        for button in row_two_buttons:
+            button.row = 2
+            self.add_item(button)
+
+        for button in row_three_buttons:
+            button.row = 3
             self.add_item(button)
 
     async def refresh_embed(self, interaction: discord.Interaction) -> discord.Embed:
@@ -389,6 +404,19 @@ class ManagePlayerHomeView(OwnerBoundView):
             action_key="delete_all",
         )
         await interaction.response.edit_message(embed=confirm_view.current_embed(), view=confirm_view)
+
+    @discord.ui.button(label="Reset Quests", style=discord.ButtonStyle.danger, row=2)
+    async def reset_quests(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        if self.target.member is None:
+            await interaction.response.send_message(
+                "❌ Quest reset is only available when the target is still a member of this server.",
+                ephemeral=True,
+            )
+            return
+
+        from slash_commands import resetquestfor_cmd
+
+        await resetquestfor_cmd.command(interaction, self.target.member)
 
     @discord.ui.button(label="Remove from Contest", style=discord.ButtonStyle.danger, row=2)
     async def remove_from_contest(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
