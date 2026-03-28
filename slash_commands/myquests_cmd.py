@@ -27,6 +27,21 @@ _ITEM_DUNGEON_INDEX: Dict[str, str] = {}
 _ITEM_DUNGEON_INDEX_READY = False
 
 
+async def _send_interaction_message(
+    interaction: discord.Interaction,
+    *,
+    content: str | None = None,
+    embed: discord.Embed | None = None,
+    view: discord.ui.View | None = None,
+    ephemeral: bool = False,
+) -> None:
+    if not interaction.response.is_done():
+        await interaction.response.send_message(content=content, embed=embed, view=view, ephemeral=ephemeral)
+        return
+
+    await interaction.followup.send(content=content, embed=embed, view=view, ephemeral=ephemeral)
+
+
 def _strip_shiny_suffix(item_name: str) -> str:
     normalized = normalize_item_name(item_name)
     if normalized.lower().endswith("(shiny)"):
@@ -419,11 +434,8 @@ async def command(interaction: discord.Interaction):
             completed_embed=completed_embed,
         )
 
-        await interaction.response.send_message(
-            embed=home_embed,
-            view=view,
-            ephemeral=False,
-        )
+        await _send_interaction_message(interaction, embed=home_embed, view=view, ephemeral=False)
 
     except (ValueError, KeyError, LookupError) as e:
-        return await interaction.response.send_message(str(e), ephemeral=True)
+        await _send_interaction_message(interaction, content=str(e), ephemeral=True)
+        return

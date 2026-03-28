@@ -1,9 +1,6 @@
 from __future__ import annotations
 
 import os
-import tempfile
-from typing import Any
-
 import discord
 
 from dataclass import Bonus, PPEData, PlayerData
@@ -12,8 +9,26 @@ from slash_commands import myquests_cmd, shareloot_cmd, shareseasonloot_cmd
 from utils.bonus_data import load_bonuses
 from utils.guild_config import get_max_ppes, get_realmshark_settings, load_guild_config
 from utils.loot_table_md_builder import create_loot_markdown_file
+from utils.markdown_message_builder import MarkdownMessageBuilder
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.points_service import recompute_ppe_points
+
+
+async def _send_interaction_text(interaction: discord.Interaction, content: str, *, ephemeral: bool) -> None:
+    if not interaction.response.is_done():
+        await interaction.response.send_message(content, ephemeral=ephemeral)
+        return
+    await interaction.followup.send(content, ephemeral=ephemeral)
+
+
+async def _close_myinfo_menu(interaction: discord.Interaction) -> None:
+    if interaction.response.is_done():
+        return
+
+    try:
+        await interaction.response.edit_message(content="Closed `/myinfo` menu.", embed=None, view=None)
+    except discord.NotFound:
+        await interaction.response.defer()
 
 
 def _display_class_name(ppe: PPEData) -> str:
@@ -207,17 +222,17 @@ async def _send_season_loot_markdown_followup(interaction: discord.Interaction) 
         )
         return
 
-    os.makedirs("temp", exist_ok=True)
-    username = "".join(c for c in interaction.user.display_name if c.isalnum() or c in "_-").strip() or "user"
-    fd, temp_file_path = tempfile.mkstemp(prefix=f"season_loot_{username}_", suffix=".md", dir="temp")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            handle.write(f"# Season Loot for {interaction.user.display_name}\n")
-            handle.write(f"Total unique items: {len(items_list)}\n\n")
-            for idx, (item_name, shiny) in enumerate(items_list, start=1):
-                marker = " [shiny]" if shiny else ""
-                handle.write(f"{idx}. {item_name}{marker}\n")
+    builder = MarkdownMessageBuilder(f"Season Loot for {interaction.user.display_name}")
+    builder.add_paragraph(f"Total unique items: {len(items_list)}")
 
+    lines: list[str] = []
+    for item_name, shiny in items_list:
+        marker = " [shiny]" if shiny else ""
+        lines.append(f"{item_name}{marker}")
+
+    builder.add_numbered_list(lines, heading="Items")
+    temp_file_path = builder.write_temp_file(prefix="season_loot", username=interaction.user.display_name)
+    try:
         await interaction.followup.send(file=discord.File(temp_file_path), ephemeral=True)
     finally:
         if os.path.exists(temp_file_path):
@@ -229,30 +244,29 @@ async def _send_ppe_list_markdown_followup(interaction: discord.Interaction, pla
     best_ppe = _get_best_ppe(player_data)
     best_ppe_id = int(best_ppe.id) if best_ppe else None
 
-    os.makedirs("temp", exist_ok=True)
-    username = "".join(c for c in interaction.user.display_name if c.isalnum() or c in "_-").strip() or "user"
-    fd, temp_file_path = tempfile.mkstemp(prefix=f"ppe_list_{username}_", suffix=".md", dir="temp")
+    builder = MarkdownMessageBuilder(f"PPE List for {interaction.user.display_name}")
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            handle.write(f"# PPE List for {interaction.user.display_name}\n\n")
+        if not sorted_ppes:
+            builder.add_paragraph("No PPEs found.")
+        else:
+            lines: list[str] = []
+            for ppe in sorted_ppes:
+                labels: list[str] = []
+                if int(ppe.id) == int(player_data.active_ppe or -1):
+                    labels.append("ACTIVE")
+                if best_ppe_id is not None and int(ppe.id) == best_ppe_id:
+                    labels.append("BEST")
+                suffix = f" [{' | '.join(labels)}]" if labels else ""
+                lines.append(
+                    f"PPE #{ppe.id} | Class: {_display_class_name(ppe)} | Points: {_format_points(ppe.points)}{suffix}"
+                )
+            builder.add_numbered_list(lines, heading="Characters")
 
-            if not sorted_ppes:
-                handle.write("No PPEs found.\n")
-            else:
-                for idx, ppe in enumerate(sorted_ppes, start=1):
-                    labels: list[str] = []
-                    if int(ppe.id) == int(player_data.active_ppe or -1):
-                        labels.append("ACTIVE")
-                    if best_ppe_id is not None and int(ppe.id) == best_ppe_id:
-                        labels.append("BEST")
-                    suffix = f" [{' | '.join(labels)}]" if labels else ""
-                    handle.write(
-                        f"{idx}. PPE #{ppe.id} | Class: {_display_class_name(ppe)} | Points: {_format_points(ppe.points)}{suffix}\n"
-                    )
+        temp_file_path = builder.write_temp_file(prefix="ppe_list", username=interaction.user.display_name)
 
         await interaction.followup.send(file=discord.File(temp_file_path), ephemeral=True)
     finally:
-        if os.path.exists(temp_file_path):
+        if "temp_file_path" in locals() and os.path.exists(temp_file_path):
             os.remove(temp_file_path)
 
 
@@ -314,6 +328,11 @@ class MyInfoHomeView(OwnerBoundView):
         embed = view.current_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
+    @discord.ui.button(label="Show Quests", style=discord.ButtonStyle.primary, row=0)
+    async def show_quests(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await _close_myinfo_menu(interaction)
+        await myquests_cmd.command(interaction)
+
     @discord.ui.button(label="List PPEs", style=discord.ButtonStyle.secondary, row=0)
     async def list_ppes(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         records = await load_player_records(interaction)
@@ -322,12 +341,6 @@ class MyInfoHomeView(OwnerBoundView):
 
         await interaction.response.defer(ephemeral=True)
         await _send_ppe_list_markdown_followup(interaction, player_data)
-
-    @discord.ui.button(label="Show Quests", style=discord.ButtonStyle.primary, row=0)
-    async def show_quests(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if interaction.message:
-            await interaction.message.edit(view=None)
-        await myquests_cmd.command(interaction)
 
     @discord.ui.button(label="Manage Characters", style=discord.ButtonStyle.success, row=0)
     async def manage_characters(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -400,18 +413,8 @@ class SeasonLootVariantView(OwnerBoundView):
     def current_embed(self) -> discord.Embed:
         embed = discord.Embed(
             title="Show Season Loot",
-            description="Choose which season loot image variant to generate.",
+            description="Choose an action.",
             color=discord.Color.gold(),
-        )
-        embed.add_field(
-            name="Variants",
-            value=(
-                "Normal Only\n"
-                "Normal + Limited\n"
-                "Normal + Skins\n"
-                "All Loot"
-            ),
-            inline=False,
         )
         return embed
 
@@ -421,54 +424,53 @@ class SeasonLootVariantView(OwnerBoundView):
         player_data = records[key]
 
         if key not in records or not player_data.is_member:
-            await interaction.response.send_message("❌ You're not part of the PPE contest.", ephemeral=True)
+            await _send_interaction_text(interaction, "❌ You're not part of the PPE contest.", ephemeral=True)
             return
 
         if not player_data.unique_items:
-            await interaction.response.send_message(
+            await _send_interaction_text(
+                interaction,
                 "You haven't collected any season loot yet!\nUse `/addseasonloot` to start tracking your unique items.",
                 ephemeral=True,
             )
             return
 
         await shareseasonloot_cmd.command(interaction, include_skins=include_skins, include_limited=include_limited)
-        await _send_season_loot_markdown_followup(interaction)
+
+    async def _close_and_share(
+        self,
+        interaction: discord.Interaction,
+        *,
+        include_skins: bool,
+        include_limited: bool,
+    ) -> None:
+        await _close_myinfo_menu(interaction)
+        await self._share(interaction, include_skins=include_skins, include_limited=include_limited)
 
     @discord.ui.button(label="Normal Only", style=discord.ButtonStyle.primary, row=0)
     async def normal_only(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await self._share(interaction, include_skins=False, include_limited=False)
+        await self._close_and_share(interaction, include_skins=False, include_limited=False)
 
     @discord.ui.button(label="Normal + Limited", style=discord.ButtonStyle.primary, row=0)
     async def normal_limited(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await self._share(interaction, include_skins=False, include_limited=True)
+        await self._close_and_share(interaction, include_skins=False, include_limited=True)
 
     @discord.ui.button(label="Normal + Skins", style=discord.ButtonStyle.primary, row=1)
     async def normal_skins(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await self._share(interaction, include_skins=True, include_limited=False)
+        await self._close_and_share(interaction, include_skins=True, include_limited=False)
 
     @discord.ui.button(label="All Loot", style=discord.ButtonStyle.success, row=1)
     async def all_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await self._share(interaction, include_skins=True, include_limited=True)
+        await self._close_and_share(interaction, include_skins=True, include_limited=True)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=2)
-    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        records = await load_player_records(interaction)
-        key = ensure_player_exists(records, interaction.user.id)
-        player_data = records[key]
-
-        active_ppe = None
-        for ppe in player_data.ppes:
-            if ppe.id == player_data.active_ppe:
-                active_ppe = ppe
-                break
-
-        embed = _build_home_embed(interaction.user, player_data, active_ppe, max_ppes=self.max_ppes)
-        view = MyInfoHomeView(interaction.user.id, max_ppes=self.max_ppes)
-        await interaction.response.edit_message(embed=embed, view=view)
+    @discord.ui.button(label="List Season Loot", style=discord.ButtonStyle.secondary, row=2)
+    async def list_season_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await _close_myinfo_menu(interaction)
+        await _send_season_loot_markdown_followup(interaction)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await interaction.response.edit_message(content="Closed `/myinfo` menu.", embed=None, view=None)
+        await _close_myinfo_menu(interaction)
 
 
 class _BonusChoiceSelect(discord.ui.Select):
@@ -727,7 +729,7 @@ class ManageCharactersView(OwnerBoundView):
         self.index = (self.index + 1) % len(self.ppes)
         await interaction.response.edit_message(embed=self.current_embed(interaction.user), view=self)
 
-    @discord.ui.button(label="Show Loot", style=discord.ButtonStyle.primary, row=1)
+    @discord.ui.button(label="Show Loot", style=discord.ButtonStyle.primary, row=0)
     async def show_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         selected = self.current_ppe()
         view = CharacterLootVariantView(
@@ -774,7 +776,7 @@ class CharacterLootVariantView(OwnerBoundView):
     def current_embed(self, ppe: PPEData) -> discord.Embed:
         embed = discord.Embed(
             title=f"Show Loot for PPE #{ppe.id}",
-            description="Choose which loot image variant to generate.",
+            description="Choose an action.",
             color=discord.Color.blue(),
         )
         embed.add_field(name="Character", value=f"{_display_class_name(ppe)}", inline=True)
@@ -788,46 +790,47 @@ class CharacterLootVariantView(OwnerBoundView):
             include_skins=include_skins,
             include_limited=include_limited,
         )
-
-        refreshed = await _refresh_player_data(interaction, interaction.user.id)
-        selected = _find_ppe_or_raise(refreshed, self.ppe_id)
-        await _send_myloot_markdown_followup(interaction, selected)
         await interaction.followup.send(
             f"Generated variant: **{_variant_label(include_skins, include_limited)}**",
             ephemeral=True,
         )
 
+    async def _close_and_share(
+        self,
+        interaction: discord.Interaction,
+        *,
+        include_skins: bool,
+        include_limited: bool,
+    ) -> None:
+        await _close_myinfo_menu(interaction)
+        await self._share(interaction, include_skins=include_skins, include_limited=include_limited)
+
     @discord.ui.button(label="Normal Only", style=discord.ButtonStyle.primary, row=0)
     async def normal_only(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await self._share(interaction, include_skins=False, include_limited=False)
+        await self._close_and_share(interaction, include_skins=False, include_limited=False)
 
     @discord.ui.button(label="Normal + Limited", style=discord.ButtonStyle.primary, row=0)
     async def normal_limited(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await self._share(interaction, include_skins=False, include_limited=True)
+        await self._close_and_share(interaction, include_skins=False, include_limited=True)
 
     @discord.ui.button(label="Normal + Skins", style=discord.ButtonStyle.primary, row=1)
     async def normal_skins(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await self._share(interaction, include_skins=True, include_limited=False)
+        await self._close_and_share(interaction, include_skins=True, include_limited=False)
 
     @discord.ui.button(label="All Loot", style=discord.ButtonStyle.success, row=1)
     async def all_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await self._share(interaction, include_skins=True, include_limited=True)
+        await self._close_and_share(interaction, include_skins=True, include_limited=True)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=2)
-    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+    @discord.ui.button(label="List Loot", style=discord.ButtonStyle.secondary, row=2)
+    async def list_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await _close_myinfo_menu(interaction)
         refreshed = await _refresh_player_data(interaction, interaction.user.id)
-        connected_ids = await _realmshark_connected_ppe_ids(interaction, interaction.user.id)
-        view = ManageCharactersView(
-            owner_id=interaction.user.id,
-            player_data=refreshed,
-            connected_ppe_ids=connected_ids,
-            preferred_ppe_id=self.preferred_ppe_id,
-        )
-        await interaction.response.edit_message(embed=view.current_embed(interaction.user), view=view)
+        selected = _find_ppe_or_raise(refreshed, self.ppe_id)
+        await _send_myloot_markdown_followup(interaction, selected)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await interaction.response.edit_message(content="Closed `/myinfo` menu.", embed=None, view=None)
+        await _close_myinfo_menu(interaction)
 
 
 async def _refresh_player_data(interaction: discord.Interaction, user_id: int) -> PlayerData:

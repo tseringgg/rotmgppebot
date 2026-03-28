@@ -1,9 +1,6 @@
-from calendar import c
-import os
-import tempfile
 import json
-from datetime import datetime
 from dataclass import PPEData
+from utils.markdown_message_builder import MarkdownMessageBuilder
 from utils.points_service import calculate_item_points as calculate_item_points_service
 
 
@@ -34,25 +31,12 @@ def calculate_item_points(item_name: str, divine: bool, shiny: bool, quantity: i
 
 def create_loot_markdown_file(ppe_data: PPEData) -> str:
     """Create a temporary markdown file with the loot table and return the file path."""
-    
-    # Ensure temp directory exists
-    temp_dir = "temp"
-    os.makedirs(temp_dir, exist_ok=True)
-    
-    # Create filename with PPE ID and class name
-    safe_name = "".join(c for c in ppe_data.name if c.isalnum() or c in (' ', '-', '_')).strip()
-    safe_name = safe_name.replace(' ', '_')
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"loot_table_ppe_{ppe_data.id}_{safe_name}_{timestamp}.md"
-    file_path = os.path.join(temp_dir, filename)
+    display_name = str(getattr(ppe_data.name, "value", ppe_data.name))
     
     # Build markdown content
     content = []
     
-    # Title
-    points_display = int(ppe_data.points) if ppe_data.points == int(ppe_data.points) else f"{ppe_data.points:.1f}"
-    content.append(f"# Loot Table: {ppe_data.name} (PPE #{ppe_data.id})")
-    content.append(f"Total Points: {points_display}\n")
+    total_points_display = int(ppe_data.points) if ppe_data.points == int(ppe_data.points) else f"{ppe_data.points:.1f}"
     
     # Loot section
     if ppe_data.loot:
@@ -203,8 +187,12 @@ def create_loot_markdown_file(ppe_data: PPEData) -> str:
     content.append("---")
     content.append(f"Summary: {total_items} total items ({total_loot_items} loot, {total_bonus_items} bonuses)")
     
-    # Write to file
-    with open(file_path, 'w', encoding='utf-8') as f:
-        f.write("\n".join(content))
-    
-    return file_path
+    builder = MarkdownMessageBuilder(f"Loot Table: {display_name} (PPE #{ppe_data.id})")
+    builder.add_paragraph(f"Total Points: {total_points_display}")
+    builder.add_section(lines=content)
+
+    return builder.write_temp_file(
+        prefix=f"loot_table_ppe_{ppe_data.id}",
+        username=display_name,
+        temp_dir="temp",
+    )

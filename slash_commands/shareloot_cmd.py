@@ -7,6 +7,18 @@ import csv
 from PIL import Image
 import os
 
+
+async def _send_interaction_text(interaction: discord.Interaction, content: str, *, ephemeral: bool) -> None:
+    if not interaction.response.is_done():
+        await interaction.response.send_message(content, ephemeral=ephemeral)
+        return
+    await interaction.followup.send(content, ephemeral=ephemeral)
+
+
+async def _defer_if_needed(interaction: discord.Interaction) -> None:
+    if not interaction.response.is_done():
+        await interaction.response.defer()
+
 async def command(interaction: discord.Interaction, include_skins: bool = False, include_limited: bool = False):
     """
     Generate a personalized loot image showing the player's active PPE loot.
@@ -20,7 +32,8 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
         # Get active PPE using the same method as other commands
         active_ppe = await get_active_ppe_of_user(interaction)
     except (ValueError, KeyError) as e:
-        return await interaction.response.send_message(str(e), ephemeral=True)
+        await _send_interaction_text(interaction, str(e), ephemeral=True)
+        return
     
     try:
         # Determine which variant to use based on parameters
@@ -52,7 +65,7 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
         
         # Load sprite positions mapping
         if not os.path.exists(sprite_csv):
-            await interaction.response.send_message(f"❌ Sprite mapping not found! ({sprite_csv})", ephemeral=True)
+            await _send_interaction_text(interaction, f"❌ Sprite mapping not found! ({sprite_csv})", ephemeral=True)
             return
         
         sprite_positions = {}
@@ -107,7 +120,7 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
         
         # Load background image
         if not os.path.exists(background_file):
-            await interaction.response.send_message(f"❌ Loot background not found! ({background_file})", ephemeral=True)
+            await _send_interaction_text(interaction, f"❌ Loot background not found! ({background_file})", ephemeral=True)
             return
         
         # Create a copy of the background for this player
@@ -146,7 +159,7 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
                 print(f"Error loading sprite {png_file}: {e}")
         
         # Defer response since this might take a moment
-        await interaction.response.defer()
+        await _defer_if_needed(interaction)
         
         # Count how many items we're placing
         items_placed = 0
@@ -263,7 +276,4 @@ async def command(interaction: discord.Interaction, include_skins: bool = False,
         background.close()
     except Exception as e:
         print(f"Error in shareloot command: {e}")
-        if not interaction.response.is_done():
-            await interaction.response.send_message(f"❌ An error occurred: {str(e)}", ephemeral=True)
-        else:
-            await interaction.followup.send(f"❌ An error occurred: {str(e)}", ephemeral=True)
+        await _send_interaction_text(interaction, f"❌ An error occurred: {str(e)}", ephemeral=True)
