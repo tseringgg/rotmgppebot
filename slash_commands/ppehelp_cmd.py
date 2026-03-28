@@ -17,6 +17,7 @@ async def command(interaction: discord.Interaction):
     ppe_mgmt_cmds = {
         "newppe": "Start a new PPE run (max set by server config).",
         "myinfo": "Open the My Info home menu (characters, season loot, quest menu, and utility actions).",
+        "mysniffer": "Open your sniffer dashboard (token generation, unlink, and character configure panel).",
         "setactiveppe": "Set which PPE is active.",
         "addbonus": "Add a bonus to your active PPE.",
         "removebonus": "Remove a bonus from your active PPE.",
@@ -65,6 +66,7 @@ async def command(interaction: discord.Interaction):
         "pointsettings": "View guild points modifier settings.",
         "pointsettingsglobal": "Set global percent modifiers for loot/bonus/penalty/total.",
         "pointsettingsclass": "Set class-specific percent modifiers and minimum total.",
+        "managesniffer": "Admin sniffer control panel (enable/disable, tokens, output channel, reset, player sniffer management).",
     }
     
     # --- Admin: Team Management ---

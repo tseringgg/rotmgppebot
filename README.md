@@ -136,17 +136,11 @@ Player team assignment/removal is now handled through `/manageplayer` in the Tea
 | `/listadmins` | View all PPE admins |
 | `/listroles` | Show server role information |
 
-### RealmShark Commands
+### Sniffer Commands
 | Command | Description |
 |---------|-------------|
-| `/realmsharklink` | Create a private link token for RealmShark/Tomato ingest |
-| `/realmsharkenabled` | Enable/disable RealmShark ingest for the guild |
-| `/realmsharkchannel` | Set/reset RealmShark announcement channel |
-| `/realmsharkstatus` | Show RealmShark config status and which account is linked to each token |
-| `/realmsharkconfigure` | Open interactive mapping panel (`Show All` or `Show Pending`) |
-| `/realmsharkadminview` | Open admin RealmShark panel for a user (`Show All` or `Show Pending`) |
-| `/realmsharkunlink` | Revoke a specific RealmShark link token |
-| `/realmsharkreset` | Reset all RealmShark settings/tokens and clear pending logs for the guild |
+| `/mysniffer` | Player sniffer dashboard: setup steps, generate token, unlink token, and open character configure panel |
+| `/managesniffer` | Admin sniffer dashboard: enable/disable, manage player sniffer view, manage/revoke tokens, change output channel, and reset all sniffer settings |
 
 ## RealmShark Character-Aware Routing
 
@@ -156,7 +150,7 @@ When Tomato sends loot with `character_id`, routing is policy-driven:
 2. If `character_id` is mapped as seasonal, the bot logs through `/addseasonloot` behavior.
 3. If `character_id` is unseen/unmapped, the bot logs through `/addseasonloot`, pings the player, and stores a pending loot log (item + rarity + flags) for review.
 
-Use `/realmsharkconfigure` to manage all character mappings and pending loot through an interactive panel. Start in `Show All` (all known characters) or `Show Pending` (only pending unmapped characters), then use the panel buttons to map characters to PPEs (which automatically applies pending loot), set characters as seasonal, clear pending logs, and navigate between entries.
+Use `/mysniffer` and click `Configure Characters` to manage all character mappings and pending loot through an interactive panel. Start in `Show All` (all known characters) or `Show Pending` (only pending unmapped characters), then use the panel buttons to map characters to PPEs (which automatically applies pending loot), set characters as seasonal, clear pending logs, and navigate between entries.
 The panel is intuitive with `Prev` / `Next` buttons to cycle through characters, and all destructive actions require explicit confirmation.
 The panel/config view shows detected in-game character name/class when available, and mapping is class-validated: a character cannot be mapped to a PPE of a different class.
 

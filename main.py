@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, addtoteam_cmd, myloot_cmd, listplayers_cmd, listroles_cmd, manageplayer_cmd, manageteams_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removefromteam_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfrom_cmd, resetseason_cmd, myteam_cmd, managequests_cmd, realmshark_cmd, pointsettings_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, addtoteam_cmd, myloot_cmd, listplayers_cmd, listroles_cmd, manageplayer_cmd, manageteams_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removefromteam_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfrom_cmd, resetseason_cmd, myteam_cmd, managequests_cmd, pointsettings_cmd, mysniffer_cmd, managesniffer_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -459,66 +459,15 @@ async def myloot(interaction: discord.Interaction):
 async def managequests(interaction: discord.Interaction):
     await managequests_cmd.command(interaction)
 
-@bot.tree.command(name="realmsharklink", description="Generate a RealmShark link token for your account.", guilds=guilds)
+@bot.tree.command(name="mysniffer", description="Open your sniffer setup and character configuration menu.", guilds=guilds)
 @require_ppe_roles(player_required=True)
-async def realmsharklink(interaction: discord.Interaction):
-    await realmshark_cmd.generate_link_token(interaction)
+async def mysniffer(interaction: discord.Interaction):
+    await mysniffer_cmd.command(interaction)
 
-@bot.tree.command(name="realmsharkenabled", description="Enable or disable RealmShark ingest for this guild.", guilds=guilds)
+@bot.tree.command(name="managesniffer", description="Open admin sniffer controls for this guild.", guilds=guilds)
 @require_ppe_roles(admin_required=True)
-async def realmsharkenabled(interaction: discord.Interaction, enabled: bool):
-    await realmshark_cmd.set_enabled(interaction, enabled)
-
-@bot.tree.command(name="realmsharkchannel", description="Set channel for RealmShark announcements (omit to reset default).", guilds=guilds)
-@app_commands.describe(channel="Optional channel for RealmShark announcements")
-@require_ppe_roles(admin_required=True)
-async def realmsharkchannel(interaction: discord.Interaction, channel: discord.TextChannel | None = None):
-    await realmshark_cmd.set_announce_channel(interaction, channel)
-
-@bot.tree.command(name="realmsharkstatus", description="Show RealmShark integration status for this guild.", guilds=guilds)
-@require_ppe_roles(admin_required=True)
-async def realmsharkstatus(interaction: discord.Interaction):
-    await realmshark_cmd.status(interaction)
-
-@bot.tree.command(name="realmsharkconfigure", description="Manage RealmShark character mappings and pending loot.", guilds=guilds)
-@app_commands.describe(mode="Panel start mode (defaults to Show All)")
-@app_commands.choices(mode=[
-    app_commands.Choice(name="Show All", value="show_all"),
-    app_commands.Choice(name="Show Pending", value="show_pending"),
-])
-@require_ppe_roles(player_required=True)
-async def realmsharkconfigure(
-    interaction: discord.Interaction,
-    mode: app_commands.Choice[str] | None = None,
-):
-    selected_mode = mode.value if mode is not None else "show_all"
-    await realmshark_cmd.open_panel(interaction, selected_mode)
-
-@bot.tree.command(name="realmsharkadminview", description="Manage a user's RealmShark mappings and pending loot.", guilds=guilds)
-@app_commands.describe(member="Player to manage")
-@app_commands.describe(mode="Panel start mode (defaults to Show All)")
-@app_commands.choices(mode=[
-    app_commands.Choice(name="Show All", value="show_all"),
-    app_commands.Choice(name="Show Pending", value="show_pending"),
-])
-@require_ppe_roles(admin_required=True)
-async def realmsharkadminview(
-    interaction: discord.Interaction,
-    member: discord.Member,
-    mode: app_commands.Choice[str] | None = None,
-):
-    selected_mode = mode.value if mode is not None else "show_all"
-    await realmshark_cmd.admin_panel(interaction, member, selected_mode)
-
-@bot.tree.command(name="realmsharkunlink", description="Revoke a specific RealmShark link token.", guilds=guilds)
-@require_ppe_roles(admin_required=True)
-async def realmsharkunlink(interaction: discord.Interaction, token: str):
-    await realmshark_cmd.unlink_token(interaction, token)
-
-@bot.tree.command(name="realmsharkreset", description="Reset all RealmShark integration data for this guild.", guilds=guilds)
-@require_ppe_roles(admin_required=True)
-async def realmsharkreset(interaction: discord.Interaction):
-    await realmshark_cmd.reset_all(interaction)
+async def managesniffer(interaction: discord.Interaction):
+    await managesniffer_cmd.command(interaction)
 
 @bot.tree.command(name="resetseason", description="Reset season data, teams, and RealmShark links/settings. Server owner/admin only.", guilds=guilds)
 @app_commands.describe(clear_realmshark_links="If true, unlink all RealmShark integrations and remove all mappings")
