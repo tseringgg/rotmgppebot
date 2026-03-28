@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import discord
@@ -43,6 +44,30 @@ def _parse_user_id(raw: str) -> int | None:
 
     value = int(text)
     return value if value > 0 else None
+
+
+def _resolve_member_from_input(guild: discord.Guild, raw_value: str) -> discord.Member | None:
+    text = str(raw_value or "").strip()
+    if not text:
+        return None
+
+    mention_match = re.fullmatch(r"<@!?(\d+)>", text)
+    if mention_match:
+        member = guild.get_member(int(mention_match.group(1)))
+        if member is not None:
+            return member
+
+    if text.isdigit():
+        member = guild.get_member(int(text))
+        if member is not None:
+            return member
+
+    lowered = text.casefold()
+    for member in guild.members:
+        if member.display_name.casefold() == lowered or member.name.casefold() == lowered:
+            return member
+
+    return None
 
 
 def _parse_channel_id(raw: str) -> int | None:
@@ -190,12 +215,39 @@ class _DeleteTokenSelect(discord.ui.Select):
             await interaction.response.send_message("This picker belongs to another admin.", ephemeral=True)
             return
 
+        from menus.menu_utils import ConfirmCancelView
+
         token = self.values[0]
+        confirm_view = ConfirmCancelView(
+            owner_id=self.owner_id,
+            timeout=60,
+            confirm_label="Confirm Delete",
+            cancel_label="Cancel",
+            confirm_style=discord.ButtonStyle.danger,
+            cancel_style=discord.ButtonStyle.secondary,
+            owner_error="This confirmation belongs to another admin.",
+        )
+        await interaction.response.send_message(
+            f"⚠️ Delete token `{token_preview(token)}`? This cannot be undone.",
+            view=confirm_view,
+            ephemeral=True,
+        )
+
+        await confirm_view.wait()
+        try:
+            await interaction.delete_original_response()
+        except discord.HTTPException:
+            pass
+
+        if not confirm_view.confirmed:
+            await interaction.followup.send("Token deletion cancelled.", ephemeral=True)
+            return
+
         deleted = await revoke_token(interaction, token)
         if deleted:
-            await interaction.response.edit_message(content="Token revoked.", embed=None, view=None)
+            await interaction.followup.send("Token revoked.", ephemeral=True)
         else:
-            await interaction.response.edit_message(content="Token was already removed.", embed=None, view=None)
+            await interaction.followup.send("Token was already removed.", ephemeral=True)
 
 
 class TokenDeletePickerView(OwnerBoundView):
@@ -206,8 +258,8 @@ class TokenDeletePickerView(OwnerBoundView):
 
 class ManageSnifferPlayerModal(discord.ui.Modal, title="Manage Player's Sniffer"):
     player_id = discord.ui.TextInput(
-        label="Player ID or mention",
-        placeholder="123456789012345678 or @player",
+        label="Player Name",
+        placeholder="Discord display name, username, mention, or ID",
         required=True,
         max_length=64,
     )
@@ -221,15 +273,22 @@ class ManageSnifferPlayerModal(discord.ui.Modal, title="Manage Player's Sniffer"
             await interaction.response.send_message("This form belongs to another admin.", ephemeral=True)
             return
 
-        target_user_id = _parse_user_id(str(self.player_id.value))
-        if target_user_id is None:
-            await interaction.response.send_message("Provide a valid Discord user ID or @mention.", ephemeral=True)
+        if interaction.guild is None:
+            await interaction.response.send_message("❌ This action can only be used in a server.", ephemeral=True)
+            return
+
+        target_member = _resolve_member_from_input(interaction.guild, str(self.player_id.value))
+        if target_member is None:
+            await interaction.response.send_message(
+                "❌ Player not found. Use exact display name/username, mention, or user ID.",
+                ephemeral=True,
+            )
             return
 
         await render_manage_player_sniffer_home(
             interaction,
             owner_id=self.owner_id,
-            target_user_id=target_user_id,
+            target_user_id=int(target_member.id),
         )
 
 
