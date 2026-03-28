@@ -649,14 +649,14 @@ class TeamPickerView(OwnerBoundView):
             color=discord.Color.teal(),
         )
 
-    @discord.ui.button(label="Find Team", style=discord.ButtonStyle.primary, row=1)
+    @discord.ui.button(label="Find Team", style=discord.ButtonStyle.primary, row=0)
     async def find_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not self.team_names:
             await interaction.response.send_message("❌ No teams exist yet.", ephemeral=True)
             return
         await interaction.response.send_modal(TeamNameLookupModal(owner_id=self.owner_id, team_names=self.team_names))
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=0)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await open_manage_teams_home(interaction, owner_id=self.owner_id)
 
@@ -716,6 +716,12 @@ class TeamDeleteConfirmView(OwnerBoundView):
 
 
 class ManageSingleTeamView(OwnerBoundView):
+    """View for managing a single team with all member actions.
+    
+    Button Layout:
+    - Row 0: Add Member (green), Set Leader (green), Rename Team (green), Team Info (blue)
+    - Row 1: Remove Members (red), Delete Team (red), Back (gray)
+    """
     def __init__(
         self,
         *,
@@ -731,6 +737,7 @@ class ManageSingleTeamView(OwnerBoundView):
         self.member_rows = member_rows
 
     def current_embed(self) -> discord.Embed:
+        """Generate the current team information embed."""
         total_points = sum(member[4] for member in self.member_rows)
         if self.team.leader_id:
             leader_label = f"<@{self.team.leader_id}>"
@@ -763,17 +770,10 @@ class ManageSingleTeamView(OwnerBoundView):
         embed.add_field(name="Member Contributions", value=text, inline=False)
         return embed
 
-    @discord.ui.button(label="Remove Members", style=discord.ButtonStyle.danger, row=1)
-    async def remove_selected(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not self.member_rows:
-            await interaction.response.send_message("❌ This team has no members to remove.", ephemeral=True)
-            return
-        await interaction.response.send_modal(
-            RemoveMembersModal(owner_id=self.owner_id, team_name=self.team_name, member_rows=self.member_rows)
-        )
-
-    @discord.ui.button(label="Add Member", style=discord.ButtonStyle.success, row=1)
+    # === ROW 0: Add Member, Set Leader, Rename Team, Team Info ===
+    @discord.ui.button(label="Add Member", style=discord.ButtonStyle.success, row=0)
     async def add_member(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        """Add a member to the team using modal-based name resolution."""
         records = await load_player_records(interaction)
         teams = await load_teams(interaction)
         actual_name = _resolve_team_name(teams, self.team_name)
@@ -805,8 +805,9 @@ class ManageSingleTeamView(OwnerBoundView):
             AddMemberModal(owner_id=self.owner_id, team_name=actual_name, eligible_members=eligible)
         )
 
-    @discord.ui.button(label="Set Leader", style=discord.ButtonStyle.primary, row=1)
+    @discord.ui.button(label="Set Leader", style=discord.ButtonStyle.success, row=0)
     async def set_leader(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        """Set the team leader from current members."""
         if not self.member_rows:
             await interaction.response.send_message("❌ This team has no members. Add one before setting leader.", ephemeral=True)
             return
@@ -814,12 +815,14 @@ class ManageSingleTeamView(OwnerBoundView):
             SetLeaderModal(owner_id=self.owner_id, team_name=self.team_name, member_rows=self.member_rows)
         )
 
-    @discord.ui.button(label="Rename Team", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Rename Team", style=discord.ButtonStyle.success, row=0)
     async def rename_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        """Rename the team."""
         await interaction.response.send_modal(RenameTeamModal(owner_id=self.owner_id, team_name=self.team_name))
 
-    @discord.ui.button(label="Team Info", style=discord.ButtonStyle.primary, row=2)
+    @discord.ui.button(label="Team Info", style=discord.ButtonStyle.primary, row=0)
     async def team_info(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        """View detailed team information with PPE and quest point breakdown."""
         from slash_commands.myteam_cmd import build_team_embeds
 
         embeds = await build_team_embeds(
@@ -831,13 +834,26 @@ class ManageSingleTeamView(OwnerBoundView):
         view = TeamInfoPreviewView(owner_id=self.owner_id, embeds=embeds, team_name=self.team_name)
         await interaction.response.edit_message(embed=view.embeds[0], view=view)
 
-    @discord.ui.button(label="Delete Team", style=discord.ButtonStyle.danger, row=2)
+    # === ROW 1: Remove Members, Delete Team, Back ===
+    @discord.ui.button(label="Remove Members", style=discord.ButtonStyle.danger, row=1)
+    async def remove_selected(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        """Remove members from the team using modal-based name resolution."""
+        if not self.member_rows:
+            await interaction.response.send_message("❌ This team has no members to remove.", ephemeral=True)
+            return
+        await interaction.response.send_modal(
+            RemoveMembersModal(owner_id=self.owner_id, team_name=self.team_name, member_rows=self.member_rows)
+        )
+
+    @discord.ui.button(label="Delete Team", style=discord.ButtonStyle.danger, row=1)
     async def delete_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        """Delete the entire team - requires confirmation."""
         view = TeamDeleteConfirmView(owner_id=self.owner_id, team_name=self.team_name)
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        """Return to the team picker view."""
         await open_manage_teams_home(interaction, owner_id=self.owner_id)
 
 
@@ -896,6 +912,13 @@ class ManageTeamsHomeView(OwnerBoundView):
     async def create_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await interaction.response.send_modal(CreateTeamModal(owner_id=self.owner_id))
 
+    @discord.ui.button(label="Manage Team", style=discord.ButtonStyle.success, row=1)
+    async def manage_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        teams = await load_teams(interaction)
+        ordered_names = sorted(teams.keys(), key=lambda name: name.lower())
+        picker = TeamPickerView(owner_id=self.owner_id, team_names=ordered_names)
+        await interaction.response.edit_message(embed=picker.current_embed(), view=picker)
+
     @discord.ui.button(label="Team Leaderboard", style=discord.ButtonStyle.primary, row=1)
     async def team_leaderboard(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         data = await team_manager.get_team_leaderboard_data(interaction)
@@ -919,13 +942,6 @@ class ManageTeamsHomeView(OwnerBoundView):
 
         view = LeaderboardPreviewView(owner_id=self.owner_id, embeds=embeds)
         await interaction.response.send_message(embed=embeds[0], view=view, ephemeral=True)
-
-    @discord.ui.button(label="Manage Team", style=discord.ButtonStyle.secondary, row=1)
-    async def manage_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        teams = await load_teams(interaction)
-        ordered_names = sorted(teams.keys(), key=lambda name: name.lower())
-        picker = TeamPickerView(owner_id=self.owner_id, team_names=ordered_names)
-        await interaction.response.edit_message(embed=picker.current_embed(), view=picker)
 
     @discord.ui.button(label="Close", style=discord.ButtonStyle.danger, row=2)
     async def close(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

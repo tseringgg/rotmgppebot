@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, myloot_cmd, listplayers_cmd, listroles_cmd, manageplayer_cmd, manageteams_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfrom_cmd, resetseason_cmd, myteam_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd, pointsettings_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, addtoteam_cmd, myloot_cmd, listplayers_cmd, listroles_cmd, manageplayer_cmd, manageteams_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removefromteam_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfrom_cmd, resetseason_cmd, myteam_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd, pointsettings_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -547,6 +547,40 @@ async def manageteams(interaction: discord.Interaction):
 @app_commands.autocomplete(team_name=team_name_autocomplete)
 async def myteam(interaction: discord.Interaction, team_name: str = None):
     await myteam_cmd.command(interaction, team_name)
+
+# --- Add player to team ---
+@bot.tree.command(name="addtoteam", description="Add a player to a team. Admin only.", guilds=guilds)
+@app_commands.describe(
+    team_name="Name of the team to add to",
+    player="The Discord user to add (mention or name)",
+    player_id="Alternative: Discord ID of player (if not using player parameter)"
+)
+@app_commands.autocomplete(team_name=team_name_autocomplete)
+@require_ppe_roles(admin_required=True)
+async def addtoteam(
+    interaction: discord.Interaction,
+    team_name: str,
+    player: discord.User | None = None,
+    player_id: int | None = None,
+):
+    await addtoteam_cmd.command(interaction, team_name, player, player_id)
+
+# --- Remove player from team ---
+@bot.tree.command(name="removefromteam", description="Remove a player from a team. Admin only.", guilds=guilds)
+@app_commands.describe(
+    team_name="Name of the team to remove from",
+    player="The Discord user to remove (mention or name)",
+    player_id="Alternative: Discord ID of player (if not using player parameter)"
+)
+@app_commands.autocomplete(team_name=team_name_autocomplete)
+@require_ppe_roles(admin_required=True)
+async def removefromteam(
+    interaction: discord.Interaction,
+    team_name: str,
+    player: discord.User | None = None,
+    player_id: int | None = None,
+):
+    await removefromteam_cmd.command(interaction, team_name, player, player_id)
 
 ###############
 #### ROLES ####
