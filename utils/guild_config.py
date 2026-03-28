@@ -8,6 +8,9 @@ import discord
 from utils.player_records import DATA_DIR, get_lock
 
 _DEFAULT_CONFIG: Dict[str, Any] = {
+    "ppe_settings": {
+        "max_ppes": 10,
+    },
     "quest_settings": {
         "regular_target": 8,
         "shiny_target": 3,
@@ -72,6 +75,22 @@ def _normalized_targets(config: Dict[str, Any]) -> Dict[str, int]:
         "shiny_points": _as_non_negative_int(settings.get("shiny_points"), _DEFAULT_CONFIG["quest_settings"]["shiny_points"]),
         "skin_points": _as_non_negative_int(settings.get("skin_points"), _DEFAULT_CONFIG["quest_settings"]["skin_points"]),
         "num_resets": _as_non_negative_int(settings.get("num_resets"), _DEFAULT_CONFIG["quest_settings"]["num_resets"]),
+    }
+
+
+def _normalized_ppe_settings(config: Dict[str, Any]) -> Dict[str, int]:
+    settings = config.get("ppe_settings", {}) if isinstance(config.get("ppe_settings", {}), dict) else {}
+
+    try:
+        parsed_max = int(settings.get("max_ppes", _DEFAULT_CONFIG["ppe_settings"]["max_ppes"]))
+    except (TypeError, ValueError):
+        parsed_max = _DEFAULT_CONFIG["ppe_settings"]["max_ppes"]
+
+    if parsed_max <= 0:
+        parsed_max = _DEFAULT_CONFIG["ppe_settings"]["max_ppes"]
+
+    return {
+        "max_ppes": parsed_max,
     }
 
 
@@ -179,6 +198,7 @@ def _normalized_realmshark_settings(config: Dict[str, Any]) -> Dict[str, Any]:
 
 def _merge_defaults(raw: Dict[str, Any]) -> Dict[str, Any]:
     merged = dict(_DEFAULT_CONFIG)
+    merged["ppe_settings"] = _normalized_ppe_settings(raw)
     merged["quest_settings"] = _normalized_targets(raw)
     merged["realmshark_settings"] = _normalized_realmshark_settings(raw)
     merged["points_settings"] = _normalized_points_settings(raw)
@@ -274,6 +294,12 @@ async def get_quest_targets(interaction: discord.Interaction) -> tuple[int, int,
     config = await load_guild_config(interaction)
     settings = config["quest_settings"]
     return settings["regular_target"], settings["shiny_target"], settings["skin_target"]
+
+
+async def get_max_ppes(interaction: discord.Interaction) -> int:
+    config = await load_guild_config(interaction)
+    settings = config["ppe_settings"]
+    return int(settings["max_ppes"])
 
 
 async def set_quest_targets(

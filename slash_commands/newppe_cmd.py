@@ -3,7 +3,7 @@
 import discord
 
 from dataclass import PPEData, ROTMGClass
-from utils.guild_config import load_guild_config
+from utils.guild_config import get_max_ppes, load_guild_config
 from utils.points_service import apply_penalties_to_ppe, recompute_ppe_points, validate_penalty_inputs
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 
@@ -30,11 +30,13 @@ async def command(interaction: discord.Interaction, class_name: str, pet_level: 
 
     player_data = records[key]
 
+    max_ppes = await get_max_ppes(interaction)
+
     # --- PPE limit check ---
     ppe_count = len(player_data.ppes)
-    if ppe_count >= 10:
+    if ppe_count >= max_ppes:
         return await interaction.response.send_message(
-            "⚠️ You’ve reached the limit of `10 PPEs`. "
+            f"⚠️ You’ve reached the limit of `{max_ppes} PPEs`. "
             "Delete or reuse an existing one before making a new one."
         )
 
@@ -112,6 +114,6 @@ async def command(interaction: discord.Interaction, class_name: str, pet_level: 
     await interaction.response.send_message(
         f"✅ Created `PPE #{next_id}` for your `{class_enum.value}` "
         f"and set it as your active PPE.\n"
-        f"You now have {ppe_count + 1}/10 PPEs.",
+        f"You now have {ppe_count + 1}/{max_ppes} PPEs.",
         embed=embed
     )

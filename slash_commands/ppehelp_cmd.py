@@ -19,7 +19,7 @@ async def command(interaction: discord.Interaction):
     
     # --- PPE Management (Player) ---
     ppe_mgmt_cmds = {
-        "newppe": "Start a new PPE run (max 10).",
+        "newppe": "Start a new PPE run (max set by server config).",
         "myinfo": "Open your personal dashboard for loot, season, quests, and character management.",
         "setactiveppe": "Set which PPE is active.",
         "addpenalties": "Apply penalties to active PPE.",

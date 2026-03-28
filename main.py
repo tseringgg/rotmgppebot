@@ -158,7 +158,7 @@ async def setup_roles(interaction: discord.Interaction):
 ### COMMANDS BELOW ###
 ######################
 
-@bot.tree.command(name="newppe", description="Create a new PPE (max 10) and make it your active one.", guilds=guilds)
+@bot.tree.command(name="newppe", description="Create a new PPE and make it your active one.", guilds=guilds)
 @app_commands.describe(class_name="Choose your class")
 @app_commands.describe(pet_level="Level of your max pet ability -1st one (0-100)")
 @app_commands.describe(num_exalts="Number of exalts (0-40)")

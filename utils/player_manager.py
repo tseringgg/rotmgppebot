@@ -4,7 +4,7 @@ import discord
 from dataclass import Loot, PPEData, PlayerData
 from utils.player_records import load_player_records, save_player_records, ensure_player_exists, get_active_ppe
 from utils.quest_manager import update_quests_for_item
-from utils.guild_config import get_quest_targets
+from utils.guild_config import get_max_ppes, get_quest_targets
 from utils.guild_config import load_guild_config
 from utils.points_service import recompute_ppe_points
 
@@ -172,10 +172,11 @@ class PlayerManager:
             key = ensure_player_exists(records, user_id)
             
             player_data = records[key]
+            max_ppes = await get_max_ppes(interaction)
             
             # PPE limit check
-            if len(player_data.ppes) >= 10:
-                raise ValueError("⚠️ You've reached the limit of 10 PPEs.")
+            if len(player_data.ppes) >= max_ppes:
+                raise ValueError(f"⚠️ You've reached the limit of {max_ppes} PPEs.")
             
             # Create new PPE
             next_id = max((ppe.id for ppe in player_data.ppes), default=0) + 1
