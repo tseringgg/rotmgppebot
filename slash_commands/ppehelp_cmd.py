@@ -94,11 +94,6 @@ async def command(interaction: discord.Interaction):
         "updateteam": "Rename team (Leader/Admin).",
     }
     
-    # --- Admin: Utility ---
-    admin_util_cmds = {
-        "migrateapostrophes": "Fix apostrophes in records.",
-    }
-    
     owner_cmds = {
         "resetseason": "Clear season data and teams; optionally unlink all RealmShark links/mappings.",
         "removeppeadminrole": "Remove PPE Admin role.",

@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, manage_cmd, manageplayer_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, seasonleaderboard_cmd, questleaderboard_cmd, resetseason_cmd, migrateapostrophes_cmd, addteam_cmd, addplayer_team_cmd, leaveteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, resetquestfor_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, manage_cmd, manageplayer_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, seasonleaderboard_cmd, questleaderboard_cmd, resetseason_cmd, addteam_cmd, addplayer_team_cmd, leaveteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, resetquestfor_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -517,12 +517,6 @@ async def questleaderboard(interaction: discord.Interaction):
 @commands.has_permissions(administrator=True)
 async def resetseason(interaction: discord.Interaction, clear_realmshark_links: bool = False):
     await resetseason_cmd.command(interaction, clear_realmshark_links)
-
-# --- Migrate apostrophes ---
-@bot.tree.command(name="migrateapostrophes", description="Normalize all apostrophes in player records. Admin only.", guilds=guilds)
-@require_ppe_roles(admin_required=True)
-async def migrate_apostrophes(interaction: discord.Interaction):
-    await migrateapostrophes_cmd.command(interaction)
 
 ##################
 #### TEAMS ####
