@@ -55,7 +55,7 @@ async def close_manageplayer_menu(interaction: discord.Interaction) -> None:
         await interaction.response.defer()
 
 
-async def send_followup_text(interaction: discord.Interaction, content: str, *, ephemeral: bool = False) -> None:
+async def send_followup_text(interaction: discord.Interaction, content: str, *, ephemeral: bool = True) -> None:
     if not interaction.response.is_done():
         await interaction.response.send_message(content, ephemeral=ephemeral)
         return
@@ -224,7 +224,7 @@ async def open_manageplayer_menu(
 
     target, error = await resolve_target(interaction, member=member, user_id=user_id)
     if error:
-        await interaction.response.send_message(error, ephemeral=True)
+        await interaction.response.send_message(error, ephemeral=False)
         return
 
     assert target is not None
@@ -244,7 +244,7 @@ async def open_manageplayer_menu(
         max_ppes=max_ppes,
         target_team_name=player_data.team_name,
     )
-    await interaction.response.send_message(embed=embed, view=view, ephemeral=False)
+    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
 def find_ppe_or_raise(player_data: PlayerData, ppe_id: int) -> PPEData:
@@ -263,7 +263,7 @@ async def send_target_ppe_list_markdown_followup(
     sorted_ppes = sorted(player_data.ppes, key=lambda p: int(p.id))
 
     if not sorted_ppes:
-        await interaction.followup.send(f"No PPEs found for {target.display_name}.", ephemeral=False)
+        await interaction.followup.send(f"No PPEs found for {target.display_name}.", ephemeral=True)
         return
 
     lines: list[str] = []
@@ -276,7 +276,7 @@ async def send_target_ppe_list_markdown_followup(
 
     await interaction.followup.send(
         f"PPE list for {target.mention_text}\n" + "\n".join(lines),
-        ephemeral=False,
+        ephemeral=True,
     )
 
 
@@ -289,7 +289,7 @@ async def send_target_season_loot_markdown_followup(
     items_list = sorted(player_data.unique_items, key=lambda x: (x[0].lower(), x[1]))
 
     if not items_list:
-        await interaction.followup.send(f"{target.display_name} has no season loot tracked yet.", ephemeral=False)
+        await interaction.followup.send(f"{target.display_name} has no season loot tracked yet.", ephemeral=True)
         return
 
     temp_file_path = create_season_loot_markdown_file(
@@ -297,7 +297,7 @@ async def send_target_season_loot_markdown_followup(
         display_name=target.display_name,
     )
     try:
-        await interaction.followup.send(file=discord.File(temp_file_path), ephemeral=False)
+        await interaction.followup.send(file=discord.File(temp_file_path), ephemeral=True)
     finally:
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
@@ -478,7 +478,7 @@ async def send_target_quests_followup(interaction: discord.Interaction, target: 
     if key not in records or not records[key].is_member:
         await interaction.followup.send(
             f"❌ {target.display_name} is not part of the PPE contest.",
-            ephemeral=False,
+            ephemeral=True,
         )
         return
 
@@ -556,7 +556,7 @@ async def send_target_loot_markdown_followup(interaction: discord.Interaction, *
 
     temp_file_path = create_loot_markdown_file(ppe)
     try:
-        await interaction.followup.send(file=discord.File(temp_file_path), ephemeral=False)
+        await interaction.followup.send(file=discord.File(temp_file_path), ephemeral=True)
     finally:
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)

@@ -75,14 +75,14 @@ class _TeamChoiceSelect(discord.ui.Select):
                 ephemeral=False,
             )
         except ValueError as exc:
-            await interaction.response.send_message(str(exc), ephemeral=True)
+            await interaction.response.send_message(str(exc), ephemeral=False)
         except discord.Forbidden:
             await interaction.response.send_message(
                 "❌ I do not have permission to manage team roles.",
-                ephemeral=True,
+                ephemeral=False,
             )
         except Exception as exc:
-            await interaction.response.send_message(str(exc), ephemeral=True)
+            await interaction.response.send_message(str(exc), ephemeral=False)
 
 
 class ManagePlayerAddToTeamView(OwnerBoundView):
@@ -215,7 +215,7 @@ class ManagePlayerRemoveFromTeamConfirmView(OwnerBoundView):
                 ephemeral=False,
             )
         except Exception as exc:
-            await interaction.response.send_message(str(exc), ephemeral=True)
+            await interaction.response.send_message(str(exc), ephemeral=False)
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=0)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

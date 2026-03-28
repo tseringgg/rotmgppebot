@@ -32,7 +32,7 @@ class _AddToTeamButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction) -> None:
         view = self.view
         if not isinstance(view, ManagePlayerHomeView):
-            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            await interaction.response.send_message("Invalid menu state.", ephemeral=False)
             return
 
         from menus.manageplayer.team_view import ManagePlayerAddToTeamView
@@ -60,7 +60,7 @@ class _RemoveFromTeamButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction) -> None:
         view = self.view
         if not isinstance(view, ManagePlayerHomeView):
-            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            await interaction.response.send_message("Invalid menu state.", ephemeral=False)
             return
 
         player_data = await load_target_player_data(interaction, view.target.user_id)
@@ -156,7 +156,7 @@ class ManagePlayerHomeView(OwnerBoundView):
         player_data = await load_target_player_data(interaction, self.target.user_id)
         if not player_data.ppes:
             await interaction.response.defer()
-            await send_followup_text(interaction, f"No PPEs found for {self.target.display_name}.", ephemeral=False)
+            await send_followup_text(interaction, f"No PPEs found for {self.target.display_name}.", ephemeral=True)
             return
         await interaction.response.defer()
         await send_target_ppe_list_markdown_followup(interaction, target=self.target, player_data=player_data)
@@ -204,7 +204,7 @@ class ManagePlayerHomeView(OwnerBoundView):
             await send_followup_text(interaction, result, ephemeral=False)
             await close_manageplayer_menu(interaction)
         except Exception as e:
-            await send_followup_text(interaction, str(e), ephemeral=True)
+            await send_followup_text(interaction, str(e), ephemeral=False)
 
     @discord.ui.button(label="Remove from Contest", style=discord.ButtonStyle.danger, row=1)
     async def remove_from_contest(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -214,7 +214,7 @@ class ManagePlayerHomeView(OwnerBoundView):
             await send_followup_text(interaction, result, ephemeral=False)
             await close_manageplayer_menu(interaction)
         except Exception as e:
-            await send_followup_text(interaction, str(e), ephemeral=True)
+            await send_followup_text(interaction, str(e), ephemeral=False)
 
     @discord.ui.button(label="Make Admin", style=discord.ButtonStyle.secondary, row=1)
     async def make_admin(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -223,7 +223,7 @@ class ManagePlayerHomeView(OwnerBoundView):
             await interaction.response.defer()
             await send_followup_text(interaction, result, ephemeral=False)
         except Exception as e:
-            await send_followup_text(interaction, str(e), ephemeral=True)
+            await send_followup_text(interaction, str(e), ephemeral=False)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, row=1)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -245,7 +245,7 @@ class NotInContestView(OwnerBoundView):
             await send_followup_text(interaction, result, ephemeral=False)
             await close_manageplayer_menu(interaction)
         except Exception as e:
-            await send_followup_text(interaction, str(e), ephemeral=True)
+            await send_followup_text(interaction, str(e), ephemeral=False)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=0)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

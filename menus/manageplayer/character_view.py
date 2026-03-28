@@ -244,7 +244,7 @@ class ManagePlayerCharactersView(OwnerBoundView):
             await send_followup_text(interaction, result, ephemeral=False)
             await close_manageplayer_menu(interaction)
         except Exception as e:
-            await send_followup_text(interaction, str(e), ephemeral=True)
+            await send_followup_text(interaction, str(e), ephemeral=False)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
