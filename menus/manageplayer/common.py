@@ -39,6 +39,10 @@ def _player_role(guild: discord.Guild) -> discord.Role | None:
     return discord.utils.get(guild.roles, name="PPE Player")
 
 
+def _admin_role(guild: discord.Guild) -> discord.Role | None:
+    return discord.utils.get(guild.roles, name="PPE Admin")
+
+
 def _safe_display_name(member: discord.Member | None, user_id: int) -> str:
     if member is not None:
         return member.display_name
@@ -128,6 +132,7 @@ def target_home_embed(
     player_data: PlayerData,
     active_ppe: PPEData | None,
     max_ppes: int,
+    target_is_admin: bool,
 ) -> discord.Embed:
     best_ppe = max(player_data.ppes, key=lambda p: float(p.points), default=None)
 
@@ -149,8 +154,15 @@ def target_home_embed(
         ),
         color=discord.Color.dark_teal(),
     )
+    if target_is_admin:
+        ppe_role_text = "Is PPE Admin"
+    elif player_data.team_name:
+        ppe_role_text = "Is Team PPE"
+    else:
+        ppe_role_text = "Regular PPE Player"
+
     embed.add_field(name="Discord ID", value=str(target.user_id), inline=True)
-    embed.add_field(name="PPE Role", value="Has PPE Player" if target.has_player_role else "Missing PPE Player", inline=True)
+    embed.add_field(name="PPE Role", value=ppe_role_text, inline=True)
     embed.add_field(name="PPE Count", value=f"{len(player_data.ppes)}/{max_ppes}", inline=True)
     embed.add_field(name="Team", value=player_data.team_name or "N/A", inline=True)
     embed.add_field(name="Best PPE", value=best_line, inline=False)
@@ -198,18 +210,30 @@ async def open_manageplayer_home(
 
     player_data = await load_target_player_data(interaction, target.user_id)
     active_ppe = active_ppe_for_player(player_data)
+    is_target_admin = target_has_admin_role(interaction, target)
+    owner_can_manage_admin = bool(interaction.guild and int(owner_id) == int(interaction.guild.owner_id))
+    is_in_contest = bool(player_data.is_member or target.has_player_role)
 
     if target.member is not None and not target.has_player_role:
-        view = NotInContestView(owner_id=owner_id, target=target)
+        view = NotInContestView(owner_id=owner_id, target=target, max_ppes=max_ppes)
         await interaction.response.edit_message(embed=add_to_contest_embed(target), view=view)
         return
 
-    embed = target_home_embed(target=target, player_data=player_data, active_ppe=active_ppe, max_ppes=max_ppes)
+    embed = target_home_embed(
+        target=target,
+        player_data=player_data,
+        active_ppe=active_ppe,
+        max_ppes=max_ppes,
+        target_is_admin=is_target_admin,
+    )
     view = ManagePlayerHomeView(
         owner_id=owner_id,
         target=target,
         max_ppes=max_ppes,
         target_team_name=player_data.team_name,
+        is_target_admin=is_target_admin,
+        is_in_contest=is_in_contest,
+        owner_can_manage_admin=owner_can_manage_admin,
     )
     await interaction.response.edit_message(embed=embed, view=view)
 
@@ -231,18 +255,30 @@ async def open_manageplayer_menu(
     player_data = await load_target_player_data(interaction, target.user_id)
     active_ppe = active_ppe_for_player(player_data)
     max_ppes = await get_max_ppes(interaction)
+    is_target_admin = target_has_admin_role(interaction, target)
+    owner_can_manage_admin = bool(interaction.guild and int(interaction.user.id) == int(interaction.guild.owner_id))
+    is_in_contest = bool(player_data.is_member or target.has_player_role)
 
     if target.member is not None and not target.has_player_role:
-        view = NotInContestView(owner_id=interaction.user.id, target=target)
+        view = NotInContestView(owner_id=interaction.user.id, target=target, max_ppes=max_ppes)
         await interaction.response.send_message(embed=add_to_contest_embed(target), view=view, ephemeral=False)
         return
 
-    embed = target_home_embed(target=target, player_data=player_data, active_ppe=active_ppe, max_ppes=max_ppes)
+    embed = target_home_embed(
+        target=target,
+        player_data=player_data,
+        active_ppe=active_ppe,
+        max_ppes=max_ppes,
+        target_is_admin=is_target_admin,
+    )
     view = ManagePlayerHomeView(
         owner_id=interaction.user.id,
         target=target,
         max_ppes=max_ppes,
         target_team_name=player_data.team_name,
+        is_target_admin=is_target_admin,
+        is_in_contest=is_in_contest,
+        owner_can_manage_admin=owner_can_manage_admin,
     )
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
@@ -463,12 +499,36 @@ async def give_target_admin_role(interaction: discord.Interaction, target: Manag
     if target.member is None:
         raise LookupError("❌ Cannot grant PPE Admin by ID because this user is not currently in the server.")
 
-    role = discord.utils.get(interaction.guild.roles, name="PPE Admin")
+    role = _admin_role(interaction.guild)
     if not role:
         raise LookupError("❌ PPE Admin role not found. Create it first.")
 
     await target.member.add_roles(role)
     return f"✅ Gave PPE Admin role to {target.member.mention}."
+
+
+async def remove_target_admin_role(interaction: discord.Interaction, target: ManagedPlayerTarget) -> str:
+    if not interaction.guild:
+        raise ValueError("❌ This command can only be used in a server.")
+
+    if target.member is None:
+        raise LookupError("❌ Cannot remove PPE Admin by ID because this user is not currently in the server.")
+
+    role = _admin_role(interaction.guild)
+    if not role:
+        raise LookupError("❌ PPE Admin role not found. Create it first.")
+
+    await target.member.remove_roles(role)
+    return f"✅ Removed PPE Admin role from {target.member.mention}."
+
+
+def target_has_admin_role(interaction: discord.Interaction, target: ManagedPlayerTarget) -> bool:
+    if not interaction.guild or not target.member:
+        return False
+    role = _admin_role(interaction.guild)
+    if role is None:
+        return False
+    return role in target.member.roles
 
 
 async def send_target_quests_followup(interaction: discord.Interaction, target: ManagedPlayerTarget) -> None:
@@ -612,6 +672,7 @@ __all__ = [
     "penalty_input_defaults",
     "realmshark_connected_ppe_ids",
     "remove_target_from_contest",
+    "remove_target_admin_role",
     "send_followup_text",
     "send_target_loot_markdown_followup",
     "send_target_ppe_list_markdown_followup",
@@ -619,4 +680,5 @@ __all__ = [
     "send_target_season_loot_markdown_followup",
     "set_target_ppe_penalties",
     "target_home_embed",
+    "target_has_admin_role",
 ]

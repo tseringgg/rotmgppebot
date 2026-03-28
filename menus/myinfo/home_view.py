@@ -49,6 +49,17 @@ class MyInfoHomeView(OwnerBoundView):
         await close_myinfo_menu(interaction)
         await send_ppe_list_markdown_followup(interaction, records[key])
 
+    @discord.ui.button(label="/myteam", style=discord.ButtonStyle.primary, row=0)
+    async def my_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        from slash_commands.myteam_cmd import build_team_embed
+
+        embed = await build_team_embed(
+            interaction,
+            user_id=interaction.user.id,
+            title="My Team",
+        )
+        await interaction.response.edit_message(embed=embed, view=self)
+
     @discord.ui.button(label="Manage Characters", style=discord.ButtonStyle.success, row=0)
     async def manage_characters(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         from menus.myinfo.character_view import ManageCharactersView

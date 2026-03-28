@@ -52,7 +52,7 @@ async def command(interaction: discord.Interaction):
     admin_player_cmds = {
         "addplayer": "Add member to contest.",
         "listplayers": "List all participants.",
-        "manageplayer": "Comprehensive admin menu to manage any player's data: view/edit PPEs, manage penalties, delete PPEs, view quests, manage loot, remove from contest, and assign roles.",
+        "manageplayer": "Comprehensive admin menu to manage any player's data: view/edit PPEs, manage penalties, delete PPEs, view quests, manage loot, remove from contest, team actions, and owner-only PPE Admin toggles.",
     }
     
     # --- Admin: Loot & Data Management ---
@@ -86,13 +86,8 @@ async def command(interaction: discord.Interaction):
         "updateteam": "Rename team (Leader/Admin).",
     }
 
-    admin_util_cmds = {
-        "removeppeadminrole": "Remove PPE Admin role from a member.",
-    }
-    
     owner_cmds = {
         "resetseason": "Clear season data and teams; optionally unlink all RealmShark links/mappings.",
-        "removeppeadminrole": "Remove PPE Admin role.",
         "setuproles": "Create required roles.",
     }
 
@@ -126,7 +121,6 @@ async def command(interaction: discord.Interaction):
         ("🔴 Admin: Players", admin_player_cmds),
         ("🔴 Admin: Loot & Data", admin_data_cmds),
         ("🔴 Admin: Teams", admin_team_cmds),
-        ("🔴 Admin: Utility", admin_util_cmds),
         ("🔒 Owner Only", owner_cmds),
     ]
 

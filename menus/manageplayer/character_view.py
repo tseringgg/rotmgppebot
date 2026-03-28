@@ -238,13 +238,12 @@ class ManagePlayerCharactersView(OwnerBoundView):
     @discord.ui.button(label="Delete PPE", style=discord.ButtonStyle.danger, row=1)
     async def delete_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         selected = self.current_ppe()
-        try:
-            result = await delete_single_ppe_for_target(interaction, self.target, int(selected.id))
-            await interaction.response.defer()
-            await send_followup_text(interaction, result, ephemeral=False)
-            await close_manageplayer_menu(interaction)
-        except Exception as e:
-            await send_followup_text(interaction, str(e), ephemeral=False)
+        confirm_view = ManagePlayerDeletePpeConfirmView(
+            owner_id=interaction.user.id,
+            target=self.target,
+            ppe_id=int(selected.id),
+        )
+        await interaction.response.edit_message(embed=confirm_view.current_embed(), view=confirm_view)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -335,3 +334,44 @@ class ManagePlayerCharacterLootView(OwnerBoundView):
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_manageplayer_menu(interaction)
+
+
+class ManagePlayerDeletePpeConfirmView(OwnerBoundView):
+    """Confirmation menu shown before deleting a specific PPE."""
+
+    def __init__(self, *, owner_id: int, target: ManagedPlayerTarget, ppe_id: int) -> None:
+        super().__init__(owner_id=owner_id, timeout=120, owner_error="This confirmation belongs to another user.")
+        self.target = target
+        self.ppe_id = ppe_id
+
+    def current_embed(self) -> discord.Embed:
+        return discord.Embed(
+            title="Delete PPE",
+            description=f"Are you sure you want to delete **PPE #{self.ppe_id}** for **{self.target.display_name}**?",
+            color=discord.Color.orange(),
+        )
+
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.danger, row=0)
+    async def confirm(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        try:
+            result = await delete_single_ppe_for_target(interaction, self.target, self.ppe_id)
+            await interaction.response.defer()
+            await send_followup_text(interaction, result, ephemeral=False)
+            await close_manageplayer_menu(interaction)
+        except Exception as e:
+            await send_followup_text(interaction, str(e), ephemeral=False)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=0)
+    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        refreshed = await load_target_player_data(interaction, self.target.user_id)
+        guild_config = await load_guild_config(interaction)
+        connected_ids = await realmshark_connected_ppe_ids(interaction, self.target.user_id)
+        view = ManagePlayerCharactersView(
+            owner_id=interaction.user.id,
+            target=self.target,
+            player_data=refreshed,
+            connected_ppe_ids=connected_ids,
+            guild_config=guild_config,
+            preferred_ppe_id=self.ppe_id,
+        )
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)

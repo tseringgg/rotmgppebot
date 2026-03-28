@@ -10,13 +10,14 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 - **Bonus System**: Manage achievement bonuses from an interactive dashboard
 - **Point Management**: Automated point calculations with duplicate handling
 - **Personal Dashboard**: Use `/myinfo` as the central hub for season, loot, quest, and character actions
+- **Team Dashboard Shortcut**: `/myteam` is also available directly from the `/myinfo` and `/manageplayer` home menus
 - **Separate Seasonal Tracking**: View your overall season progress and loot
 - **Account Quests**: Get randomized regular, shiny, and skin quests tied to your account with completion tracking
 - **Team System**: Join teams and track group performance with team leaderboards
 
 ### 🔧 Admin Features
 - **Player Management**: Add/remove contest participants
-- **Advanced Moderation**: Manage any player's PPE data
+- **Advanced Moderation**: Manage any player's PPE data from one panel (including owner-only PPE Admin add/remove)
 - **Point Corrections**: Refresh and fix point totals automatically
 - **Bulk Operations**: Mass point recalculation for server-wide fixes
 - **Inspection Tools**: View detailed loot and bonus information
@@ -97,7 +98,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 |---------|-------------|
 | `/addplayer` | Register a player for the contest |
 | `/listplayers` | View all contest participants |
-| `/manageplayer` | Open the admin menu to manage a player's PPE, season loot, quests, team state, and roles |
+| `/manageplayer` | Open the admin menu to manage a player's PPE, season loot, quests, team state, and roles (owner-only buttons for Make/Remove Admin) |
 | `/addlootfor` | Add items to any player's specific PPE |
 | `/removelootfrom` | Remove items from any player's PPE |
 | `/addbonusfor` | Add bonuses to any player's PPE |
@@ -126,7 +127,7 @@ The `/myquests` command and the My Info -> Show Quests button now use the same s
 | `/teamleaderboard` | View team rankings by total points |
 | `/myteam` | View your team members and their rankings (optional: specify team name) |
 
-Player team assignment/removal is now handled through `/manageplayer` in the Team actions panel.
+Player team assignment/removal is now handled through `/manageplayer` in the Team actions panel. Standalone `/removeppeadminrole` was retired; use `/manageplayer` for admin-role toggles.
 
 ### Utility Commands
 | Command | Description |
@@ -323,7 +324,7 @@ Teams enable collaborative PPE competition where multiple players combine their 
 - **`/myteam`**: View your team members and their individual rankings (or specify a team name to view any team)
 
 ### Player Removal Behavior
-- **`/manageplayer`**: Removes players from teams and/or contest data from a single admin panel
+- **`/manageplayer`**: Removes players from teams and/or contest data from a single admin panel, and exposes owner-only PPE Admin add/remove actions
 
 ### Permissions
 - **Admin Only**: Create teams, delete teams, force remove players from teams

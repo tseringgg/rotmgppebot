@@ -110,9 +110,9 @@ class MyQuestsView(OwnerBoundView):
     @discord.ui.button(label="Close", style=discord.ButtonStyle.secondary)
     async def close(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.stop()
-        await interaction.response.edit_message(
-            content="Quest panel closed.",
-            embed=None,
-            attachments=[],
-            view=None,
-        )
+        await interaction.response.defer()
+        try:
+            await interaction.delete_original_response()
+        except Exception:
+            pass
+        await interaction.followup.send("Quest panel closed.", ephemeral=True)

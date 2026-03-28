@@ -12,9 +12,11 @@ from menus.manageplayer.common import (
     give_target_admin_role,
     load_target_player_data,
     open_manageplayer_home,
+    remove_target_admin_role,
     remove_target_from_contest,
     send_followup_text,
     send_target_ppe_list_markdown_followup,
+    target_has_admin_role,
     target_home_embed,
 )
 from menus.menu_utils import OwnerBoundView
@@ -83,6 +85,83 @@ class _RemoveFromTeamButton(discord.ui.Button):
         await interaction.response.edit_message(embed=confirm_view.current_embed(), view=confirm_view)
 
 
+class _ManagePlayerActionConfirmView(OwnerBoundView):
+    """Confirmation submenu used for destructive /manageplayer actions."""
+
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        target: ManagedPlayerTarget,
+        max_ppes: int,
+        action_key: str,
+    ) -> None:
+        super().__init__(owner_id=owner_id, timeout=120, owner_error="This confirmation belongs to another user.")
+        self.target = target
+        self.max_ppes = max_ppes
+        self.action_key = action_key
+
+    def current_embed(self) -> discord.Embed:
+        descriptions = {
+            "delete_all": f"Are you sure you want to delete all PPEs for **{self.target.display_name}**?",
+            "remove_contest": (
+                f"Are you sure you want to remove **{self.target.display_name}** from the contest?\n"
+                "This also removes their PPE record and team assignment."
+            ),
+            "remove_admin": f"Are you sure you want to remove PPE Admin from **{self.target.display_name}**?",
+        }
+        return discord.Embed(
+            title="Confirm Action",
+            description=descriptions.get(self.action_key, "Are you sure?"),
+            color=discord.Color.orange(),
+        )
+
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.danger, row=0)
+    async def confirm(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        try:
+            if self.action_key == "delete_all":
+                result = await delete_all_ppes_for_target(interaction, self.target)
+                await interaction.response.defer()
+                await send_followup_text(interaction, result, ephemeral=False)
+                await close_manageplayer_menu(interaction)
+                return
+
+            if self.action_key == "remove_contest":
+                result = await remove_target_from_contest(interaction, self.target)
+                await interaction.response.defer()
+                await send_followup_text(interaction, result, ephemeral=False)
+                await close_manageplayer_menu(interaction)
+                return
+
+            if self.action_key == "remove_admin":
+                if not interaction.guild or interaction.user.id != interaction.guild.owner_id:
+                    await interaction.response.send_message("❌ Only the server owner can remove PPE Admin.", ephemeral=True)
+                    return
+
+                result = await remove_target_admin_role(interaction, self.target)
+                await open_manageplayer_home(
+                    interaction,
+                    owner_id=interaction.user.id,
+                    target=self.target,
+                    max_ppes=self.max_ppes,
+                )
+                await send_followup_text(interaction, result, ephemeral=False)
+                return
+
+            await interaction.response.send_message("❌ Unknown confirmation action.", ephemeral=True)
+        except Exception as e:
+            await send_followup_text(interaction, str(e), ephemeral=False)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=0)
+    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await open_manageplayer_home(
+            interaction,
+            owner_id=interaction.user.id,
+            target=self.target,
+            max_ppes=self.max_ppes,
+        )
+
+
 class ManagePlayerHomeView(OwnerBoundView):
     """Home dashboard for admin management of a specific player."""
 
@@ -93,17 +172,57 @@ class ManagePlayerHomeView(OwnerBoundView):
         target: ManagedPlayerTarget,
         max_ppes: int,
         target_team_name: str | None,
+        is_target_admin: bool,
+        is_in_contest: bool,
+        owner_can_manage_admin: bool,
     ):
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.target = target
         self.max_ppes = max_ppes
         self.target_team_name = target_team_name
+        self.is_target_admin = is_target_admin
+        self.is_in_contest = is_in_contest
+        self.owner_can_manage_admin = owner_can_manage_admin
+        self.team_action_button: discord.ui.Button | None = None
 
         # The team action is context-sensitive: add when teamless, remove when already assigned.
-        if self.target_team_name:
-            self.add_item(_RemoveFromTeamButton())
+        if self.is_in_contest:
+            if self.target_team_name:
+                self.team_action_button = _RemoveFromTeamButton()
+            else:
+                self.team_action_button = _AddToTeamButton()
+            self.add_item(self.team_action_button)
+
+        if self.is_in_contest or self.target.member is None:
+            self.remove_item(self.add_to_contest)
+
+        if not self.owner_can_manage_admin or self.target.member is None:
+            self.remove_item(self.make_admin)
+            self.remove_item(self.remove_admin)
+        elif self.is_target_admin:
+            self.remove_item(self.make_admin)
         else:
-            self.add_item(_AddToTeamButton())
+            self.remove_item(self.remove_admin)
+
+        self._reorder_row_two_buttons()
+
+    def _reorder_row_two_buttons(self) -> None:
+        ordered_buttons: list[discord.ui.Item] = []
+
+        if isinstance(self.team_action_button, _RemoveFromTeamButton):
+            ordered_buttons.append(self.team_action_button)
+        for candidate in (self.delete_all_ppes, self.remove_admin, self.remove_from_contest, self.cancel):
+            if candidate in self.children:
+                ordered_buttons.append(candidate)
+
+        if not ordered_buttons:
+            return
+
+        for button in ordered_buttons:
+            if button in self.children:
+                self.remove_item(button)
+        for button in ordered_buttons:
+            self.add_item(button)
 
     async def refresh_embed(self, interaction: discord.Interaction) -> discord.Embed:
         player_data = await load_target_player_data(interaction, self.target.user_id)
@@ -117,6 +236,7 @@ class ManagePlayerHomeView(OwnerBoundView):
             player_data=player_data,
             active_ppe=active_ppe,
             max_ppes=self.max_ppes,
+            target_is_admin=target_has_admin_role(interaction, self.target),
         )
 
     @discord.ui.button(label="Show Season Loot", style=discord.ButtonStyle.primary, row=0)
@@ -161,6 +281,17 @@ class ManagePlayerHomeView(OwnerBoundView):
         await interaction.response.defer()
         await send_target_ppe_list_markdown_followup(interaction, target=self.target, player_data=player_data)
 
+    @discord.ui.button(label="/myteam", style=discord.ButtonStyle.primary, row=0)
+    async def my_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        from slash_commands.myteam_cmd import build_team_embed
+
+        embed = await build_team_embed(
+            interaction,
+            user_id=self.target.user_id,
+            title=f"Team View - {self.target.display_name}",
+        )
+        await interaction.response.edit_message(embed=embed, view=self)
+
     @discord.ui.button(label="Manage Characters", style=discord.ButtonStyle.success, row=1)
     async def manage_characters(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         from menus.manageplayer.character_view import ManagePlayerCharactersView
@@ -179,6 +310,11 @@ class ManagePlayerHomeView(OwnerBoundView):
                     target=self.target,
                     max_ppes=self.max_ppes,
                     target_team_name=player_data.team_name,
+                    is_target_admin=target_has_admin_role(interaction, self.target),
+                    is_in_contest=bool(player_data.is_member or self.target.has_player_role),
+                    owner_can_manage_admin=bool(
+                        interaction.guild and int(interaction.user.id) == int(interaction.guild.owner_id)
+                    ),
                 ),
             )
             return
@@ -209,32 +345,54 @@ class ManagePlayerHomeView(OwnerBoundView):
 
     @discord.ui.button(label="Make Admin", style=discord.ButtonStyle.success, row=1)
     async def make_admin(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        if not interaction.guild or interaction.user.id != interaction.guild.owner_id:
+            await interaction.response.send_message("❌ Only the server owner can make PPE Admin.", ephemeral=True)
+            return
         try:
             result = await give_target_admin_role(interaction, self.target)
-            await interaction.response.defer()
+            await open_manageplayer_home(
+                interaction,
+                owner_id=interaction.user.id,
+                target=self.target,
+                max_ppes=self.max_ppes,
+            )
             await send_followup_text(interaction, result, ephemeral=False)
         except Exception as e:
             await send_followup_text(interaction, str(e), ephemeral=False)
+
+    @discord.ui.button(label="Remove Admin", style=discord.ButtonStyle.danger, row=2)
+    async def remove_admin(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        if not interaction.guild or interaction.user.id != interaction.guild.owner_id:
+            await interaction.response.send_message("❌ Only the server owner can remove PPE Admin.", ephemeral=True)
+            return
+
+        confirm_view = _ManagePlayerActionConfirmView(
+            owner_id=interaction.user.id,
+            target=self.target,
+            max_ppes=self.max_ppes,
+            action_key="remove_admin",
+        )
+        await interaction.response.edit_message(embed=confirm_view.current_embed(), view=confirm_view)
 
     @discord.ui.button(label="Delete All PPEs", style=discord.ButtonStyle.danger, row=2)
     async def delete_all_ppes(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        try:
-            result = await delete_all_ppes_for_target(interaction, self.target)
-            await interaction.response.defer()
-            await send_followup_text(interaction, result, ephemeral=False)
-            await close_manageplayer_menu(interaction)
-        except Exception as e:
-            await send_followup_text(interaction, str(e), ephemeral=False)
+        confirm_view = _ManagePlayerActionConfirmView(
+            owner_id=interaction.user.id,
+            target=self.target,
+            max_ppes=self.max_ppes,
+            action_key="delete_all",
+        )
+        await interaction.response.edit_message(embed=confirm_view.current_embed(), view=confirm_view)
 
     @discord.ui.button(label="Remove from Contest", style=discord.ButtonStyle.danger, row=2)
     async def remove_from_contest(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        try:
-            result = await remove_target_from_contest(interaction, self.target)
-            await interaction.response.defer()
-            await send_followup_text(interaction, result, ephemeral=False)
-            await close_manageplayer_menu(interaction)
-        except Exception as e:
-            await send_followup_text(interaction, str(e), ephemeral=False)
+        confirm_view = _ManagePlayerActionConfirmView(
+            owner_id=interaction.user.id,
+            target=self.target,
+            max_ppes=self.max_ppes,
+            action_key="remove_contest",
+        )
+        await interaction.response.edit_message(embed=confirm_view.current_embed(), view=confirm_view)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -244,9 +402,24 @@ class ManagePlayerHomeView(OwnerBoundView):
 class NotInContestView(OwnerBoundView):
     """Fallback view shown when target player is not in the PPE contest."""
 
-    def __init__(self, owner_id: int, *, target: ManagedPlayerTarget):
+    def __init__(self, owner_id: int, *, target: ManagedPlayerTarget, max_ppes: int):
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.target = target
+        self.max_ppes = max_ppes
+
+    @discord.ui.button(label="Add to Contest", style=discord.ButtonStyle.success, row=0)
+    async def add_to_contest(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        try:
+            result = await add_target_to_contest(interaction, self.target)
+            await open_manageplayer_home(
+                interaction,
+                owner_id=interaction.user.id,
+                target=self.target,
+                max_ppes=self.max_ppes,
+            )
+            await send_followup_text(interaction, result, ephemeral=False)
+        except Exception as e:
+            await send_followup_text(interaction, str(e), ephemeral=False)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=0)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
