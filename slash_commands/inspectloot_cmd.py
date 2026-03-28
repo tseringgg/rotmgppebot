@@ -1,7 +1,7 @@
 import discord
 from utils.player_records import ensure_player_exists, load_player_records
 from utils.embed_builders import build_loot_embed
-from slash_commands.helpers.loot_table_message import LootTableMessage
+from utils.helpers.loot_table_message import LootTableMessage
 
 async def command(interaction: discord.Interaction, user: discord.Member, id: int):
     if not interaction.guild:

@@ -5,9 +5,11 @@ import discord
 
 from dataclass import Bonus, PPEData, PlayerData
 from menus.menu_utils import OwnerBoundView
-from slash_commands import myquests_cmd, shareloot_cmd, shareseasonloot_cmd
+from slash_commands import myquests_cmd
 from utils.bonus_data import load_bonuses
 from utils.guild_config import get_max_ppes, get_realmshark_settings, load_guild_config
+from utils.helpers.loot_share_commands import share_active_ppe_loot_image, share_season_loot_image
+from utils.helpers.shareloot_image import variant_image_label
 from utils.loot_table_md_builder import create_loot_markdown_file
 from utils.markdown_message_builder import MarkdownMessageBuilder
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
@@ -270,16 +272,6 @@ async def _send_ppe_list_markdown_followup(interaction: discord.Interaction, pla
             os.remove(temp_file_path)
 
 
-def _variant_label(include_skins: bool, include_limited: bool) -> str:
-    if include_skins and include_limited:
-        return "All Loot"
-    if include_skins:
-        return "Normal + Skins"
-    if include_limited:
-        return "Normal + Limited"
-    return "Normal Only"
-
-
 async def _send_myloot_markdown_followup(interaction: discord.Interaction, ppe: PPEData) -> None:
     temp_file_path = create_loot_markdown_file(ppe)
     try:
@@ -302,19 +294,35 @@ async def _temporarily_switch_active_ppe_and_share(
     old_active = player_data.active_ppe
 
     if old_active == ppe_id:
-        await shareloot_cmd.command(interaction, include_skins=include_skins, include_limited=include_limited)
+        await share_active_ppe_loot_image(interaction, include_skins=include_skins, include_limited=include_limited)
         return
 
     player_data.active_ppe = ppe_id
     await save_player_records(interaction, records)
 
     try:
-        await shareloot_cmd.command(interaction, include_skins=include_skins, include_limited=include_limited)
+        await share_active_ppe_loot_image(interaction, include_skins=include_skins, include_limited=include_limited)
     finally:
         records_restore = await load_player_records(interaction)
         restore_key = ensure_player_exists(records_restore, interaction.user.id)
         records_restore[restore_key].active_ppe = old_active
         await save_player_records(interaction, records_restore)
+
+
+async def _open_myinfo_home(interaction: discord.Interaction, *, max_ppes: int) -> None:
+    records = await load_player_records(interaction)
+    key = ensure_player_exists(records, interaction.user.id)
+    player_data = records[key]
+
+    active_ppe = None
+    for ppe in player_data.ppes:
+        if ppe.id == player_data.active_ppe:
+            active_ppe = ppe
+            break
+
+    embed = _build_home_embed(interaction.user, player_data, active_ppe, max_ppes=max_ppes)
+    view = MyInfoHomeView(interaction.user.id, max_ppes=max_ppes)
+    await interaction.response.edit_message(embed=embed, view=view)
 
 
 class MyInfoHomeView(OwnerBoundView):
@@ -339,7 +347,7 @@ class MyInfoHomeView(OwnerBoundView):
         key = ensure_player_exists(records, interaction.user.id)
         player_data = records[key]
 
-        await interaction.response.defer(ephemeral=True)
+        await _close_myinfo_menu(interaction)
         await _send_ppe_list_markdown_followup(interaction, player_data)
 
     @discord.ui.button(label="Manage Characters", style=discord.ButtonStyle.success, row=0)
@@ -384,21 +392,9 @@ class NoCharactersView(OwnerBoundView):
     async def create_one(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await interaction.response.send_message("Use `/newppe` to create your first character.", ephemeral=True)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=0)
-    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        records = await load_player_records(interaction)
-        key = ensure_player_exists(records, interaction.user.id)
-        player_data = records[key]
-
-        active_ppe = None
-        for ppe in player_data.ppes:
-            if ppe.id == player_data.active_ppe:
-                active_ppe = ppe
-                break
-
-        embed = _build_home_embed(interaction.user, player_data, active_ppe, max_ppes=self.max_ppes)
-        view = MyInfoHomeView(interaction.user.id, max_ppes=self.max_ppes)
-        await interaction.response.edit_message(embed=embed, view=view)
+    @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary, row=0)
+    async def home(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await _open_myinfo_home(interaction, max_ppes=self.max_ppes)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=0)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -435,7 +431,7 @@ class SeasonLootVariantView(OwnerBoundView):
             )
             return
 
-        await shareseasonloot_cmd.command(interaction, include_skins=include_skins, include_limited=include_limited)
+        await share_season_loot_image(interaction, include_skins=include_skins, include_limited=include_limited)
 
     async def _close_and_share(
         self,
@@ -447,19 +443,19 @@ class SeasonLootVariantView(OwnerBoundView):
         await _close_myinfo_menu(interaction)
         await self._share(interaction, include_skins=include_skins, include_limited=include_limited)
 
-    @discord.ui.button(label="Normal Only", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="Generate Image: Normal Only", style=discord.ButtonStyle.primary, row=0)
     async def normal_only(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=False, include_limited=False)
 
-    @discord.ui.button(label="Normal + Limited", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="Generate Image: Normal + Limited", style=discord.ButtonStyle.primary, row=0)
     async def normal_limited(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=False, include_limited=True)
 
-    @discord.ui.button(label="Normal + Skins", style=discord.ButtonStyle.primary, row=1)
+    @discord.ui.button(label="Generate Image: Normal + Skins", style=discord.ButtonStyle.primary, row=1)
     async def normal_skins(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=True, include_limited=False)
 
-    @discord.ui.button(label="All Loot", style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(label="Generate Image: All Loot", style=discord.ButtonStyle.success, row=1)
     async def all_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=True, include_limited=True)
 
@@ -662,17 +658,10 @@ class ModifyPPEView(OwnerBoundView):
         await interaction.response.edit_message(content="PPE updated. Menu closed.", embed=None, view=None)
         await interaction.followup.send(public_message, ephemeral=False)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
-    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        refreshed = await _refresh_player_data(interaction, interaction.user.id)
-        connected_ids = await _realmshark_connected_ppe_ids(interaction, interaction.user.id)
-        view = ManageCharactersView(
-            owner_id=interaction.user.id,
-            player_data=refreshed,
-            connected_ppe_ids=connected_ids,
-            preferred_ppe_id=self.ppe_id,
-        )
-        await interaction.response.edit_message(embed=view.current_embed(interaction.user), view=view)
+    @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary, row=1)
+    async def home(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        max_ppes = await get_max_ppes(interaction)
+        await _open_myinfo_home(interaction, max_ppes=max_ppes)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -762,6 +751,11 @@ class ManageCharactersView(OwnerBoundView):
         )
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
+    @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary, row=1)
+    async def home(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        max_ppes = await get_max_ppes(interaction)
+        await _open_myinfo_home(interaction, max_ppes=max_ppes)
+
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await interaction.response.edit_message(content="Closed `/myinfo` menu.", embed=None, view=None)
@@ -791,7 +785,7 @@ class CharacterLootVariantView(OwnerBoundView):
             include_limited=include_limited,
         )
         await interaction.followup.send(
-            f"Generated variant: **{_variant_label(include_skins, include_limited)}**",
+            f"Generated: **{variant_image_label(include_skins, include_limited)}**",
             ephemeral=True,
         )
 
@@ -805,19 +799,19 @@ class CharacterLootVariantView(OwnerBoundView):
         await _close_myinfo_menu(interaction)
         await self._share(interaction, include_skins=include_skins, include_limited=include_limited)
 
-    @discord.ui.button(label="Normal Only", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="Generate Image: Normal Only", style=discord.ButtonStyle.primary, row=0)
     async def normal_only(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=False, include_limited=False)
 
-    @discord.ui.button(label="Normal + Limited", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="Generate Image: Normal + Limited", style=discord.ButtonStyle.primary, row=0)
     async def normal_limited(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=False, include_limited=True)
 
-    @discord.ui.button(label="Normal + Skins", style=discord.ButtonStyle.primary, row=1)
+    @discord.ui.button(label="Generate Image: Normal + Skins", style=discord.ButtonStyle.primary, row=1)
     async def normal_skins(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=True, include_limited=False)
 
-    @discord.ui.button(label="All Loot", style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(label="Generate Image: All Loot", style=discord.ButtonStyle.success, row=1)
     async def all_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=True, include_limited=True)
 

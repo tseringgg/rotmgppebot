@@ -2,10 +2,10 @@ import discord
 
 from utils.embed_builders import build_loot_embed
 from utils.loot_data import LOOT
+from utils.helpers.loot_table_message import LootTableMessage
 from utils.player_manager import player_manager
 from utils.points_service import calculate_drop_points, get_item_base_points
 from utils.player_records import get_active_ppe_of_user
-from slash_commands.helpers.loot_table_message import LootTableMessage
 
 
 async def command(
