@@ -66,6 +66,8 @@ def build_item_image_index_if_needed() -> None:
 
 
 def resolve_item_image_path(item_name: str) -> str | None:
+    """Resolve best-fit item icon path, including shiny/base fallback matching."""
+
     build_item_image_index_if_needed()
 
     full_name = normalize_item_name(item_name)
@@ -85,6 +87,8 @@ def resolve_item_image_path(item_name: str) -> str | None:
 
 
 def build_dungeon_lookup_if_needed() -> None:
+    """Build a normalized item->dungeon cache from dungeon_loot.json once."""
+
     global _ITEM_DUNGEON_INDEX_READY
     if _ITEM_DUNGEON_INDEX_READY:
         return
@@ -130,6 +134,8 @@ def dungeon_for_item(item_name: str) -> str:
 
 
 def coerce_resets_remaining(player_data, default_reset_limit: int) -> int:
+    """Normalize persisted reset counters and recover from invalid legacy values."""
+
     value = player_data.quest_resets_remaining
     if value is None:
         return max(0, default_reset_limit)
@@ -140,6 +146,8 @@ def coerce_resets_remaining(player_data, default_reset_limit: int) -> int:
 
 
 def board_file(item_names: Sequence[str], title: str, filename: str) -> discord.File:
+    """Render a quest board image and return it as a Discord file attachment."""
+
     buffer = generate_quest_board(
         item_names,
         resolve_item_image_path,

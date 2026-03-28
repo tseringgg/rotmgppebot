@@ -89,6 +89,22 @@ def penalty_stats_text(ppe: PPEData) -> str:
     )
 
 
+def penalty_input_defaults(ppe: PPEData) -> dict[str, float]:
+    """Return editable penalty form defaults derived from stored penalty bonuses."""
+
+    penalties = get_penalty_map(ppe)
+    pet_level = int(round(-4.0 * penalties["pet"])) if penalties["pet"] != 0 else 0
+    exalts = int(round(-2.0 * penalties["exalts"])) if penalties["exalts"] != 0 else 0
+    loot_boost = round(-0.5 * penalties["loot"], 1) if penalties["loot"] != 0 else 0.0
+    incombat = round(-0.1 * penalties["incombat"], 1) if penalties["incombat"] != 0 else 0.0
+    return {
+        "pet_level": max(0, pet_level),
+        "num_exalts": max(0, exalts),
+        "percent_loot": max(0.0, loot_boost),
+        "incombat_reduction": max(0.0, incombat),
+    }
+
+
 def team_type_text(player_data: PlayerData) -> str:
     return "Team PPE" if player_data.team_name else "Regular PPE"
 
@@ -176,7 +192,7 @@ def build_character_embed(
     embed.add_field(name="Character Type", value=character_type, inline=True)
     embed.add_field(name="Active Status", value="⭐ Active PPE" if is_active else "Not Active", inline=True)
 
-    embed.set_footer(text="Use Show Loot, Set As Active, or Modify PPE from the buttons below.")
+    embed.set_footer(text="Use Show Loot, Set As Active, or Manage PPE to edit penalties.")
     return embed
 
 

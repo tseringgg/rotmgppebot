@@ -1,10 +1,10 @@
-"""Character-focused /myinfo views for PPE browsing, loot sharing, and bonus edits."""
+"""Character-focused /myinfo views for PPE browsing, loot sharing, and penalty edits."""
 
 from __future__ import annotations
 
 import discord
 
-from dataclass import Bonus, PPEData, PlayerData
+from dataclass import PPEData, PlayerData
 from menus.menu_utils import OwnerBoundView
 from menus.myinfo.common import (
     build_character_embed,
@@ -13,215 +13,105 @@ from menus.myinfo.common import (
     find_ppe_or_raise,
     format_points,
     open_myinfo_home,
+    penalty_input_defaults,
     refresh_player_data,
     send_myloot_markdown_followup,
     temporarily_switch_active_ppe_and_share,
 )
-from utils.bonus_data import load_bonuses
 from utils.guild_config import get_max_ppes, load_guild_config
 from utils.helpers.shareloot_image import variant_image_label
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
-from utils.points_service import recompute_ppe_points
+from utils.points_service import apply_penalties_to_ppe, recompute_ppe_points, validate_penalty_inputs
 
 
-class _BonusChoiceSelect(discord.ui.Select):
-    """Dropdown selector for choosing which bonus to add or remove."""
+class ManagePPEPenaltiesModal(discord.ui.Modal, title="Manage PPE Penalties"):
+    """Modal form used by the myinfo character view to edit penalty inputs."""
 
-    def __init__(self, owner_id: int, options: list[discord.SelectOption]):
-        super().__init__(
-            placeholder="Select a bonus",
-            min_values=1,
-            max_values=1,
-            options=options[:25] if options else [discord.SelectOption(label="No options", value="")],
-            disabled=not bool(options),
-        )
-        self.owner_id = owner_id
-
-    async def callback(self, interaction: discord.Interaction) -> None:
-        view = self.view
-        if not isinstance(view, ModifyPPEView):
-            await interaction.response.send_message("Could not update selection.", ephemeral=True)
-            return
-
-        view.selected_bonus_name = self.values[0]
-        await interaction.response.edit_message(embed=view.current_embed(), view=view)
-
-
-class ModifyPPEView(OwnerBoundView):
-    """Menu view for adding or removing bonuses on a specific PPE."""
+    pet_level = discord.ui.TextInput(label="Pet Level (0-100)", required=True, max_length=3)
+    num_exalts = discord.ui.TextInput(label="Exalts (0-40)", required=True, max_length=3)
+    percent_loot = discord.ui.TextInput(label="Loot Boost % (0-25)", required=True, max_length=5)
+    incombat_reduction = discord.ui.TextInput(
+        label="In-Combat Reduction",
+        placeholder="0, 0.2, 0.4, 0.6, 0.8, or 1.0",
+        required=True,
+        max_length=3,
+    )
 
     def __init__(
         self,
         *,
         owner_id: int,
-        ppe: PPEData,
-        player_data: PlayerData,
+        ppe_id: int,
+        defaults: dict[str, float],
+        source_message: discord.Message | None,
         connected_ppe_ids: set[int],
-        action: str = "add",
-        selected_bonus_name: str | None = None,
     ) -> None:
-        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
-        self.ppe_id = int(ppe.id)
-        self.player_data = player_data
+        super().__init__()
+        self.owner_id = owner_id
+        self.ppe_id = ppe_id
+        self.source_message = source_message
         self.connected_ppe_ids = connected_ppe_ids
-        self.action = action
-        self.selected_bonus_name = selected_bonus_name
+        self.pet_level.default = str(int(defaults["pet_level"]))
+        self.num_exalts.default = str(int(defaults["num_exalts"]))
+        self.percent_loot.default = f"{float(defaults['percent_loot']):g}"
+        self.incombat_reduction.default = f"{float(defaults['incombat_reduction']):g}"
 
-        options = self._build_options(ppe)
-        self.add_item(_BonusChoiceSelect(owner_id, options))
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        """Validate modal values, persist penalties, and refresh the open character panel."""
 
-    def _build_options(self, ppe: PPEData) -> list[discord.SelectOption]:
-        if self.action == "add":
-            options: list[discord.SelectOption] = []
-            for bonus_name, bonus in sorted(load_bonuses().items()):
-                repeat_text = "repeatable" if bonus.repeatable else "one-time"
-                options.append(
-                    discord.SelectOption(
-                        label=bonus_name[:100],
-                        value=bonus_name,
-                        description=f"{bonus.points:+g} pts, {repeat_text}"[:100],
-                    )
-                )
-            return options
-
-        remove_counts: dict[str, int] = {}
-        for bonus in ppe.bonuses:
-            qty = max(1, int(getattr(bonus, "quantity", 1)))
-            remove_counts[bonus.name] = remove_counts.get(bonus.name, 0) + qty
-
-        options = []
-        for bonus_name, quantity in sorted(remove_counts.items()):
-            options.append(
-                discord.SelectOption(
-                    label=bonus_name[:100],
-                    value=bonus_name,
-                    description=f"Owned: {quantity}"[:100],
-                )
+        try:
+            pet_level = int(str(self.pet_level.value).strip())
+            num_exalts = int(str(self.num_exalts.value).strip())
+            percent_loot = float(str(self.percent_loot.value).strip())
+            incombat_reduction = float(str(self.incombat_reduction.value).strip())
+        except ValueError:
+            await interaction.response.send_message(
+                "❌ Invalid values. Use numbers for all fields.",
+                ephemeral=True,
             )
-        return options
-
-    def current_embed(self) -> discord.Embed:
-        mode_name = "Add Bonus" if self.action == "add" else "Remove Bonus"
-        selected_line = self.selected_bonus_name or "Nothing selected"
-
-        embed = discord.Embed(
-            title=f"Modify PPE #{self.ppe_id}",
-            description=f"Mode: **{mode_name}**\nSelected bonus: **{selected_line}**",
-            color=discord.Color.orange(),
-        )
-        embed.add_field(
-            name="How this works",
-            value=(
-                "1) Pick add/remove mode.\n"
-                "2) Select a bonus from the dropdown.\n"
-                "3) Click Confirm to apply and announce the update publicly."
-            ),
-            inline=False,
-        )
-        return embed
-
-    @discord.ui.button(label="Add Mode", style=discord.ButtonStyle.success, row=1)
-    async def switch_add_mode(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        refreshed = await refresh_player_data(interaction, interaction.user.id)
-        view = ModifyPPEView(
-            owner_id=self.owner_id,
-            ppe=find_ppe_or_raise(refreshed, self.ppe_id),
-            player_data=refreshed,
-            connected_ppe_ids=self.connected_ppe_ids,
-            action="add",
-        )
-        await interaction.response.edit_message(embed=view.current_embed(), view=view)
-
-    @discord.ui.button(label="Remove Mode", style=discord.ButtonStyle.secondary, row=1)
-    async def switch_remove_mode(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        refreshed = await refresh_player_data(interaction, interaction.user.id)
-        view = ModifyPPEView(
-            owner_id=self.owner_id,
-            ppe=find_ppe_or_raise(refreshed, self.ppe_id),
-            player_data=refreshed,
-            connected_ppe_ids=self.connected_ppe_ids,
-            action="remove",
-        )
-        await interaction.response.edit_message(embed=view.current_embed(), view=view)
-
-    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.primary, row=1)
-    async def confirm(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not self.selected_bonus_name:
-            await interaction.response.send_message("Pick a bonus from the dropdown first.", ephemeral=True)
             return
 
+        error = validate_penalty_inputs(pet_level, num_exalts, percent_loot, incombat_reduction)
+        if error:
+            await interaction.response.send_message(error, ephemeral=True)
+            return
+
+        # Re-load records at submit time to avoid writing stale menu state.
         records = await load_player_records(interaction)
-        key = ensure_player_exists(records, interaction.user.id)
+        key = ensure_player_exists(records, self.owner_id)
         player_data = records[key]
         ppe = find_ppe_or_raise(player_data, self.ppe_id)
 
+        apply_penalties_to_ppe(
+            ppe,
+            pet_level=pet_level,
+            num_exalts=num_exalts,
+            percent_loot=percent_loot,
+            incombat_reduction=incombat_reduction,
+        )
         guild_config = await load_guild_config(interaction)
+        recompute_ppe_points(ppe, guild_config)
+        await save_player_records(interaction=interaction, records=records)
 
-        if self.action == "add":
-            available = load_bonuses()
-            bonus_data = available.get(self.selected_bonus_name)
-            if bonus_data is None:
-                await interaction.response.send_message("Selected bonus is no longer available.", ephemeral=True)
-                return
+        await interaction.response.send_message(
+            f"✅ Updated penalties for PPE #{ppe.id} ({display_class_name(ppe)}). "
+            f"New total: **{format_points(ppe.points)}** points.",
+            ephemeral=True,
+        )
 
-            existing = next((b for b in ppe.bonuses if b.name == self.selected_bonus_name), None)
-            if existing:
-                if not bonus_data.repeatable:
-                    await interaction.response.send_message(
-                        "That bonus already exists and is not repeatable.",
-                        ephemeral=True,
-                    )
-                    return
-                existing.quantity += 1
-            else:
-                ppe.bonuses.append(
-                    Bonus(
-                        name=bonus_data.name,
-                        points=float(bonus_data.points),
-                        repeatable=bool(bonus_data.repeatable),
-                        quantity=1,
-                    )
-                )
-
-            recompute_ppe_points(ppe, guild_config)
-            await save_player_records(interaction, records)
-
-            public_message = (
-                f"✅ {interaction.user.mention} updated PPE #{ppe.id} ({display_class_name(ppe)}): "
-                f"added bonus **{self.selected_bonus_name}**. "
-                f"New total: **{format_points(ppe.points)}** points."
+        # Refresh the character panel message so penalty stats and points are immediately visible.
+        if self.source_message is not None:
+            refreshed = await refresh_player_data(interaction, self.owner_id)
+            refreshed_view = ManageCharactersView(
+                owner_id=self.owner_id,
+                player_data=refreshed,
+                connected_ppe_ids=self.connected_ppe_ids,
+                preferred_ppe_id=self.ppe_id,
             )
-        else:
-            existing = next((b for b in ppe.bonuses if b.name.lower() == self.selected_bonus_name.lower()), None)
-            if existing is None:
-                await interaction.response.send_message("That bonus is not currently on this PPE.", ephemeral=True)
-                return
-
-            if int(existing.quantity) > 1:
-                existing.quantity -= 1
-            else:
-                ppe.bonuses.remove(existing)
-
-            recompute_ppe_points(ppe, guild_config)
-            await save_player_records(interaction, records)
-
-            public_message = (
-                f"✅ {interaction.user.mention} updated PPE #{ppe.id} ({display_class_name(ppe)}): "
-                f"removed bonus **{self.selected_bonus_name}**. "
-                f"New total: **{format_points(ppe.points)}** points."
-            )
-
-        await interaction.response.edit_message(content="PPE updated. Menu closed.", embed=None, view=None)
-        await interaction.followup.send(public_message, ephemeral=False)
-
-    @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary, row=1)
-    async def home(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        max_ppes = await get_max_ppes(interaction)
-        await open_myinfo_home(interaction, max_ppes=max_ppes)
-
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
-    async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await interaction.response.edit_message(content="Closed `/myinfo` menu.", embed=None, view=None)
+            try:
+                await self.source_message.edit(embed=refreshed_view.current_embed(interaction.user), view=refreshed_view)
+            except discord.HTTPException:
+                pass
 
 
 class ManageCharactersView(OwnerBoundView):
@@ -244,6 +134,8 @@ class ManageCharactersView(OwnerBoundView):
         self.index = self._initial_index(preferred_ppe_id)
 
     def _initial_index(self, preferred_ppe_id: int | None) -> int:
+        """Select starting carousel index using preferred ID or active PPE."""
+
         target_id = preferred_ppe_id if preferred_ppe_id is not None else self.player_data.active_ppe
         for idx, ppe in enumerate(self.ppes):
             if int(ppe.id) == int(target_id or -1):
@@ -297,17 +189,20 @@ class ManageCharactersView(OwnerBoundView):
         self.player_data.active_ppe = int(selected.id)
         await interaction.response.edit_message(embed=self.current_embed(interaction.user), view=self)
 
-    @discord.ui.button(label="Modify PPE", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Manage PPE", style=discord.ButtonStyle.secondary, row=1)
     async def modify_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        """Open a penalty form for the selected PPE and prefill current values."""
+
         selected = self.current_ppe()
-        view = ModifyPPEView(
+        defaults = penalty_input_defaults(selected)
+        modal = ManagePPEPenaltiesModal(
             owner_id=interaction.user.id,
-            ppe=selected,
-            player_data=self.player_data,
+            ppe_id=int(selected.id),
+            defaults=defaults,
+            source_message=interaction.message,
             connected_ppe_ids=self.connected_ppe_ids,
-            action="add",
         )
-        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+        await interaction.response.send_modal(modal)
 
     @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary, row=1)
     async def home(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
