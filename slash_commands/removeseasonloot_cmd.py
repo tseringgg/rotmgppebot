@@ -1,7 +1,8 @@
 import discord
 from utils.player_records import load_player_records, save_player_records, ensure_player_exists
 from utils.loot_data import LOOT
-from utils.quest_manager import remove_item_from_completed_quests
+from utils.guild_config import get_quest_targets, load_guild_config
+from utils.quest_manager import refresh_player_quests, remove_item_from_completed_quests
 
 
 async def command(
@@ -39,6 +40,21 @@ async def command(
         
         player_data.unique_items.discard(item_key)
         removed_quest_entries = remove_item_from_completed_quests(player_data, item_name, shiny)
+
+        regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
+        config = await load_guild_config(interaction)
+        refresh_player_quests(
+            player_data,
+            target_item_quests=regular_target,
+            target_shiny_quests=shiny_target,
+            target_skin_quests=skin_target,
+            global_quests={
+                "enabled": bool(config["quest_settings"].get("use_global_quests", False)),
+                "regular": list(config["quest_settings"].get("global_regular_quests", [])),
+                "shiny": list(config["quest_settings"].get("global_shiny_quests", [])),
+                "skin": list(config["quest_settings"].get("global_skin_quests", [])),
+            },
+        )
         
         await save_player_records(interaction, records)
         

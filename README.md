@@ -106,8 +106,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/addpointsfor` | Manually add points to a specific PPE |
 | `/refreshpointsfor` | Recalculate points for a specific PPE |
 | `/refreshallpoints` | Fix all PPE point totals server-wide |
-| `/resetallquests` | Reset quest data for all players (with confirmation) |
-| `/managequests` | View or update per-server quest targets (regular/shiny/skin) |
+| `/managequests` | View or update per-server quest targets (regular/shiny/skin), global quest pools, and run Reset All Quests from the menu |
 | `/addseasonlootfor` | Add a unique item to another player's season collection |
 | `/removeseasonlootfrom` | Remove a unique item from another player's season collection |
 | `/pointsettings` | View guild point modifier settings |
@@ -119,6 +118,7 @@ The `/myquests` command and the My Info -> Show Quests button now use the same s
 Quest reset actions are now menu-integrated:
 - Use `/myquests` -> `Reset Quests` for self resets.
 - Use `/manageplayer` -> `Show Quests` -> `Reset Quests` for admin resets.
+- Use `/managequests` -> `Reset All Quests` for server-wide quest resets.
 
 ### Team Commands
 | Command | Description |

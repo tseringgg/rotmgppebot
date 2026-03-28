@@ -9,6 +9,7 @@ import discord
 
 from menus.managequests.common import build_global_quests_embed, build_managequests_home_embed, load_managequests_settings
 from menus.managequests.modals import AddGlobalQuestItemsModal, EditQuestSettingsModal, RemoveGlobalQuestItemsModal
+from menus.managequests.reset_actions import open_reset_all_quests_confirmation, open_reset_for_member
 from menus.managequests.services import apply_settings_to_players, clear_all_quests_and_global_pools, save_settings
 from menus.menu_utils import ConfirmCancelView, OwnerBoundView
 from menus.myquests.common import build_myquests_state_for_player
@@ -234,9 +235,7 @@ class ManageQuestsHomeView(OwnerBoundView):
 
     @discord.ui.button(label="Reset All Quests", style=discord.ButtonStyle.danger, row=0)
     async def reset_all(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        from slash_commands import resetquests_cmd
-
-        await resetquests_cmd.command(interaction)
+        await open_reset_all_quests_confirmation(interaction, owner_id=self.owner_id)
 
     @discord.ui.button(label="Edit Quest Settings", style=discord.ButtonStyle.primary, row=0)
     async def edit_settings(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -292,17 +291,8 @@ class ManagePlayerQuestsPromptModal(discord.ui.Modal, title="Manage Player's Que
             )
             return
 
-        if self.source_message is not None:
-            view = ManagePlayerQuestsView(owner_id=self.owner_id, member=target)
-            try:
-                await self.source_message.edit(embed=view.current_embed(), view=view)
-            except discord.HTTPException:
-                pass
-
-        await interaction.response.send_message(
-            f"Opened quest manager for **{target.display_name}**.",
-            ephemeral=True,
-        )
+        view = ManagePlayerQuestsView(owner_id=self.owner_id, member=target)
+        await interaction.response.send_message(embed=view.current_embed(), view=view, ephemeral=True)
 
     @staticmethod
     def _resolve_member(guild: discord.Guild, raw_value: str) -> discord.Member | None:
@@ -347,16 +337,12 @@ class ManagePlayerQuestsView(OwnerBoundView):
 
     @discord.ui.button(label="Reset Quests", style=discord.ButtonStyle.danger, row=0)
     async def reset_quests(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        from slash_commands import resetquestfor_cmd
-
-        await resetquestfor_cmd.command(interaction, self.member)
+        await open_reset_for_member(interaction, self.member, actor_id=self.owner_id)
 
     @discord.ui.button(label="Show Quests", style=discord.ButtonStyle.primary, row=0)
     async def show_quests(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         async def _show_target_reset_for_member(reset_interaction: discord.Interaction) -> None:
-            from slash_commands import resetquestfor_cmd
-
-            await resetquestfor_cmd.command(reset_interaction, self.member)
+            await open_reset_for_member(reset_interaction, self.member, actor_id=self.owner_id)
 
         state = await build_myquests_state_for_player(
             interaction,

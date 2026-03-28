@@ -21,6 +21,7 @@ from menus.manageplayer.common import (
 )
 from menus.menu_utils import OwnerBoundView
 from menus.myquests import open_myquests_menu_for_player
+from menus.managequests.reset_actions import open_reset_for_member
 from utils.guild_config import load_guild_config
 from utils.player_records import load_teams
 
@@ -57,7 +58,7 @@ class _RemoveFromTeamButton(discord.ui.Button):
     """Open a confirmation submenu before removing a player from their team."""
 
     def __init__(self) -> None:
-        super().__init__(label="Remove from Team", style=discord.ButtonStyle.danger, row=2)
+        super().__init__(label="Remove from Team", style=discord.ButtonStyle.danger, row=3)
 
     async def callback(self, interaction: discord.Interaction) -> None:
         view = self.view
@@ -273,9 +274,7 @@ class ManagePlayerHomeView(OwnerBoundView):
                     ephemeral=True,
                 )
                 return
-            from slash_commands import resetquestfor_cmd
-
-            await resetquestfor_cmd.command(reset_interaction, self.target.member)
+            await open_reset_for_member(reset_interaction, self.target.member, actor_id=interaction.user.id)
 
         await open_myquests_menu_for_player(
             interaction,
@@ -413,10 +412,7 @@ class ManagePlayerHomeView(OwnerBoundView):
                 ephemeral=True,
             )
             return
-
-        from slash_commands import resetquestfor_cmd
-
-        await resetquestfor_cmd.command(interaction, self.target.member)
+        await open_reset_for_member(interaction, self.target.member, actor_id=interaction.user.id)
 
     @discord.ui.button(label="Remove from Contest", style=discord.ButtonStyle.danger, row=2)
     async def remove_from_contest(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

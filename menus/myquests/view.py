@@ -7,9 +7,9 @@ from typing import Sequence
 
 import discord
 
+from menus.managequests.reset_actions import open_reset_for_self
 from menus.menu_utils import OwnerBoundView
 from menus.myquests.common import board_file, build_category_embed
-from slash_commands import resetquestfor_cmd
 
 
 class MyQuestsView(OwnerBoundView):
@@ -42,7 +42,7 @@ class MyQuestsView(OwnerBoundView):
         self.current_all = list(current_all)
         self.completed_embed = completed_embed
         self.global_mode_enabled = global_mode_enabled
-        self.reset_callback = reset_callback or resetquestfor_cmd.command_self
+        self.reset_callback = reset_callback or open_reset_for_self
 
         if self.global_mode_enabled:
             self.reset_quests.disabled = True
