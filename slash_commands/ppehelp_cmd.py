@@ -62,7 +62,7 @@ async def command(interaction: discord.Interaction):
         "addbonusfor": "Add bonus to player's PPE.",
         "removebonusfrom": "Remove bonus from player's PPE.",
         "addseasonlootfor": "Add to player's season loot.",
-        "removeseasonlootfor": "Remove from player's season.",
+        "removeseasonlootfrom": "Remove from player's season.",
         "addpointsfor": "Manually add points.",
         "refreshpointsfor": "Recalculate PPE points.",
         "refreshallpoints": "Recalculate all PPE points.",

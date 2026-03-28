@@ -110,7 +110,7 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/resetallquests` | Reset quest data for all players (with confirmation) |
 | `/managequests` | View or update per-server quest targets (regular/shiny/skin) |
 | `/addseasonlootfor` | Add a unique item to another player's season collection |
-| `/removeseasonlootfor` | Remove a unique item from another player's season collection |
+| `/removeseasonlootfrom` | Remove a unique item from another player's season collection |
 | `/pointsettings` | View guild point modifier settings |
 | `/pointsettingsglobal` | Set global point modifiers |
 | `/pointsettingsclass` | Set class-specific point modifiers |

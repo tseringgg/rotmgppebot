@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, manageplayer_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, seasonleaderboard_cmd, questleaderboard_cmd, resetseason_cmd, addteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, resetquestfor_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd, pointsettings_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, myloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, manageplayer_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfrom_cmd, seasonleaderboard_cmd, questleaderboard_cmd, resetseason_cmd, addteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, resetquestfor_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd, pointsettings_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -442,19 +442,22 @@ async def removeseasonloot(
     ):
     await removeseasonloot_cmd.command(interaction, item_name, shiny)
 
-@bot.tree.command(name="removeseasonlootfor", description="Remove a unique item from another player's season loot. Admin only.", guilds=guilds)
+@bot.tree.command(name="removeseasonlootfrom", description="Remove a unique item from another player's season loot. Admin only.", guilds=guilds)
 @app_commands.describe(user="The player to remove loot from", item_name="Name of the item to remove", shiny="Is the item shiny?")
 @app_commands.autocomplete(item_name=item_name_autocomplete)
 @require_ppe_roles(admin_required=True)
-async def removeseasonlootfor(
+async def removeseasonlootfrom(
         interaction: discord.Interaction,
         user: discord.Member,
         item_name: str,
         shiny: bool = False
     ):
-    await removeseasonlootfor_cmd.command(interaction, user, item_name, shiny)
+    await removeseasonlootfrom_cmd.command(interaction, user, item_name, shiny)
 
-
+@bot.tree.command(name="myloot", description="Show all loot for your active PPE.", guilds=guilds)
+@require_ppe_roles(player_required=True)
+async def myloot(interaction: discord.Interaction):
+    await myloot_cmd.command(interaction)
 
 @bot.tree.command(name="resetquests", description="Reset sections of your own quests.", guilds=guilds)
 @require_ppe_roles(player_required=True)
