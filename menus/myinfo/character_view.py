@@ -20,8 +20,9 @@ from menus.myinfo.common import (
 )
 from utils.guild_config import get_max_ppes, load_guild_config
 from utils.helpers.shareloot_image import variant_image_label
+from utils.penalty_embed import build_penalty_infographic_embed
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
-from utils.points_service import apply_penalties_to_ppe, recompute_ppe_points, validate_penalty_inputs
+from utils.points_service import apply_penalties_to_ppe, parse_penalty_inputs, recompute_ppe_points
 
 
 class ManagePPEPenaltiesModal(discord.ui.Modal, title="Manage PPE Penalties"):
@@ -31,8 +32,8 @@ class ManagePPEPenaltiesModal(discord.ui.Modal, title="Manage PPE Penalties"):
     num_exalts = discord.ui.TextInput(label="Exalts (0-40)", required=True, max_length=3)
     percent_loot = discord.ui.TextInput(label="Loot Boost % (0-25)", required=True, max_length=5)
     incombat_reduction = discord.ui.TextInput(
-        label="In-Combat Reduction",
-        placeholder="0, 0.2, 0.4, 0.6, 0.8, or 1.0",
+        label="In-Combat Reduction (0, 0.2, 0.4, 0.6, 0.8, 1.0)",
+        placeholder="Enter one of: 0, 0.2, 0.4, 0.6, 0.8, 1.0",
         required=True,
         max_length=3,
     )
@@ -59,22 +60,21 @@ class ManagePPEPenaltiesModal(discord.ui.Modal, title="Manage PPE Penalties"):
     async def on_submit(self, interaction: discord.Interaction) -> None:
         """Validate modal values, persist penalties, and refresh the open character panel."""
 
-        try:
-            pet_level = int(str(self.pet_level.value).strip())
-            num_exalts = int(str(self.num_exalts.value).strip())
-            percent_loot = float(str(self.percent_loot.value).strip())
-            incombat_reduction = float(str(self.incombat_reduction.value).strip())
-        except ValueError:
-            await interaction.response.send_message(
-                "❌ Invalid values. Use numbers for all fields.",
-                ephemeral=True,
-            )
-            return
-
-        error = validate_penalty_inputs(pet_level, num_exalts, percent_loot, incombat_reduction)
+        parsed_inputs, error = parse_penalty_inputs(
+            self.pet_level.value,
+            self.num_exalts.value,
+            self.percent_loot.value,
+            self.incombat_reduction.value,
+        )
         if error:
             await interaction.response.send_message(error, ephemeral=True)
             return
+
+        assert parsed_inputs is not None
+        pet_level = int(parsed_inputs["pet_level"])
+        num_exalts = int(parsed_inputs["num_exalts"])
+        percent_loot = float(parsed_inputs["percent_loot"])
+        incombat_reduction = float(parsed_inputs["incombat_reduction"])
 
         # Re-load records at submit time to avoid writing stale menu state.
         records = await load_player_records(interaction)
@@ -82,20 +82,36 @@ class ManagePPEPenaltiesModal(discord.ui.Modal, title="Manage PPE Penalties"):
         player_data = records[key]
         ppe = find_ppe_or_raise(player_data, self.ppe_id)
 
-        apply_penalties_to_ppe(
+        guild_config = await load_guild_config(interaction)
+
+        penalty_result = apply_penalties_to_ppe(
             ppe,
             pet_level=pet_level,
             num_exalts=num_exalts,
             percent_loot=percent_loot,
             incombat_reduction=incombat_reduction,
+            guild_config=guild_config,
         )
-        guild_config = await load_guild_config(interaction)
-        recompute_ppe_points(ppe, guild_config)
+        points_breakdown = recompute_ppe_points(ppe, guild_config)
         await save_player_records(interaction=interaction, records=records)
+
+        components = penalty_result["components"]
+        embed = build_penalty_infographic_embed(
+            pet_level=pet_level,
+            num_exalts=num_exalts,
+            percent_loot=percent_loot,
+            incombat_reduction=incombat_reduction,
+            pet_penalty=components["Pet Level Penalty"],
+            exalt_penalty=components["Exalts Penalty"],
+            loot_penalty=components["Loot Boost Penalty"],
+            incombat_penalty=components["In-Combat Reduction Penalty"],
+            total_points=points_breakdown["total"],
+        )
 
         await interaction.response.send_message(
             f"✅ Updated penalties for PPE #{ppe.id} ({display_class_name(ppe)}). "
-            f"New total: **{format_points(ppe.points)}** points.",
+            f"New total: **{format_points(points_breakdown['total'])}** points.",
+            embed=embed,
             ephemeral=True,
         )
 
@@ -107,6 +123,7 @@ class ManagePPEPenaltiesModal(discord.ui.Modal, title="Manage PPE Penalties"):
                 player_data=refreshed,
                 connected_ppe_ids=self.connected_ppe_ids,
                 preferred_ppe_id=self.ppe_id,
+                guild_config=guild_config,
             )
             try:
                 await self.source_message.edit(embed=refreshed_view.current_embed(interaction.user), view=refreshed_view)
@@ -124,11 +141,13 @@ class ManageCharactersView(OwnerBoundView):
         player_data: PlayerData,
         connected_ppe_ids: set[int],
         preferred_ppe_id: int | None = None,
+        guild_config: dict | None = None,
     ) -> None:
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.player_data = player_data
         self.connected_ppe_ids = connected_ppe_ids
         self.ppes = sorted(player_data.ppes, key=lambda p: int(p.id))
+        self.guild_config = guild_config
         best = max(self.ppes, key=lambda p: float(p.points), default=None)
         self.best_ppe_id = int(best.id) if best else None
         self.index = self._initial_index(preferred_ppe_id)
@@ -156,6 +175,7 @@ class ManageCharactersView(OwnerBoundView):
             is_active=(self.player_data.active_ppe == ppe.id),
             is_best=(self.best_ppe_id is not None and int(ppe.id) == self.best_ppe_id),
             is_realmshark_connected=(int(ppe.id) in self.connected_ppe_ids),
+            guild_config=self.guild_config,
         )
 
     @discord.ui.button(label="Prev", style=discord.ButtonStyle.secondary, row=0)
@@ -194,7 +214,7 @@ class ManageCharactersView(OwnerBoundView):
         """Open a penalty form for the selected PPE and prefill current values."""
 
         selected = self.current_ppe()
-        defaults = penalty_input_defaults(selected)
+        defaults = penalty_input_defaults(selected, self.guild_config)
         modal = ManagePPEPenaltiesModal(
             owner_id=interaction.user.id,
             ppe_id=int(selected.id),

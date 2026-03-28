@@ -13,6 +13,7 @@ from menus.myinfo.common import (
     realmshark_connected_ppe_ids,
     send_ppe_list_markdown_followup,
 )
+from utils.guild_config import load_guild_config
 from utils.player_records import ensure_player_exists, load_player_records
 
 
@@ -39,6 +40,12 @@ class MyInfoHomeView(OwnerBoundView):
     async def list_ppes(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         records = await load_player_records(interaction)
         key = ensure_player_exists(records, interaction.user.id)
+
+        if not records[key].ppes:
+            view = NoCharactersView(owner_id=interaction.user.id, max_ppes=self.max_ppes)
+            await interaction.response.edit_message(embed=view.current_embed(), view=view)
+            return
+
         await close_myinfo_menu(interaction)
         await send_ppe_list_markdown_followup(interaction, records[key])
 
@@ -55,11 +62,13 @@ class MyInfoHomeView(OwnerBoundView):
             await interaction.response.edit_message(embed=view.current_embed(), view=view)
             return
 
+        guild_config = await load_guild_config(interaction)
         connected_ids = await realmshark_connected_ppe_ids(interaction, interaction.user.id)
         view = ManageCharactersView(
             owner_id=interaction.user.id,
             player_data=player_data,
             connected_ppe_ids=connected_ids,
+            guild_config=guild_config,
         )
         await interaction.response.edit_message(embed=view.current_embed(interaction.user), view=view)
 
@@ -81,10 +90,6 @@ class NoCharactersView(OwnerBoundView):
             description="Create one with **/newppe** to start tracking a character.",
             color=discord.Color.orange(),
         )
-
-    @discord.ui.button(label="Create One", style=discord.ButtonStyle.success, row=0)
-    async def create_one(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await interaction.response.send_message("Use `/newppe` to create your first character.", ephemeral=True)
 
     @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary, row=0)
     async def home(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

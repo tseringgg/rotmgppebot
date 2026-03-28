@@ -3,8 +3,9 @@
 import discord
 
 from dataclass import PPEData, ROTMGClass
+from utils.penalty_embed import build_penalty_infographic_embed
 from utils.guild_config import get_max_ppes, load_guild_config
-from utils.points_service import apply_penalties_to_ppe, recompute_ppe_points, validate_penalty_inputs
+from utils.points_service import apply_penalties_to_ppe, parse_penalty_inputs, recompute_ppe_points
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 
 
@@ -20,9 +21,15 @@ async def command(interaction: discord.Interaction, class_name: str, pet_level: 
             ephemeral=True
         )
 
-    error = validate_penalty_inputs(pet_level, num_exalts, percent_loot, incombat_reduction)
+    parsed_inputs, error = parse_penalty_inputs(pet_level, num_exalts, percent_loot, incombat_reduction)
     if error:
         return await interaction.response.send_message(error, ephemeral=True)
+
+    assert parsed_inputs is not None
+    pet_level = int(parsed_inputs["pet_level"])
+    num_exalts = int(parsed_inputs["num_exalts"])
+    percent_loot = float(parsed_inputs["percent_loot"])
+    incombat_reduction = float(parsed_inputs["incombat_reduction"])
 
     guild_id = interaction.guild.id
     records = await load_player_records(interaction)
@@ -52,12 +59,15 @@ async def command(interaction: discord.Interaction, class_name: str, pet_level: 
         bonuses=[]
     )
 
+    guild_config = await load_guild_config(interaction)
+
     penalty_result = apply_penalties_to_ppe(
         new_ppe,
         pet_level=pet_level,
         num_exalts=num_exalts,
         percent_loot=percent_loot,
         incombat_reduction=incombat_reduction,
+        guild_config=guild_config,
     )
     components = penalty_result["components"]
     pet_penalty = components["Pet Level Penalty"]
@@ -65,7 +75,6 @@ async def command(interaction: discord.Interaction, class_name: str, pet_level: 
     loot_penalty = components["Loot Boost Penalty"]
     incombat_penalty = components["In-Combat Reduction Penalty"]
 
-    guild_config = await load_guild_config(interaction)
     points_breakdown = recompute_ppe_points(new_ppe, guild_config)
     points = points_breakdown["total"]
 
@@ -74,41 +83,16 @@ async def command(interaction: discord.Interaction, class_name: str, pet_level: 
 
     await save_player_records(interaction=interaction, records=records)
 
-    # Create embed for handicap breakdown
-    embed = discord.Embed(
-        title="🧾 Starting Points Breakdown",
-        description="Here's how your starting points were calculated:",
-        color=discord.Color.blue()
-    )
-    
-    embed.add_field(
-        name="Pet Level Penalty",
-        value=f"Level {pet_level} → {pet_penalty} points",
-        inline=True
-    )
-    
-    embed.add_field(
-        name="Exalts Penalty", 
-        value=f"{num_exalts} exalts → {exalt_penalty} points",
-        inline=True
-    )
-    
-    embed.add_field(
-        name="Loot Boost Penalty",
-        value=f"{percent_loot}% boost → {loot_penalty} points", 
-        inline=True
-    )
-    
-    embed.add_field(
-        name="In-Combat Reduction Penalty",
-        value=f"{incombat_reduction} reduction → {incombat_penalty} points",
-        inline=True
-    )
-    
-    embed.add_field(
-        name="**Total Starting Points**",
-        value=f"**{points} points**",
-        inline=False
+    embed = build_penalty_infographic_embed(
+        pet_level=pet_level,
+        num_exalts=num_exalts,
+        percent_loot=percent_loot,
+        incombat_reduction=incombat_reduction,
+        pet_penalty=pet_penalty,
+        exalt_penalty=exalt_penalty,
+        loot_penalty=loot_penalty,
+        incombat_penalty=incombat_penalty,
+        total_points=points,
     )
 
     await interaction.response.send_message(

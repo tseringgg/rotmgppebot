@@ -11,6 +11,7 @@ from utils.guild_config import get_max_ppes, get_realmshark_settings
 from utils.helpers.loot_share_commands import share_active_ppe_loot_image
 from utils.loot_table_md_builder import create_loot_markdown_file
 from utils.markdown_message_builder import MarkdownMessageBuilder
+from utils.points_service import penalty_inputs_from_bonuses
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 
 
@@ -49,60 +50,22 @@ def get_best_ppe(player_data: PlayerData) -> PPEData | None:
     return max(sorted_ppes, key=lambda p: float(p.points), default=None)
 
 
-def get_penalty_map(ppe: PPEData) -> dict[str, float]:
-    result = {
-        "pet": 0.0,
-        "exalts": 0.0,
-        "loot": 0.0,
-        "incombat": 0.0,
-    }
-
-    for bonus in ppe.bonuses:
-        total = float(bonus.points) * max(1, int(getattr(bonus, "quantity", 1)))
-        if bonus.name == "Pet Level Penalty":
-            result["pet"] += total
-        elif bonus.name == "Exalts Penalty":
-            result["exalts"] += total
-        elif bonus.name == "Loot Boost Penalty":
-            result["loot"] += total
-        elif bonus.name == "In-Combat Reduction Penalty":
-            result["incombat"] += total
-
-    return result
-
-
-def penalty_stats_text(ppe: PPEData) -> str:
+def penalty_stats_text(ppe: PPEData, guild_config: dict | None = None) -> str:
     """Convert stored penalty bonuses into user-friendly stat values."""
 
-    penalties = get_penalty_map(ppe)
-
-    pet_level = int(round(-4.0 * penalties["pet"])) if penalties["pet"] != 0 else 0
-    exalts = int(round(-2.0 * penalties["exalts"])) if penalties["exalts"] != 0 else 0
-    loot_boost = round(-0.5 * penalties["loot"], 1) if penalties["loot"] != 0 else 0.0
-    incombat = round(-0.1 * penalties["incombat"], 1) if penalties["incombat"] != 0 else 0.0
+    defaults = penalty_input_defaults(ppe, guild_config)
 
     return (
-        f"Pet Level: **{pet_level}**\n"
-        f"Exalts: **{exalts}**\n"
-        f"Loot Boost: **{loot_boost}%**\n"
-        f"In-Combat Reduction: **{incombat}s**"
+        f"Pet Level: **{int(defaults['pet_level'])}**\n"
+        f"Exalts: **{int(defaults['num_exalts'])}**\n"
+        f"Loot Boost: **{float(defaults['percent_loot']):g}%**\n"
+        f"In-Combat Reduction: **{float(defaults['incombat_reduction']):g}s**"
     )
 
 
-def penalty_input_defaults(ppe: PPEData) -> dict[str, float]:
+def penalty_input_defaults(ppe: PPEData, guild_config: dict | None = None) -> dict[str, float]:
     """Return editable penalty form defaults derived from stored penalty bonuses."""
-
-    penalties = get_penalty_map(ppe)
-    pet_level = int(round(-4.0 * penalties["pet"])) if penalties["pet"] != 0 else 0
-    exalts = int(round(-2.0 * penalties["exalts"])) if penalties["exalts"] != 0 else 0
-    loot_boost = round(-0.5 * penalties["loot"], 1) if penalties["loot"] != 0 else 0.0
-    incombat = round(-0.1 * penalties["incombat"], 1) if penalties["incombat"] != 0 else 0.0
-    return {
-        "pet_level": max(0, pet_level),
-        "num_exalts": max(0, exalts),
-        "percent_loot": max(0.0, loot_boost),
-        "incombat_reduction": max(0.0, incombat),
-    }
+    return penalty_inputs_from_bonuses(ppe.bonuses, guild_config=guild_config)
 
 
 def team_type_text(player_data: PlayerData) -> str:
@@ -142,8 +105,8 @@ def build_home_embed(
         "Use **/newppe** to create a new PPE.",
         "Use **/addloot** and **/addseasonloot** to log loot.",
         "Use **/removeloot** and **/removeseasonloot** to remove loot.",
-        "Use **Manage Characters -> Modify PPE** to add or remove bonuses.",
-        "Use **/setactiveppe** if you prefer quick switching from slash commands.",
+        "Use **/addbonus** and **/removebonus** to manage bonuses such as fame or maxed stats.",
+        "Use **/setactiveppe** to quickly manage which PPE is active (determines character affected by /addloot).",
     ]
     embed.add_field(name="How To Use The Bot", value="\n".join(help_lines), inline=False)
     embed.set_footer(text="Buttons below open actions and dashboards.")
@@ -160,6 +123,7 @@ def build_character_embed(
     is_active: bool,
     is_best: bool,
     is_realmshark_connected: bool,
+    guild_config: dict | None = None,
 ) -> discord.Embed:
     character_type = team_type_text(player_data)
     distinct_loot_items = len([loot for loot in ppe.loot if int(loot.quantity) > 0])
@@ -188,11 +152,11 @@ def build_character_embed(
     embed.add_field(name="Points", value=f"**{format_points(ppe.points)}**", inline=True)
     embed.add_field(name="RealmShark Connected", value="Yes" if is_realmshark_connected else "No", inline=True)
     embed.add_field(name="Different Loot Items", value=str(distinct_loot_items), inline=True)
-    embed.add_field(name="Starting Penalty Stats", value=penalty_stats_text(ppe), inline=False)
+    embed.add_field(name="Starting Penalty Stats", value=penalty_stats_text(ppe, guild_config), inline=False)
     embed.add_field(name="Character Type", value=character_type, inline=True)
     embed.add_field(name="Active Status", value="⭐ Active PPE" if is_active else "Not Active", inline=True)
 
-    embed.set_footer(text="Use Show Loot, Set As Active, or Manage PPE to edit penalties.")
+    embed.set_footer(text="Click Manage PPE to edit starting penalties.")
     return embed
 
 

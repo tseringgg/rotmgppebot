@@ -33,6 +33,12 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
             "penalty_percent": 0.0,
             "total_percent": 0.0,
         },
+        "penalty_weights": {
+            "pet_level_per_point": 4.0,
+            "exalts_per_point": 2.0,
+            "loot_percent_per_point": 0.5,
+            "incombat_seconds_per_point": 0.1,
+        },
         "class_overrides": {},
     },
 }
@@ -222,6 +228,31 @@ def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
         "total_percent": _as_float(raw_global.get("total_percent"), _DEFAULT_CONFIG["points_settings"]["global"]["total_percent"]),
     }
 
+    raw_penalty_weights = raw.get("penalty_weights", {}) if isinstance(raw.get("penalty_weights", {}), dict) else {}
+
+    def _positive_float(value: Any, fallback: float) -> float:
+        parsed = _as_float(value, fallback)
+        return parsed if parsed > 0 else fallback
+
+    normalized_penalty_weights = {
+        "pet_level_per_point": _positive_float(
+            raw_penalty_weights.get("pet_level_per_point"),
+            _DEFAULT_CONFIG["points_settings"]["penalty_weights"]["pet_level_per_point"],
+        ),
+        "exalts_per_point": _positive_float(
+            raw_penalty_weights.get("exalts_per_point"),
+            _DEFAULT_CONFIG["points_settings"]["penalty_weights"]["exalts_per_point"],
+        ),
+        "loot_percent_per_point": _positive_float(
+            raw_penalty_weights.get("loot_percent_per_point"),
+            _DEFAULT_CONFIG["points_settings"]["penalty_weights"]["loot_percent_per_point"],
+        ),
+        "incombat_seconds_per_point": _positive_float(
+            raw_penalty_weights.get("incombat_seconds_per_point"),
+            _DEFAULT_CONFIG["points_settings"]["penalty_weights"]["incombat_seconds_per_point"],
+        ),
+    }
+
     normalized_overrides: Dict[str, Dict[str, Any]] = {}
     class_overrides = raw.get("class_overrides", {})
     if isinstance(class_overrides, dict):
@@ -243,6 +274,7 @@ def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
 
     return {
         "global": normalized_global,
+        "penalty_weights": normalized_penalty_weights,
         "class_overrides": normalized_overrides,
     }
 

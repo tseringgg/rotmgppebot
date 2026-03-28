@@ -11,6 +11,22 @@ PENALTY_NAMES = {
     "In-Combat Reduction Penalty",
 }
 
+VALID_INCOMBAT_REDUCTION_OPTIONS = (0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
+
+DEFAULT_PENALTY_WEIGHTS = {
+    "pet_level_per_point": 4.0,
+    "exalts_per_point": 2.0,
+    "loot_percent_per_point": 0.5,
+    "incombat_seconds_per_point": 0.1,
+}
+
+PENALTY_COMPONENT_NAMES = {
+    "pet": "Pet Level Penalty",
+    "exalts": "Exalts Penalty",
+    "loot": "Loot Boost Penalty",
+    "incombat": "In-Combat Reduction Penalty",
+}
+
 
 def _as_float(value: Any, fallback: float = 0.0) -> float:
     try:
@@ -33,6 +49,22 @@ def _get_points_settings(guild_config: Dict[str, Any] | None) -> Dict[str, Any]:
         return {}
     settings = guild_config.get("points_settings", {})
     return settings if isinstance(settings, dict) else {}
+
+
+def _get_penalty_weights(guild_config: Dict[str, Any] | None) -> Dict[str, float]:
+    points_settings = _get_points_settings(guild_config)
+    raw_weights = points_settings.get("penalty_weights", {}) if isinstance(points_settings.get("penalty_weights", {}), dict) else {}
+
+    def _positive_float(key: str, fallback: float) -> float:
+        parsed = _as_float(raw_weights.get(key), fallback)
+        return parsed if parsed > 0 else fallback
+
+    return {
+        "pet_level_per_point": _positive_float("pet_level_per_point", DEFAULT_PENALTY_WEIGHTS["pet_level_per_point"]),
+        "exalts_per_point": _positive_float("exalts_per_point", DEFAULT_PENALTY_WEIGHTS["exalts_per_point"]),
+        "loot_percent_per_point": _positive_float("loot_percent_per_point", DEFAULT_PENALTY_WEIGHTS["loot_percent_per_point"]),
+        "incombat_seconds_per_point": _positive_float("incombat_seconds_per_point", DEFAULT_PENALTY_WEIGHTS["incombat_seconds_per_point"]),
+    }
 
 
 def _get_modifier_bucket(points_settings: Dict[str, Any], class_name: str) -> Dict[str, float | None]:
@@ -132,12 +164,87 @@ def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = Non
     }
 
 
-def compute_penalty_components(pet_level: int, num_exalts: int, percent_loot: float, incombat_reduction: float) -> Dict[str, float]:
+def parse_penalty_inputs(
+    pet_level: int | str,
+    num_exalts: int | str,
+    percent_loot: float | str,
+    incombat_reduction: float | str,
+) -> tuple[Dict[str, float | int] | None, str | None]:
+    try:
+        parsed_pet_level = int(str(pet_level).strip())
+        parsed_num_exalts = int(str(num_exalts).strip())
+        parsed_percent_loot = float(str(percent_loot).strip())
+        parsed_incombat_reduction = float(str(incombat_reduction).strip())
+    except (TypeError, ValueError):
+        return None, "❌ Invalid values. Use numbers for all fields."
+
+    error = validate_penalty_inputs(parsed_pet_level, parsed_num_exalts, parsed_percent_loot, parsed_incombat_reduction)
+    if error:
+        return None, error
+
     return {
-        "Pet Level Penalty": -round(pet_level / 4),
-        "Exalts Penalty": -0.5 * num_exalts,
-        "Loot Boost Penalty": -2 * percent_loot,
-        "In-Combat Reduction Penalty": -(2 * (incombat_reduction / 0.2)),
+        "pet_level": parsed_pet_level,
+        "num_exalts": parsed_num_exalts,
+        "percent_loot": parsed_percent_loot,
+        "incombat_reduction": parsed_incombat_reduction,
+    }, None
+
+
+def compute_penalty_components(
+    pet_level: int,
+    num_exalts: int,
+    percent_loot: float,
+    incombat_reduction: float,
+    guild_config: Dict[str, Any] | None = None,
+) -> Dict[str, float]:
+    weights = _get_penalty_weights(guild_config)
+    return {
+        PENALTY_COMPONENT_NAMES["pet"]: -round(pet_level / weights["pet_level_per_point"]),
+        PENALTY_COMPONENT_NAMES["exalts"]: -(num_exalts / weights["exalts_per_point"]),
+        PENALTY_COMPONENT_NAMES["loot"]: -(percent_loot / weights["loot_percent_per_point"]),
+        PENALTY_COMPONENT_NAMES["incombat"]: -(incombat_reduction / weights["incombat_seconds_per_point"]),
+    }
+
+
+def penalty_map_from_bonuses(bonuses: Iterable[Bonus]) -> Dict[str, float]:
+    result = {
+        "pet": 0.0,
+        "exalts": 0.0,
+        "loot": 0.0,
+        "incombat": 0.0,
+    }
+
+    for bonus in bonuses:
+        total = calculate_bonus_points(bonus)
+        if bonus.name == PENALTY_COMPONENT_NAMES["pet"]:
+            result["pet"] += total
+        elif bonus.name == PENALTY_COMPONENT_NAMES["exalts"]:
+            result["exalts"] += total
+        elif bonus.name == PENALTY_COMPONENT_NAMES["loot"]:
+            result["loot"] += total
+        elif bonus.name == PENALTY_COMPONENT_NAMES["incombat"]:
+            result["incombat"] += total
+
+    return result
+
+
+def penalty_inputs_from_bonuses(
+    bonuses: Iterable[Bonus],
+    guild_config: Dict[str, Any] | None = None,
+) -> Dict[str, float]:
+    penalties = penalty_map_from_bonuses(bonuses)
+    weights = _get_penalty_weights(guild_config)
+
+    pet_level = int(round(-weights["pet_level_per_point"] * penalties["pet"])) if penalties["pet"] != 0 else 0
+    exalts = int(round(-weights["exalts_per_point"] * penalties["exalts"])) if penalties["exalts"] != 0 else 0
+    loot_boost = round(-weights["loot_percent_per_point"] * penalties["loot"], 1) if penalties["loot"] != 0 else 0.0
+    incombat = round(-weights["incombat_seconds_per_point"] * penalties["incombat"], 1) if penalties["incombat"] != 0 else 0.0
+
+    return {
+        "pet_level": max(0, pet_level),
+        "num_exalts": max(0, exalts),
+        "percent_loot": max(0.0, loot_boost),
+        "incombat_reduction": max(0.0, incombat),
     }
 
 
@@ -150,8 +257,21 @@ def build_penalty_bonuses(components: Dict[str, float]) -> list[Bonus]:
     return penalties
 
 
-def apply_penalties_to_ppe(ppe: PPEData, pet_level: int, num_exalts: int, percent_loot: float, incombat_reduction: float) -> Dict[str, Any]:
-    components = compute_penalty_components(pet_level, num_exalts, percent_loot, incombat_reduction)
+def apply_penalties_to_ppe(
+    ppe: PPEData,
+    pet_level: int,
+    num_exalts: int,
+    percent_loot: float,
+    incombat_reduction: float,
+    guild_config: Dict[str, Any] | None = None,
+) -> Dict[str, Any]:
+    components = compute_penalty_components(
+        pet_level,
+        num_exalts,
+        percent_loot,
+        incombat_reduction,
+        guild_config=guild_config,
+    )
     new_penalties = build_penalty_bonuses(components)
 
     removed_penalty_points = 0.0
@@ -180,6 +300,6 @@ def validate_penalty_inputs(pet_level: int, num_exalts: int, percent_loot: float
         return "❌ Number of exalts must be between `0` and `40`."
     if not (0.0 <= percent_loot <= 25.0):
         return "❌ Percent loot boost must be between `0%` and `25%`."
-    if incombat_reduction not in {0.0, 0.2, 0.4, 0.6, 0.8, 1.0}:
-        return "❌ In-combat damage reduction must be one of: `0`, `0.2`, `0.4`, `0.6`, `0.8`, `1`."
+    if incombat_reduction not in set(VALID_INCOMBAT_REDUCTION_OPTIONS):
+        return "❌ In-combat damage reduction must be one of: `0`, `0.2`, `0.4`, `0.6`, `0.8`, `1.0`."
     return None
