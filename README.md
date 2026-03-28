@@ -102,8 +102,6 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/removelootfrom` | Remove items from any player's PPE |
 | `/addbonusfor` | Add bonuses to any player's PPE |
 | `/removebonusfrom` | Remove bonuses from any player's PPE |
-| `/addpenaltiesfor` | Apply penalties to any player's PPE |
-| `/inspectloot` | View any player's PPE loot details |
 | `/refreshpointsfor` | Recalculate points for a specific PPE |
 | `/refreshallpoints` | Fix all PPE point totals server-wide |
 | `/deleteallppes` | Delete all PPEs for a player |
@@ -114,7 +112,6 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/managequests` | View or update per-server quest targets (regular/shiny/skin) |
 | `/manage ppe addbonusfor` | Add bonus to a specific player's PPE |
 | `/manage ppe removebonusfrom` | Remove bonus from a specific player's PPE |
-| `/manage ppe setpenaltiesfor` | Set penalties for a specific player's PPE |
 | `/manage ppe addpointsfor` | Manually add points to a specific PPE |
 | `/manage ppe refreshpointsfor` | Recalculate a specific PPE |
 | `/manage ppe refreshallpoints` | Recalculate all PPEs |

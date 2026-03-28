@@ -4,7 +4,6 @@ from discord import app_commands
 from slash_commands import (
     addbonus_cmd,
     addbonusfor_cmd,
-    addpenaltiesfor_cmd,
     addpointsfor_cmd,
     refreshallpoints_cmd,
     refreshpointsfor_cmd,
@@ -51,28 +50,6 @@ async def manage_ppe_addbonusfor(interaction: discord.Interaction, user: discord
 @require_ppe_roles(admin_required=True)
 async def manage_ppe_removebonusfrom(interaction: discord.Interaction, user: discord.Member, id: int, bonus_name: str):
     await removebonusfrom_cmd.command(interaction, user, id, bonus_name)
-
-
-@ppe_group.command(name="setpenaltiesfor", description="Set penalty bonuses on another player's PPE. Admin only.")
-@app_commands.describe(
-    user="The player whose PPE to update",
-    id="The PPE ID to target",
-    pet_level="Pet level (0-100)",
-    num_exalts="Number of exalts (0-40)",
-    percent_loot="Loot boost percentage (0-25)",
-    incombat_reduction="In-combat damage reduction (0, 0.2, 0.4, 0.6, 0.8, 1.0)",
-)
-@require_ppe_roles(admin_required=True)
-async def manage_ppe_setpenaltiesfor(
-    interaction: discord.Interaction,
-    user: discord.Member,
-    id: int,
-    pet_level: int,
-    num_exalts: int,
-    percent_loot: float,
-    incombat_reduction: float,
-):
-    await addpenaltiesfor_cmd.command(interaction, user, id, pet_level, num_exalts, percent_loot, incombat_reduction)
 
 
 @ppe_group.command(name="addpointsfor", description="Add points to another player's PPE. Admin only.")
