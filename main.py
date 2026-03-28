@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, myloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, manageplayer_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfrom_cmd, seasonleaderboard_cmd, questleaderboard_cmd, resetseason_cmd, addteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd, pointsettings_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, myloot_cmd, listplayers_cmd, listroles_cmd, manageplayer_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfrom_cmd, resetseason_cmd, addteam_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd, pointsettings_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -10,6 +10,7 @@ from utils.loot_data import init_loot_data
 from create_loot_table import create_loot_background_and_mapping
 from utils.realmshark_ingest_server import start_realmshark_ingest_server
 from utils.realmshark_notifier import build_realmshark_notifier
+from menus.leaderboard import open_leaderboard_menu
 
 from utils.autocomplete import class_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, target_user_ppe_id_autocomplete, team_name_autocomplete
 
@@ -390,15 +391,9 @@ async def addplayer(interaction: discord.Interaction, member: discord.Member):
 
 
 
-@bot.tree.command(name="leaderboard", description="Show the best PPE from each player.", guilds=guilds)
+@bot.tree.command(name="leaderboard", description="Open the leaderboard menu.", guilds=guilds)
 async def leaderboard(interaction: discord.Interaction):
-    await leaderboard_cmd.command(interaction)
-
-@bot.tree.command(name="characterleaderboard", description="Show the highest point characters of a specific class.", guilds=guilds)
-@app_commands.describe(class_name="Choose the class to filter by")
-@app_commands.autocomplete(class_name=class_autocomplete)
-async def characterleaderboard(interaction: discord.Interaction, class_name: str):
-    await characterleaderboard_cmd.command(interaction, class_name)
+    await open_leaderboard_menu(interaction)
 
 @bot.tree.command(name="ppehelp", description="Show available PPE commands for players and admins.", guilds=guilds)
 async def ppehelp(interaction: discord.Interaction):
@@ -470,9 +465,9 @@ async def resetallquests(interaction: discord.Interaction):
 @app_commands.describe(shiny_quests="Target number of active shiny item quests")
 @app_commands.describe(skin_quests="Target number of active skin quests")
 @app_commands.describe(num_resets="How many quest resets each player gets")
-@app_commands.describe(regular_points="Points per completed regular quest on /questleaderboard")
-@app_commands.describe(shiny_points="Points per completed shiny quest on /questleaderboard")
-@app_commands.describe(skin_points="Points per completed skin quest on /questleaderboard")
+@app_commands.describe(regular_points="Points per completed regular quest on Leaderboard -> Quest Leaderboard")
+@app_commands.describe(shiny_points="Points per completed shiny quest on Leaderboard -> Quest Leaderboard")
+@app_commands.describe(skin_points="Points per completed skin quest on Leaderboard -> Quest Leaderboard")
 @require_ppe_roles(admin_required=True)
 async def managequests(
     interaction: discord.Interaction,
@@ -556,14 +551,6 @@ async def realmsharkunlink(interaction: discord.Interaction, token: str):
 async def realmsharkreset(interaction: discord.Interaction):
     await realmshark_cmd.reset_all(interaction)
 
-@bot.tree.command(name="seasonleaderboard", description="Show leaderboard ranked by unique items collected.", guilds=guilds)
-async def seasonleaderboard(interaction: discord.Interaction):
-    await seasonleaderboard_cmd.command(interaction)
-
-@bot.tree.command(name="questleaderboard", description="Show leaderboard ranked by quests completed.", guilds=guilds)
-async def questleaderboard(interaction: discord.Interaction):
-    await questleaderboard_cmd.command(interaction)
-
 @bot.tree.command(name="resetseason", description="Reset season data, teams, and RealmShark links/settings. Server owner/admin only.", guilds=guilds)
 @app_commands.describe(clear_realmshark_links="If true, unlink all RealmShark integrations and remove all mappings")
 @commands.has_permissions(administrator=True)
@@ -580,11 +567,6 @@ async def resetseason(interaction: discord.Interaction, clear_realmshark_links: 
 @require_ppe_roles(admin_required=True)
 async def addteam(interaction: discord.Interaction, team_name: str, team_leader: discord.Member):
     await addteam_cmd.command(interaction, team_name, team_leader)
-
-# --- Team leaderboard ---
-@bot.tree.command(name="teamleaderboard", description="Show the team leaderboard.", guilds=guilds)
-async def teamleaderboard(interaction: discord.Interaction):
-    await teamleaderboard_cmd.command(interaction)
 
 # --- My team ---
 @bot.tree.command(name="myteam", description="Show your team members and their rankings. Optional: specify a team name to view.", guilds=guilds)

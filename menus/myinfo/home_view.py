@@ -51,14 +51,15 @@ class MyInfoHomeView(OwnerBoundView):
 
     @discord.ui.button(label="My Team", style=discord.ButtonStyle.primary, row=0)
     async def my_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        from slash_commands.myteam_cmd import build_team_embed
+        from slash_commands.myteam_cmd import build_team_embeds
 
-        embed = await build_team_embed(
+        embeds = await build_team_embeds(
             interaction,
             user_id=interaction.user.id,
             title="My Team",
         )
-        await interaction.response.edit_message(embed=embed, view=self)
+        view = MyInfoTeamView(owner_id=interaction.user.id, max_ppes=self.max_ppes, embeds=embeds)
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
     @discord.ui.button(label="Manage Characters", style=discord.ButtonStyle.success, row=1)
     async def manage_characters(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -82,6 +83,41 @@ class MyInfoHomeView(OwnerBoundView):
             guild_config=guild_config,
         )
         await interaction.response.edit_message(embed=view.current_embed(interaction.user), view=view)
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
+    async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await interaction.response.edit_message(content="Closed `/myinfo` menu.", embed=None, view=None)
+
+
+class MyInfoTeamView(OwnerBoundView):
+    """Team ranking view opened from /myinfo with overflow pagination controls."""
+
+    def __init__(self, owner_id: int, *, max_ppes: int, embeds: list[discord.Embed]) -> None:
+        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
+        self.max_ppes = max_ppes
+        self.embeds = embeds
+        self.index = 0
+
+        if len(self.embeds) <= 1:
+            self.remove_item(self.prev_page)
+            self.remove_item(self.next_page)
+
+    def current_embed(self) -> discord.Embed:
+        return self.embeds[self.index]
+
+    @discord.ui.button(label="Prev", style=discord.ButtonStyle.secondary, row=0)
+    async def prev_page(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.index = (self.index - 1) % len(self.embeds)
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.secondary, row=0)
+    async def next_page(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.index = (self.index + 1) % len(self.embeds)
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
+    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await open_myinfo_home(interaction, max_ppes=self.max_ppes)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

@@ -20,6 +20,87 @@ def _team_state_embed(title: str, description: str, *, color: discord.Color | No
     )
 
 
+def _split_lines(lines: list[str], *, page_size: int) -> list[list[str]]:
+    if not lines:
+        return [[]]
+
+    pages: list[list[str]] = []
+    for index in range(0, len(lines), page_size):
+        pages.append(lines[index:index + page_size])
+    return pages
+
+
+async def build_team_embeds(
+    interaction: discord.Interaction,
+    *,
+    user_id: int,
+    team_name: str | None = None,
+    title: str = "My Team",
+    no_team_message: str = "Uh oh, you haven't been added to a team yet.",
+    page_size: int = 15,
+) -> list[discord.Embed]:
+    if not interaction.guild:
+        return [_team_state_embed(title, "❌ This command can only be used in a server.", color=discord.Color.red())]
+
+    teams = await load_teams(interaction)
+    if not teams:
+        return [_team_state_embed(title, "❌ No teams currently exist.")]
+
+    target_team = team_name
+    if not target_team:
+        records = await load_player_records(interaction)
+        user_key = ensure_player_exists(records, user_id)
+        user_team = records[user_key].team_name if user_key in records else None
+        if not user_team:
+            return [_team_state_embed(title, no_team_message)]
+        target_team = user_team
+
+    team_info = await team_manager.get_team_members_info(interaction, target_team)
+    if not team_info:
+        return [_team_state_embed(title, f"❌ Team `{target_team}` not found.", color=discord.Color.red())]
+
+    team_name_result, leader_id, members_info = team_info
+    members_info_sorted = sorted(members_info, key=lambda x: x[2], reverse=True)
+    total_points = sum(points for _member_id, _member_name, points, _ppe_class in members_info_sorted)
+
+    if not members_info_sorted:
+        embed = discord.Embed(
+            title=f"Team: {team_name_result}",
+            description=f"Leader: <@{leader_id}>",
+            color=discord.Color.blurple(),
+        )
+        embed.add_field(name="Members", value="0", inline=True)
+        embed.add_field(name="Total Team Points", value=f"{total_points:.1f}", inline=True)
+        embed.add_field(
+            name="Rankings",
+            value="This team has no active members with PPE characters.",
+            inline=False,
+        )
+        return [embed]
+
+    all_lines: list[str] = []
+    for rank, (_member_id, member_name, points, ppe_class) in enumerate(members_info_sorted, start=1):
+        all_lines.append(f"{rank}. {member_name}: {points:.1f} pts ({_format_class_name(ppe_class)})")
+
+    line_pages = _split_lines(all_lines, page_size=page_size)
+    embeds: list[discord.Embed] = []
+    page_total = len(line_pages)
+    for page_number, page_lines in enumerate(line_pages, start=1):
+        embed = discord.Embed(
+            title=f"Team: {team_name_result}",
+            description=f"Leader: <@{leader_id}>",
+            color=discord.Color.blurple(),
+        )
+        embed.add_field(name="Members", value=str(len(members_info_sorted)), inline=True)
+        embed.add_field(name="Total Team Points", value=f"{total_points:.1f}", inline=True)
+        embed.add_field(name="Rankings", value="\n".join(page_lines), inline=False)
+        if page_total > 1:
+            embed.set_footer(text=f"Page {page_number}/{page_total}")
+        embeds.append(embed)
+
+    return embeds
+
+
 async def build_team_embed(
     interaction: discord.Interaction,
     *,

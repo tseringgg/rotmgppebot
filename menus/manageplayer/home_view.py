@@ -283,14 +283,20 @@ class ManagePlayerHomeView(OwnerBoundView):
 
     @discord.ui.button(label="My Team", style=discord.ButtonStyle.primary, row=0)
     async def my_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        from slash_commands.myteam_cmd import build_team_embed
+        from slash_commands.myteam_cmd import build_team_embeds
 
-        embed = await build_team_embed(
+        embeds = await build_team_embeds(
             interaction,
             user_id=self.target.user_id,
             title=f"Team View - {self.target.display_name}",
         )
-        await interaction.response.edit_message(embed=embed, view=self)
+        view = ManagePlayerTeamView(
+            owner_id=interaction.user.id,
+            target=self.target,
+            max_ppes=self.max_ppes,
+            embeds=embeds,
+        )
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
     @discord.ui.button(label="Manage Characters", style=discord.ButtonStyle.success, row=1)
     async def manage_characters(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -395,6 +401,54 @@ class ManagePlayerHomeView(OwnerBoundView):
         await interaction.response.edit_message(embed=confirm_view.current_embed(), view=confirm_view)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)
+    async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await close_manageplayer_menu(interaction)
+
+
+class ManagePlayerTeamView(OwnerBoundView):
+    """Team ranking view opened from /manageplayer with overflow pagination controls."""
+
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        target: ManagedPlayerTarget,
+        max_ppes: int,
+        embeds: list[discord.Embed],
+    ) -> None:
+        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
+        self.target = target
+        self.max_ppes = max_ppes
+        self.embeds = embeds
+        self.index = 0
+
+        if len(self.embeds) <= 1:
+            self.remove_item(self.prev_page)
+            self.remove_item(self.next_page)
+
+    def current_embed(self) -> discord.Embed:
+        return self.embeds[self.index]
+
+    @discord.ui.button(label="Prev", style=discord.ButtonStyle.secondary, row=0)
+    async def prev_page(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.index = (self.index - 1) % len(self.embeds)
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.secondary, row=0)
+    async def next_page(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.index = (self.index + 1) % len(self.embeds)
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
+    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await open_manageplayer_home(
+            interaction,
+            owner_id=interaction.user.id,
+            target=self.target,
+            max_ppes=self.max_ppes,
+        )
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_manageplayer_menu(interaction)
 

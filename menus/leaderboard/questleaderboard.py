@@ -1,8 +1,8 @@
 import discord
 
-from utils.player_records import load_player_records
-from utils.pagination import chunk_lines_to_pages, LootPaginationView
 from utils.guild_config import get_quest_points
+from utils.pagination import LootPaginationView, chunk_lines_to_pages
+from utils.player_records import load_player_records
 
 
 async def command(interaction: discord.Interaction):

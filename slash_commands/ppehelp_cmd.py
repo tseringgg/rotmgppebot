@@ -7,11 +7,7 @@ from utils.pagination import LootPaginationView
 async def command(interaction: discord.Interaction):
     # --- Commands for everyone ---
     general_cmds = {
-        "leaderboard": "Show the current PPE leaderboard.",
-        "characterleaderboard": "Show highest points for specific class.",
-        "seasonleaderboard": "Show season leaderboard by unique items.",
-        "questleaderboard": "Show leaderboard by weighted quest points.",
-        "teamleaderboard": "Show team leaderboard by combined points.",
+        "leaderboard": "Open leaderboard menu (PPE, Quest, Character-by-class, Season Loot, Team).",
         "ppehelp": "Show this help message.",
         "listroles": "List all roles in this server.",
         "listadmins": "Show all admins.",
@@ -43,7 +39,6 @@ async def command(interaction: discord.Interaction):
     
     # --- Team Commands (Player/Leader) ---
     team_cmds = {
-        "teamleaderboard": "View team rankings.",
         "myteam": "View your team members and rankings (optional: specify team name).",
     }
     

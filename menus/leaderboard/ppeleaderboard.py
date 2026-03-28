@@ -1,6 +1,5 @@
-
-
 import discord
+
 from utils.player_records import load_player_records
 
 
@@ -9,12 +8,8 @@ async def command(interaction: discord.Interaction):
         return await interaction.response.send_message("❌ This command can only be used in a server.")
     records = await load_player_records(interaction)
 
-    # for m in interaction.guild.members:
-    #     print(f"Member loaded: {m.display_name} (ID: {m.id})")
-
     leaderboard_data = []
     for pid, data in records.items():
-        # if player is not a contest member, skip
         if not data.is_member:
             continue
         if not data.ppes:
@@ -27,7 +22,6 @@ async def command(interaction: discord.Interaction):
 
     leaderboard_data.sort(key=lambda x: x[2], reverse=True)
 
-    # if leaderboard is empty
     if not leaderboard_data:
         return await interaction.response.send_message("❌ No PPE data available yet.")
 
