@@ -32,7 +32,7 @@ class ManagePPEPenaltiesModal(discord.ui.Modal, title="Manage PPE Penalties"):
     num_exalts = discord.ui.TextInput(label="Exalts (0-40)", required=True, max_length=3)
     percent_loot = discord.ui.TextInput(label="Loot Boost % (0-25)", required=True, max_length=5)
     incombat_reduction = discord.ui.TextInput(
-        label="In-Combat Reduction (0, 0.2, 0.4, 0.6, 0.8, 1.0)",
+        label="In-Combat Reduction (0/0.2/0.4/0.6/0.8/1.0)",
         placeholder="Enter one of: 0, 0.2, 0.4, 0.6, 0.8, 1.0",
         required=True,
         max_length=3,
