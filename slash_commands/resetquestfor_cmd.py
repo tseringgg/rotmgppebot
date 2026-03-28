@@ -238,11 +238,18 @@ class ResetQuestSelectionView(OwnerBoundView):
 
             if removed_current_items or removed_current_shinies or removed_current_skins:
                 regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
+                config = await load_guild_config(interaction)
                 refresh_player_quests(
                     player_data,
                     target_item_quests=regular_target,
                     target_shiny_quests=shiny_target,
                     target_skin_quests=skin_target,
+                    global_quests={
+                        "enabled": bool(config["quest_settings"].get("use_global_quests", False)),
+                        "regular": list(config["quest_settings"].get("global_regular_quests", [])),
+                        "shiny": list(config["quest_settings"].get("global_shiny_quests", [])),
+                        "skin": list(config["quest_settings"].get("global_skin_quests", [])),
+                    },
                 )
 
         if self.include_reset_counter_option and ACTION_RESET_RESETS_TO_DEFAULT in self.selected_values:

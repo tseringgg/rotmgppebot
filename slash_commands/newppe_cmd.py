@@ -9,21 +9,29 @@ from utils.points_service import apply_penalties_to_ppe, parse_penalty_inputs, r
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 
 
-async def command(interaction: discord.Interaction, class_name: str, pet_level: int, num_exalts: int, percent_loot: float, incombat_reduction: float):
+async def create_new_ppe_for_user(
+    interaction: discord.Interaction,
+    *,
+    class_name: str,
+    pet_level: int,
+    num_exalts: int,
+    percent_loot: float,
+    incombat_reduction: float,
+) -> dict:
     if not interaction.guild:
-        return await interaction.response.send_message("❌ This command can only be used in a server.")
+        raise ValueError("❌ This command can only be used in a server.")
+
     # --- Validate class name ---
     class_enum = next((c for c in ROTMGClass if c.value == class_name), None)
     if not class_enum:
-        return await interaction.response.send_message(
+        raise ValueError(
             f"❌ `{class_name}` is not a valid RotMG class.\n"
             f"Use the autocomplete list to choose one.",
-            ephemeral=True
         )
 
     parsed_inputs, error = parse_penalty_inputs(pet_level, num_exalts, percent_loot, incombat_reduction)
     if error:
-        return await interaction.response.send_message(error, ephemeral=True)
+        raise ValueError(error)
 
     assert parsed_inputs is not None
     pet_level = int(parsed_inputs["pet_level"])
@@ -42,7 +50,7 @@ async def command(interaction: discord.Interaction, class_name: str, pet_level: 
     # --- PPE limit check ---
     ppe_count = len(player_data.ppes)
     if ppe_count >= max_ppes:
-        return await interaction.response.send_message(
+        raise ValueError(
             f"⚠️ You’ve reached the limit of `{max_ppes} PPEs`. "
             "Delete or reuse an existing one before making a new one."
         )
@@ -95,9 +103,34 @@ async def command(interaction: discord.Interaction, class_name: str, pet_level: 
         total_points=points,
     )
 
+    return {
+        "next_id": next_id,
+        "class_name": class_enum.value,
+        "ppe_count": ppe_count + 1,
+        "max_ppes": max_ppes,
+        "embed": embed,
+    }
+
+
+async def command(interaction: discord.Interaction, class_name: str, pet_level: int, num_exalts: int, percent_loot: float, incombat_reduction: float):
+    if not interaction.guild:
+        return await interaction.response.send_message("❌ This command can only be used in a server.")
+
+    try:
+        result = await create_new_ppe_for_user(
+            interaction,
+            class_name=class_name,
+            pet_level=pet_level,
+            num_exalts=num_exalts,
+            percent_loot=percent_loot,
+            incombat_reduction=incombat_reduction,
+        )
+    except ValueError as exc:
+        return await interaction.response.send_message(str(exc), ephemeral=True)
+
     await interaction.response.send_message(
-        f"✅ Created `PPE #{next_id}` for your `{class_enum.value}` "
+        f"✅ Created `PPE #{result['next_id']}` for your `{result['class_name']}` "
         f"and set it as your active PPE.\n"
-        f"You now have {ppe_count + 1}/{max_ppes} PPEs.",
-        embed=embed
+        f"You now have {result['ppe_count']}/{result['max_ppes']} PPEs.",
+        embed=result["embed"],
     )

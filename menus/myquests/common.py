@@ -176,6 +176,7 @@ def build_home_embed(
     target_regular: int,
     target_shiny: int,
     target_skin: int,
+    global_mode_enabled: bool,
 ) -> discord.Embed:
     completed_regular = len(quests.completed_items)
     completed_shiny = len(quests.completed_shinies)
@@ -195,8 +196,16 @@ def build_home_embed(
     embed = discord.Embed(
         title=f"My Quests - {display_name}",
         description=(
-            f"Resets remaining: **{resets_remaining}/{reset_limit}**\n"
-            "Use the menu below to view quest boards, completed quests, or reset any number of your quests."
+            (
+                "Global quest mode is active. Your quest list is shared server-wide and shrinks as quests are completed.\n"
+                if global_mode_enabled
+                else f"Resets remaining: **{resets_remaining}/{reset_limit}**\n"
+            )
+            + (
+                "Use the menu below to view quest boards and completed quests."
+                if global_mode_enabled
+                else "Use the menu below to view quest boards, completed quests, or reset any number of your quests."
+            )
         ),
         color=discord.Color.from_rgb(54, 57, 63),
     )
@@ -204,7 +213,12 @@ def build_home_embed(
         name="Quest Progress",
         value=(
             f"Active: **{active_regular}** Regular, **{active_shiny}** Shiny, **{active_skin}** Skin\n"
-            f"Targets: **{target_regular}** Regular, **{target_shiny}** Shiny, **{target_skin}** Skin\n"
+            + (
+                "Targets: **Global List**\n"
+                if global_mode_enabled
+                else f"Targets: **{target_regular}** Regular, **{target_shiny}** Shiny, **{target_skin}** Skin\n"
+            )
+            +
             f"Completed: **{total_completed}** total"
         ),
         inline=False,
@@ -302,6 +316,12 @@ async def build_myquests_state_for_player(
         target_item_quests=regular_target,
         target_shiny_quests=shiny_target,
         target_skin_quests=skin_target,
+        global_quests={
+            "enabled": bool(config["quest_settings"].get("use_global_quests", False)),
+            "regular": list(config["quest_settings"].get("global_regular_quests", [])),
+            "shiny": list(config["quest_settings"].get("global_shiny_quests", [])),
+            "skin": list(config["quest_settings"].get("global_skin_quests", [])),
+        },
     )
 
     if player_data.quest_resets_remaining != resets_remaining:
@@ -330,12 +350,14 @@ async def build_myquests_state_for_player(
             regular_target,
             shiny_target,
             skin_target,
+            bool(config["quest_settings"].get("use_global_quests", False)),
         ),
         "completed_embed": build_completed_embed(quests, regular_points, shiny_points, skin_points),
         "current_regular": current_regular,
         "current_shiny": current_shiny,
         "current_skin": current_skin,
         "current_all": current_regular + current_shiny + current_skin,
+        "global_mode_enabled": bool(config["quest_settings"].get("use_global_quests", False)),
     }
 
 

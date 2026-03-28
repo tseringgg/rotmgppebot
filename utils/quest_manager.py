@@ -76,6 +76,69 @@ def _contains_name(items: List[str], item_name: str) -> bool:
     return any(normalize_item_name(item).lower() == target for item in items)
 
 
+def _dedupe_preserve_order(items: List[str]) -> List[str]:
+    seen: set[str] = set()
+    result: List[str] = []
+    for item in items:
+        normalized = normalize_item_name(item)
+        lowered = normalized.lower()
+        if not normalized or lowered in seen:
+            continue
+        seen.add(lowered)
+        result.append(normalized)
+    return result
+
+
+def _is_global_mode_enabled(global_quests: dict | None) -> bool:
+    return bool(global_quests and bool(global_quests.get("enabled")))
+
+
+def _apply_global_quests_mode(player_data: PlayerData, global_quests: dict | None) -> bool:
+    if not _is_global_mode_enabled(global_quests):
+        return False
+
+    quests = player_data.quests
+    regular_pool = _dedupe_preserve_order(list(global_quests.get("regular", [])))
+    shiny_pool = _dedupe_preserve_order(list(global_quests.get("shiny", [])))
+    skin_pool = _dedupe_preserve_order(list(global_quests.get("skin", [])))
+
+    owned_regular_norms = _owned_regular_norms(player_data)
+    owned_shiny_targets = _owned_shiny_target_norms(player_data)
+
+    changed = False
+
+    for item in regular_pool:
+        if normalize_item_name(item).lower() in owned_regular_norms and not _contains_name(quests.completed_items, item):
+            quests.completed_items.append(item)
+            changed = True
+
+    for shiny_item in shiny_pool:
+        if normalize_item_name(shiny_item).lower() in owned_shiny_targets and not _contains_name(quests.completed_shinies, shiny_item):
+            quests.completed_shinies.append(shiny_item)
+            changed = True
+
+    for skin in skin_pool:
+        if normalize_item_name(skin).lower() in owned_regular_norms and not _contains_name(quests.completed_skins, skin):
+            quests.completed_skins.append(skin)
+            changed = True
+
+    target_regular = [item for item in regular_pool if not _contains_name(quests.completed_items, item)]
+    target_shiny = [item for item in shiny_pool if not _contains_name(quests.completed_shinies, item)]
+    target_skin = [item for item in skin_pool if not _contains_name(quests.completed_skins, item)]
+
+    if quests.current_items != target_regular:
+        quests.current_items = target_regular
+        changed = True
+    if quests.current_shinies != target_shiny:
+        quests.current_shinies = target_shiny
+        changed = True
+    if quests.current_skins != target_skin:
+        quests.current_skins = target_skin
+        changed = True
+
+    return changed
+
+
 def _quest_target_name(item_name: str, shiny: bool = False) -> str:
     normalized = normalize_item_name(item_name)
     if shiny and not normalized.lower().endswith(" (shiny)"):
@@ -219,8 +282,13 @@ def refresh_player_quests(
     target_item_quests: int = DEFAULT_REGULAR_QUEST_TARGET,
     target_shiny_quests: int = DEFAULT_SHINY_QUEST_TARGET,
     target_skin_quests: int = DEFAULT_SKIN_QUEST_TARGET,
+    global_quests: dict | None = None,
 ) -> bool:
     sanitized = _sanitize_quest_buckets(player_data)
+
+    if _is_global_mode_enabled(global_quests):
+        return bool(sanitized or _apply_global_quests_mode(player_data, global_quests))
+
     initialized = initialize_quests_if_needed(
         player_data,
         target_item_quests=target_item_quests,
@@ -290,14 +358,18 @@ def update_quests_for_item(
     target_item_quests: int = DEFAULT_REGULAR_QUEST_TARGET,
     target_shiny_quests: int = DEFAULT_SHINY_QUEST_TARGET,
     target_skin_quests: int = DEFAULT_SKIN_QUEST_TARGET,
+    global_quests: dict | None = None,
 ) -> dict:
     sanitized = _sanitize_quest_buckets(player_data)
-    initialized = initialize_quests_if_needed(
-        player_data,
-        target_item_quests=target_item_quests,
-        target_shiny_quests=target_shiny_quests,
-        target_skin_quests=target_skin_quests,
-    )
+    if _is_global_mode_enabled(global_quests):
+        initialized = _apply_global_quests_mode(player_data, global_quests)
+    else:
+        initialized = initialize_quests_if_needed(
+            player_data,
+            target_item_quests=target_item_quests,
+            target_shiny_quests=target_shiny_quests,
+            target_skin_quests=target_skin_quests,
+        )
 
     normalized_regular = normalize_item_name(item_name).lower()
     normalized_shiny = _quest_target_norm(item_name, shiny=True)
@@ -342,12 +414,15 @@ def update_quests_for_item(
     replacement_shinies: List[str] = []
     replacement_skins: List[str] = []
     if completed_items or completed_shinies or completed_skins or initialized:
-        replacement_items, replacement_shinies, replacement_skins = _fill_missing_quests(
-            player_data,
-            target_item_quests=target_item_quests,
-            target_shiny_quests=target_shiny_quests,
-            target_skin_quests=target_skin_quests,
-        )
+        if _is_global_mode_enabled(global_quests):
+            _apply_global_quests_mode(player_data, global_quests)
+        else:
+            replacement_items, replacement_shinies, replacement_skins = _fill_missing_quests(
+                player_data,
+                target_item_quests=target_item_quests,
+                target_shiny_quests=target_shiny_quests,
+                target_skin_quests=target_skin_quests,
+            )
 
     return {
         "initialized": initialized,

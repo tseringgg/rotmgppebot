@@ -88,6 +88,12 @@ class PlayerManager:
                 target_item_quests=regular_target,
                 target_shiny_quests=shiny_target,
                 target_skin_quests=skin_target,
+                global_quests={
+                    "enabled": bool(guild_config["quest_settings"].get("use_global_quests", False)),
+                    "regular": list(guild_config["quest_settings"].get("global_regular_quests", [])),
+                    "shiny": list(guild_config["quest_settings"].get("global_shiny_quests", [])),
+                    "skin": list(guild_config["quest_settings"].get("global_skin_quests", [])),
+                },
             )
             
             return item_name, points_rounded, active_ppe, quest_update

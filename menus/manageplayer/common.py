@@ -553,6 +553,12 @@ async def send_target_quests_followup(interaction: discord.Interaction, target: 
         target_item_quests=regular_target,
         target_shiny_quests=shiny_target,
         target_skin_quests=skin_target,
+        global_quests={
+            "enabled": bool(config["quest_settings"].get("use_global_quests", False)),
+            "regular": list(config["quest_settings"].get("global_regular_quests", [])),
+            "shiny": list(config["quest_settings"].get("global_shiny_quests", [])),
+            "skin": list(config["quest_settings"].get("global_skin_quests", [])),
+        },
     )
     if changed:
         await save_player_records(interaction, records)

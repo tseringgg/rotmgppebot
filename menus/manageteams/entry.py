@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 import discord
 
 from dataclass import TeamData
@@ -32,6 +34,83 @@ def _display_name(guild: discord.Guild, user_id: int) -> str:
     if member is None:
         return f"Unknown User ({user_id})"
     return member.display_name
+
+
+def _parse_id_token(raw_value: str) -> int | None:
+    token = str(raw_value).strip()
+    if not token:
+        return None
+
+    mention_match = re.fullmatch(r"<@!?(\d+)>", token)
+    if mention_match:
+        return int(mention_match.group(1))
+
+    if token.isdigit():
+        return int(token)
+    return None
+
+
+def _resolve_single_name_query(candidates: list[tuple[int, str]], query: str, *, context_label: str) -> tuple[int | None, str | None]:
+    token = str(query).strip()
+    if not token:
+        return None, f"❌ Please provide a {context_label} name, mention, or user ID."
+
+    parsed_id = _parse_id_token(token)
+    if parsed_id is not None:
+        for candidate_id, _candidate_name in candidates:
+            if candidate_id == parsed_id:
+                return candidate_id, None
+        return None, f"❌ No {context_label} matched that user ID."
+
+    lowered = token.lower()
+    exact_matches = [entry for entry in candidates if entry[1].lower() == lowered]
+    if len(exact_matches) == 1:
+        return exact_matches[0][0], None
+    if len(exact_matches) > 1:
+        names = ", ".join(name for _id, name in exact_matches[:5])
+        return None, f"❌ Multiple exact matches found: {names}. Please use a mention or user ID."
+
+    startswith_matches = [entry for entry in candidates if entry[1].lower().startswith(lowered)]
+    if len(startswith_matches) == 1:
+        return startswith_matches[0][0], None
+
+    contains_matches = [entry for entry in candidates if lowered in entry[1].lower()]
+    if len(contains_matches) == 1:
+        return contains_matches[0][0], None
+
+    matches = startswith_matches or contains_matches
+    if matches:
+        preview = ", ".join(name for _id, name in matches[:8])
+        return None, f"❌ Multiple matches found. Be more specific: {preview}"
+
+    return None, f"❌ No {context_label} matched '{token}'."
+
+
+def _resolve_team_name_query(team_names: list[str], query: str) -> tuple[str | None, str | None]:
+    token = str(query).strip()
+    if not token:
+        return None, "❌ Team name cannot be empty."
+
+    lowered = token.lower()
+    exact = [name for name in team_names if name.lower() == lowered]
+    if len(exact) == 1:
+        return exact[0], None
+    if len(exact) > 1:
+        return None, "❌ Multiple teams have the same exact name. Please use a more specific query."
+
+    startswith = [name for name in team_names if name.lower().startswith(lowered)]
+    if len(startswith) == 1:
+        return startswith[0], None
+
+    contains = [name for name in team_names if lowered in name.lower()]
+    if len(contains) == 1:
+        return contains[0], None
+
+    matches = startswith or contains
+    if matches:
+        return None, f"❌ Multiple team matches found: {', '.join(matches[:8])}. Please refine your input."
+
+    return None, f"❌ No team matched '{token}'."
 
 
 async def _create_empty_team(interaction: discord.Interaction, team_name: str) -> TeamData:
@@ -299,106 +378,135 @@ class TeamNameSelect(discord.ui.Select):
         await open_team_manage_view(interaction, owner_id=view.owner_id, team_name=self.values[0])
 
 
-class MembersSelect(discord.ui.Select):
-    def __init__(self, *, member_rows: list[tuple[int, str, float, float, float, str]]) -> None:
-        options: list[discord.SelectOption] = []
-        for member_id, member_name, _best, _quest, contribution, _cls in member_rows[:25]:
-            options.append(
-                discord.SelectOption(
-                    label=member_name[:100],
-                    value=str(member_id),
-                    description=f"{contribution:.1f} total contribution",
-                )
-            )
+class TeamNameLookupModal(discord.ui.Modal, title="Find Team"):
+    team_name = discord.ui.TextInput(
+        label="Team Name",
+        placeholder="Type full or partial team name",
+        max_length=64,
+    )
 
-        super().__init__(
-            placeholder="Select members to remove...",
-            min_values=1,
-            max_values=len(options) if options else 1,
-            options=options,
-            row=0,
-        )
+    def __init__(self, *, owner_id: int, team_names: list[str]) -> None:
+        super().__init__(timeout=300)
+        self.owner_id = owner_id
+        self.team_names = list(team_names)
 
-    async def callback(self, interaction: discord.Interaction) -> None:
-        view = self.view
-        if not isinstance(view, ManageSingleTeamView):
-            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
             return
 
-        view.selected_member_ids = [int(value) for value in self.values]
-        await interaction.response.edit_message(embed=view.current_embed(), view=view)
-
-
-class AddMemberSelect(discord.ui.Select):
-    def __init__(self, *, eligible: list[discord.Member]) -> None:
-        options = [
-            discord.SelectOption(label=member.display_name[:100], value=str(member.id))
-            for member in eligible[:25]
-        ]
-        super().__init__(
-            placeholder="Select a player to add...",
-            min_values=1,
-            max_values=1,
-            options=options,
-            row=0,
-        )
-
-    async def callback(self, interaction: discord.Interaction) -> None:
-        view = self.view
-        if not isinstance(view, AddMemberView):
-            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+        matched_name, error = _resolve_team_name_query(self.team_names, str(self.team_name.value))
+        if error:
+            await interaction.response.send_message(error, ephemeral=True)
             return
 
-        member_id = int(self.values[0])
+        assert matched_name is not None
+        await open_team_manage_view(interaction, owner_id=self.owner_id, team_name=matched_name)
+
+
+class RemoveMembersModal(discord.ui.Modal, title="Remove Team Members"):
+    members = discord.ui.TextInput(
+        label="Members to Remove",
+        placeholder="Enter names/mentions/IDs separated by commas",
+        style=discord.TextStyle.paragraph,
+        max_length=400,
+    )
+
+    def __init__(self, *, owner_id: int, team_name: str, member_rows: list[tuple[int, str, float, float, float, str]]) -> None:
+        super().__init__(timeout=300)
+        self.owner_id = owner_id
+        self.team_name = team_name
+        self.member_rows = member_rows
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        tokens = [part.strip() for part in str(self.members.value).split(",") if part.strip()]
+        if not tokens:
+            await interaction.response.send_message("❌ Please provide at least one member to remove.", ephemeral=True)
+            return
+
+        candidates = [(member_id, name) for member_id, name, _b, _q, _t, _c in self.member_rows]
+        member_ids: list[int] = []
+        errors: list[str] = []
+        for token in tokens:
+            member_id, error = _resolve_single_name_query(candidates, token, context_label="team member")
+            if error:
+                errors.append(error)
+                continue
+            assert member_id is not None
+            if member_id not in member_ids:
+                member_ids.append(member_id)
+
+        if errors:
+            await interaction.response.send_message("\n".join(errors[:5]), ephemeral=True)
+            return
+
         try:
-            team = await team_manager.add_player_to_team(interaction, member_id, view.team_name)
-            if interaction.guild:
-                member = interaction.guild.get_member(member_id)
-                role = discord.utils.get(interaction.guild.roles, name=team.name)
-                if member and role and role not in member.roles:
-                    await member.add_roles(role)
+            actual_name, removed_count, removed_ids, new_leader_id = await _remove_members_from_team(
+                interaction,
+                team_name=self.team_name,
+                member_ids=member_ids,
+            )
         except ValueError as exc:
             await interaction.response.send_message(str(exc), ephemeral=True)
-            return
-        except discord.Forbidden:
-            await interaction.response.send_message(
-                "⚠️ Player added, but I could not update role assignments.",
-                ephemeral=True,
-            )
             return
         except Exception as exc:
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
 
-        await open_team_manage_view(interaction, owner_id=view.owner_id, team_name=view.team_name)
-        await interaction.followup.send(f"✅ Added <@{member_id}> to **{view.team_name}**.", ephemeral=True)
+        role_notice = ""
+        if interaction.guild and removed_ids:
+            team_role = discord.utils.get(interaction.guild.roles, name=actual_name)
+            if team_role:
+                for member_id in removed_ids:
+                    member = interaction.guild.get_member(member_id)
+                    if member and team_role in member.roles:
+                        try:
+                            await member.remove_roles(team_role)
+                        except discord.Forbidden:
+                            role_notice = "\n⚠️ Member removal succeeded, but role cleanup failed for one or more users."
+                            break
 
-
-class LeaderSelect(discord.ui.Select):
-    def __init__(self, *, member_rows: list[tuple[int, str, float, float, float, str]]) -> None:
-        options = [
-            discord.SelectOption(label=member_name[:100], value=str(member_id))
-            for member_id, member_name, _best, _quest, _total, _cls in member_rows[:25]
-        ]
-        super().__init__(
-            placeholder="Select the new team leader...",
-            min_values=1,
-            max_values=1,
-            options=options,
-            row=0,
+        await open_team_manage_view(interaction, owner_id=self.owner_id, team_name=actual_name)
+        leader_text = f" New leader: <@{new_leader_id}>." if new_leader_id else " Leader is now unassigned."
+        await interaction.followup.send(
+            f"✅ Removed **{removed_count}** member(s) from **{actual_name}**.{leader_text}{role_notice}",
+            ephemeral=True,
         )
 
-    async def callback(self, interaction: discord.Interaction) -> None:
-        view = self.view
-        if not isinstance(view, SetLeaderView):
-            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+
+class SetLeaderModal(discord.ui.Modal, title="Set Team Leader"):
+    leader = discord.ui.TextInput(
+        label="New Team Leader",
+        placeholder="Enter member name, mention, or ID",
+        max_length=100,
+    )
+
+    def __init__(self, *, owner_id: int, team_name: str, member_rows: list[tuple[int, str, float, float, float, str]]) -> None:
+        super().__init__(timeout=300)
+        self.owner_id = owner_id
+        self.team_name = team_name
+        self.member_rows = member_rows
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
             return
 
-        leader_id = int(self.values[0])
+        candidates = [(member_id, name) for member_id, name, _b, _q, _t, _c in self.member_rows]
+        leader_id, error = _resolve_single_name_query(candidates, str(self.leader.value), context_label="team member")
+        if error:
+            await interaction.response.send_message(error, ephemeral=True)
+            return
+
+        assert leader_id is not None
         try:
-            actual_name, _leader_id = await _set_team_leader(
+            actual_name, _updated_leader_id = await _set_team_leader(
                 interaction,
-                team_name=view.team_name,
+                team_name=self.team_name,
                 leader_id=leader_id,
             )
             if interaction.guild:
@@ -419,8 +527,57 @@ class LeaderSelect(discord.ui.Select):
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
 
-        await open_team_manage_view(interaction, owner_id=view.owner_id, team_name=view.team_name)
-        await interaction.followup.send(f"✅ Updated leader for **{view.team_name}**.", ephemeral=True)
+        await open_team_manage_view(interaction, owner_id=self.owner_id, team_name=self.team_name)
+        await interaction.followup.send(f"✅ Updated leader for **{self.team_name}**.", ephemeral=True)
+
+
+class AddMemberModal(discord.ui.Modal, title="Add Team Member"):
+    member = discord.ui.TextInput(
+        label="Member to Add",
+        placeholder="Enter member name, mention, or ID",
+        max_length=100,
+    )
+
+    def __init__(self, *, owner_id: int, team_name: str, eligible_members: list[discord.Member]) -> None:
+        super().__init__(timeout=300)
+        self.owner_id = owner_id
+        self.team_name = team_name
+        self.eligible_members = list(eligible_members)
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        candidates = [(member.id, member.display_name) for member in self.eligible_members]
+        member_id, error = _resolve_single_name_query(candidates, str(self.member.value), context_label="eligible player")
+        if error:
+            await interaction.response.send_message(error, ephemeral=True)
+            return
+
+        assert member_id is not None
+        try:
+            team = await team_manager.add_player_to_team(interaction, member_id, self.team_name)
+            if interaction.guild:
+                member = interaction.guild.get_member(member_id)
+                role = discord.utils.get(interaction.guild.roles, name=team.name)
+                if member and role and role not in member.roles:
+                    await member.add_roles(role)
+        except ValueError as exc:
+            await interaction.response.send_message(str(exc), ephemeral=True)
+            return
+        except discord.Forbidden:
+            await interaction.response.send_message(
+                "⚠️ Player added, but I could not update role assignments.",
+                ephemeral=True,
+            )
+            return
+        except Exception as exc:
+            await interaction.response.send_message(str(exc), ephemeral=True)
+            return
+
+        await open_team_manage_view(interaction, owner_id=self.owner_id, team_name=self.team_name)
+        await interaction.followup.send(f"✅ Added <@{member_id}> to **{self.team_name}**.", ephemeral=True)
 
 
 class RenameTeamModal(discord.ui.Modal, title="Rename Team"):
@@ -470,20 +627,21 @@ class TeamPickerView(OwnerBoundView):
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.owner_id = owner_id
         self.team_names = team_names
+        self.use_lookup_only = len(self.team_names) > 20
 
-        if self.team_names:
+        if self.team_names and not self.use_lookup_only:
             self.add_item(TeamNameSelect(team_names=self.team_names))
 
     def current_embed(self) -> discord.Embed:
         if not self.team_names:
             description = "No teams exist yet. Create one from the home page first."
-        elif len(self.team_names) > 25:
+        elif self.use_lookup_only:
             description = (
-                "Select a team from the dropdown.\n"
-                "Only the first 25 teams are shown due to Discord limits."
+                "This server has many teams, so quick-lookup is enabled.\n"
+                "Use **Find Team** to jump to any team by name."
             )
         else:
-            description = "Select a team from the dropdown to manage members, leader, and name."
+            description = "Select a team from the dropdown, or use **Find Team** to search by name."
 
         return discord.Embed(
             title="Manage Team",
@@ -491,62 +649,16 @@ class TeamPickerView(OwnerBoundView):
             color=discord.Color.teal(),
         )
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Find Team", style=discord.ButtonStyle.primary, row=1)
+    async def find_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        if not self.team_names:
+            await interaction.response.send_message("❌ No teams exist yet.", ephemeral=True)
+            return
+        await interaction.response.send_modal(TeamNameLookupModal(owner_id=self.owner_id, team_names=self.team_names))
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=2)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await open_manage_teams_home(interaction, owner_id=self.owner_id)
-
-
-class AddMemberView(OwnerBoundView):
-    def __init__(self, *, owner_id: int, team_name: str, eligible_members: list[discord.Member]) -> None:
-        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
-        self.owner_id = owner_id
-        self.team_name = team_name
-        self.eligible_members = eligible_members
-
-        if self.eligible_members:
-            self.add_item(AddMemberSelect(eligible=self.eligible_members))
-
-    def current_embed(self) -> discord.Embed:
-        if not self.eligible_members:
-            desc = "No eligible PPE members are available to add."
-        else:
-            desc = f"Select one player to add to **{self.team_name}**."
-
-        return discord.Embed(
-            title=f"Add Member - {self.team_name}",
-            description=desc,
-            color=discord.Color.green(),
-        )
-
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
-    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await open_team_manage_view(interaction, owner_id=self.owner_id, team_name=self.team_name)
-
-
-class SetLeaderView(OwnerBoundView):
-    def __init__(self, *, owner_id: int, team_name: str, member_rows: list[tuple[int, str, float, float, float, str]]) -> None:
-        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
-        self.owner_id = owner_id
-        self.team_name = team_name
-        self.member_rows = member_rows
-
-        if self.member_rows:
-            self.add_item(LeaderSelect(member_rows=self.member_rows))
-
-    def current_embed(self) -> discord.Embed:
-        if not self.member_rows:
-            desc = "This team has no members. Add a member before setting a leader."
-        else:
-            desc = "Select a member to set as team leader."
-        return discord.Embed(
-            title=f"Set Leader - {self.team_name}",
-            description=desc,
-            color=discord.Color.brand_green(),
-        )
-
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
-    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await open_team_manage_view(interaction, owner_id=self.owner_id, team_name=self.team_name)
 
 
 class TeamDeleteConfirmView(OwnerBoundView):
@@ -617,10 +729,6 @@ class ManageSingleTeamView(OwnerBoundView):
         self.team_name = team_name
         self.team = team
         self.member_rows = member_rows
-        self.selected_member_ids: list[int] = []
-
-        if self.member_rows:
-            self.add_item(MembersSelect(member_rows=self.member_rows))
 
     def current_embed(self) -> discord.Embed:
         total_points = sum(member[4] for member in self.member_rows)
@@ -645,9 +753,8 @@ class ManageSingleTeamView(OwnerBoundView):
 
         lines: list[str] = []
         for rank, (member_id, member_name, ppe_points, quest_points, contribution, best_class) in enumerate(self.member_rows, start=1):
-            selected_marker = " [selected]" if member_id in self.selected_member_ids else ""
             lines.append(
-                f"{rank}. **{member_name}** ({best_class}) - {ppe_points:.1f} PPE + {quest_points:.1f} Quest = **{contribution:.1f}**{selected_marker}"
+                f"{rank}. **{member_name}** ({best_class}) - {ppe_points:.1f} PPE + {quest_points:.1f} Quest = **{contribution:.1f}**"
             )
 
         text = "\n".join(lines)
@@ -656,43 +763,13 @@ class ManageSingleTeamView(OwnerBoundView):
         embed.add_field(name="Member Contributions", value=text, inline=False)
         return embed
 
-    @discord.ui.button(label="Remove Selected Members", style=discord.ButtonStyle.danger, row=1)
+    @discord.ui.button(label="Remove Members", style=discord.ButtonStyle.danger, row=1)
     async def remove_selected(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if not self.selected_member_ids:
-            await interaction.response.send_message("Pick one or more members from the dropdown first.", ephemeral=True)
+        if not self.member_rows:
+            await interaction.response.send_message("❌ This team has no members to remove.", ephemeral=True)
             return
-
-        try:
-            actual_name, removed_count, removed_ids, new_leader_id = await _remove_members_from_team(
-                interaction,
-                team_name=self.team_name,
-                member_ids=self.selected_member_ids,
-            )
-        except ValueError as exc:
-            await interaction.response.send_message(str(exc), ephemeral=True)
-            return
-        except Exception as exc:
-            await interaction.response.send_message(str(exc), ephemeral=True)
-            return
-
-        role_notice = ""
-        if interaction.guild and removed_ids:
-            team_role = discord.utils.get(interaction.guild.roles, name=actual_name)
-            if team_role:
-                for member_id in removed_ids:
-                    member = interaction.guild.get_member(member_id)
-                    if member and team_role in member.roles:
-                        try:
-                            await member.remove_roles(team_role)
-                        except discord.Forbidden:
-                            role_notice = "\n⚠️ Member removal succeeded, but role cleanup failed for one or more users."
-                            break
-
-        await open_team_manage_view(interaction, owner_id=self.owner_id, team_name=actual_name)
-        leader_text = f" New leader: <@{new_leader_id}>." if new_leader_id else " Leader is now unassigned."
-        await interaction.followup.send(
-            f"✅ Removed **{removed_count}** member(s) from **{actual_name}**.{leader_text}{role_notice}",
-            ephemeral=True,
+        await interaction.response.send_modal(
+            RemoveMembersModal(owner_id=self.owner_id, team_name=self.team_name, member_rows=self.member_rows)
         )
 
     @discord.ui.button(label="Add Member", style=discord.ButtonStyle.success, row=1)
@@ -720,17 +797,39 @@ class ManageSingleTeamView(OwnerBoundView):
                 eligible.append(member)
 
         eligible.sort(key=lambda member: member.display_name.lower())
-        view = AddMemberView(owner_id=self.owner_id, team_name=actual_name, eligible_members=eligible)
-        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+        if not eligible:
+            await interaction.response.send_message("❌ No eligible PPE members are available to add.", ephemeral=True)
+            return
+
+        await interaction.response.send_modal(
+            AddMemberModal(owner_id=self.owner_id, team_name=actual_name, eligible_members=eligible)
+        )
 
     @discord.ui.button(label="Set Leader", style=discord.ButtonStyle.primary, row=1)
     async def set_leader(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        view = SetLeaderView(owner_id=self.owner_id, team_name=self.team_name, member_rows=self.member_rows)
-        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+        if not self.member_rows:
+            await interaction.response.send_message("❌ This team has no members. Add one before setting leader.", ephemeral=True)
+            return
+        await interaction.response.send_modal(
+            SetLeaderModal(owner_id=self.owner_id, team_name=self.team_name, member_rows=self.member_rows)
+        )
 
     @discord.ui.button(label="Rename Team", style=discord.ButtonStyle.secondary, row=1)
     async def rename_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await interaction.response.send_modal(RenameTeamModal(owner_id=self.owner_id, team_name=self.team_name))
+
+    @discord.ui.button(label="Team Info", style=discord.ButtonStyle.primary, row=2)
+    async def team_info(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        from slash_commands.myteam_cmd import build_team_embeds
+
+        embeds = await build_team_embeds(
+            interaction,
+            user_id=interaction.user.id,
+            team_name=self.team_name,
+            title=f"Team Info - {self.team_name}",
+        )
+        view = TeamInfoPreviewView(owner_id=self.owner_id, embeds=embeds, team_name=self.team_name)
+        await interaction.response.edit_message(embed=view.embeds[0], view=view)
 
     @discord.ui.button(label="Delete Team", style=discord.ButtonStyle.danger, row=2)
     async def delete_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -740,6 +839,33 @@ class ManageSingleTeamView(OwnerBoundView):
     @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=2)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await open_manage_teams_home(interaction, owner_id=self.owner_id)
+
+
+class TeamInfoPreviewView(OwnerBoundView):
+    def __init__(self, *, owner_id: int, embeds: list[discord.Embed], team_name: str) -> None:
+        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
+        self.owner_id = owner_id
+        self.embeds = embeds
+        self.team_name = team_name
+        self.index = 0
+
+        if len(self.embeds) <= 1:
+            self.remove_item(self.prev_page)
+            self.remove_item(self.next_page)
+
+    @discord.ui.button(label="Prev", style=discord.ButtonStyle.secondary, row=0)
+    async def prev_page(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.index = (self.index - 1) % len(self.embeds)
+        await interaction.response.edit_message(embed=self.embeds[self.index], view=self)
+
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.secondary, row=0)
+    async def next_page(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.index = (self.index + 1) % len(self.embeds)
+        await interaction.response.edit_message(embed=self.embeds[self.index], view=self)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
+    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await open_team_manage_view(interaction, owner_id=self.owner_id, team_name=self.team_name)
 
 
 class ManageTeamsHomeView(OwnerBoundView):

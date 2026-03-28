@@ -138,10 +138,22 @@ class NoCharactersView(OwnerBoundView):
             color=discord.Color.orange(),
         )
 
-    @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary, row=0)
+    @discord.ui.button(label="New PPE", style=discord.ButtonStyle.primary, row=0)
+    async def new_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        from menus.myinfo.character_view import NewPPEFromMyInfoModal
+
+        await interaction.response.send_modal(
+            NewPPEFromMyInfoModal(
+                owner_id=interaction.user.id,
+                source_message=interaction.message,
+                connected_ppe_ids=set(),
+            )
+        )
+
+    @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary, row=1)
     async def home(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await open_myinfo_home(interaction, max_ppes=self.max_ppes)
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=0)
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await interaction.response.edit_message(content="Closed `/myinfo` menu.", embed=None, view=None)

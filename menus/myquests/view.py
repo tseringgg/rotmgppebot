@@ -26,6 +26,7 @@ class MyQuestsView(OwnerBoundView):
         current_skin: Sequence[str],
         current_all: Sequence[str],
         completed_embed: discord.Embed,
+        global_mode_enabled: bool = False,
         reset_callback: Callable[[discord.Interaction], Awaitable[None]] | None = None,
     ) -> None:
         super().__init__(
@@ -40,7 +41,11 @@ class MyQuestsView(OwnerBoundView):
         self.current_skin = list(current_skin)
         self.current_all = list(current_all)
         self.completed_embed = completed_embed
+        self.global_mode_enabled = global_mode_enabled
         self.reset_callback = reset_callback or resetquestfor_cmd.command_self
+
+        if self.global_mode_enabled:
+            self.reset_quests.disabled = True
 
     async def _edit_with_board(
         self,
@@ -105,6 +110,12 @@ class MyQuestsView(OwnerBoundView):
 
     @discord.ui.button(label="Reset Quests", style=discord.ButtonStyle.danger)
     async def reset_quests(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        if self.global_mode_enabled:
+            await interaction.response.send_message(
+                "Global quests are enabled for this server, so individual quest resets are disabled.",
+                ephemeral=True,
+            )
+            return
         await self.reset_callback(interaction)
 
     @discord.ui.button(label="Close", style=discord.ButtonStyle.secondary)

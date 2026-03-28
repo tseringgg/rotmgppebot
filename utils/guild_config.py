@@ -19,6 +19,10 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
         "shiny_points": 10,
         "skin_points": 15,
         "num_resets": 3,
+        "use_global_quests": False,
+        "global_regular_quests": [],
+        "global_shiny_quests": [],
+        "global_skin_quests": [],
     },
     "realmshark_settings": {
         "enabled": False,
@@ -63,7 +67,7 @@ def _write_json_atomic(path: str, payload: Dict[str, Any]) -> None:
     os.replace(temp_path, path)
 
 
-def _normalized_targets(config: Dict[str, Any]) -> Dict[str, int]:
+def _normalized_targets(config: Dict[str, Any]) -> Dict[str, Any]:
     settings = config.get("quest_settings", {}) if isinstance(config.get("quest_settings", {}), dict) else {}
 
     def _as_non_negative_int(value: Any, fallback: int) -> int:
@@ -73,6 +77,18 @@ def _normalized_targets(config: Dict[str, Any]) -> Dict[str, int]:
             return fallback
         return max(0, parsed)
 
+    def _as_string_list(value: Any) -> list[str]:
+        if not isinstance(value, list):
+            return []
+        normalized: list[str] = []
+        for entry in value:
+            if not isinstance(entry, str):
+                continue
+            text = entry.strip()
+            if text:
+                normalized.append(text)
+        return normalized
+
     return {
         "regular_target": _as_non_negative_int(settings.get("regular_target"), _DEFAULT_CONFIG["quest_settings"]["regular_target"]),
         "shiny_target": _as_non_negative_int(settings.get("shiny_target"), _DEFAULT_CONFIG["quest_settings"]["shiny_target"]),
@@ -81,6 +97,10 @@ def _normalized_targets(config: Dict[str, Any]) -> Dict[str, int]:
         "shiny_points": _as_non_negative_int(settings.get("shiny_points"), _DEFAULT_CONFIG["quest_settings"]["shiny_points"]),
         "skin_points": _as_non_negative_int(settings.get("skin_points"), _DEFAULT_CONFIG["quest_settings"]["skin_points"]),
         "num_resets": _as_non_negative_int(settings.get("num_resets"), _DEFAULT_CONFIG["quest_settings"]["num_resets"]),
+        "use_global_quests": bool(settings.get("use_global_quests", _DEFAULT_CONFIG["quest_settings"]["use_global_quests"])),
+        "global_regular_quests": _as_string_list(settings.get("global_regular_quests")),
+        "global_shiny_quests": _as_string_list(settings.get("global_shiny_quests")),
+        "global_skin_quests": _as_string_list(settings.get("global_skin_quests")),
     }
 
 

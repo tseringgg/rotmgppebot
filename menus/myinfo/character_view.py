@@ -23,6 +23,7 @@ from utils.helpers.shareloot_image import variant_image_label
 from utils.penalty_embed import build_penalty_infographic_embed
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.points_service import apply_penalties_to_ppe, parse_penalty_inputs, recompute_ppe_points
+from slash_commands.newppe_cmd import create_new_ppe_for_user
 
 
 class ManagePPEPenaltiesModal(discord.ui.Modal, title="Manage PPE Penalties"):
@@ -131,6 +132,73 @@ class ManagePPEPenaltiesModal(discord.ui.Modal, title="Manage PPE Penalties"):
                 pass
 
 
+class NewPPEFromMyInfoModal(discord.ui.Modal, title="Create New PPE"):
+    """Modal that mirrors /newppe inputs directly from the Manage Characters panel."""
+
+    class_name = discord.ui.TextInput(
+        label="Class Name",
+        placeholder="Example: Wizard",
+        required=True,
+        max_length=32,
+    )
+    pet_level = discord.ui.TextInput(label="Pet Level (0-100)", required=True, max_length=3)
+    num_exalts = discord.ui.TextInput(label="Exalts (0-40)", required=True, max_length=3)
+    percent_loot = discord.ui.TextInput(label="Loot Boost % (0-25)", required=True, max_length=5)
+    incombat_reduction = discord.ui.TextInput(
+        label="In-Combat Reduction (0/0.2/0.4/0.6/0.8/1.0)",
+        placeholder="Enter one of: 0, 0.2, 0.4, 0.6, 0.8, 1.0",
+        required=True,
+        max_length=3,
+    )
+
+    def __init__(self, *, owner_id: int, source_message: discord.Message | None, connected_ppe_ids: set[int]) -> None:
+        super().__init__()
+        self.owner_id = owner_id
+        self.source_message = source_message
+        self.connected_ppe_ids = connected_ppe_ids
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        try:
+            result = await create_new_ppe_for_user(
+                interaction,
+                class_name=str(self.class_name.value).strip(),
+                pet_level=int(str(self.pet_level.value).strip()),
+                num_exalts=int(str(self.num_exalts.value).strip()),
+                percent_loot=float(str(self.percent_loot.value).strip()),
+                incombat_reduction=float(str(self.incombat_reduction.value).strip()),
+            )
+        except ValueError as exc:
+            await interaction.response.send_message(str(exc), ephemeral=False)
+            return
+
+        await interaction.response.send_message(
+            f"✅ Created `PPE #{result['next_id']}` for your `{result['class_name']}` "
+            f"and set it as your active PPE.\n"
+            f"You now have {result['ppe_count']}/{result['max_ppes']} PPEs.",
+            embed=result["embed"],
+            ephemeral=False,
+        )
+
+        if self.source_message is not None:
+            refreshed = await refresh_player_data(interaction, self.owner_id)
+            guild_config = await load_guild_config(interaction)
+            refreshed_view = ManageCharactersView(
+                owner_id=self.owner_id,
+                player_data=refreshed,
+                connected_ppe_ids=self.connected_ppe_ids,
+                preferred_ppe_id=int(result["next_id"]),
+                guild_config=guild_config,
+            )
+            try:
+                await self.source_message.edit(embed=refreshed_view.current_embed(interaction.user), view=refreshed_view)
+            except discord.HTTPException:
+                pass
+
+
 class ManageCharactersView(OwnerBoundView):
     """Carousel-style character management view for navigating a player's PPE list."""
 
@@ -224,6 +292,15 @@ class ManageCharactersView(OwnerBoundView):
             owner_id=interaction.user.id,
             ppe_id=int(selected.id),
             defaults=defaults,
+            source_message=interaction.message,
+            connected_ppe_ids=self.connected_ppe_ids,
+        )
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="New PPE", style=discord.ButtonStyle.primary, row=1)
+    async def new_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        modal = NewPPEFromMyInfoModal(
+            owner_id=interaction.user.id,
             source_message=interaction.message,
             connected_ppe_ids=self.connected_ppe_ids,
         )

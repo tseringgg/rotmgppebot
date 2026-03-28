@@ -461,34 +461,9 @@ async def resetallquests(interaction: discord.Interaction):
     await resetquests_cmd.command(interaction)
 
 @bot.tree.command(name="managequests", description="View or update quest settings and leaderboard points. Admin only.", guilds=guilds)
-@app_commands.describe(regular_quests="Target number of active regular item quests")
-@app_commands.describe(shiny_quests="Target number of active shiny item quests")
-@app_commands.describe(skin_quests="Target number of active skin quests")
-@app_commands.describe(num_resets="How many quest resets each player gets")
-@app_commands.describe(regular_points="Points per completed regular quest on Leaderboard -> Quest Leaderboard")
-@app_commands.describe(shiny_points="Points per completed shiny quest on Leaderboard -> Quest Leaderboard")
-@app_commands.describe(skin_points="Points per completed skin quest on Leaderboard -> Quest Leaderboard")
 @require_ppe_roles(admin_required=True)
-async def managequests(
-    interaction: discord.Interaction,
-    regular_quests: int | None = None,
-    shiny_quests: int | None = None,
-    skin_quests: int | None = None,
-    num_resets: int | None = None,
-    regular_points: int | None = None,
-    shiny_points: int | None = None,
-    skin_points: int | None = None,
-):
-    await managequests_cmd.command(
-        interaction,
-        regular_quests,
-        shiny_quests,
-        skin_quests,
-        num_resets,
-        regular_points,
-        shiny_points,
-        skin_points,
-    )
+async def managequests(interaction: discord.Interaction):
+    await managequests_cmd.command(interaction)
 
 @bot.tree.command(name="realmsharklink", description="Generate a RealmShark link token for your account.", guilds=guilds)
 @require_ppe_roles(player_required=True)

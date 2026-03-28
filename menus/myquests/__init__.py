@@ -22,6 +22,7 @@ async def open_myquests_menu(interaction: discord.Interaction, *, ephemeral: boo
         current_skin=state["current_skin"],
         current_all=state["current_all"],
         completed_embed=state["completed_embed"],
+        global_mode_enabled=state["global_mode_enabled"],
     )
 
     await send_interaction_message(interaction, embed=state["home_embed"], view=view, ephemeral=ephemeral)
@@ -54,6 +55,7 @@ async def open_myquests_menu_for_player(
         current_skin=state["current_skin"],
         current_all=state["current_all"],
         completed_embed=state["completed_embed"],
+        global_mode_enabled=state["global_mode_enabled"],
         reset_callback=reset_callback,
     )
 
