@@ -692,7 +692,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
                     prompt = (
                         f"<@{linked_user_id}> New character detected (`{character_id}`). "
                         "Loot is currently tracked as seasonal. "
-                        "Use `/realmsharkconfigure` to map this character to a PPE or keep it seasonal."
+                        "Use `/mysniffer` -> `Configure Characters` to map this character to a PPE or keep it seasonal."
                     )
                     await notifier(
                         guild_id,
@@ -788,7 +788,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
             new_points = float(result.get("total_points", 0) or 0)
             old_points = new_points - points_added
             announcement += (
-                f" Points: {_format_points(old_points)} -> {_format_points(new_points)}"
+                    " | new character is still unmapped, use /mysniffer -> Configure Characters to choose PPE vs seasonal"
             )
 
         if bool(result.get("already_present", False)):

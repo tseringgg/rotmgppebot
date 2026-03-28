@@ -123,7 +123,7 @@ async def start_realmshark_ingest_server(notifier: Notifier | None = None) -> we
 
     host = os.getenv("REALMSHARK_INGEST_HOST", "0.0.0.0")
     # Railway injects PORT dynamically for public services.
-    port_raw = os.getenv("PORT") or os.getenv("REALMSHARK_INGEST_PORT", "8787")
+    port_raw = os.getenv("PORT") or os.getenv("REALMSHARK_INGEST_PORT", "8080")
     try:
         port = int(port_raw)
     except ValueError:

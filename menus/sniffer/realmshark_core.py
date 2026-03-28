@@ -73,7 +73,7 @@ async def generate_link_token(interaction: discord.Interaction) -> None:
         "- realmshark.bridge.enabled=true\n"
         "- realmshark.bridge.guild_id=<your guild id>\n"
         "- realmshark.bridge.link_token=<token>\n"
-        "- realmshark.bridge.endpoint=http://<bot-host>:8787/realmshark/ingest",
+        "- realmshark.bridge.endpoint=http://<bot-host>:8080/realmshark/ingest",
         ephemeral=True,
     )
 
@@ -1451,7 +1451,7 @@ class RealmSharkConfigurePanelView(OwnerBoundView):
             ephemeral=True,
         )
 
-    @discord.ui.button(label="Set Seasonal", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="Set Seasonal", style=discord.ButtonStyle.success)
     async def set_seasonal(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not await self.ensure_owner(interaction):
             return
@@ -1494,6 +1494,16 @@ class RealmSharkConfigurePanelView(OwnerBoundView):
         if not await self.ensure_owner(interaction):
             return
         await self._refresh_panel(interaction)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary)
+    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        if not await self.ensure_owner(interaction):
+            return
+        await interaction.response.edit_message(
+            content="Closed configure characters menu.",
+            embed=None,
+            view=None,
+        )
 
 
 async def open_panel(

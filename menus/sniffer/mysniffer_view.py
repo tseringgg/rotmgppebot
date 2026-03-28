@@ -17,12 +17,13 @@ from menus.sniffer.common import (
     revoke_token,
     token_preview,
 )
-from slash_commands import realmshark_cmd
+from menus.sniffer import realmshark_core
 
 
 def build_mysniffer_home_embed(
     *,
     user: discord.abc.User,
+    guild_id: int | None,
     settings: dict[str, Any],
     user_links: list[tuple[str, dict[str, Any]]],
 ) -> discord.Embed:
@@ -41,7 +42,7 @@ def build_mysniffer_home_embed(
     embed.add_field(name="Seasonal Characters", value=str(seasonal_count), inline=True)
 
     if enabled:
-        embed.add_field(name="Setup Steps", value=build_setup_steps(), inline=False)
+        embed.add_field(name="Setup Steps", value=build_setup_steps(guild_id), inline=False)
     else:
         embed.add_field(
             name="Status",
@@ -97,7 +98,12 @@ class MySnifferHomeView(OwnerBoundView):
     async def _refresh_home(self, interaction: discord.Interaction) -> None:
         settings, links = await load_sniffer_settings(interaction)
         user_links = iter_user_links(links, interaction.user.id)
-        embed = build_mysniffer_home_embed(user=interaction.user, settings=settings, user_links=user_links)
+        embed = build_mysniffer_home_embed(
+            user=interaction.user,
+            guild_id=interaction.guild.id if interaction.guild else None,
+            settings=settings,
+            user_links=user_links,
+        )
         await interaction.response.edit_message(embed=embed, view=self)
 
     @discord.ui.button(label="Generate Token", style=discord.ButtonStyle.success)
@@ -142,7 +148,7 @@ class MySnifferHomeView(OwnerBoundView):
             )
             return
 
-        await realmshark_cmd.open_panel(interaction, "show_all")
+        await realmshark_core.open_panel(interaction, "show_all")
 
     @discord.ui.button(label="Refresh", style=discord.ButtonStyle.secondary)
     async def refresh(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

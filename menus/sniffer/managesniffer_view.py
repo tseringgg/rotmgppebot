@@ -7,6 +7,7 @@ from typing import Any
 import discord
 
 from menus.menu_utils import OwnerBoundView
+from menus.sniffer import realmshark_core
 from menus.sniffer.common import (
     build_realmshark_link_instructions,
     generate_link_token_for_user,
@@ -24,13 +25,36 @@ from menus.sniffer.common import (
     token_preview,
 )
 from menus.sniffer.mysniffer_view import build_mysniffer_home_embed
-from slash_commands import realmshark_cmd
 
 
 def _resolve_member(guild: discord.Guild | None, user_id: int) -> discord.Member | None:
     if guild is None:
         return None
     return guild.get_member(int(user_id))
+
+
+def _parse_user_id(raw: str) -> int | None:
+    text = str(raw or "").strip()
+    if text.startswith("<@") and text.endswith(">"):
+        text = text[2:-1].replace("!", "")
+
+    if not text.isdigit():
+        return None
+
+    value = int(text)
+    return value if value > 0 else None
+
+
+def _parse_channel_id(raw: str) -> int | None:
+    text = str(raw or "").strip()
+    if text.startswith("<#") and text.endswith(">"):
+        text = text[2:-1]
+
+    if not text.isdigit():
+        return None
+
+    value = int(text)
+    return value if value > 0 else None
 
 
 def build_managesniffer_home_embed(
@@ -56,15 +80,15 @@ def build_managesniffer_home_embed(
     if not enabled:
         embed.add_field(
             name="Enable Sniffer",
-            value="Sniffer is disabled. Use the green **Enable Sniffer** button below to turn it on.",
+            value="Sniffer is disabled. Use **Enable Sniffer** to allow monitoring and ingest again.",
             inline=False,
         )
     else:
         embed.add_field(
             name="Admin Actions",
             value=(
-                "Use the buttons below to manage player links, inspect and revoke tokens, "
-                "set output channel, or reset all sniffer settings."
+                "Use the green buttons for day-to-day management. "
+                "Use red buttons for destructive and lifecycle actions."
             ),
             inline=False,
         )
@@ -75,6 +99,7 @@ def build_managesniffer_home_embed(
 
 def build_manage_player_sniffer_embed(
     *,
+    guild_id: int | None,
     target_user: discord.abc.User,
     settings: dict[str, Any],
     links: dict[str, dict[str, Any]],
@@ -82,7 +107,12 @@ def build_manage_player_sniffer_embed(
     user_links = iter_user_links(links, target_user.id)
     mapped_count, seasonal_count = linked_character_counts(user_links)
 
-    embed = build_mysniffer_home_embed(user=target_user, settings=settings, user_links=user_links)
+    embed = build_mysniffer_home_embed(
+        user=target_user,
+        guild_id=guild_id,
+        settings=settings,
+        user_links=user_links,
+    )
     embed.title = f"Manage Player Sniffer - {target_user.display_name}"
     embed.description = "Admin view of this player's /mysniffer dashboard."
     embed.add_field(name="Player ID", value=str(target_user.id), inline=True)
@@ -163,7 +193,7 @@ class _DeleteTokenSelect(discord.ui.Select):
         token = self.values[0]
         deleted = await revoke_token(interaction, token)
         if deleted:
-            await interaction.response.edit_message(content="✅ Token revoked.", embed=None, view=None)
+            await interaction.response.edit_message(content="Token revoked.", embed=None, view=None)
         else:
             await interaction.response.edit_message(content="Token was already removed.", embed=None, view=None)
 
@@ -174,82 +204,84 @@ class TokenDeletePickerView(OwnerBoundView):
         self.add_item(_DeleteTokenSelect(owner_id, token_window))
 
 
-class _ManageSnifferPlayerPicker(discord.ui.UserSelect):
+class ManageSnifferPlayerModal(discord.ui.Modal, title="Manage Player's Sniffer"):
+    player_id = discord.ui.TextInput(
+        label="Player ID or mention",
+        placeholder="123456789012345678 or @player",
+        required=True,
+        max_length=64,
+    )
+
     def __init__(self, owner_id: int) -> None:
-        super().__init__(
-            placeholder="Select a player to manage",
-            min_values=1,
-            max_values=1,
-        )
+        super().__init__(timeout=180)
         self.owner_id = owner_id
 
-    async def callback(self, interaction: discord.Interaction) -> None:
+    async def on_submit(self, interaction: discord.Interaction) -> None:
         if interaction.user.id != self.owner_id:
-            await interaction.response.send_message("This picker belongs to another admin.", ephemeral=True)
+            await interaction.response.send_message("This form belongs to another admin.", ephemeral=True)
             return
 
-        if not self.values:
-            await interaction.response.send_message("Please select a user.", ephemeral=True)
+        target_user_id = _parse_user_id(str(self.player_id.value))
+        if target_user_id is None:
+            await interaction.response.send_message("Provide a valid Discord user ID or @mention.", ephemeral=True)
             return
 
-        target_user = self.values[0]
         await render_manage_player_sniffer_home(
             interaction,
             owner_id=self.owner_id,
-            target_user_id=int(target_user.id),
+            target_user_id=target_user_id,
         )
 
 
-class ManageSnifferPlayerPickerView(OwnerBoundView):
+class OutputChannelIdModal(discord.ui.Modal, title="Set Sniffer Output Channel"):
+    channel_id = discord.ui.TextInput(
+        label="Channel ID or #mention",
+        placeholder="123456789012345678 or #channel",
+        required=True,
+        max_length=64,
+    )
+
     def __init__(self, owner_id: int) -> None:
-        super().__init__(owner_id=owner_id, timeout=300, owner_error="This picker belongs to another admin.")
-        self.add_item(_ManageSnifferPlayerPicker(owner_id))
-
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary)
-    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await render_managesniffer_home(interaction, owner_id=self.owner_id)
-
-
-class _OutputChannelSelect(discord.ui.ChannelSelect):
-    def __init__(self, owner_id: int) -> None:
-        super().__init__(
-            placeholder="Select output channel",
-            min_values=1,
-            max_values=1,
-            channel_types=[discord.ChannelType.text],
-        )
+        super().__init__(timeout=180)
         self.owner_id = owner_id
 
-    async def callback(self, interaction: discord.Interaction) -> None:
+    async def on_submit(self, interaction: discord.Interaction) -> None:
         if interaction.user.id != self.owner_id:
-            await interaction.response.send_message("This picker belongs to another admin.", ephemeral=True)
+            await interaction.response.send_message("This form belongs to another admin.", ephemeral=True)
             return
 
-        if not self.values:
-            await interaction.response.send_message("Please select a text channel.", ephemeral=True)
+        parsed_channel_id = _parse_channel_id(str(self.channel_id.value))
+        if parsed_channel_id is None:
+            await interaction.response.send_message("Provide a valid text channel ID or #channel mention.", ephemeral=True)
             return
 
-        selected = self.values[0]
-        channel_id = int(getattr(selected, "id", 0) or 0)
-        if channel_id <= 0:
-            await interaction.response.send_message("Invalid channel selection.", ephemeral=True)
+        if interaction.guild is None:
+            await interaction.response.send_message("This action can only be used in a server.", ephemeral=True)
             return
 
-        await set_output_channel(interaction, channel_id)
+        channel = interaction.guild.get_channel(parsed_channel_id)
+        if not isinstance(channel, discord.TextChannel):
+            await interaction.response.send_message("Channel ID must resolve to a text channel in this server.", ephemeral=True)
+            return
+
+        await set_output_channel(interaction, parsed_channel_id)
         await render_output_channel_view(interaction, owner_id=self.owner_id)
 
 
 class ManageSnifferOutputChannelView(OwnerBoundView):
     def __init__(self, owner_id: int) -> None:
         super().__init__(owner_id=owner_id, timeout=300, owner_error="This menu belongs to another admin.")
-        self.add_item(_OutputChannelSelect(owner_id))
 
-    @discord.ui.button(label="Reset To Default", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="Set Channel ID", style=discord.ButtonStyle.success, row=0)
+    async def set_channel_id(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await interaction.response.send_modal(OutputChannelIdModal(self.owner_id))
+
+    @discord.ui.button(label="Reset To Default", style=discord.ButtonStyle.secondary, row=0)
     async def reset_default(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await reset_output_channel(interaction)
         await render_output_channel_view(interaction, owner_id=self.owner_id)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=0)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await render_managesniffer_home(interaction, owner_id=self.owner_id)
 
@@ -293,13 +325,13 @@ class ManagePlayerSnifferView(OwnerBoundView):
         )
         await interaction.followup.send(f"Revoked `{revoked}` token(s) for this player.", ephemeral=True)
 
-    @discord.ui.button(label="Configure Characters", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="Configure Characters", style=discord.ButtonStyle.success)
     async def configure(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         target_member = _resolve_member(interaction.guild, self.target_user_id)
         if target_member is None:
             await interaction.response.send_message("Player is no longer in this server.", ephemeral=True)
             return
-        await realmshark_cmd.admin_panel(interaction, target_member, "show_all")
+        await realmshark_core.admin_panel(interaction, target_member, "show_all")
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -366,6 +398,44 @@ class ManageSnifferTokensView(OwnerBoundView):
         await render_managesniffer_home(interaction, owner_id=self.owner_id)
 
 
+class SnifferDangerConfirmView(OwnerBoundView):
+    def __init__(self, owner_id: int, action_key: str) -> None:
+        super().__init__(owner_id=owner_id, timeout=180, owner_error="This confirmation belongs to another admin.")
+        self.action_key = action_key
+
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.danger, row=0)
+    async def confirm(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        if self.action_key == "disable":
+            await set_sniffer_enabled(interaction, False)
+            await render_managesniffer_home(interaction, owner_id=self.owner_id)
+            await interaction.followup.send(
+                "Sniffer disabled. Existing tokens are preserved, but incoming sniffer ingest and monitoring are now inactive.",
+                ephemeral=True,
+            )
+            return
+
+        if self.action_key == "reset":
+            summary = await reset_all_sniffer_settings(interaction)
+            await render_managesniffer_home(interaction, owner_id=self.owner_id)
+            await interaction.followup.send(
+                "Reset all sniffer data for this guild.\n"
+                f"enabled: `{summary['enabled']}`\n"
+                f"mode: `{summary['mode']}`\n"
+                f"announce_channel_id: `{summary['announce_channel_id']}`\n"
+                f"link_count: `{summary['link_count']}`\n"
+                f"revoked_links: `{summary['revoked_links']}`\n"
+                f"pending_files_removed: `{summary['pending_files_removed']}`",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.send_message("Unknown confirmation action.", ephemeral=True)
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, row=0)
+    async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await render_managesniffer_home(interaction, owner_id=self.owner_id)
+
+
 class ManageSnifferHomeView(OwnerBoundView):
     def __init__(self, owner_id: int, *, enabled: bool) -> None:
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another admin.")
@@ -376,23 +446,18 @@ class ManageSnifferHomeView(OwnerBoundView):
         else:
             self.remove_item(self.disable_sniffer)
 
-    @discord.ui.button(label="Enable Sniffer", style=discord.ButtonStyle.success, row=0)
+    @discord.ui.button(label="Enable Sniffer", style=discord.ButtonStyle.success, row=1)
     async def enable_sniffer(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await set_sniffer_enabled(interaction, True)
         await render_managesniffer_home(interaction, owner_id=self.owner_id)
 
-    @discord.ui.button(label="Manage Player's Sniffer", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="Manage Player's Sniffer", style=discord.ButtonStyle.success, row=0)
     async def manage_player(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        embed = discord.Embed(
-            title="Select Player",
-            description="Pick a player to open their sniffer management panel.",
-            color=discord.Color.blurple(),
-        )
-        await interaction.response.edit_message(embed=embed, view=ManageSnifferPlayerPickerView(self.owner_id))
+        await interaction.response.send_modal(ManageSnifferPlayerModal(self.owner_id))
 
-    @discord.ui.button(label="Manage Tokens", style=discord.ButtonStyle.primary, row=1)
+    @discord.ui.button(label="Manage Tokens", style=discord.ButtonStyle.success, row=0)
     async def manage_tokens(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        settings, links = await load_sniffer_settings(interaction)
+        _settings, links = await load_sniffer_settings(interaction)
         view = ManageSnifferTokensView(self.owner_id, page=0)
         embed = build_tokens_embed(
             guild=interaction.guild,
@@ -402,31 +467,42 @@ class ManageSnifferHomeView(OwnerBoundView):
         )
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="Change Output Channel", style=discord.ButtonStyle.primary, row=1)
+    @discord.ui.button(label="Change Output Channel", style=discord.ButtonStyle.success, row=0)
     async def change_output_channel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await render_output_channel_view(interaction, owner_id=self.owner_id)
 
-    @discord.ui.button(label="Reset All Sniffer Settings", style=discord.ButtonStyle.danger, row=2)
+    @discord.ui.button(label="Reset All Sniffer Settings", style=discord.ButtonStyle.danger, row=1)
     async def reset_all(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        summary = await reset_all_sniffer_settings(interaction)
-        await render_managesniffer_home(interaction, owner_id=self.owner_id)
-        await interaction.followup.send(
-            "Reset all sniffer data for this guild.\n"
-            f"enabled: `{summary['enabled']}`\n"
-            f"mode: `{summary['mode']}`\n"
-            f"announce_channel_id: `{summary['announce_channel_id']}`\n"
-            f"link_count: `{summary['link_count']}`\n"
-            f"revoked_links: `{summary['revoked_links']}`\n"
-            f"pending_files_removed: `{summary['pending_files_removed']}`",
-            ephemeral=True,
+        embed = discord.Embed(
+            title="Confirm Sniffer Reset",
+            description=(
+                "This will remove all sniffer configuration data for this guild:\n"
+                "- revokes all tokens\n"
+                "- clears mappings and pending sniffer files\n"
+                "- resets enabled state and output channel"
+            ),
+            color=discord.Color.red(),
         )
+        await interaction.response.edit_message(embed=embed, view=SnifferDangerConfirmView(self.owner_id, "reset"))
 
-    @discord.ui.button(label="Disable Sniffer", style=discord.ButtonStyle.danger, row=2)
+    @discord.ui.button(label="Disable Sniffer", style=discord.ButtonStyle.danger, row=1)
     async def disable_sniffer(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await set_sniffer_enabled(interaction, False)
-        await render_managesniffer_home(interaction, owner_id=self.owner_id)
+        embed = discord.Embed(
+            title="Confirm Disable Sniffer",
+            description=(
+                "Disabling sniffer does not delete existing tokens or mappings.\n"
+                "It prevents incoming sniffer ingest requests from being processed and stops monitoring behavior "
+                "until re-enabled."
+            ),
+            color=discord.Color.red(),
+        )
+        await interaction.response.edit_message(embed=embed, view=SnifferDangerConfirmView(self.owner_id, "disable"))
 
-    @discord.ui.button(label="Refresh", style=discord.ButtonStyle.secondary, row=3)
+    @discord.ui.button(label="Close", style=discord.ButtonStyle.danger, row=1)
+    async def close(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await interaction.response.edit_message(content="Closed /managesniffer menu.", embed=None, view=None)
+
+    @discord.ui.button(label="Refresh", style=discord.ButtonStyle.secondary, row=1)
     async def refresh(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await render_managesniffer_home(interaction, owner_id=self.owner_id)
 
@@ -457,15 +533,19 @@ async def render_manage_player_sniffer_home(
 ) -> None:
     target_user = _resolve_member(interaction.guild, target_user_id)
     if target_user is None:
-        await interaction.response.edit_message(
-            content="Player is no longer in this server.",
-            embed=None,
-            view=ManageSnifferPlayerPickerView(owner_id),
+        await interaction.response.send_message(
+            "Player not found in this server. Provide a valid server member ID/mention.",
+            ephemeral=True,
         )
         return
 
     settings, links = await load_sniffer_settings(interaction)
-    embed = build_manage_player_sniffer_embed(target_user=target_user, settings=settings, links=links)
+    embed = build_manage_player_sniffer_embed(
+        guild_id=interaction.guild.id if interaction.guild else None,
+        target_user=target_user,
+        settings=settings,
+        links=links,
+    )
     view = ManagePlayerSnifferView(owner_id=owner_id, target_user_id=target_user_id)
     await interaction.response.edit_message(embed=embed, view=view)
 
@@ -476,7 +556,7 @@ async def render_output_channel_view(interaction: discord.Interaction, *, owner_
 
     embed = discord.Embed(
         title="Sniffer Output Channel",
-        description="Choose a text channel for sniffer announcements, or reset to default.",
+        description="Set the output channel by channel ID (or #channel mention), or reset to default.",
         color=discord.Color.blurple(),
     )
     embed.add_field(name="Current Channel", value=mention_for_channel(interaction.guild, channel_id), inline=False)

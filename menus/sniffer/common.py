@@ -176,14 +176,14 @@ async def reset_all_sniffer_settings(interaction: discord.Interaction) -> dict[s
 def build_realmshark_link_instructions(guild_id: int | None, token: str) -> str:
     guild_id_text = str(guild_id) if guild_id is not None else "unknown"
     return (
-        "Sniffer token created. Keep it private.\\n"
-        f"guild_id: `{guild_id_text}`\\n"
-        f"link_token: `{token}`\\n\\n"
-        "Set these in RealmShark properties:\\n"
-        "- realmshark.bridge.enabled=true\\n"
-        "- realmshark.bridge.guild_id=<your guild id>\\n"
-        "- realmshark.bridge.link_token=<token>\\n"
-        "- realmshark.bridge.endpoint=http://<bot-host>:8787/realmshark/ingest"
+        "Sniffer token created. Keep it private.\n"
+        f"guild_id: `{guild_id_text}`\n"
+        f"link_token: `{token}`\n\n"
+        "Set these in RealmShark properties:\n"
+        "- realmshark.bridge.enabled=true\n"
+        f"- realmshark.bridge.guild_id={guild_id_text}\n"
+        f"- realmshark.bridge.link_token={token}\n"
+        "- realmshark.bridge.endpoint=http://<bot-host>:8080/realmshark/ingest"
     )
 
 
@@ -207,13 +207,14 @@ def sniffer_connected_user_count(links: dict[str, dict[str, Any]]) -> int:
     return len(users)
 
 
-def build_setup_steps() -> str:
-    return "\\n".join(
+def build_setup_steps(guild_id: int | None) -> str:
+    guild_id_text = str(guild_id) if guild_id is not None else "<this server id>"
+    return "\n".join(
         [
             "1. Click **Generate Token** to create your private link token.",
             "2. In RealmShark, set `realmshark.bridge.enabled=true`.",
-            "3. Set `realmshark.bridge.guild_id=<this server id>` and `realmshark.bridge.link_token=<your token>`.",
-            "4. Set `realmshark.bridge.endpoint=http://<bot-host>:8787/realmshark/ingest`.",
+            f"3. Set `realmshark.bridge.guild_id={guild_id_text}` and `realmshark.bridge.link_token=<your token>`.",
+            "4. Set `realmshark.bridge.endpoint=http://<bot-host>:8080/realmshark/ingest`.",
             "5. Play on your character, then click **Configure Characters** to map to PPEs.",
         ]
     )
