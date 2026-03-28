@@ -138,7 +138,7 @@ class NoCharactersView(OwnerBoundView):
             color=discord.Color.orange(),
         )
 
-    @discord.ui.button(label="New PPE", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="New PPE", style=discord.ButtonStyle.success, row=0)
     async def new_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         from menus.myinfo.character_view import NewPPEFromMyInfoModal
 

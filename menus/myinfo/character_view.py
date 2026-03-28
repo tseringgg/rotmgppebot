@@ -297,7 +297,7 @@ class ManageCharactersView(OwnerBoundView):
         )
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="New PPE", style=discord.ButtonStyle.primary, row=1)
+    @discord.ui.button(label="New PPE", style=discord.ButtonStyle.success, row=1)
     async def new_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         modal = NewPPEFromMyInfoModal(
             owner_id=interaction.user.id,
