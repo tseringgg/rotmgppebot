@@ -754,7 +754,7 @@ class ManageSingleTeamView(OwnerBoundView):
         lines: list[str] = []
         for rank, (member_id, member_name, ppe_points, quest_points, contribution, best_class) in enumerate(self.member_rows, start=1):
             lines.append(
-                f"{rank}. **{member_name}** ({best_class}) - {ppe_points:.1f} PPE + {quest_points:.1f} Quest = **{contribution:.1f}**"
+                f"{rank}. **{member_name}** ({best_class}): {ppe_points:.1f} PPE + {quest_points:.1f} Quest = **{contribution:.1f}**"
             )
 
         text = "\n".join(lines)
