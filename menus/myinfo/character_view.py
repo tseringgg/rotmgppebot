@@ -67,7 +67,7 @@ class ManagePPEPenaltiesModal(discord.ui.Modal, title="Manage PPE Penalties"):
             self.incombat_reduction.value,
         )
         if error:
-            await interaction.response.send_message(error, ephemeral=True)
+            await interaction.response.send_message(error, ephemeral=False)
             return
 
         assert parsed_inputs is not None
@@ -112,7 +112,7 @@ class ManagePPEPenaltiesModal(discord.ui.Modal, title="Manage PPE Penalties"):
             f"✅ Updated penalties for PPE #{ppe.id} ({display_class_name(ppe)}). "
             f"New total: **{format_points(points_breakdown['total'])}** points.",
             embed=embed,
-            ephemeral=True,
+            ephemeral=False,
         )
 
         # Refresh the character panel message so penalty stats and points are immediately visible.
