@@ -63,9 +63,7 @@ async def command(interaction: discord.Interaction):
         "refreshallpoints": "Recalculate all PPE points.",
         "manageplayer": "Use Manage Player -> Show Quests -> Reset Quests to reset quest sections for a player.",
         "managequests": "View/update quest targets, reset attempts, quest leaderboard point weights, and run Reset All Quests from the menu.",
-        "pointsettings": "View guild points modifier settings.",
-        "pointsettingsglobal": "Set global percent modifiers for loot/bonus/penalty/total.",
-        "pointsettingsclass": "Set class-specific percent modifiers and minimum total.",
+        "manageseason": "Open season admin menu: Reset Season (with RealmShark mode selection) and Manage Point Settings.",
         "managesniffer": "Admin sniffer control panel (enable/disable, tokens, output channel, reset, player sniffer management).",
     }
     
@@ -76,7 +74,6 @@ async def command(interaction: discord.Interaction):
     }
 
     owner_cmds = {
-        "resetseason": "Clear season data and teams; optionally unlink all RealmShark links/mappings.",
         "setuproles": "Create required roles.",
     }
 

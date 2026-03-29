@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, addtoteam_cmd, myloot_cmd, listplayers_cmd, listroles_cmd, manageplayer_cmd, manageteams_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removefromteam_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfrom_cmd, resetseason_cmd, myteam_cmd, managequests_cmd, pointsettings_cmd, mysniffer_cmd, managesniffer_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, addtoteam_cmd, myloot_cmd, listplayers_cmd, listroles_cmd, manageseason_cmd, manageplayer_cmd, manageteams_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removefromteam_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfrom_cmd, myteam_cmd, managequests_cmd, mysniffer_cmd, managesniffer_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -295,67 +295,6 @@ async def refreshpointsfor(interaction: discord.Interaction, user: discord.Membe
 async def refreshallpoints(interaction: discord.Interaction):
     await refreshallpoints_cmd.command(interaction)
 
-
-@bot.tree.command(name="pointsettings", description="View current guild point modifier settings. Admin only.", guilds=guilds)
-@require_ppe_roles(admin_required=True)
-async def pointsettings(interaction: discord.Interaction):
-    await pointsettings_cmd.view(interaction)
-
-
-@bot.tree.command(name="pointsettingsglobal", description="Set global point modifiers (%). Admin only.", guilds=guilds)
-@app_commands.describe(
-    loot_percent="Percent modifier for loot points",
-    bonus_percent="Percent modifier for bonus points",
-    penalty_percent="Percent modifier for penalty points",
-    total_percent="Percent modifier for final total points",
-)
-@require_ppe_roles(admin_required=True)
-async def pointsettingsglobal(
-    interaction: discord.Interaction,
-    loot_percent: float | None = None,
-    bonus_percent: float | None = None,
-    penalty_percent: float | None = None,
-    total_percent: float | None = None,
-):
-    await pointsettings_cmd.set_global(
-        interaction,
-        loot_percent=loot_percent,
-        bonus_percent=bonus_percent,
-        penalty_percent=penalty_percent,
-        total_percent=total_percent,
-    )
-
-
-@bot.tree.command(name="pointsettingsclass", description="Set class-specific point modifiers. Admin only.", guilds=guilds)
-@app_commands.describe(
-    class_name="Class to configure",
-    loot_percent="Percent modifier for loot points",
-    bonus_percent="Percent modifier for bonus points",
-    penalty_percent="Percent modifier for penalty points",
-    total_percent="Percent modifier for final total points",
-    minimum_total="Minimum final point total floor for this class",
-)
-@app_commands.autocomplete(class_name=class_autocomplete)
-@require_ppe_roles(admin_required=True)
-async def pointsettingsclass(
-    interaction: discord.Interaction,
-    class_name: str,
-    loot_percent: float | None = None,
-    bonus_percent: float | None = None,
-    penalty_percent: float | None = None,
-    total_percent: float | None = None,
-    minimum_total: float | None = None,
-):
-    await pointsettings_cmd.set_class(
-        interaction,
-        class_name=class_name,
-        loot_percent=loot_percent,
-        bonus_percent=bonus_percent,
-        penalty_percent=penalty_percent,
-        total_percent=total_percent,
-        minimum_total=minimum_total,
-    )
-
 @bot.tree.command(name="listplayers", description="Show all current participants in the PPE contest.", guilds=guilds)
 # @commands.has_role("PPE Admin")
 @require_ppe_roles(admin_required=True)
@@ -459,6 +398,11 @@ async def myloot(interaction: discord.Interaction):
 async def managequests(interaction: discord.Interaction):
     await managequests_cmd.command(interaction)
 
+@bot.tree.command(name="manageseason", description="Open season admin controls (reset season and point settings).", guilds=guilds)
+@require_ppe_roles(admin_required=True)
+async def manageseason(interaction: discord.Interaction):
+    await manageseason_cmd.command(interaction)
+
 @bot.tree.command(name="mysniffer", description="Open your sniffer setup and character configuration menu.", guilds=guilds)
 @require_ppe_roles(player_required=True)
 async def mysniffer(interaction: discord.Interaction):
@@ -468,12 +412,6 @@ async def mysniffer(interaction: discord.Interaction):
 @require_ppe_roles(admin_required=True)
 async def managesniffer(interaction: discord.Interaction):
     await managesniffer_cmd.command(interaction)
-
-@bot.tree.command(name="resetseason", description="Reset season data, teams, and RealmShark links/settings. Server owner/admin only.", guilds=guilds)
-@app_commands.describe(clear_realmshark_links="If true, unlink all RealmShark integrations and remove all mappings")
-@commands.has_permissions(administrator=True)
-async def resetseason(interaction: discord.Interaction, clear_realmshark_links: bool = False):
-    await resetseason_cmd.command(interaction, clear_realmshark_links)
 
 ##################
 #### TEAMS ####

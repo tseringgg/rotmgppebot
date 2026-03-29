@@ -107,11 +107,9 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/refreshpointsfor` | Recalculate points for a specific PPE |
 | `/refreshallpoints` | Fix all PPE point totals server-wide |
 | `/managequests` | View or update per-server quest targets (regular/shiny/skin), global quest pools, and run Reset All Quests from the menu |
+| `/manageseason` | Open season admin controls: Reset Season and Manage Point Settings |
 | `/addseasonlootfor` | Add a unique item to another player's season collection |
 | `/removeseasonlootfrom` | Remove a unique item from another player's season collection |
-| `/pointsettings` | View guild point modifier settings |
-| `/pointsettingsglobal` | Set global point modifiers |
-| `/pointsettingsclass` | Set class-specific point modifiers |
 
 Legacy standalone commands for `/myloot`, `/myppes`, and `/showseasonloot` were retired in favor of `/myinfo`.
 The `/myquests` command and the My Info -> Show Quests button now use the same shared menu view implementation.
