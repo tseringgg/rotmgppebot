@@ -84,15 +84,6 @@ def normalize_ppe(ppe: dict) -> PPEData:
 def normalize_player(player: dict) -> PlayerData:
     ppes = [normalize_ppe(p) for p in player.get("ppes", [])]
 
-    def safe_optional_non_negative_int(value) -> int | None:
-        if value is None:
-            return None
-        try:
-            parsed = int(value)
-        except (TypeError, ValueError):
-            return None
-        return max(0, parsed)
-
     def safe_str_list(value) -> List[str]:
         """Coerce unknown/legacy values into a clean list of strings."""
         if value is None:
@@ -131,8 +122,7 @@ def normalize_player(player: dict) -> PlayerData:
         is_member=bool(player.get("is_member", False)),
         unique_items=unique_items,
         team_name=player.get("team_name", None),
-        quests=normalized_quests,
-        quest_resets_remaining=safe_optional_non_negative_int(player.get("quest_resets_remaining")),
+        quests=normalized_quests
     )
 
 async def load_player_records(interaction: discord.Interaction) -> Dict[int, PlayerData]:
@@ -204,7 +194,6 @@ async def save_player_records(interaction: discord.Interaction, records: Dict[in
             "active_ppe": data.active_ppe,
             "unique_items": list(data.unique_items),  # Convert set to list for JSON
             "team_name": data.team_name,
-            "quest_resets_remaining": data.quest_resets_remaining,
             "quests": {
                 "current_items": data.quests.current_items,
                 "current_shinies": data.quests.current_shinies,
@@ -358,3 +347,72 @@ async def save_teams(interaction: discord.Interaction, teams: Dict[str, TeamData
     }
     async with get_lock(guild_id):
         await asyncio.to_thread(_write_atomic_json, path, temp_path, json_ready)
+
+
+# -------------------------------------------------------------------------
+# Channel settings (item suggestions, etc.)
+# -------------------------------------------------------------------------
+
+def get_guild_settings_path(guild_id: int | str) -> str:
+    """Return the file path for this guild's channel settings file."""
+    return os.path.join(DATA_DIR, f"{guild_id}_channel_settings.json")
+
+
+async def get_item_suggestions_enabled(guild_id: str, channel_id: str) -> bool:
+    """Return True if item suggestions are enabled for the given channel, False otherwise."""
+    guild_id = str(guild_id)
+    channel_id = str(channel_id)
+    path = get_guild_settings_path(guild_id)
+
+    async with get_lock(int(guild_id)):
+        data = await asyncio.to_thread(_read_json_file, path)
+
+    enabled = (
+        data
+        .get("channels", {})
+        .get(channel_id, {})
+        .get("item_suggestions_enabled", False)
+    )
+    print(f"[settings] get_item_suggestions_enabled guild={guild_id} channel={channel_id} -> {enabled}")
+    return bool(enabled)
+
+
+async def set_item_suggestions_enabled(guild_id: str, channel_id: str, enabled: bool):
+    """Set whether item suggestions are enabled for the given channel and persist the change."""
+    guild_id = str(guild_id)
+    channel_id = str(channel_id)
+    path = get_guild_settings_path(guild_id)
+    temp_path = f"{path}.tmp"
+
+    async with get_lock(int(guild_id)):
+        data = await asyncio.to_thread(_read_json_file, path)
+
+        channels = data.setdefault("channels", {})
+        channel_entry = channels.setdefault(channel_id, {})
+        channel_entry["item_suggestions_enabled"] = enabled
+
+        print(f"[settings] set_item_suggestions_enabled guild={guild_id} channel={channel_id} -> {enabled}")
+        await asyncio.to_thread(_write_atomic_json, path, temp_path, data)
+
+
+async def toggle_item_suggestions(guild_id: str, channel_id: str) -> bool:
+    """Flip the item suggestions setting for the given channel and return the new value."""
+    guild_id = str(guild_id)
+    channel_id = str(channel_id)
+    path = get_guild_settings_path(guild_id)
+    temp_path = f"{path}.tmp"
+
+    async with get_lock(int(guild_id)):
+        data = await asyncio.to_thread(_read_json_file, path)
+
+        channels = data.setdefault("channels", {})
+        channel_entry = channels.setdefault(channel_id, {})
+
+        current = bool(channel_entry.get("item_suggestions_enabled", False))
+        new_value = not current
+        channel_entry["item_suggestions_enabled"] = new_value
+
+        print(f"[settings] toggle_item_suggestions guild={guild_id} channel={channel_id} -> {new_value}")
+        await asyncio.to_thread(_write_atomic_json, path, temp_path, data)
+
+    return new_value

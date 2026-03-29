@@ -56,7 +56,6 @@ Skin,Demon Frog Pet Skin,0
 
 White or ST,Sword of Illumination,6.0
 White or ST,Adamantine Helm,6.0
-White or ST,Adamantine Helm (shiny),12
 
 White or ST,Arcane Rapier,3.0
 UT,Amber Encrusted Helmet,0
@@ -123,12 +122,11 @@ Skin,Crystal Cobra Pet Skin,0
 White or ST,Wand of Hidden Knowledge,4.0
 White or ST,Necronomicon,4.0
 White or ST,Scholar's Seal,4.0
-UT,Ronin's Wakizashi,4
+UT,Ronin's Wakizashi,0
 White or ST,Corruption Cutter,4.0
-White or ST,Wand of Hidden Knowledge (shiny),8.0
 White or ST,Necronomicon (shiny),8.0
 White or ST,Scholar's Seal (shiny),8
-UT,Ronin's Wakizashi (shiny),8
+UT,Ronin's Wakizashi (shiny),0
 White or ST,Corruption Cutter (shiny),8
 White or ST,Deathless Crossbow,4.0
 White or ST,Quiver of Shrieking Specters,4.0
@@ -292,7 +290,6 @@ White or ST,Staff of Unholy Sacrifice,7.0
 White or ST,Skull of Corrupted Souls,7.0
 White or ST,Ritual Robe,7.0
 White or ST,Bloodshed Ring,7.0
-White or ST,Staff of Unholy Sacrifice (shiny),14
 White or ST,Burial Blades (shiny),14
 White or ST,Skull of Corrupted Souls (shiny),14
 White or ST,Ritual Robe (shiny),14
@@ -514,12 +511,12 @@ White or ST,Heavenly Magatama,6.5
 Skin,Good Mask Spirit Pet Skin,0
 Skin,Evil Mask Spirit Pet Skin,0
 
-UT,Snakeskin Shield,0
+White or ST,Snakeskin Shield,2.5
 White or ST,Wand of the Bulwark,2.5
 White or ST,Snake Charmer Pungi,2.5
 White or ST,Snakeskin Armor,2.5
 White or ST,Snake Eye Ring,2.5
-UT,Snakeskin Shield (shiny),0
+White or ST,Snakeskin Shield (shiny),5
 White or ST,Wand of the Bulwark (shiny),5
 White or ST,Snake Charmer Pungi (shiny),5
 White or ST,Snakeskin Armor (shiny),5
@@ -537,7 +534,6 @@ White or ST,Overwhelming Axehead,8.0
 White or ST,Motivational Megaphone,8.0
 White or ST,Damnation,8.0
 White or ST,Vial of Soul Extract,8
-White or ST,Wretched Rags (shiny),16
 White or ST,Tools of the Tarnished (shiny),16.0
 White or ST,Ocular Entrapment (shiny),16
 White or ST,Motivational Megaphone (shiny),16
@@ -665,10 +661,6 @@ White or ST,Squaroid Staff,6.0
 White or ST,Cubic Frame,6.0
 White or ST,Polygonal Garbs,6.0
 White or ST,Cuband,6.0
-White or ST,Morning Square,6.0
-White or ST,The Triangle,6.0
-White or ST,Ring of Cubed Wisdom,6.0
-White or ST,Shadow Serpent Sidearm (shiny),12
 
 White or ST,Ring of the Pyramid,6.0
 White or ST,Ring of the Sphinx,6.0
@@ -861,7 +853,6 @@ White or ST,Fool's Prism,4.5
 White or ST,Honey Scepter Supreme,4.5
 White or ST,Unshuriken,4.5
 White or ST,NSFWakizashi,4.5
-White or ST,Sigil of the Rubber Duck,4.5
 White or ST,Lullaby,4.5
 White or ST,Recursion Mace,4.5
 White or ST,Paper Machete,4.5
@@ -1063,59 +1054,8 @@ Limited,Leprechaun's Walking Hat Pet Skin,0
 Limited,Green Hat Bunny Pet Skin,0
 Limited,Mini Pot of Gold Pet Skin,0
 
-Limited,Wand of Egg-cellence,0
-Limited,Dagger of the Hasteful Rabbit,0
 Limited,Incubation Mace,10
-Limited,Eggstatic Conductor,5
-Limited,Vitamine Buster,5
-Limited,Sunny Side Bow,5
-Limited,Helm of the Swift Bunny,5
-Limited,Botany Book,5
-Limited,Sakura Wakizashi,5
-Limited,Eggsponential Scepter,5
 Limited,Incubation Mace (shiny),20
-Limited,Bunny Trickster Skin,0
-Limited,Moon Bunny Pet Skin,0
-
-Limited,Bunny Ear Tachi,0
-Limited,Caramel Spellblade,0
-Limited,Shard Launcher,0
-Limited,Egg Basher,0
-Limited,Chocolate Ovipositor,0
-Limited,Hatchling Blades,0
-Limited,Carrotroot Vestments,0
-Limited,Eggshell Carapace,0
-Limited,Fudgeclad Armor,0
-
-Limited,Eternal Graved Great Sword,5
-Limited,Spriteful Shield,5
-Limited,Eggre Battle Armor,5
-Limited,Tiara of Eggscellent Sturdiness,5
-Limited,Spring Wonder Bow,5
-Limited,Fresh Breeze Quiver,5
-Limited,Painted Eggshell Armor,5
-Limited,Painted Egg Amulet,5
-Limited,Nutrient Rich Carrot Blade,5
-Limited,Carrot Cake Crest,5
-Limited,Hardened Carrot Armor,5
-Limited,Sun Bathed Straw Hat,5
-Limited,Sweet Desire Wand,5
-Limited,Chocolate Egg Mace,5
-Limited,Chocolate Glazed Robe,5
-Limited,Chocolate Bunny Ears,5
-
-Limited,Mithril Sword,10
-Limited,Leave Bow,5
-Limited,Ring of Overwhelming Health,7.5
-Limited,Mood Bow,3.5
-Limited,Reasonable Hour Star,6.0
-Limited,Bottled Medusa,5.5
-Limited,Nice Crown,10.0
-Limited,Non-Fungible Tome,7.5
-Limited,Luminaire,9.5
-Limited,Inferior,9.5
-Limited,Chocolate Cream Sandwich Cookie,10
-Limited,Seal of Blasphemous Prayer,10
 
 Limited,Crystal Key,5
 Limited,Keychain Cutlass,10

@@ -10,7 +10,6 @@ async def command(
     regular_quests: int | None = None,
     shiny_quests: int | None = None,
     skin_quests: int | None = None,
-    num_resets: int | None = None,
     regular_points: int | None = None,
     shiny_points: int | None = None,
     skin_points: int | None = None,
@@ -22,7 +21,6 @@ async def command(
         (regular_quests, "regular_quests"),
         (shiny_quests, "shiny_quests"),
         (skin_quests, "skin_quests"),
-        (num_resets, "num_resets"),
         (regular_points, "regular_points"),
         (shiny_points, "shiny_points"),
         (skin_points, "skin_points"),
@@ -41,7 +39,6 @@ async def command(
             regular_quests is None
             and shiny_quests is None
             and skin_quests is None
-            and num_resets is None
             and regular_points is None
             and shiny_points is None
             and skin_points is None
@@ -57,8 +54,7 @@ async def command(
                 value=(
                     f"Regular: **{settings['regular_target']}**\n"
                     f"Shiny: **{settings['shiny_target']}**\n"
-                    f"Skin: **{settings['skin_target']}**\n"
-                    f"Quest resets per player: **{settings['num_resets']}**"
+                    f"Skin: **{settings['skin_target']}**"
                 ),
                 inline=True,
             )
@@ -82,8 +78,6 @@ async def command(
             settings["shiny_target"] = shiny_quests
         if skin_quests is not None:
             settings["skin_target"] = skin_quests
-        if num_resets is not None:
-            settings["num_resets"] = num_resets
         if regular_points is not None:
             settings["regular_points"] = regular_points
         if shiny_points is not None:
@@ -97,34 +91,27 @@ async def command(
 
         players_adjusted = 0
         active_entries_removed = 0
-        player_reset_counters_updated = 0
         quest_targets_changed = any(v is not None for v in (regular_quests, shiny_quests, skin_quests))
-        reset_limit_changed = num_resets is not None
 
-        if quest_targets_changed or reset_limit_changed:
+        if quest_targets_changed:
             records = await load_player_records(interaction)
 
             for player_data in records.values():
-                if quest_targets_changed:
-                    result = apply_quest_targets(
-                        player_data,
-                        target_item_quests=settings["regular_target"],
-                        target_shiny_quests=settings["shiny_target"],
-                        target_skin_quests=settings["skin_target"],
+                result = apply_quest_targets(
+                    player_data,
+                    target_item_quests=settings["regular_target"],
+                    target_shiny_quests=settings["shiny_target"],
+                    target_skin_quests=settings["skin_target"],
+                )
+                if result["changed"]:
+                    players_adjusted += 1
+                    active_entries_removed += (
+                        len(result["removed_current_items"])
+                        + len(result["removed_current_shinies"])
+                        + len(result["removed_current_skins"])
                     )
-                    if result["changed"]:
-                        players_adjusted += 1
-                        active_entries_removed += (
-                            len(result["removed_current_items"])
-                            + len(result["removed_current_shinies"])
-                            + len(result["removed_current_skins"])
-                        )
 
-                if reset_limit_changed:
-                    player_data.quest_resets_remaining = settings["num_resets"]
-                    player_reset_counters_updated += 1
-
-            if players_adjusted > 0 or player_reset_counters_updated > 0:
+            if players_adjusted > 0:
                 await save_player_records(interaction, records)
 
         changed_lines = []
@@ -132,7 +119,6 @@ async def command(
             ("regular_target", "Regular quests"),
             ("shiny_target", "Shiny quests"),
             ("skin_target", "Skin quests"),
-            ("num_resets", "Quest resets per player"),
             ("regular_points", "Regular points"),
             ("shiny_points", "Shiny points"),
             ("skin_points", "Skin points"),
@@ -150,8 +136,7 @@ async def command(
             value=(
                 f"Regular: **{settings['regular_target']}**\n"
                 f"Shiny: **{settings['shiny_target']}**\n"
-                    f"Skin: **{settings['skin_target']}**\n"
-                    f"Quest resets per player: **{settings['num_resets']}**"
+                f"Skin: **{settings['skin_target']}**"
             ),
             inline=True,
         )
@@ -173,8 +158,7 @@ async def command(
             name="Player Impact",
             value=(
                 f"Players adjusted: **{players_adjusted}**\n"
-                f"Active quests removed: **{active_entries_removed}**\n"
-                f"Reset counters updated: **{player_reset_counters_updated}**"
+                f"Active quests removed: **{active_entries_removed}**"
             ),
             inline=False,
         )

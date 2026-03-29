@@ -134,32 +134,6 @@ A comprehensive Discord bot for managing **Petless Player Experience (PPE)** com
 | `/listadmins` | View all PPE admins |
 | `/listroles` | Show server role information |
 
-### RealmShark Commands
-| Command | Description |
-|---------|-------------|
-| `/realmsharklink` | Create a private link token for RealmShark/Tomato ingest |
-| `/realmsharkenabled` | Enable/disable RealmShark ingest for the guild |
-| `/realmsharkchannel` | Set/reset RealmShark announcement channel |
-| `/realmsharkstatus` | Show RealmShark config status and which account is linked to each token |
-| `/realmsharkconfigure` | Open interactive mapping panel (`Show All` or `Show Pending`) |
-| `/realmsharkadminview` | Open admin RealmShark panel for a user (`Show All` or `Show Pending`) |
-| `/realmsharkunlink` | Revoke a specific RealmShark link token |
-| `/realmsharkreset` | Reset all RealmShark settings/tokens and clear pending logs for the guild |
-
-## RealmShark Character-Aware Routing
-
-When Tomato sends loot with `character_id`, routing is policy-driven:
-
-1. If `character_id` is mapped to one of your PPEs, the bot logs through `/addloot` behavior on that mapped PPE.
-2. If `character_id` is mapped as seasonal, the bot logs through `/addseasonloot` behavior.
-3. If `character_id` is unseen/unmapped, the bot logs through `/addseasonloot`, pings the player, and stores a pending loot log (item + rarity + flags) for review.
-
-Use `/realmsharkconfigure` to manage all character mappings and pending loot through an interactive panel. Start in `Show All` (all known characters) or `Show Pending` (only pending unmapped characters), then use the panel buttons to map characters to PPEs (which automatically applies pending loot), set characters as seasonal, clear pending logs, and navigate between entries.
-The panel is intuitive with `Prev` / `Next` buttons to cycle through characters, and all destructive actions require explicit confirmation.
-The panel/config view shows detected in-game character name/class when available, and mapping is class-validated: a character cannot be mapped to a PPE of a different class.
-
-Pending unmapped character events are stored in per-player files so main guild config files stay compact.
-
 ## 🚂 Hosting on Railway (No Coding Required)
 
 For those unfamiliar with programming, [Railway](https://railway.app/) offers a simple way to host this bot 24/7 in the cloud with minimal setup. This is perfect if you don't want to run the bot on your personal computer.
@@ -269,7 +243,6 @@ SERVER2_ID = another_server_id_here
 - `{guild_id}_loot_records.json`: Player data storage (per guild)
 - `{guild_id}_teams.json`: Team data storage (per guild)
 - `{guild_id}_config.json`: Per-server settings storage (quest target counts and future config)
-- `{guild_id}_{user_id}_realmshark_pending.json`: Pending unmapped character logs for each player
 
 ### Role Requirements
 - **PPE Player**: Can create PPEs and manage own data

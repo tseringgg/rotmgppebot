@@ -1,10 +1,11 @@
 discord.py
 python-dotenv
 aiosqlite
-aiohttp
 opencv-python-headless
-numpy
 IPython
 anyio
 Image
-Pillow
+pytesseract==0.3.10
+Pillow==10.3.0
+numpy==1.26.4
+rapidfuzz==3.6.1

@@ -11,7 +11,7 @@ class LootTableMessage:
     Supports different message types and configurations for various use cases.
     """
     
-    def __init__(self, interaction: discord.Interaction, message_type: str = "markdown", response: str = None, **config):
+    def __init__(self, interaction: discord.Interaction, message_type: str = "markdown", response: str = None, already_responded: bool = False, **config):
         """
         Initialize loot table message handler.
         
@@ -19,11 +19,13 @@ class LootTableMessage:
             interaction: Discord interaction object for sending messages
             message_type: Type of message to send ("markdown", "embed", "visual")
             response: Optional initial response message. If provided, loot table will be sent as followup
+            already_responded: If True, skip sending an initial response and use followup for all sends
             **config: Additional configuration options for message formatting
         """
         self.interaction = interaction
         self.message_type = message_type
         self.response = response
+        self.already_responded = already_responded
         self.config = config
     
     async def send_player_loot(self, active_ppe, **kwargs):
@@ -35,8 +37,8 @@ class LootTableMessage:
             **kwargs: Additional arguments specific to message type
         """
         try:
-            # Send initial response message if provided
-            if self.response:
+            # Send initial response message if provided (and not already responded)
+            if self.response and not self.already_responded:
                 await self.interaction.response.send_message(
                     self.response, 
                     ephemeral=self.config.get('response_ephemeral', False)
@@ -54,7 +56,7 @@ class LootTableMessage:
         except (ValueError, KeyError) as e:
             # Handle errors - use response if not already used, otherwise followup
             error_msg = str(e)
-            if self.response:
+            if self.response or self.already_responded:
                 await self.interaction.followup.send(error_msg, ephemeral=True)
             else:
                 await self.interaction.response.send_message(error_msg, ephemeral=True)
@@ -65,7 +67,7 @@ class LootTableMessage:
         
         try:
             # Send the file as attachment (response or followup based on whether response was already sent)
-            if self.response:
+            if self.response or self.already_responded:
                 # Use followup since response was already sent
                 await self.interaction.followup.send(
                     file=discord.File(temp_file_path), 
@@ -93,7 +95,7 @@ class LootTableMessage:
         content = self.config.get('embed_content', f"Your active PPE now has **{active_ppe.points} total points**.")
         
         # Send embed (response or followup based on whether response was already sent)
-        if self.response:
+        if self.response or self.already_responded:
             # Use followup since response was already sent
             await self.interaction.followup.send(
                 content=content,

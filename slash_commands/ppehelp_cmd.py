@@ -42,7 +42,6 @@ async def command(interaction: discord.Interaction):
         "showseasonloot": "Show all season unique items.",
         "shareseasonloot": "Generate season loot table.",
         "myquests": "Show your current and completed quests.",
-        "resetquests": "Reset parts of your own quests (limited attempts).",
     }
     
     # --- Team Commands (Player/Leader) ---
@@ -77,7 +76,7 @@ async def command(interaction: discord.Interaction):
         "viewquestsfor": "View quest state for a player.",
         "resetquestfor": "Reset quest sections for a player.",
         "resetallquests": "Reset all quest data for all players (with confirmation).",
-        "managequests": "View/update quest targets, reset attempts, and quest leaderboard point weights.",
+        "managequests": "View/update quest targets and quest leaderboard point weights.",
     }
     
     # --- Admin: Team Management ---
@@ -99,7 +98,7 @@ async def command(interaction: discord.Interaction):
     }
     
     owner_cmds = {
-        "resetseason": "Clear season data and teams; optionally unlink all RealmShark links/mappings.",
+        "resetseason": "Clear all season data & teams.",
         "giveppeadminrole": "Grant PPE Admin role.",
         "removeppeadminrole": "Remove PPE Admin role.",
         "setuproles": "Create required roles.",
