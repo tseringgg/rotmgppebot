@@ -82,6 +82,18 @@ async def send_leaderboard(
     empty_message: str = "No data available yet.",
     per_page: int = LEADERBOARD_PAGE_SIZE,
 ) -> None:
+    if not entries:
+        empty_embed = discord.Embed(
+            title=title,
+            description=empty_message,
+            color=color,
+        )
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=empty_embed, ephemeral=True)
+        else:
+            await interaction.response.send_message(embed=empty_embed, ephemeral=True)
+        return
+
     embeds = build_leaderboard_embeds(
         title=title,
         entries=entries,
