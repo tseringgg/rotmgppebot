@@ -179,11 +179,11 @@ def build_realmshark_link_instructions(guild_id: int | None, token: str) -> str:
         "Sniffer token created. Keep it private.\n"
         f"guild_id: `{guild_id_text}`\n"
         f"link_token: `{token}`\n\n"
-        "Set these in RealmShark properties:\n"
-        "- realmshark.bridge.enabled=true\n"
-        f"- realmshark.bridge.guild_id={guild_id_text}\n"
-        f"- realmshark.bridge.link_token={token}\n"
-        "- realmshark.bridge.endpoint=http://<bot-host>:8080/realmshark/ingest"
+        "Set these in Bridge Review:\n"
+        "Enabled -> checked\n"
+        f"Guild ID = {guild_id_text}\n"
+        f"Link Token ={token}\n"
+        "Endpoint = *Provided endpoint*\n"
     )
 
 
@@ -211,10 +211,13 @@ def build_setup_steps(guild_id: int | None) -> str:
     guild_id_text = str(guild_id) if guild_id is not None else "<this server id>"
     return "\n".join(
         [
-            "1. Click **Generate Token** to create your private link token.",
-            "2. In RealmShark, set `realmshark.bridge.enabled=true`.",
-            f"3. Set `realmshark.bridge.guild_id={guild_id_text}` and `realmshark.bridge.link_token=<your token>`.",
-            "4. Set `realmshark.bridge.endpoint=http://<bot-host>:8080/realmshark/ingest`.",
-            "5. Play on your character, then click **Configure Characters** to map to PPEs.",
+            "1. Click **Generate Token** to create a private link token. You will need to copy it.",
+            "2. Open Sniffer (Tomato/RealmShark) and go to the Bridge Review tab. If missing, check for correct version.",
+            "2.5. Ensure that your Sniffer is running (File -> Start Sniffer).",
+            "3. Set `Endpoint` to the link provided by your admin. It should be something like: `http://<bot-host>:8080/realmshark/ingest`.",
+            f"4. Set `Guild ID` to `{guild_id_text}` and `Link Token` to your generated token (step 1).",
+            "5. Check the `Enabled` checkbox. Optionally check `Debug` for better logging in Bridge Logs.",
+            "6. Click `Save Bridge Settings` in Sniffer - you should be pinged on discord.",
+            "7. Play on your character. **Once you get loggable loot** the bot will provide instructions on how to configure characters.",
         ]
     )
