@@ -25,6 +25,7 @@ _REALMSHARK_DEFAULTS: Dict[str, Any] = {
     "mode": "addloot",
     "links": {},
     "announce_channel_id": 0,
+    "endpoint": "",
 }
 
 _CONFIG_ACTIONS = {

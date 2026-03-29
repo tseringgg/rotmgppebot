@@ -146,6 +146,7 @@ async def reset_season_data(
                 "mode": "addloot",
                 "links": {},
                 "announce_channel_id": 0,
+                "endpoint": "",
             },
         )
     else:
@@ -157,6 +158,7 @@ async def reset_season_data(
                 "mode": "addloot",
                 "links": migrated_links,
                 "announce_channel_id": _coerce_channel_id(realmshark_settings.get("announce_channel_id", 0)),
+                "endpoint": str(realmshark_settings.get("endpoint", "")).strip(),
             },
         )
 

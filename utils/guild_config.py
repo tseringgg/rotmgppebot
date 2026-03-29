@@ -29,6 +29,7 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
         "mode": "addloot",
         "links": {},
         "announce_channel_id": 0,
+        "endpoint": "",
     },
     "points_settings": {
         "global": {
@@ -214,11 +215,15 @@ def _normalized_realmshark_settings(config: Dict[str, Any]) -> Dict[str, Any]:
     if announce_channel_id < 0:
         announce_channel_id = _DEFAULT_CONFIG["realmshark_settings"]["announce_channel_id"]
 
+    endpoint_raw = settings.get("endpoint", _DEFAULT_CONFIG["realmshark_settings"]["endpoint"])
+    endpoint = endpoint_raw.strip() if isinstance(endpoint_raw, str) else ""
+
     return {
         "enabled": bool(settings.get("enabled", _DEFAULT_CONFIG["realmshark_settings"]["enabled"])),
         "mode": mode,
         "links": links,
         "announce_channel_id": announce_channel_id,
+        "endpoint": endpoint,
     }
 
 

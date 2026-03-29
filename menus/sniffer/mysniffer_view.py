@@ -10,6 +10,7 @@ from menus.menu_utils import OwnerBoundView
 from menus.sniffer.common import (
     build_realmshark_link_instructions,
     build_setup_steps,
+    configured_endpoint,
     generate_link_token_for_user,
     iter_user_links,
     linked_character_counts,
@@ -42,7 +43,11 @@ def build_mysniffer_home_embed(
     embed.add_field(name="Seasonal Characters", value=str(seasonal_count), inline=True)
 
     if enabled:
-        embed.add_field(name="Setup Steps", value=build_setup_steps(guild_id), inline=False)
+        embed.add_field(
+            name="Setup Steps",
+            value=build_setup_steps(guild_id, configured_endpoint(settings)),
+            inline=False,
+        )
     else:
         embed.add_field(
             name="Status",

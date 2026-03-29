@@ -16,6 +16,7 @@ _REALMSHARK_DEFAULTS: dict[str, Any] = {
     "mode": "addloot",
     "links": {},
     "announce_channel_id": 0,
+    "endpoint": "",
 }
 
 
@@ -100,6 +101,13 @@ async def set_output_channel(interaction: discord.Interaction, channel_id: int) 
 
 async def reset_output_channel(interaction: discord.Interaction) -> dict[str, Any]:
     return await set_output_channel(interaction, 0)
+
+
+async def set_endpoint(interaction: discord.Interaction, endpoint: str) -> dict[str, Any]:
+    settings, _links = await load_sniffer_settings(interaction)
+    settings["endpoint"] = str(endpoint).strip()
+    saved, _ = await save_sniffer_settings(interaction, settings)
+    return saved
 
 
 async def generate_link_token_for_user(interaction: discord.Interaction, user_id: int) -> str:
@@ -197,6 +205,11 @@ def mention_for_channel(guild: discord.Guild | None, channel_id: int) -> str:
     return str(channel_id)
 
 
+def configured_endpoint(settings: dict[str, Any]) -> str:
+    endpoint_raw = settings.get("endpoint", "")
+    return endpoint_raw.strip() if isinstance(endpoint_raw, str) else ""
+
+
 def sniffer_connected_user_count(links: dict[str, dict[str, Any]]) -> int:
     users: set[int] = set()
     for link_data in links.values():
@@ -207,14 +220,20 @@ def sniffer_connected_user_count(links: dict[str, dict[str, Any]]) -> int:
     return len(users)
 
 
-def build_setup_steps(guild_id: int | None) -> str:
+def build_setup_steps(guild_id: int | None, endpoint_url: str | None = None) -> str:
     guild_id_text = str(guild_id) if guild_id is not None else "<this server id>"
+    normalized_endpoint = endpoint_url.strip() if isinstance(endpoint_url, str) else ""
+    step_3 = (
+        f"3. Set `Endpoint` to `{normalized_endpoint}`."
+        if normalized_endpoint
+        else "3. Set `Endpoint` to the link provided by your admin. It should be something like: `http://<bot-host>:8080/realmshark/ingest`."
+    )
     return "\n".join(
         [
             "1. Click **Generate Token** to create a private link token. You will need to copy it.",
             "2. Open Sniffer (Tomato/RealmShark) and go to the Bridge Review tab. If missing, check for correct version.",
             "2.5. Ensure that your Sniffer is running (File -> Start Sniffer).",
-            "3. Set `Endpoint` to the link provided by your admin. It should be something like: `http://<bot-host>:8080/realmshark/ingest`.",
+            step_3,
             f"4. Set `Guild ID` to `{guild_id_text}` and `Link Token` to your generated token (step 1).",
             "5. This depends on the server. Download CSV file, put in same location as Sniffer, and set `CSV Path` field to `./rotmg_loot_drops_updated.csv`.",
             "6. Check the `Enabled` checkbox. Optionally check `Debug` for better logging in Bridge Logs.",

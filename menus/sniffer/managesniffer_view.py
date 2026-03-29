@@ -11,6 +11,7 @@ from menus.menu_utils import OwnerBoundView
 from menus.sniffer import realmshark_core
 from menus.sniffer.common import (
     build_realmshark_link_instructions,
+    configured_endpoint,
     generate_link_token_for_user,
     iter_user_links,
     linked_character_counts,
@@ -20,6 +21,7 @@ from menus.sniffer.common import (
     reset_output_channel,
     revoke_all_tokens_for_user,
     revoke_token,
+    set_endpoint,
     set_output_channel,
     set_sniffer_enabled,
     sniffer_connected_user_count,
@@ -90,6 +92,7 @@ def build_managesniffer_home_embed(
 ) -> discord.Embed:
     enabled = bool(settings.get("enabled", False))
     channel_id = int(settings.get("announce_channel_id", 0) or 0)
+    endpoint = configured_endpoint(settings)
     connected_users = sniffer_connected_user_count(links)
 
     embed = discord.Embed(
@@ -101,6 +104,11 @@ def build_managesniffer_home_embed(
     embed.add_field(name="Linked Tokens", value=str(len(links)), inline=True)
     embed.add_field(name="Connected Players", value=str(connected_users), inline=True)
     embed.add_field(name="Output Channel", value=mention_for_channel(guild, channel_id), inline=False)
+    embed.add_field(
+        name="Endpoint",
+        value=f"`{endpoint}`" if endpoint else "Not set. Players will see the generic endpoint setup hint.",
+        inline=False,
+    )
 
     if not enabled:
         embed.add_field(
@@ -327,6 +335,43 @@ class OutputChannelIdModal(discord.ui.Modal, title="Set Sniffer Output Channel")
         await render_output_channel_view(interaction, owner_id=self.owner_id)
 
 
+class EndpointUrlModal(discord.ui.Modal, title="Configure Sniffer Endpoint"):
+    def __init__(self, owner_id: int, current_endpoint: str) -> None:
+        super().__init__(timeout=180)
+        self.owner_id = owner_id
+        self.allow_empty = bool(current_endpoint)
+        self.endpoint = discord.ui.TextInput(
+            label="Endpoint URL",
+            placeholder="http://<bot-host>:8080/realmshark/ingest",
+            default=current_endpoint,
+            required=not self.allow_empty,
+            max_length=300,
+        )
+        self.add_item(self.endpoint)
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This form belongs to another admin.", ephemeral=True)
+            return
+
+        endpoint_value = str(self.endpoint.value).strip()
+        if not self.allow_empty and not endpoint_value:
+            await interaction.response.send_message("Provide an endpoint URL.", ephemeral=True)
+            return
+
+        await set_endpoint(interaction, endpoint_value)
+        await render_managesniffer_home(interaction, owner_id=self.owner_id)
+
+        if endpoint_value:
+            await interaction.followup.send(f"Endpoint set to `{endpoint_value}`.", ephemeral=True)
+            return
+
+        await interaction.followup.send(
+            "Endpoint cleared. The button is now **Add Endpoint** and step 3 falls back to generic setup text.",
+            ephemeral=True,
+        )
+
+
 class ManageSnifferOutputChannelView(OwnerBoundView):
     def __init__(self, owner_id: int) -> None:
         super().__init__(owner_id=owner_id, timeout=300, owner_error="This menu belongs to another admin.")
@@ -496,14 +541,17 @@ class SnifferDangerConfirmView(OwnerBoundView):
 
 
 class ManageSnifferHomeView(OwnerBoundView):
-    def __init__(self, owner_id: int, *, enabled: bool) -> None:
+    def __init__(self, owner_id: int, *, enabled: bool, endpoint: str) -> None:
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another admin.")
         self.enabled = enabled
+        self.endpoint = endpoint
 
         if enabled:
             self.remove_item(self.enable_sniffer)
         else:
             self.remove_item(self.disable_sniffer)
+
+        self.configure_endpoint.label = "Edit Endpoint" if endpoint else "Add Endpoint"
 
     @discord.ui.button(label="Enable Sniffer", style=discord.ButtonStyle.success, row=1)
     async def enable_sniffer(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -529,6 +577,11 @@ class ManageSnifferHomeView(OwnerBoundView):
     @discord.ui.button(label="Change Output Channel", style=discord.ButtonStyle.success, row=0)
     async def change_output_channel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await render_output_channel_view(interaction, owner_id=self.owner_id)
+
+    @discord.ui.button(label="Add Endpoint", style=discord.ButtonStyle.success, row=0)
+    async def configure_endpoint(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        settings, _links = await load_sniffer_settings(interaction)
+        await interaction.response.send_modal(EndpointUrlModal(self.owner_id, configured_endpoint(settings)))
 
     @discord.ui.button(label="Reset All Sniffer Settings", style=discord.ButtonStyle.danger, row=1)
     async def reset_all(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -569,18 +622,20 @@ class ManageSnifferHomeView(OwnerBoundView):
 async def render_managesniffer_home(interaction: discord.Interaction, *, owner_id: int) -> None:
     settings, links = await load_sniffer_settings(interaction)
     enabled = bool(settings.get("enabled", False))
+    endpoint = configured_endpoint(settings)
 
     embed = build_managesniffer_home_embed(guild=interaction.guild, settings=settings, links=links)
-    view = ManageSnifferHomeView(owner_id=owner_id, enabled=enabled)
+    view = ManageSnifferHomeView(owner_id=owner_id, enabled=enabled, endpoint=endpoint)
     await interaction.response.edit_message(embed=embed, view=view)
 
 
 async def send_managesniffer_home(interaction: discord.Interaction) -> None:
     settings, links = await load_sniffer_settings(interaction)
     enabled = bool(settings.get("enabled", False))
+    endpoint = configured_endpoint(settings)
 
     embed = build_managesniffer_home_embed(guild=interaction.guild, settings=settings, links=links)
-    view = ManageSnifferHomeView(owner_id=interaction.user.id, enabled=enabled)
+    view = ManageSnifferHomeView(owner_id=interaction.user.id, enabled=enabled, endpoint=endpoint)
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
