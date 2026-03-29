@@ -57,7 +57,7 @@ class _RemoveFromTeamButton(discord.ui.Button):
     """Open a confirmation submenu before removing a player from their team."""
 
     def __init__(self) -> None:
-        super().__init__(label="Remove from Team", style=discord.ButtonStyle.danger, row=3)
+        super().__init__(label="Remove From Team", style=discord.ButtonStyle.danger, row=3)
 
     async def callback(self, interaction: discord.Interaction) -> None:
         view = self.view
@@ -216,11 +216,11 @@ class ManagePlayerHomeView(OwnerBoundView):
         if isinstance(self.team_action_button, _RemoveFromTeamButton) and self.team_action_button in self.children:
             row_two_buttons.append(self.team_action_button)
 
-        for candidate in (self.reset_quests, self.delete_all_ppes, self.cancel):
+        for candidate in (self.reset_quests, self.delete_all_ppes):
             if candidate in self.children:
                 row_two_buttons.append(candidate)
 
-        for candidate in (self.remove_admin, self.remove_from_contest):
+        for candidate in (self.remove_admin, self.remove_from_contest, self.cancel):
             if candidate in self.children:
                 row_three_buttons.append(candidate)
 
@@ -417,7 +417,7 @@ class ManagePlayerHomeView(OwnerBoundView):
 
         await open_reset_for_member(interaction, self.target.member, actor_id=interaction.user.id)
 
-    @discord.ui.button(label="Remove from Contest", style=discord.ButtonStyle.danger, row=2)
+    @discord.ui.button(label="Remove From Contest", style=discord.ButtonStyle.danger, row=2)
     async def remove_from_contest(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         confirm_view = _ManagePlayerActionConfirmView(
             owner_id=interaction.user.id,
@@ -427,7 +427,7 @@ class ManagePlayerHomeView(OwnerBoundView):
         )
         await interaction.response.edit_message(embed=confirm_view.current_embed(), view=confirm_view)
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=3)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_manageplayer_menu(interaction)
 

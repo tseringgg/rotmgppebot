@@ -113,7 +113,7 @@ class ResetQuestSelectionView(OwnerBoundView):
 
     async def on_timeout(self):
         self.confirm_button.disabled = True
-        self.cancel_button.disabled = True
+        self.back_button.disabled = True
         self.section_select.disabled = True
 
     @ui.select(
@@ -134,7 +134,7 @@ class ResetQuestSelectionView(OwnerBoundView):
     async def confirm_button(self, interaction: discord.Interaction, button: ui.Button):
         if not self.selected_values:
             return await interaction.response.send_message(
-                "⚠️ Select at least one quest/action, or press Cancel.",
+                "⚠️ Select at least one quest/action, or press Back.",
                 ephemeral=True,
             )
 
@@ -293,11 +293,11 @@ class ResetQuestSelectionView(OwnerBoundView):
             embed=None,
         )
 
-    @ui.button(label="Cancel", style=discord.ButtonStyle.secondary)
-    async def cancel_button(self, interaction: discord.Interaction, button: ui.Button):
+    @ui.button(label="Back", style=discord.ButtonStyle.secondary)
+    async def back_button(self, interaction: discord.Interaction, button: ui.Button):
         self.stop()
         await interaction.response.edit_message(
-            content="Quest reset cancelled.",
+            content="Returned without making any quest reset changes.",
             view=None,
             embed=None,
         )

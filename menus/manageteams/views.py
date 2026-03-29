@@ -171,6 +171,62 @@ class ManageSingleTeamView(OwnerBoundView):
         embed.add_field(name="Member Contributions", value=text, inline=False)
         return embed
 
+    def _build_team_info_embeds(self) -> list[discord.Embed]:
+        leader_label = f"<@{self.team.leader_id}>" if self.team.leader_id else "Unassigned"
+        total_ppe = sum(row[2] for row in self.member_rows)
+        total_quest = sum(row[3] for row in self.member_rows)
+        total_points = sum(row[4] for row in self.member_rows)
+
+        if not self.member_rows:
+            embed = discord.Embed(
+                title=f"Team Info - {self.team_name}",
+                description=f"Leader: {leader_label}",
+                color=discord.Color.blurple(),
+            )
+            embed.add_field(name="Members", value="0", inline=True)
+            embed.add_field(name="Total: PPE + Quest", value=f"{total_ppe:.1f} + {total_quest:.1f} = **{total_points:.1f}**", inline=True)
+            embed.add_field(name="Rankings", value="This team has no members yet.", inline=False)
+            return [embed]
+
+        lines = [
+            (
+                f"{rank}. {member_name}: {ppe_points:.1f} PPE + {quest_points:.1f} "
+                f"Quest = **{contribution:.1f}** pts ({best_class})"
+            )
+            for rank, (_member_id, member_name, ppe_points, quest_points, contribution, best_class) in enumerate(
+                self.member_rows,
+                start=1,
+            )
+        ]
+
+        pages = [lines[index:index + LEADERBOARD_PAGE_SIZE] for index in range(0, len(lines), LEADERBOARD_PAGE_SIZE)]
+        embeds: list[discord.Embed] = []
+        page_count = len(pages)
+
+        for page_number, page_lines in enumerate(pages, start=1):
+            embed = discord.Embed(
+                title=f"Team Info - {self.team_name}",
+                description=f"Leader: {leader_label}",
+                color=discord.Color.blurple(),
+            )
+            embed.add_field(name="Members", value=str(len(self.member_rows)), inline=True)
+            embed.add_field(
+                name="Total: PPE + Quest",
+                value=f"{total_ppe:.1f} + {total_quest:.1f} = **{total_points:.1f}**",
+                inline=True,
+            )
+
+            ranking_value = "\n".join(page_lines)
+            if len(ranking_value) > 1024:
+                ranking_value = ranking_value[:1000].rstrip() + "\n..."
+            embed.add_field(name="Rankings", value=ranking_value, inline=False)
+
+            if page_count > 1:
+                embed.set_footer(text=f"Page {page_number}/{page_count}")
+            embeds.append(embed)
+
+        return embeds
+
     @discord.ui.button(label="Add Member", style=discord.ButtonStyle.success, row=0)
     async def add_member(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         records = await load_player_records(interaction)
@@ -219,14 +275,7 @@ class ManageSingleTeamView(OwnerBoundView):
 
     @discord.ui.button(label="Team Info", style=discord.ButtonStyle.primary, row=0)
     async def team_info(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        from slash_commands.myteam_cmd import build_team_embeds
-
-        embeds = await build_team_embeds(
-            interaction,
-            user_id=interaction.user.id,
-            team_name=self.team_name,
-            title=f"Team Info - {self.team_name}",
-        )
+        embeds = self._build_team_info_embeds()
         view = TeamInfoPreviewView(owner_id=self.owner_id, embeds=embeds, team_name=self.team_name)
         await interaction.response.edit_message(embed=view.embeds[0], view=view)
 
