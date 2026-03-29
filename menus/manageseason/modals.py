@@ -9,6 +9,7 @@ from menus.manageseason.services import (
     update_class_point_override,
     update_global_point_modifiers,
 )
+from menus.menu_utils import ConfirmCancelView
 
 
 def _parse_optional_float(raw_value: str, *, field_name: str) -> float | None:
@@ -38,6 +39,36 @@ def _parse_minimum_total(raw_value: str) -> tuple[float | None, bool]:
         raise ValueError(
             "ERROR: `minimum_total` must be a number, or use `none` to clear the minimum-total floor."
         ) from exc
+
+
+async def _confirm_points_update(
+    *,
+    interaction: discord.Interaction,
+    owner_id: int,
+    confirmation_text: str,
+) -> bool:
+    confirm_view = ConfirmCancelView(
+        owner_id=owner_id,
+        timeout=60,
+        confirm_label="Apply Changes",
+        cancel_label="Cancel",
+        confirm_style=discord.ButtonStyle.danger,
+        cancel_style=discord.ButtonStyle.secondary,
+        owner_error="This confirmation belongs to another user.",
+    )
+
+    await interaction.response.send_message(confirmation_text, view=confirm_view, ephemeral=True)
+    await confirm_view.wait()
+
+    try:
+        await interaction.delete_original_response()
+    except discord.HTTPException:
+        pass
+
+    if not confirm_view.confirmed:
+        await interaction.followup.send("Point modifier update cancelled.", ephemeral=True)
+        return False
+    return True
 
 
 async def _refresh_point_settings_message(
@@ -137,7 +168,27 @@ class EditGlobalPointSettingsModal(discord.ui.Modal, title="Edit Global Point Mo
             await interaction.response.send_message("ERROR: Provide at least one modifier to update.", ephemeral=True)
             return
 
-        settings = await update_global_point_modifiers(
+        loot_text = self.loot_percent.value.strip() or "(unchanged)"
+        bonus_text = self.bonus_percent.value.strip() or "(unchanged)"
+        penalty_text = self.penalty_percent.value.strip() or "(unchanged)"
+        total_text = self.total_percent.value.strip() or "(unchanged)"
+        confirm_text = (
+            "⚠️ **Apply global modifier changes and recalculate all PPE characters?**\n"
+            "This will update point totals server-wide.\n\n"
+            f"Loot: `{loot_text}`\n"
+            f"Bonus: `{bonus_text}`\n"
+            f"Penalty: `{penalty_text}`\n"
+            f"Total: `{total_text}`"
+        )
+        confirmed = await _confirm_points_update(
+            interaction=interaction,
+            owner_id=self.owner_id,
+            confirmation_text=confirm_text,
+        )
+        if not confirmed:
+            return
+
+        settings, refresh_summary = await update_global_point_modifiers(
             interaction,
             loot_percent=loot_percent,
             bonus_percent=bonus_percent,
@@ -146,12 +197,14 @@ class EditGlobalPointSettingsModal(discord.ui.Modal, title="Edit Global Point Mo
         )
 
         global_settings = settings.get("global", {})
-        await interaction.response.send_message(
+        await interaction.followup.send(
             "Updated global point modifiers.\n"
             f"Loot: {float(global_settings.get('loot_percent', 0.0)):.2f}%\n"
             f"Bonus: {float(global_settings.get('bonus_percent', 0.0)):.2f}%\n"
             f"Penalty: {float(global_settings.get('penalty_percent', 0.0)):.2f}%\n"
-            f"Total: {float(global_settings.get('total_percent', 0.0)):.2f}%",
+            f"Total: {float(global_settings.get('total_percent', 0.0)):.2f}%\n"
+            f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
+            f"PPE totals changed: {refresh_summary.ppes_updated}",
             ephemeral=True,
         )
 
@@ -242,7 +295,25 @@ class EditClassPointSettingsModal(discord.ui.Modal):
             await interaction.response.send_message("ERROR: Provide at least one class modifier to update.", ephemeral=True)
             return
 
-        settings, class_override = await update_class_point_override(
+        minimum_text = self.minimum_total.value.strip() or "(unchanged)"
+        confirm_text = (
+            f"⚠️ **Apply class modifier changes for {self.class_name} and recalculate all PPE characters?**\n"
+            "This will update point totals server-wide.\n\n"
+            f"Loot: `{self.loot_percent.value or '(unchanged)'}`\n"
+            f"Bonus: `{self.bonus_percent.value or '(unchanged)'}`\n"
+            f"Penalty: `{self.penalty_percent.value or '(unchanged)'}`\n"
+            f"Total: `{self.total_percent.value or '(unchanged)'}`\n"
+            f"Minimum Total: `{minimum_text}`"
+        )
+        confirmed = await _confirm_points_update(
+            interaction=interaction,
+            owner_id=self.owner_id,
+            confirmation_text=confirm_text,
+        )
+        if not confirmed:
+            return
+
+        settings, class_override, refresh_summary = await update_class_point_override(
             interaction,
             class_name=self.class_name,
             loot_percent=loot_percent,
@@ -255,13 +326,15 @@ class EditClassPointSettingsModal(discord.ui.Modal):
 
         min_total = class_override.get("minimum_total")
         min_text = "none" if min_total is None else f"{float(min_total):.2f}"
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"Updated class override for {self.class_name}.\n"
             f"Loot: {float(class_override.get('loot_percent', 0.0)):.2f}%\n"
             f"Bonus: {float(class_override.get('bonus_percent', 0.0)):.2f}%\n"
             f"Penalty: {float(class_override.get('penalty_percent', 0.0)):.2f}%\n"
             f"Total: {float(class_override.get('total_percent', 0.0)):.2f}%\n"
-            f"Minimum total: {min_text}",
+            f"Minimum total: {min_text}\n"
+            f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
+            f"PPE totals changed: {refresh_summary.ppes_updated}",
             ephemeral=True,
         )
 

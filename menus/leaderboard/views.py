@@ -36,13 +36,14 @@ def leaderboard_home_embed(contest_settings: dict | None = None) -> discord.Embe
 
 
 def character_class_embed(selected_class: str | None) -> discord.Embed:
+    base_instructions = (
+        "Step 1: Select a class from the dropdown.\n"
+        "Step 2: Click **View Selected Class** to open that leaderboard."
+    )
     if selected_class:
-        description = (
-            "Choose another class from the dropdown or press View Selected Class.\n"
-            f"Current class: **{selected_class}**"
-        )
+        description = f"{base_instructions}\n\nCurrent class: **{selected_class}**"
     else:
-        description = "Select a class from the dropdown, then press View Selected Class."
+        description = f"{base_instructions}\n\nCurrent class: **None selected yet**"
 
     return discord.Embed(
         title="Character Leaderboard",
@@ -101,6 +102,10 @@ class LeaderboardHomeView(OwnerBoundView):
     def current_embed(self) -> discord.Embed:
         return leaderboard_home_embed(self.contest_settings)
 
+    @discord.ui.button(label="Contest Leaderboard", style=discord.ButtonStyle.success, row=0)
+    async def contest(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await contestleaderboard.run_default_contest_leaderboard(interaction)
+
     @discord.ui.button(label="PPE Leaderboard", style=discord.ButtonStyle.primary, row=0)
     async def ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await ppeleaderboard.command(interaction)
@@ -121,10 +126,6 @@ class LeaderboardHomeView(OwnerBoundView):
     @discord.ui.button(label="Team Leaderboard", style=discord.ButtonStyle.primary, row=2)
     async def team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await teamleaderboard.command(interaction)
-
-    @discord.ui.button(label="Contest Leaderboard", style=discord.ButtonStyle.primary, row=2)
-    async def contest(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await contestleaderboard.run_default_contest_leaderboard(interaction)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=3)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

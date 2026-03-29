@@ -18,6 +18,7 @@ from utils.guild_config import (
     update_global_points_modifiers,
 )
 from utils.player_records import load_player_records, load_teams, save_player_records, save_teams
+from utils.points_service import recompute_ppe_points
 from utils.realmshark_pending_store import clear_all_pending_for_guild
 from utils.contest_leaderboards import normalize_contest_leaderboard_id
 
@@ -37,6 +38,14 @@ class SeasonResetSummary:
     clear_realmshark_links: bool
     converted_bindings: int = 0
     tokens_updated: int = 0
+
+
+@dataclass(slots=True)
+class PointsRefreshSummary:
+    """Structured result payload for bulk PPE point recalculation."""
+
+    ppes_processed: int
+    ppes_updated: int
 
 
 async def load_points_settings_for_menu(interaction: discord.Interaction) -> dict[str, Any]:
@@ -83,8 +92,8 @@ async def update_global_point_modifiers(
     bonus_percent: float | None = None,
     penalty_percent: float | None = None,
     total_percent: float | None = None,
-) -> dict[str, Any]:
-    """Update one or more global percent modifiers and return the saved settings."""
+) -> tuple[dict[str, Any], PointsRefreshSummary]:
+    """Update global percent modifiers and refresh all PPE point totals."""
     settings = await update_global_points_modifiers(
         interaction,
         loot_percent=loot_percent,
@@ -92,7 +101,8 @@ async def update_global_point_modifiers(
         penalty_percent=penalty_percent,
         total_percent=total_percent,
     )
-    return dict(settings)
+    refresh_summary = await refresh_all_character_points(interaction)
+    return dict(settings), refresh_summary
 
 
 async def update_class_point_override(
@@ -105,8 +115,8 @@ async def update_class_point_override(
     total_percent: float | None = None,
     minimum_total: float | None = None,
     clear_minimum_total: bool = False,
-) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Update a class override while supporting explicit minimum-total clearing."""
+) -> tuple[dict[str, Any], dict[str, Any], PointsRefreshSummary]:
+    """Update one class override and refresh all PPE point totals."""
     settings = await get_points_settings(interaction)
     class_overrides = dict(settings.get("class_overrides", {}))
 
@@ -136,7 +146,27 @@ async def update_class_point_override(
     settings["class_overrides"] = class_overrides
     saved = await set_points_settings(interaction, settings)
     saved_override = dict(saved.get("class_overrides", {}).get(class_name, {}))
-    return dict(saved), saved_override
+    refresh_summary = await refresh_all_character_points(interaction)
+    return dict(saved), saved_override, refresh_summary
+
+
+async def refresh_all_character_points(interaction: discord.Interaction) -> PointsRefreshSummary:
+    """Recompute point totals for every PPE using current guild settings."""
+    records = await load_player_records(interaction)
+    guild_config = await load_guild_config(interaction)
+
+    ppes_processed = 0
+    ppes_updated = 0
+    for player_data in records.values():
+        for ppe in getattr(player_data, "ppes", []):
+            ppes_processed += 1
+            old_points = float(getattr(ppe, "points", 0.0))
+            result = recompute_ppe_points(ppe, guild_config)
+            if abs(float(result["total"]) - old_points) > 0.01:
+                ppes_updated += 1
+
+    await save_player_records(interaction, records)
+    return PointsRefreshSummary(ppes_processed=ppes_processed, ppes_updated=ppes_updated)
 
 
 async def reset_season_data(
