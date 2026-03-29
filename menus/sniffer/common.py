@@ -216,8 +216,9 @@ def build_setup_steps(guild_id: int | None) -> str:
             "2.5. Ensure that your Sniffer is running (File -> Start Sniffer).",
             "3. Set `Endpoint` to the link provided by your admin. It should be something like: `http://<bot-host>:8080/realmshark/ingest`.",
             f"4. Set `Guild ID` to `{guild_id_text}` and `Link Token` to your generated token (step 1).",
-            "5. Check the `Enabled` checkbox. Optionally check `Debug` for better logging in Bridge Logs.",
-            "6. Click `Save Bridge Settings` in Sniffer - you should be pinged on discord.",
-            "7. Play on your character. **Once you get loggable loot** the bot will provide instructions on how to configure characters.",
+            "5. This depends on the server. Download CSV file, put in same location as Sniffer, and set `CSV Path` field to `./rotmg_loot_drops_updated.csv`.",
+            "6. Check the `Enabled` checkbox. Optionally check `Debug` for better logging in Bridge Logs.",
+            "7. Click `Save Bridge Settings` in Sniffer - you should be pinged on discord.",
+            "8. Play on your character. **Once you get loggable loot** the bot will provide instructions on how to configure characters.",
         ]
     )
