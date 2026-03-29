@@ -46,15 +46,25 @@ async def _refresh_point_settings_message(
     owner_id: int,
     source_message: discord.Message | None,
     settings: dict | None = None,
+    source_screen: str = "landing",
     selected_class: str | None = None,
 ) -> None:
     if source_message is None:
         return
 
-    from menus.manageseason.views import ManagePointSettingsView
+    from menus.manageseason.views import (
+        ManageClassPointSettingsView,
+        ManageGlobalPointSettingsView,
+        ManagePointSettingsView,
+    )
 
     refreshed = settings if settings is not None else await load_points_settings_for_menu(interaction)
-    view = ManagePointSettingsView(owner_id=owner_id, settings=refreshed, selected_class=selected_class)
+    if source_screen == "global":
+        view = ManageGlobalPointSettingsView(owner_id=owner_id, settings=refreshed)
+    elif source_screen == "class":
+        view = ManageClassPointSettingsView(owner_id=owner_id, settings=refreshed, selected_class=selected_class)
+    else:
+        view = ManagePointSettingsView(owner_id=owner_id, settings=refreshed)
 
     try:
         await source_message.edit(embed=view.current_embed(), view=view)
@@ -96,12 +106,12 @@ class EditGlobalPointSettingsModal(discord.ui.Modal, title="Edit Global Point Mo
         owner_id: int,
         settings: dict,
         source_message: discord.Message | None,
-        selected_class: str | None = None,
+        source_screen: str = "landing",
     ) -> None:
         super().__init__(timeout=300)
         self.owner_id = owner_id
         self.source_message = source_message
-        self.selected_class = selected_class
+        self.source_screen = source_screen
 
         global_settings = settings.get("global", {}) if isinstance(settings.get("global"), dict) else {}
         self.loot_percent.default = f"{float(global_settings.get('loot_percent', 0.0)):.2f}"
@@ -150,7 +160,7 @@ class EditGlobalPointSettingsModal(discord.ui.Modal, title="Edit Global Point Mo
             owner_id=self.owner_id,
             source_message=self.source_message,
             settings=settings,
-            selected_class=self.selected_class,
+            source_screen=self.source_screen,
         )
 
 
@@ -195,11 +205,13 @@ class EditClassPointSettingsModal(discord.ui.Modal):
         class_name: str,
         source_message: discord.Message | None,
         existing_override: dict | None = None,
+        source_screen: str = "class",
     ) -> None:
-        super().__init__(title=f"Edit Class Override - {class_name}", timeout=300)
+        super().__init__(title=f"Edit Class Modifiers - {class_name}", timeout=300)
         self.owner_id = owner_id
         self.class_name = class_name
         self.source_message = source_message
+        self.source_screen = source_screen
 
         override = existing_override if isinstance(existing_override, dict) else {}
         self.loot_percent.default = f"{float(override.get('loot_percent', 0.0)):.2f}"
@@ -258,5 +270,6 @@ class EditClassPointSettingsModal(discord.ui.Modal):
             owner_id=self.owner_id,
             source_message=self.source_message,
             settings=settings,
+            source_screen=self.source_screen,
             selected_class=self.class_name,
         )

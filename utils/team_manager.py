@@ -1,9 +1,10 @@
 import asyncio
 from typing import Dict, Optional
+
 import discord
-from dataclass import TeamData, PlayerData, PPEData
-from utils.player_records import load_player_records, save_player_records, load_teams, save_teams, ensure_player_exists, get_active_ppe
-from utils.guild_config import get_quest_points
+from dataclass import TeamData
+from utils.player_records import ensure_player_exists, load_player_records, load_teams, save_player_records, save_teams
+from utils.team_contest_scoring import compute_team_member_points, load_team_contest_scoring
 
 class TeamManager:
     """Centralized manager for team data operations."""
@@ -188,27 +189,22 @@ class TeamManager:
         
         async def operation(teams, records, interaction):
             leaderboard_data = []
-            regular_qp, shiny_qp, skin_qp = await get_quest_points(interaction)
+            scoring = await load_team_contest_scoring(interaction)
             
             for team_name, team in teams.items():
                 ppe_points = 0.0
-                quest_points = 0
-                
-                # Sum up each member's highest PPE points + account-level quest points.
+                quest_points = 0.0
+
+                # Sum each member's best PPE plus optional quest contribution.
                 for member_id in team.members:
                     if member_id in records:
                         player_data = records[member_id]
-
-                        if player_data.ppes:
-                            # Get the PPE with the highest points
-                            max_points = max(ppe.points for ppe in player_data.ppes)
-                            ppe_points += max_points
-
-                        quest_points += (
-                            len(player_data.quests.completed_items) * regular_qp
-                            + len(player_data.quests.completed_shinies) * shiny_qp
-                            + len(player_data.quests.completed_skins) * skin_qp
+                        member_ppe_points, member_quest_points, _member_total = compute_team_member_points(
+                            player_data,
+                            scoring=scoring,
                         )
+                        ppe_points += member_ppe_points
+                        quest_points += member_quest_points
 
                 total_points = ppe_points + quest_points
                 

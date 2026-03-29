@@ -4,9 +4,9 @@ import discord
 
 from dataclass import TeamData
 from menus.manageteams.common import TEAM_LIST_PAGE_SIZE, display_name, resolve_team_name
-from utils.guild_config import get_quest_points
 from utils.player_records import ensure_player_exists, load_player_records, load_teams
 from utils.team_manager import team_manager
+from utils.team_contest_scoring import compute_team_member_points, load_team_contest_scoring
 
 
 async def create_empty_team(interaction: discord.Interaction, team_name: str) -> TeamData:
@@ -93,7 +93,7 @@ async def set_team_leader(interaction: discord.Interaction, *, team_name: str, l
 async def build_team_summary_pages(interaction: discord.Interaction) -> list[discord.Embed]:
     teams = await load_teams(interaction)
     records = await load_player_records(interaction)
-    regular_qp, shiny_qp, skin_qp = await get_quest_points(interaction)
+    scoring = await load_team_contest_scoring(interaction)
 
     if not teams:
         return [
@@ -117,21 +117,18 @@ async def build_team_summary_pages(interaction: discord.Interaction) -> list[dis
             teams_with_leader += 1
 
         ppe_points = 0.0
-        quest_points = 0
+        quest_points = 0.0
         for member_id in team.members:
             player_data = records.get(member_id)
             if not player_data:
                 continue
 
-            if player_data.ppes:
-                best_points = max(ppe.points for ppe in player_data.ppes)
-                ppe_points += best_points
-
-            quest_points += (
-                len(player_data.quests.completed_items) * regular_qp
-                + len(player_data.quests.completed_shinies) * shiny_qp
-                + len(player_data.quests.completed_skins) * skin_qp
+            member_ppe_points, member_quest_points, _member_total = compute_team_member_points(
+                player_data,
+                scoring=scoring,
             )
+            ppe_points += member_ppe_points
+            quest_points += member_quest_points
 
         total_points = ppe_points + quest_points
         leader_name = display_name(interaction.guild, team.leader_id) if team.leader_id else "Unassigned"
@@ -151,6 +148,7 @@ async def build_team_summary_pages(interaction: discord.Interaction) -> list[dis
             f"Teams: **{len(teams)}**",
             f"Players in teams: **{len(all_members)}**",
             f"Teams with leader assigned: **{teams_with_leader}**",
+            f"Team quest scoring: **{'Enabled' if scoring.include_quest_points else 'Disabled'}**",
             "",
             "Use **Manage Team** to edit a team, or **Create New Team** to add one.",
         ]
@@ -174,10 +172,10 @@ async def build_team_detail(
     interaction: discord.Interaction,
     *,
     team_name: str,
-) -> tuple[str, TeamData, list[tuple[int, str, float, float, float, str]]]:
+) -> tuple[str, TeamData, list[tuple[int, str, float, float, float, str]], bool]:
     teams = await load_teams(interaction)
     records = await load_player_records(interaction)
-    regular_qp, shiny_qp, skin_qp = await get_quest_points(interaction)
+    scoring = await load_team_contest_scoring(interaction)
 
     actual_name = resolve_team_name(teams, team_name)
     if not actual_name:
@@ -188,24 +186,19 @@ async def build_team_detail(
     for member_id in team.members:
         player = records.get(member_id)
         member_name = display_name(interaction.guild, member_id)
-        best_points = 0.0
+        ppe_points = 0.0
         best_class = "No PPE"
 
         if player and player.ppes:
             best_ppe = max(player.ppes, key=lambda p: p.points)
-            best_points = best_ppe.points
+            ppe_points = best_ppe.points
             best_class = str(best_ppe.name)
 
-        quest_points = 0.0
-        if player:
-            quest_points = float(
-                len(player.quests.completed_items) * regular_qp
-                + len(player.quests.completed_shinies) * shiny_qp
-                + len(player.quests.completed_skins) * skin_qp
-            )
-
-        contribution = best_points + quest_points
-        members.append((member_id, member_name, best_points, quest_points, contribution, best_class))
+        _best_ppe_points, quest_points, contribution = compute_team_member_points(
+            player,
+            scoring=scoring,
+        )
+        members.append((member_id, member_name, ppe_points, quest_points, contribution, best_class))
 
     members.sort(key=lambda entry: entry[4], reverse=True)
-    return actual_name, team, members
+    return actual_name, team, members, scoring.include_quest_points

@@ -22,6 +22,7 @@ from menus.manageteams.modals import (
 from menus.manageteams.services import delete_team
 from utils.player_records import load_player_records, load_teams
 from utils.team_manager import team_manager
+from utils.team_contest_scoring import format_points_breakdown, load_team_contest_scoring, total_points_label
 
 
 class TeamPickerView(OwnerBoundView):
@@ -134,22 +135,26 @@ class ManageSingleTeamView(OwnerBoundView):
         team_name: str,
         team: TeamData,
         member_rows: list[tuple[int, str, float, float, float, str]],
+        include_quest_points: bool,
     ) -> None:
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.owner_id = owner_id
         self.team_name = team_name
         self.team = team
         self.member_rows = member_rows
+        self.include_quest_points = include_quest_points
 
     def current_embed(self) -> discord.Embed:
         total_points = sum(member[4] for member in self.member_rows)
         leader_label = f"<@{self.team.leader_id}>" if self.team.leader_id else "Unassigned"
+        scoring_mode = "PPE + Quest" if self.include_quest_points else "PPE Only"
 
         embed = discord.Embed(
             title=f"Manage Team - {self.team_name}",
             description=(
                 f"Leader: {leader_label}\n"
                 f"Members: **{len(self.member_rows)}**\n"
+                f"Scoring Mode: **{scoring_mode}**\n"
                 f"Team Total Contribution: **{total_points:.1f}** pts"
             ),
             color=discord.Color.blurple(),
@@ -161,8 +166,14 @@ class ManageSingleTeamView(OwnerBoundView):
 
         lines: list[str] = []
         for rank, (_member_id, member_name, ppe_points, quest_points, contribution, best_class) in enumerate(self.member_rows, start=1):
+            breakdown = format_points_breakdown(
+                ppe_points=ppe_points,
+                quest_points=quest_points,
+                total_points=contribution,
+                include_quest_points=self.include_quest_points,
+            )
             lines.append(
-                f"{rank}. **{member_name}** ({best_class}): {ppe_points:.1f} PPE + {quest_points:.1f} Quest = **{contribution:.1f}**"
+                f"{rank}. **{member_name}** ({best_class}): {breakdown}"
             )
 
         text = "\n".join(lines)
@@ -176,6 +187,13 @@ class ManageSingleTeamView(OwnerBoundView):
         total_ppe = sum(row[2] for row in self.member_rows)
         total_quest = sum(row[3] for row in self.member_rows)
         total_points = sum(row[4] for row in self.member_rows)
+        total_label = total_points_label(include_quest_points=self.include_quest_points)
+        total_breakdown = format_points_breakdown(
+            ppe_points=total_ppe,
+            quest_points=total_quest,
+            total_points=total_points,
+            include_quest_points=self.include_quest_points,
+        )
 
         if not self.member_rows:
             embed = discord.Embed(
@@ -184,20 +202,22 @@ class ManageSingleTeamView(OwnerBoundView):
                 color=discord.Color.blurple(),
             )
             embed.add_field(name="Members", value="0", inline=True)
-            embed.add_field(name="Total: PPE + Quest", value=f"{total_ppe:.1f} + {total_quest:.1f} = **{total_points:.1f}**", inline=True)
+            embed.add_field(name=total_label, value=total_breakdown, inline=True)
             embed.add_field(name="Rankings", value="This team has no members yet.", inline=False)
             return [embed]
 
-        lines = [
-            (
-                f"{rank}. {member_name}: {ppe_points:.1f} PPE + {quest_points:.1f} "
-                f"Quest = **{contribution:.1f}** pts ({best_class})"
+        lines: list[str] = []
+        for rank, (_member_id, member_name, ppe_points, quest_points, contribution, best_class) in enumerate(
+            self.member_rows,
+            start=1,
+        ):
+            breakdown = format_points_breakdown(
+                ppe_points=ppe_points,
+                quest_points=quest_points,
+                total_points=contribution,
+                include_quest_points=self.include_quest_points,
             )
-            for rank, (_member_id, member_name, ppe_points, quest_points, contribution, best_class) in enumerate(
-                self.member_rows,
-                start=1,
-            )
-        ]
+            lines.append(f"{rank}. {member_name}: {breakdown} pts ({best_class})")
 
         pages = [lines[index:index + LEADERBOARD_PAGE_SIZE] for index in range(0, len(lines), LEADERBOARD_PAGE_SIZE)]
         embeds: list[discord.Embed] = []
@@ -210,11 +230,7 @@ class ManageSingleTeamView(OwnerBoundView):
                 color=discord.Color.blurple(),
             )
             embed.add_field(name="Members", value=str(len(self.member_rows)), inline=True)
-            embed.add_field(
-                name="Total: PPE + Quest",
-                value=f"{total_ppe:.1f} + {total_quest:.1f} = **{total_points:.1f}**",
-                inline=True,
-            )
+            embed.add_field(name=total_label, value=total_breakdown, inline=True)
 
             ranking_value = "\n".join(page_lines)
             if len(ranking_value) > 1024:
@@ -371,10 +387,16 @@ class ManageTeamsHomeView(OwnerBoundView):
             await interaction.response.send_message("No teams available yet.", ephemeral=True)
             return
 
-        rows = [
-            f"**{team_name}** - {ppe_points:.1f} PPE + {quest_points} Quest = **{total_points:.1f}** pts ({member_count} members)"
-            for team_name, _leader_id, ppe_points, quest_points, total_points, member_count in data
-        ]
+        scoring = await load_team_contest_scoring(interaction)
+        rows: list[str] = []
+        for team_name, _leader_id, ppe_points, quest_points, total_points, member_count in data:
+            breakdown = format_points_breakdown(
+                ppe_points=ppe_points,
+                quest_points=quest_points,
+                total_points=total_points,
+                include_quest_points=scoring.include_quest_points,
+            )
+            rows.append(f"**{team_name}** - {breakdown} pts ({member_count} members)")
         embeds = build_leaderboard_embeds(
             title="Team Leaderboard",
             entries=build_ranked_entry_lines(rows),

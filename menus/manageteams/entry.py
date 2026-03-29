@@ -14,7 +14,7 @@ async def open_manage_teams_home(interaction: discord.Interaction, *, owner_id: 
 
 async def open_team_manage_view(interaction: discord.Interaction, *, owner_id: int, team_name: str) -> None:
     try:
-        actual_name, team, member_rows = await build_team_detail(interaction, team_name=team_name)
+        actual_name, team, member_rows, include_quest_points = await build_team_detail(interaction, team_name=team_name)
     except ValueError as exc:
         await interaction.response.send_message(str(exc), ephemeral=True)
         return
@@ -24,6 +24,7 @@ async def open_team_manage_view(interaction: discord.Interaction, *, owner_id: i
         team_name=actual_name,
         team=team,
         member_rows=member_rows,
+        include_quest_points=include_quest_points,
     )
     await interaction.response.edit_message(embed=view.current_embed(), view=view)
 

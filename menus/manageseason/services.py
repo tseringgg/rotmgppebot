@@ -8,15 +8,18 @@ from typing import Any
 import discord
 
 from utils.guild_config import (
+    get_contest_settings,
     get_points_settings,
     get_realmshark_settings,
     load_guild_config,
+    set_contest_settings,
     set_points_settings,
     set_realmshark_settings,
     update_global_points_modifiers,
 )
 from utils.player_records import load_player_records, load_teams, save_player_records, save_teams
 from utils.realmshark_pending_store import clear_all_pending_for_guild
+from utils.contest_leaderboards import normalize_contest_leaderboard_id
 
 
 @dataclass(slots=True)
@@ -40,6 +43,37 @@ async def load_points_settings_for_menu(interaction: discord.Interaction) -> dic
     """Load point settings for point-settings embeds/views."""
     settings = await get_points_settings(interaction)
     return dict(settings)
+
+
+async def load_contest_settings_for_menu(interaction: discord.Interaction) -> dict[str, Any]:
+    """Load contest settings for manage-contests embeds/views."""
+    settings = await get_contest_settings(interaction)
+    return dict(settings)
+
+
+async def update_default_contest_leaderboard(
+    interaction: discord.Interaction,
+    *,
+    default_leaderboard: str | None,
+) -> dict[str, Any]:
+    """Persist the default contest leaderboard identifier."""
+    settings = await get_contest_settings(interaction)
+    normalized_default = normalize_contest_leaderboard_id(default_leaderboard)
+    settings["default_contest_leaderboard"] = normalized_default
+    saved = await set_contest_settings(interaction, settings)
+    return dict(saved)
+
+
+async def update_team_contest_quest_points_setting(
+    interaction: discord.Interaction,
+    *,
+    enabled: bool,
+) -> dict[str, Any]:
+    """Toggle whether team contests should include quest points."""
+    settings = await get_contest_settings(interaction)
+    settings["team_contest_include_quest_points"] = bool(enabled)
+    saved = await set_contest_settings(interaction, settings)
+    return dict(saved)
 
 
 async def update_global_point_modifiers(
