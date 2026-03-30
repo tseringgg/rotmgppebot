@@ -306,7 +306,7 @@ class RealmSharkConfigurePanelView(OwnerBoundView):
         )
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Prev", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="Prev", style=discord.ButtonStyle.secondary, row=0)
     async def prev_pending(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not await self.ensure_owner(interaction):
             return
@@ -333,7 +333,7 @@ class RealmSharkConfigurePanelView(OwnerBoundView):
         )
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Next", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.secondary, row=0)
     async def next_pending(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not await self.ensure_owner(interaction):
             return
@@ -360,7 +360,7 @@ class RealmSharkConfigurePanelView(OwnerBoundView):
         )
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Map To PPE", style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(label="Map To PPE", style=discord.ButtonStyle.success, row=0)
     async def map_to_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not await self.ensure_owner(interaction):
             return
@@ -432,7 +432,7 @@ class RealmSharkConfigurePanelView(OwnerBoundView):
             ephemeral=True,
         )
 
-    @discord.ui.button(label="Set Seasonal", style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(label="Set Seasonal", style=discord.ButtonStyle.success, row=0)
     async def set_seasonal(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not await self.ensure_owner(interaction):
             return
@@ -476,7 +476,7 @@ class RealmSharkConfigurePanelView(OwnerBoundView):
             return
         await self._refresh_panel(interaction)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=3)
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=2)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not await self.ensure_owner(interaction):
             return
