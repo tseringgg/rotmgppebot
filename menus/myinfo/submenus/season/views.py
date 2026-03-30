@@ -54,7 +54,7 @@ class SeasonLootVariantView(SeasonLootVariantActionsView):
         await close_myinfo_menu(interaction)
         await send_season_loot_markdown_followup(interaction)
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_myinfo_menu(interaction)
 

@@ -221,6 +221,7 @@ class TeamManager:
         """Get detailed information about a team's members.
         
         Returns a tuple: (team_name, leader_id, [(member_id, member_name, top_ppe_points, ppe_class), ...])
+        Members without PPE characters are included with 0 points and None class.
         """
         
         async def operation(teams, records, interaction):
@@ -238,18 +239,26 @@ class TeamManager:
             members_info = []
             
             for member_id in team.members:
+                # Try to get member display name
+                try:
+                    member = await interaction.guild.fetch_member(member_id)
+                    member_name = member.display_name
+                except:
+                    member_name = f"Unknown ({member_id})"
+                
+                # Check if member has player records and PPEs
                 if member_id in records:
                     player_data = records[member_id]
                     if player_data.ppes:
                         # Get the PPE with the highest points
                         best_ppe = max(player_data.ppes, key=lambda p: p.points)
-                        try:
-                            member = await interaction.guild.fetch_member(member_id)
-                            member_name = member.display_name
-                        except:
-                            member_name = f"Unknown ({member_id})"
-                        
                         members_info.append((member_id, member_name, best_ppe.points, best_ppe.name))
+                    else:
+                        # Member has no PPE characters - include them with 0 points
+                        members_info.append((member_id, member_name, 0.0, None))
+                else:
+                    # Member not in records - include them with 0 points
+                    members_info.append((member_id, member_name, 0.0, None))
             
             return (actual_team_name, team.leader_id, members_info)
         

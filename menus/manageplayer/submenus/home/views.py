@@ -22,12 +22,141 @@ from menus.manageplayer.services import (
     send_target_quests_followup,
     target_has_admin_role,
 )
+from slash_commands.newppe_cmd import create_new_ppe_for_user
 from menus.manageplayer.targets import ManagedPlayerTarget
 from menus.menu_utils import OwnerBoundView
 from menus.menu_utils.embed_pager_view import OwnerBoundEmbedPagerView
 from menus.myquests import open_myquests_menu_for_player
-from utils.guild_config import load_guild_config
+from utils.guild_config import load_guild_config, get_max_ppes
 from utils.player_records import load_teams
+from dataclass import ROTMGClass
+
+
+class CreateCharacterModal(discord.ui.Modal, title="Create New Character"):
+    """Modal for admin to create a new PPE character for another player."""
+
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        target: ManagedPlayerTarget,
+        max_ppes: int,
+    ) -> None:
+        super().__init__()
+        self.owner_id = owner_id
+        self.target = target
+        self.max_ppes = max_ppes
+
+        self.class_select = discord.ui.Select(
+            placeholder="Select a class...",
+            options=[
+                discord.SelectOption(label=cls.value, value=cls.value)
+                for cls in ROTMGClass
+            ],
+        )
+        self.add_item(self.class_select)
+
+        self.pet_level = discord.ui.TextInput(
+            label="Pet Level (0-100)",
+            required=True,
+            max_length=3,
+            placeholder="e.g., 50",
+        )
+        self.add_item(self.pet_level)
+
+        self.num_exalts = discord.ui.TextInput(
+            label="Exalts (0-40)",
+            required=True,
+            max_length=3,
+            placeholder="e.g., 10",
+        )
+        self.add_item(self.num_exalts)
+
+        self.percent_loot = discord.ui.TextInput(
+            label="Loot Boost % (0-25)",
+            required=True,
+            max_length=5,
+            placeholder="e.g., 5",
+        )
+        self.add_item(self.percent_loot)
+
+        self.incombat_reduction = discord.ui.TextInput(
+            label="In-Combat Reduction (0/0.2/0.4/0.6/0.8/1.0)",
+            placeholder="Enter one of: 0, 0.2, 0.4, 0.6, 0.8, 1.0",
+            required=True,
+            max_length=3,
+        )
+        self.add_item(self.incombat_reduction)
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        class_name = self.class_select.values[0]
+
+        try:
+            result = await create_new_ppe_for_user(
+                interaction,
+                class_name=class_name,
+                pet_level=int(self.pet_level.value),
+                num_exalts=int(self.num_exalts.value),
+                percent_loot=float(self.percent_loot.value),
+                incombat_reduction=float(self.incombat_reduction.value),
+                target_user_id=self.target.user_id,
+            )
+        except ValueError as e:
+            await interaction.response.send_message(str(e), ephemeral=True)
+            return
+
+        await interaction.response.send_message(
+            f"✅ Created `PPE #{result['next_id']}` for **{self.target.display_name}** "
+            f"(`{result['class_name']}`) and set it as their active PPE.\n"
+            f"They now have {result['ppe_count']}/{result['max_ppes']} PPEs.",
+            embed=result["embed"],
+            ephemeral=False,
+        )
+
+        # Refresh to home view
+        await open_manageplayer_home(
+            interaction,
+            owner_id=self.owner_id,
+            target=self.target,
+            max_ppes=self.max_ppes,
+        )
+
+
+class NoCharactersView(OwnerBoundView):
+    """View shown when a player has no characters, with options to create one or go back."""
+
+    def __init__(
+        self,
+        owner_id: int,
+        *,
+        target: ManagedPlayerTarget,
+        max_ppes: int,
+    ) -> None:
+        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
+        self.target = target
+        self.max_ppes = max_ppes
+
+    @discord.ui.button(label="Create Character", style=discord.ButtonStyle.success, row=0)
+    async def create_character(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        modal = CreateCharacterModal(
+            owner_id=interaction.user.id,
+            target=self.target,
+            max_ppes=self.max_ppes,
+        )
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Go Back", style=discord.ButtonStyle.secondary, row=0)
+    async def go_back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await open_manageplayer_home(
+            interaction,
+            owner_id=interaction.user.id,
+            target=self.target,
+            max_ppes=self.max_ppes,
+        )
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
+    async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await close_manageplayer_menu(interaction)
 
 
 class _AddToTeamButton(discord.ui.Button):
@@ -111,7 +240,7 @@ class _ManagePlayerActionConfirmView(OwnerBoundView):
             "delete_all": f"Are you sure you want to delete all PPEs for **{self.target.display_name}**?",
             "remove_contest": (
                 f"Are you sure you want to remove **{self.target.display_name}** from the contest?\n"
-                "This also removes their PPE record and team assignment."
+                "This also removes their PPE record, team assignment, and PPE Admin role (if they have it)."
             ),
             "remove_admin": f"Are you sure you want to remove PPE Admin from **{self.target.display_name}**?",
         }
@@ -314,16 +443,10 @@ class ManagePlayerHomeView(OwnerBoundView):
                     description=f"{self.target.display_name} has no PPE characters.",
                     color=discord.Color.orange(),
                 ),
-                view=ManagePlayerHomeView(
+                view=NoCharactersView(
                     owner_id=interaction.user.id,
                     target=self.target,
                     max_ppes=self.max_ppes,
-                    target_team_name=player_data.team_name,
-                    is_target_admin=target_has_admin_role(interaction, self.target),
-                    is_in_contest=bool(player_data.is_member or self.target.has_player_role),
-                    owner_can_manage_admin=bool(
-                        interaction.guild and int(interaction.user.id) == int(interaction.guild.owner_id)
-                    ),
                 ),
             )
             return

@@ -7,6 +7,7 @@ import discord
 from menus.menu_utils import OwnerBoundView
 from menus.menu_utils.sniffer_core import common as realmshark_common
 from menus.menu_utils.sniffer_core.panel_common import (
+    collect_character_ids_from_link as _collect_character_ids_from_link,
     detected_character_info as _detected_character_info,
     iter_user_links as _iter_user_links,
     normalize_bindings as _normalize_bindings,

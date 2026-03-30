@@ -163,6 +163,15 @@ async def remove_target_from_contest(interaction: discord.Interaction, target: M
     if target.member and role and role in target.member.roles:
         await target.member.remove_roles(role)
 
+    # Also remove PPE admin role if they have it
+    if target.member and interaction.guild:
+        admin_role_obj = admin_role(interaction.guild)
+        if admin_role_obj and admin_role_obj in target.member.roles:
+            try:
+                await target.member.remove_roles(admin_role_obj)
+            except discord.Forbidden:
+                pass
+
     if team_name and target.member:
         team_role = discord.utils.get(interaction.guild.roles, name=team_name) if interaction.guild else None
         if team_role and team_role in target.member.roles:

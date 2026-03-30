@@ -16,6 +16,8 @@ from utils.team_manager import team_manager
 
 
 def _format_class_name(raw_class: object) -> str:
+    if raw_class is None:
+        return "No Character"
     return str(getattr(raw_class, "value", raw_class))
 
 

@@ -49,6 +49,6 @@ class SeasonLootVariantActionsView(OwnerBoundView):
     async def all_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=True, include_limited=True)
 
-    @discord.ui.button(label="List Loot", style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(label="List Loot", style=discord.ButtonStyle.primary, row=1)
     async def list_season_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._list_season_loot(interaction)
