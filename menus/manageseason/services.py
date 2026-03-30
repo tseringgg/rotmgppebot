@@ -101,7 +101,10 @@ async def update_global_point_modifiers(
         penalty_percent=penalty_percent,
         total_percent=total_percent,
     )
-    refresh_summary = await refresh_all_character_points(interaction)
+    refresh_summary = await refresh_all_character_points(
+        interaction,
+        guild_config={"points_settings": settings},
+    )
     return dict(settings), refresh_summary
 
 
@@ -146,14 +149,21 @@ async def update_class_point_override(
     settings["class_overrides"] = class_overrides
     saved = await set_points_settings(interaction, settings)
     saved_override = dict(saved.get("class_overrides", {}).get(class_name, {}))
-    refresh_summary = await refresh_all_character_points(interaction)
+    refresh_summary = await refresh_all_character_points(
+        interaction,
+        guild_config={"points_settings": saved},
+    )
     return dict(saved), saved_override, refresh_summary
 
 
-async def refresh_all_character_points(interaction: discord.Interaction) -> PointsRefreshSummary:
+async def refresh_all_character_points(
+    interaction: discord.Interaction,
+    *,
+    guild_config: dict[str, Any] | None = None,
+) -> PointsRefreshSummary:
     """Recompute point totals for every PPE using current guild settings."""
     records = await load_player_records(interaction)
-    guild_config = await load_guild_config(interaction)
+    effective_guild_config = guild_config if isinstance(guild_config, dict) else await load_guild_config(interaction)
 
     ppes_processed = 0
     ppes_updated = 0
@@ -161,7 +171,7 @@ async def refresh_all_character_points(interaction: discord.Interaction) -> Poin
         for ppe in getattr(player_data, "ppes", []):
             ppes_processed += 1
             old_points = float(getattr(ppe, "points", 0.0))
-            result = recompute_ppe_points(ppe, guild_config)
+            result = recompute_ppe_points(ppe, effective_guild_config)
             if abs(float(result["total"]) - old_points) > 0.01:
                 ppes_updated += 1
 

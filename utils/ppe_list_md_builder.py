@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclass import PlayerData
 from utils.markdown_message_builder import MarkdownMessageBuilder
+from utils.points_service import non_default_points_adjustment_lines
 
 
 def _format_points(value: float) -> str:
@@ -20,12 +21,20 @@ def create_ppe_list_markdown_file(
     *,
     display_name: str,
     include_best_marker: bool,
+    guild_config: dict | None = None,
 ) -> str:
     sorted_ppes = sorted(player_data.ppes, key=lambda p: int(p.id))
     best_ppe = max(sorted_ppes, key=lambda p: float(p.points), default=None)
     best_ppe_id = int(best_ppe.id) if best_ppe else None
 
     builder = MarkdownMessageBuilder(f"PPE List for {display_name}")
+    class_names = [_display_class_name(ppe) for ppe in sorted_ppes]
+    point_adjustment_lines = non_default_points_adjustment_lines(guild_config, class_names=class_names)
+    builder.add_section(
+        heading="Point Adjustments From Defaults",
+        lines=point_adjustment_lines or ["No point adjustments from defaults."],
+    )
+
     if not sorted_ppes:
         builder.add_section(heading="Characters", lines=["No PPEs found."])
     else:

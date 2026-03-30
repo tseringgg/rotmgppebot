@@ -299,10 +299,12 @@ async def send_target_ppe_list_markdown_followup(
 ) -> None:
     temp_file_path = ""
     try:
+        guild_config = await load_guild_config(interaction)
         temp_file_path = create_ppe_list_markdown_file(
             player_data,
             display_name=target.display_name,
             include_best_marker=False,
+            guild_config=guild_config,
         )
         await interaction.followup.send(file=discord.File(temp_file_path), ephemeral=True)
     finally:
@@ -614,7 +616,8 @@ async def send_target_quests_followup(interaction: discord.Interaction, target: 
 async def send_target_loot_markdown_followup(interaction: discord.Interaction, *, ppe: PPEData) -> None:
     from utils.loot_table_md_builder import create_loot_markdown_file
 
-    temp_file_path = create_loot_markdown_file(ppe)
+    guild_config = await load_guild_config(interaction)
+    temp_file_path = create_loot_markdown_file(ppe, guild_config=guild_config)
     try:
         await interaction.followup.send(file=discord.File(temp_file_path), ephemeral=True)
     finally:

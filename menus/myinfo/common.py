@@ -7,7 +7,7 @@ import os
 import discord
 
 from dataclass import PPEData, PlayerData
-from utils.guild_config import get_max_ppes, get_realmshark_settings
+from utils.guild_config import get_max_ppes, get_realmshark_settings, load_guild_config
 from utils.helpers.loot_share_commands import share_active_ppe_loot_image
 from utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
 from utils.ppe_list_md_builder import create_ppe_list_markdown_file
@@ -227,10 +227,12 @@ async def send_season_loot_markdown_followup(interaction: discord.Interaction) -
 async def send_ppe_list_markdown_followup(interaction: discord.Interaction, player_data: PlayerData) -> None:
     temp_file_path = ""
     try:
+        guild_config = await load_guild_config(interaction)
         temp_file_path = create_ppe_list_markdown_file(
             player_data,
             display_name=interaction.user.display_name,
             include_best_marker=True,
+            guild_config=guild_config,
         )
         await interaction.followup.send(file=discord.File(temp_file_path), ephemeral=True)
     finally:
@@ -239,7 +241,8 @@ async def send_ppe_list_markdown_followup(interaction: discord.Interaction, play
 
 
 async def send_myloot_markdown_followup(interaction: discord.Interaction, ppe: PPEData) -> None:
-    temp_file_path = create_loot_markdown_file(ppe)
+    guild_config = await load_guild_config(interaction)
+    temp_file_path = create_loot_markdown_file(ppe, guild_config=guild_config)
     try:
         await interaction.followup.send(file=discord.File(temp_file_path), ephemeral=True)
     finally:

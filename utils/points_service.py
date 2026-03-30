@@ -27,6 +27,13 @@ PENALTY_COMPONENT_NAMES = {
     "incombat": "In-Combat Reduction Penalty",
 }
 
+POINT_MODIFIER_KEYS = (
+    ("loot_percent", "loot"),
+    ("bonus_percent", "bonus"),
+    ("penalty_percent", "penalty"),
+    ("total_percent", "total"),
+)
+
 
 def _as_float(value: Any, fallback: float = 0.0) -> float:
     try:
@@ -79,6 +86,93 @@ def _get_modifier_bucket(points_settings: Dict[str, Any], class_name: str) -> Di
         "total_percent": _as_float(global_settings.get("total_percent", 0.0)) + _as_float(class_settings.get("total_percent", 0.0)),
         "minimum_total": class_settings.get("minimum_total"),
     }
+
+
+def apply_percent_modifier(value: float, percent: float) -> float:
+    """Apply a percent modifier to a value."""
+    return _apply_percent(float(value), _as_float(percent))
+
+
+def get_effective_modifier_bucket_for_class(
+    class_name: str,
+    guild_config: Dict[str, Any] | None = None,
+) -> Dict[str, float | None]:
+    """Return the effective global+class modifier bucket for a class."""
+    points_settings = _get_points_settings(guild_config)
+    return _get_modifier_bucket(points_settings, class_name)
+
+
+def get_effective_modifier_bucket_for_ppe(
+    ppe: PPEData,
+    guild_config: Dict[str, Any] | None = None,
+) -> Dict[str, float | None]:
+    """Return the effective global+class modifier bucket for a PPE."""
+    return get_effective_modifier_bucket_for_class(_class_name_for_ppe(ppe), guild_config)
+
+
+def _is_non_default_percent(value: Any) -> bool:
+    return abs(_as_float(value, 0.0)) > 1e-9
+
+
+def _format_signed_percent(value: float) -> str:
+    sign = "+" if value > 0 else ""
+    return f"{sign}{value:.2f}%"
+
+
+def _modifier_parts_from_bucket(bucket: Dict[str, Any]) -> list[str]:
+    parts: list[str] = []
+    for key, label in POINT_MODIFIER_KEYS:
+        percent = _as_float(bucket.get(key), 0.0)
+        if _is_non_default_percent(percent):
+            parts.append(f"{label} {_format_signed_percent(percent)}")
+
+    minimum_total = bucket.get("minimum_total")
+    if minimum_total is not None:
+        parts.append(f"minimum total {_as_float(minimum_total, 0.0):.2f}")
+    return parts
+
+
+def non_default_points_adjustment_lines(
+    guild_config: Dict[str, Any] | None,
+    *,
+    class_names: Iterable[str] | None = None,
+) -> list[str]:
+    """Describe point adjustments that differ from defaults for markdown reporting."""
+    points_settings = _get_points_settings(guild_config)
+    global_settings = points_settings.get("global", {}) if isinstance(points_settings.get("global", {}), dict) else {}
+    class_overrides = (
+        points_settings.get("class_overrides", {})
+        if isinstance(points_settings.get("class_overrides", {}), dict)
+        else {}
+    )
+
+    lines: list[str] = []
+
+    global_parts = _modifier_parts_from_bucket(global_settings)
+    if global_parts:
+        lines.append(f"- Global: {', '.join(global_parts)}")
+
+    if class_names is None:
+        selected_classes = sorted(
+            [str(name) for name in class_overrides.keys() if isinstance(name, str)],
+            key=lambda name: name.lower(),
+        )
+    else:
+        selected_classes = sorted(
+            {str(name) for name in class_names if str(name).strip()},
+            key=lambda name: name.lower(),
+        )
+
+    for class_name in selected_classes:
+        override = class_overrides.get(class_name, {})
+        if not isinstance(override, dict):
+            continue
+
+        class_parts = _modifier_parts_from_bucket(override)
+        if class_parts:
+            lines.append(f"- {class_name}: {', '.join(class_parts)}")
+
+    return lines
 
 
 def get_item_base_points(item_name: str, shiny: bool, loot_points: Dict[str, float] | None = None) -> float:
@@ -141,8 +235,7 @@ def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = Non
         )
 
     bonus_total, penalty_total = split_bonus_points(ppe.bonuses)
-    points_settings = _get_points_settings(guild_config)
-    modifier_bucket = _get_modifier_bucket(points_settings, _class_name_for_ppe(ppe))
+    modifier_bucket = get_effective_modifier_bucket_for_ppe(ppe, guild_config)
 
     adjusted_loot = _apply_percent(loot_total, float(modifier_bucket["loot_percent"]))
     adjusted_bonus = _apply_percent(bonus_total, float(modifier_bucket["bonus_percent"]))
