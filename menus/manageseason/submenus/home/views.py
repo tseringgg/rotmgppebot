@@ -54,5 +54,11 @@ class ManageSeasonHomeView(OwnerBoundView):
         view = ManageContestsHomeView(owner_id=self.owner_id, settings=settings)
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
+    @discord.ui.button(label="Picture Suggestions", style=discord.ButtonStyle.success, row=0)
+    async def picture_suggestions(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        from menus.manageseason.submenus.picture_suggestions.entry import open_picture_suggestions_menu
+
+        await open_picture_suggestions_menu(interaction, owner_id=self.owner_id)
+
 
 __all__ = ["ManageSeasonHomeView"]

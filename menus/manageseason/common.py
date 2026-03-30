@@ -43,7 +43,7 @@ def build_manageseason_home_embed() -> discord.Embed:
     embed = discord.Embed(
         title="Manage Season",
         description=(
-            "Admin controls for season lifecycle actions, contest behavior, and point modifier configuration.\n"
+            "Admin controls for season lifecycle actions, contest behavior, point modifiers, and picture suggestions.\n"
             "Use the buttons below to choose a workflow."
         ),
         color=discord.Color.blurple(),
@@ -67,6 +67,13 @@ def build_manageseason_home_embed() -> discord.Embed:
         name="Manage Contests",
         value=(
             "Set the default `/leaderboard` contest board and configure team leaderboard scoring behavior."
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="Picture Suggestions",
+        value=(
+            "Configure channels that accept hovered-item screenshots for item suggestion matching."
         ),
         inline=False,
     )

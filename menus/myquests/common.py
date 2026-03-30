@@ -10,7 +10,7 @@ from typing import Dict, Sequence
 import discord
 
 from utils.calc_points import normalize_item_name
-from utils.generate_board import generate_quest_board
+from utils.gen_graphic_board.generate_board import generate_quest_board
 from utils.guild_config import get_quest_points, get_quest_targets, load_guild_config
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.quest_manager import refresh_player_quests

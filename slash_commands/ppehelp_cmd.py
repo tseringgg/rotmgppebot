@@ -63,7 +63,7 @@ async def command(interaction: discord.Interaction):
         "refreshallpoints": "Recalculate all PPE points.",
         "manageplayer": "Use Manage Player -> Show Quests -> Reset Quests to reset quest sections for a player.",
         "managequests": "View/update quest targets, reset attempts, quest leaderboard point weights, and run Reset All Quests from the menu.",
-        "manageseason": "Open season admin menu: Reset Season, Manage Point Settings, and Manage Contests/leaderboard behavior.",
+        "manageseason": "Open season admin menu: Reset Season, Manage Point Settings, Manage Contests, and Picture Suggestions channel controls.",
         "managesniffer": "Admin sniffer control panel (enable/disable, tokens, output channel, reset, player sniffer management).",
     }
     

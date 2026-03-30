@@ -8,7 +8,6 @@ from slash_commands import (
     addseasonloot_cmd,
     addseasonlootfor_cmd,
     addtoteam_cmd,
-    itemsuggestions_cmd,
     leaderboard_cmd,
     listadmins_cmd,
     listplayers_cmd,
@@ -44,7 +43,7 @@ from dotenv import load_dotenv
 import os
 from utils.role_checks import require_ppe_roles
 from utils.loot_data import init_loot_data
-from utils.player_records import get_item_suggestions_enabled
+from utils.settings.channel_settings import get_item_suggestions_enabled
 from utils.item_suggestion import handle_item_suggestion
 from create_loot_table import create_loot_background_and_mapping
 from utils.realmshark_ingest_server import start_realmshark_ingest_server
@@ -457,7 +456,7 @@ async def myloot(interaction: discord.Interaction):
 async def managequests(interaction: discord.Interaction):
     await managequests_cmd.command(interaction)
 
-@bot.tree.command(name="manageseason", description="Open season admin controls (reset season, point settings, contests).", guilds=guilds)
+@bot.tree.command(name="manageseason", description="Open season admin controls (reset season, point settings, contests, picture suggestions).", guilds=guilds)
 @require_ppe_roles(admin_required=True)
 async def manageseason(interaction: discord.Interaction):
     await manageseason_cmd.command(interaction)
@@ -534,18 +533,6 @@ async def list_roles(interaction: discord.Interaction):
 @bot.tree.command(name="listadmins", description="List all PPE Admins in the server.", guilds=guilds)
 async def list_admins_cmd_handler(interaction: discord.Interaction):
     await listadmins_cmd.list_admins(interaction)
-
-@bot.tree.command(name="itemsuggestions", description="Enable, disable, toggle, or check item suggestions for this channel.", guilds=guilds)
-@app_commands.describe(action="What to do with item suggestions for this channel")
-@app_commands.choices(action=[
-    app_commands.Choice(name="on", value="on"),
-    app_commands.Choice(name="off", value="off"),
-    app_commands.Choice(name="toggle", value="toggle"),
-    app_commands.Choice(name="status", value="status"),
-])
-@require_ppe_roles(admin_required=True)
-async def itemsuggestions(interaction: discord.Interaction, action: app_commands.Choice[str]):
-    await itemsuggestions_cmd.command(interaction, action.value)
 
 if not DISCORD_TOKEN:
     print("Error: DISCORD_TOKEN environment variable not set.")
