@@ -1,9 +1,46 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, inspectloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myquests_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd, shareloot_cmd, shareseasonloot_cmd, addseasonloot_cmd, addseasonlootfor_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, showseasonloot_cmd, seasonleaderboard_cmd, questleaderboard_cmd, resetseason_cmd, migrateapostrophes_cmd, addteam_cmd, addplayer_team_cmd, leaveteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, listcharactersfor_cmd, viewquestsfor_cmd, resetquestfor_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd, itemsuggestions_cmd
+from slash_commands import (
+    addbonus_cmd,
+    addbonusfor_cmd,
+    addloot_cmd,
+    addlootfor_cmd,
+    addplayer_cmd,
+    addpointsfor_cmd,
+    addseasonloot_cmd,
+    addseasonlootfor_cmd,
+    addtoteam_cmd,
+    itemsuggestions_cmd,
+    leaderboard_cmd,
+    listadmins_cmd,
+    listplayers_cmd,
+    listroles_cmd,
+    manageplayer_cmd,
+    managequests_cmd,
+    manageseason_cmd,
+    managesniffer_cmd,
+    manageteams_cmd,
+    myinfo_cmd,
+    myloot_cmd,
+    myquests_cmd,
+    mysniffer_cmd,
+    myteam_cmd,
+    newppe_cmd,
+    ppehelp_cmd,
+    refreshallpoints_cmd,
+    refreshpointsfor_cmd,
+    removebonus_cmd,
+    removebonusfrom_cmd,
+    removefromteam_cmd,
+    removeloot_cmd,
+    removelootfrom_cmd,
+    removeseasonloot_cmd,
+    removeseasonlootfrom_cmd,
+    setactiveppe_cmd,
+    submitloot_cmd,
+)
 import discord
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
-import aiosqlite
 import os
 from utils.role_checks import require_ppe_roles
 from utils.loot_data import init_loot_data
@@ -12,9 +49,8 @@ from utils.item_suggestion import handle_item_suggestion
 from create_loot_table import create_loot_background_and_mapping
 from utils.realmshark_ingest_server import start_realmshark_ingest_server
 from utils.realmshark_notifier import build_realmshark_notifier
-from menus.leaderboard import open_leaderboard_menu
 
-from utils.autocomplete import class_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, target_user_ppe_id_autocomplete, team_name_autocomplete
+from utils.autocomplete import class_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, team_name_autocomplete
 
 SERVER1_ID = 879497062117412924 # Last Oasis
 SERVER2_ID = 1435436110829326459 # Test Server
@@ -355,7 +391,7 @@ async def addplayer(interaction: discord.Interaction, member: discord.Member):
 
 @bot.tree.command(name="leaderboard", description="Open the leaderboard menu.", guilds=guilds)
 async def leaderboard(interaction: discord.Interaction):
-    await open_leaderboard_menu(interaction)
+    await leaderboard_cmd.command(interaction)
 
 @bot.tree.command(name="ppehelp", description="Show available PPE commands for players and admins.", guilds=guilds)
 async def ppehelp(interaction: discord.Interaction):
