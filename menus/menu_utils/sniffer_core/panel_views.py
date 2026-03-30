@@ -383,7 +383,7 @@ class RealmSharkConfigurePanelView(OwnerBoundView):
             ppe_name = str(getattr(ppe.name, "value", ppe.name))
             ppe_points = float(getattr(ppe, "points", 0.0))
             ppe_options.append((ppe_id, ppe_name, ppe_points))
-            ppe_lines.append(f"• PPE #{ppe_id} ({ppe_name}) - {_format_points(ppe_points)} points")
+            ppe_lines.append(f"• PPE #{ppe_id} ({ppe_name}): {_format_points(ppe_points)} points")
 
         pending_entry = await get_pending_character_entry(interaction.guild.id, self.target_user_id, self.character_id)
         pending_events = []
