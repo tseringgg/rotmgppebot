@@ -15,7 +15,7 @@ from menus.menu_utils.sniffer_core.panel_common import (
     normalized_class_name as _normalized_class_name,
     player_ppe_classes as _player_ppe_classes,
 )
-from menus.menu_utils.sniffer_shared import token_preview as _token_preview
+from menus.menu_utils.sniffer_core.common import token_preview as _token_preview
 from utils.guild_config import get_realmshark_settings, set_realmshark_settings
 from utils.player_records import ensure_player_exists, load_player_records
 from utils.realmshark_ingest import _addloot_for_user_with_ppe
