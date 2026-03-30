@@ -141,6 +141,10 @@ class ManagePlayerAddToTeamView(OwnerBoundView):
         await interaction.response.edit_message(content="Closed /manageplayer menu.", embed=None, view=None)
 
 
+class ManagePlayerTeamOverviewView(ManagePlayerAddToTeamView):
+    """Backward-compatible alias for older imports."""
+
+
 class ManagePlayerRemoveFromTeamConfirmView(OwnerBoundView):
     """Confirmation menu before removing a target player from their current team."""
 

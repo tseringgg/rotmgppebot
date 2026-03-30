@@ -14,14 +14,27 @@ from menus.manageplayer.targets import ManagedPlayerTarget, resolve_target
 from utils.guild_config import get_max_ppes
 
 
+async def _refresh_target_member(target: ManagedPlayerTarget, interaction: discord.Interaction) -> None:
+    """Refresh the target's member object to ensure roles are up to date."""
+    if target.member is not None and interaction.guild is not None:
+        try:
+            target.member = await interaction.guild.fetch_member(target.user_id)
+        except Exception:
+            pass
+
+
 async def open_manageplayer_home(
     interaction: discord.Interaction,
     *,
     owner_id: int,
     target: ManagedPlayerTarget,
     max_ppes: int,
+    refresh_member: bool = False,
 ) -> None:
     from menus.manageplayer.submenus.home.views import ManagePlayerHomeView, NotInContestView
+
+    if refresh_member:
+        await _refresh_target_member(target, interaction)
 
     player_data = await load_target_player_data(interaction, target.user_id)
     active_ppe = active_ppe_for_player(player_data)
@@ -31,7 +44,10 @@ async def open_manageplayer_home(
 
     if target.member is not None and not target.has_player_role:
         view = NotInContestView(owner_id=owner_id, target=target, max_ppes=max_ppes)
-        await interaction.response.edit_message(embed=add_to_contest_embed(target), view=view)
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=add_to_contest_embed(target), view=view, ephemeral=False)
+        else:
+            await interaction.response.edit_message(embed=add_to_contest_embed(target), view=view)
         return
 
     embed = target_home_embed(
@@ -50,7 +66,10 @@ async def open_manageplayer_home(
         is_in_contest=is_in_contest,
         owner_can_manage_admin=owner_can_manage_admin,
     )
-    await interaction.response.edit_message(embed=embed, view=view)
+    if interaction.response.is_done():
+        await interaction.followup.send(embed=embed, view=view, ephemeral=False)
+    else:
+        await interaction.response.edit_message(embed=embed, view=view)
 
 
 async def open_manageplayer_menu(

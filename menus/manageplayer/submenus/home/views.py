@@ -47,14 +47,13 @@ class CreateCharacterModal(discord.ui.Modal, title="Create New Character"):
         self.target = target
         self.max_ppes = max_ppes
 
-        self.class_select = discord.ui.Select(
-            placeholder="Select a class...",
-            options=[
-                discord.SelectOption(label=cls.value, value=cls.value)
-                for cls in ROTMGClass
-            ],
+        self.class_name = discord.ui.TextInput(
+            label="Class Name",
+            required=True,
+            max_length=20,
+            placeholder="e.g., Wizard",
         )
-        self.add_item(self.class_select)
+        self.add_item(self.class_name)
 
         self.pet_level = discord.ui.TextInput(
             label="Pet Level (0-100)",
@@ -89,7 +88,13 @@ class CreateCharacterModal(discord.ui.Modal, title="Create New Character"):
         self.add_item(self.incombat_reduction)
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
-        class_name = self.class_select.values[0]
+        # Modals only support text inputs, so normalize free-text class names
+        # to one of the canonical ROTMG class values before creating the PPE.
+        raw_class_name = (self.class_name.value or "").strip()
+        class_name = next(
+            (cls.value for cls in ROTMGClass if cls.value.lower() == raw_class_name.lower()),
+            raw_class_name,
+        )
 
         try:
             result = await create_new_ppe_for_user(
@@ -278,6 +283,7 @@ class _ManagePlayerActionConfirmView(OwnerBoundView):
                     owner_id=interaction.user.id,
                     target=self.target,
                     max_ppes=self.max_ppes,
+                    refresh_member=True,
                 )
                 await send_followup_text(interaction, result, ephemeral=False)
                 return
@@ -488,6 +494,7 @@ class ManagePlayerHomeView(OwnerBoundView):
                 owner_id=interaction.user.id,
                 target=self.target,
                 max_ppes=self.max_ppes,
+                refresh_member=True,
             )
             await send_followup_text(interaction, result, ephemeral=False)
         except Exception as e:
