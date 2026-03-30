@@ -360,7 +360,7 @@ class RealmSharkConfigurePanelView(OwnerBoundView):
         )
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Map To PPE", style=discord.ButtonStyle.success)
+    @discord.ui.button(label="Map To PPE", style=discord.ButtonStyle.success, row=1)
     async def map_to_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not await self.ensure_owner(interaction):
             return
@@ -432,7 +432,7 @@ class RealmSharkConfigurePanelView(OwnerBoundView):
             ephemeral=True,
         )
 
-    @discord.ui.button(label="Set Seasonal", style=discord.ButtonStyle.success)
+    @discord.ui.button(label="Set Seasonal", style=discord.ButtonStyle.success, row=1)
     async def set_seasonal(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not await self.ensure_owner(interaction):
             return
@@ -444,21 +444,21 @@ class RealmSharkConfigurePanelView(OwnerBoundView):
             target_user_id=self.target_user_id,
         )
 
-    @discord.ui.button(label="Show Pending", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="Show Pending", style=discord.ButtonStyle.primary, row=1)
     async def show_pending(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not await self.ensure_owner(interaction):
             return
         self.mode = "show_pending"
         await self._refresh_panel(interaction)
 
-    @discord.ui.button(label="Show All", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="Show All", style=discord.ButtonStyle.primary, row=1)
     async def show_all(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not await self.ensure_owner(interaction):
             return
         self.mode = "show_all"
         await self._refresh_panel(interaction)
 
-    @discord.ui.button(label="Clear Pending", style=discord.ButtonStyle.danger)
+    @discord.ui.button(label="Clear Pending", style=discord.ButtonStyle.danger, row=2)
     async def clear_pending(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not await self.ensure_owner(interaction):
             return
@@ -470,13 +470,13 @@ class RealmSharkConfigurePanelView(OwnerBoundView):
             target_user_id=self.target_user_id,
         )
 
-    @discord.ui.button(label="Refresh", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="Refresh", style=discord.ButtonStyle.secondary, row=2)
     async def refresh(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not await self.ensure_owner(interaction):
             return
         await self._refresh_panel(interaction)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=3)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not await self.ensure_owner(interaction):
             return
