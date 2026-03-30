@@ -8,6 +8,7 @@ import discord
 
 from dataclass import PPEData, PlayerData
 from menus.manageplayer.targets import ManagedPlayerTarget
+from menus.menu_utils import SafeResponse
 from menus.myinfo.common import (
     build_character_embed,
     display_class_name,
@@ -20,20 +21,11 @@ from utils.ppe_list_md_builder import create_ppe_list_markdown_file
 
 
 async def close_manageplayer_menu(interaction: discord.Interaction) -> None:
-    if interaction.response.is_done():
-        return
-
-    try:
-        await interaction.response.edit_message(content="Closed /manageplayer menu.", embed=None, view=None)
-    except discord.NotFound:
-        await interaction.response.defer()
+    await SafeResponse.close(interaction, close_message="Closed /manageplayer menu.")
 
 
 async def send_followup_text(interaction: discord.Interaction, content: str, *, ephemeral: bool = True) -> None:
-    if not interaction.response.is_done():
-        await interaction.response.send_message(content, ephemeral=ephemeral)
-        return
-    await interaction.followup.send(content, ephemeral=ephemeral)
+    await SafeResponse.send_text(interaction, content, ephemeral=ephemeral)
 
 def target_home_embed(
     *,

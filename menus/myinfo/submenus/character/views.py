@@ -5,7 +5,7 @@ from __future__ import annotations
 import discord
 
 from dataclass import PPEData, PlayerData
-from menus.menu_utils.character_carousel import cycle_index, select_initial_index
+from menus.menu_utils.character_carousel import CharacterCarouselPolicy
 from menus.menu_utils import OwnerBoundView
 from menus.myinfo.common import (
     build_character_embed,
@@ -44,11 +44,15 @@ class ManageCharactersView(OwnerBoundView):
         self.guild_config = guild_config
         best = max(self.ppes, key=lambda p: float(p.points), default=None)
         self.best_ppe_id = int(best.id) if best else None
-        self.index = self._initial_index(preferred_ppe_id)
+        self.carousel_policy = CharacterCarouselPolicy(
+            preferred_ppe_id=preferred_ppe_id,
+            active_ppe_id=self.player_data.active_ppe,
+        )
+        self.index = self.carousel_policy.initial_index(self.ppes)
 
     def _initial_index(self, preferred_ppe_id: int | None) -> int:
         """Select starting carousel index using preferred ID or active PPE."""
-        return select_initial_index(self.ppes, preferred_ppe_id, self.player_data.active_ppe)
+        return self.carousel_policy.initial_index(self.ppes)
 
     def current_ppe(self) -> PPEData:
         return self.ppes[self.index]
@@ -69,12 +73,12 @@ class ManageCharactersView(OwnerBoundView):
 
     @discord.ui.button(label="Prev Char", style=discord.ButtonStyle.secondary, row=0)
     async def prev(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        self.index = cycle_index(self.index, total=len(self.ppes), step=-1)
+        self.index = self.carousel_policy.next_index(self.index, total=len(self.ppes), step=-1)
         await interaction.response.edit_message(embed=self.current_embed(interaction.user), view=self)
 
     @discord.ui.button(label="Next Char", style=discord.ButtonStyle.secondary, row=0)
     async def next(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        self.index = cycle_index(self.index, total=len(self.ppes), step=1)
+        self.index = self.carousel_policy.next_index(self.index, total=len(self.ppes), step=1)
         await interaction.response.edit_message(embed=self.current_embed(interaction.user), view=self)
 
     @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary, row=0)

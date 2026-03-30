@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, timezone
 from typing import Any
 
 import discord
 
+from menus.menu_utils.sniffer_core.common import token_preview, utc_iso_now
 from utils.guild_config import get_realmshark_settings, set_realmshark_settings
 from utils.realmshark_pending_store import clear_all_pending_for_guild
 
@@ -18,17 +18,6 @@ _REALMSHARK_DEFAULTS: dict[str, Any] = {
     "announce_channel_id": 0,
     "endpoint": "",
 }
-
-
-def _utc_iso_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
-def token_preview(token: str) -> str:
-    if len(token) <= 10:
-        return token
-    return f"{token[:6]}...{token[-4:]}"
-
 
 def normalize_links(settings: dict[str, Any]) -> dict[str, dict[str, Any]]:
     raw_links = settings.get("links", {})
@@ -116,7 +105,7 @@ async def generate_link_token_for_user(interaction: discord.Interaction, user_id
     token = secrets.token_urlsafe(24)
     links[token] = {
         "user_id": int(user_id),
-        "created_at": _utc_iso_now(),
+        "created_at": utc_iso_now(),
         "last_used_at": "",
         "last_seen_character_id": 0,
         "character_bindings": {},

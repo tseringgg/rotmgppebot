@@ -5,7 +5,7 @@ from __future__ import annotations
 import discord
 
 from dataclass import PPEData, PlayerData
-from menus.menu_utils.character_carousel import cycle_index, select_initial_index
+from menus.menu_utils.character_carousel import CharacterCarouselPolicy
 from menus.manageplayer.common import (
     character_embed_for_target,
     close_manageplayer_menu,
@@ -45,6 +45,7 @@ class ManagePlayerPenaltiesModal(discord.ui.Modal, title="Set PPE Penalties"):
         target: ManagedPlayerTarget,
         ppe_id: int,
         defaults: dict[str, float],
+        max_ppes: int,
         source_message: discord.Message | None,
         connected_ppe_ids: set[int],
     ) -> None:
@@ -52,6 +53,7 @@ class ManagePlayerPenaltiesModal(discord.ui.Modal, title="Set PPE Penalties"):
         self.owner_id = owner_id
         self.target = target
         self.ppe_id = ppe_id
+        self.max_ppes = max_ppes
         self.source_message = source_message
         self.connected_ppe_ids = connected_ppe_ids
         self.pet_level.default = str(int(defaults["pet_level"]))
@@ -154,10 +156,14 @@ class ManagePlayerCharactersView(OwnerBoundView):
         self.ppes = sorted(player_data.ppes, key=lambda p: int(p.id))
         best = max(self.ppes, key=lambda p: float(p.points), default=None)
         self.best_ppe_id = int(best.id) if best else None
-        self.index = self._initial_index(preferred_ppe_id)
+        self.carousel_policy = CharacterCarouselPolicy(
+            preferred_ppe_id=preferred_ppe_id,
+            active_ppe_id=self.player_data.active_ppe,
+        )
+        self.index = self.carousel_policy.initial_index(self.ppes)
 
     def _initial_index(self, preferred_ppe_id: int | None) -> int:
-        return select_initial_index(self.ppes, preferred_ppe_id, self.player_data.active_ppe)
+        return self.carousel_policy.initial_index(self.ppes)
 
     def current_ppe(self) -> PPEData:
         return self.ppes[self.index]
@@ -178,12 +184,12 @@ class ManagePlayerCharactersView(OwnerBoundView):
 
     @discord.ui.button(label="Prev Char", style=discord.ButtonStyle.secondary, row=0)
     async def prev(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        self.index = cycle_index(self.index, total=len(self.ppes), step=-1)
+        self.index = self.carousel_policy.next_index(self.index, total=len(self.ppes), step=-1)
         await interaction.response.edit_message(embed=self.current_embed(), view=self)
 
     @discord.ui.button(label="Next Char", style=discord.ButtonStyle.secondary, row=0)
     async def next(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        self.index = cycle_index(self.index, total=len(self.ppes), step=1)
+        self.index = self.carousel_policy.next_index(self.index, total=len(self.ppes), step=1)
         await interaction.response.edit_message(embed=self.current_embed(), view=self)
 
     @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary, row=0)
@@ -221,6 +227,7 @@ class ManagePlayerCharactersView(OwnerBoundView):
             target=self.target,
             ppe_id=int(selected.id),
             defaults=defaults,
+            max_ppes=self.max_ppes,
             source_message=interaction.message,
             connected_ppe_ids=self.connected_ppe_ids,
         )

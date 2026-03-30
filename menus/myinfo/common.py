@@ -7,6 +7,7 @@ import os
 import discord
 
 from dataclass import PPEData, PlayerData
+from menus.menu_utils import SafeResponse
 from utils.guild_config import get_realmshark_settings, load_guild_config
 from utils.helpers.loot_share_commands import share_active_ppe_loot_image
 from utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
@@ -16,22 +17,12 @@ from utils.player_records import ensure_player_exists, load_player_records, save
 
 
 async def send_interaction_text(interaction: discord.Interaction, content: str, *, ephemeral: bool) -> None:
-    if not interaction.response.is_done():
-        await interaction.response.send_message(content, ephemeral=ephemeral)
-        return
-    await interaction.followup.send(content, ephemeral=ephemeral)
+    await SafeResponse.send_text(interaction, content, ephemeral=ephemeral)
 
 
 async def close_myinfo_menu(interaction: discord.Interaction) -> None:
     """Safely close an existing myinfo menu message if still editable."""
-
-    if interaction.response.is_done():
-        return
-
-    try:
-        await interaction.response.edit_message(content="Closed `/myinfo` menu.", embed=None, view=None)
-    except discord.NotFound:
-        await interaction.response.defer()
+    await SafeResponse.close(interaction, close_message="Closed `/myinfo` menu.")
 
 
 def display_class_name(ppe: PPEData) -> str:

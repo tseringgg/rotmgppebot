@@ -9,10 +9,9 @@ from menus.manageplayer.common import (
     send_followup_text,
 )
 from menus.manageplayer.entry import open_manageplayer_home
-from menus.manageplayer.services import load_target_player_data
+from menus.manageplayer.services import assign_target_to_team, load_target_player_data, remove_target_from_team
 from menus.manageplayer.targets import ManagedPlayerTarget
 from menus.menu_utils import OwnerBoundView
-from utils.team_manager import team_manager
 
 
 class _TeamChoiceSelect(discord.ui.Select):
@@ -50,30 +49,14 @@ class _TeamChoiceSelect(discord.ui.Select):
         selected_team_name = self.values[0]
 
         try:
-            team = await team_manager.add_player_to_team(interaction, view.target.user_id, selected_team_name)
-
-            if view.target.member and interaction.guild:
-                team_role = discord.utils.get(interaction.guild.roles, name=team.name)
-                if team_role:
-                    await view.target.member.add_roles(team_role)
-                else:
-                    team_role = await interaction.guild.create_role(
-                        name=team.name,
-                        reason=f"PPE Team role for {team.name}",
-                    )
-                    await view.target.member.add_roles(team_role)
-
+            result = await assign_target_to_team(interaction, view.target, selected_team_name)
             await open_manageplayer_home(
                 interaction,
                 owner_id=interaction.user.id,
                 target=view.target,
                 max_ppes=view.max_ppes,
             )
-            await send_followup_text(
-                interaction,
-                f"✅ Added {view.target.mention_text} to team `{team.name}`.",
-                ephemeral=False,
-            )
+            await send_followup_text(interaction, result, ephemeral=False)
         except ValueError as exc:
             await interaction.response.send_message(str(exc), ephemeral=False)
         except discord.Forbidden:
@@ -187,33 +170,14 @@ class ManagePlayerRemoveFromTeamConfirmView(OwnerBoundView):
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.danger, row=0)
     async def confirm(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         try:
-            removed_team_name = await team_manager.force_remove_player_from_teams(interaction, self.target.user_id)
-            if not removed_team_name:
-                await interaction.response.send_message(
-                    f"⚠️ {self.target.display_name} is not on any team.",
-                    ephemeral=True,
-                )
-                return
-
-            if self.target.member and interaction.guild:
-                team_role = discord.utils.get(interaction.guild.roles, name=removed_team_name)
-                if team_role and team_role in self.target.member.roles:
-                    try:
-                        await self.target.member.remove_roles(team_role)
-                    except discord.Forbidden:
-                        pass
-
+            result = await remove_target_from_team(interaction, self.target)
             await open_manageplayer_home(
                 interaction,
                 owner_id=interaction.user.id,
                 target=self.target,
                 max_ppes=self.max_ppes,
             )
-            await send_followup_text(
-                interaction,
-                f"✅ Removed {self.target.mention_text} from team `{removed_team_name}`.",
-                ephemeral=False,
-            )
+            await send_followup_text(interaction, result, ephemeral=False)
         except Exception as exc:
             await interaction.response.send_message(str(exc), ephemeral=False)
 

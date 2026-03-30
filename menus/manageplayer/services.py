@@ -244,6 +244,41 @@ async def remove_target_admin_role(interaction: discord.Interaction, target: Man
     return f"✅ Removed PPE Admin role from {target.member.mention}."
 
 
+async def assign_target_to_team(
+    interaction: discord.Interaction,
+    target: ManagedPlayerTarget,
+    team_name: str,
+) -> str:
+    team = await team_manager.add_player_to_team(interaction, target.user_id, team_name)
+
+    if target.member and interaction.guild:
+        team_role = discord.utils.get(interaction.guild.roles, name=team.name)
+        if team_role is None:
+            team_role = await interaction.guild.create_role(
+                name=team.name,
+                reason=f"PPE Team role for {team.name}",
+            )
+        await target.member.add_roles(team_role)
+
+    return f"✅ Added {target.mention_text} to team `{team.name}`."
+
+
+async def remove_target_from_team(interaction: discord.Interaction, target: ManagedPlayerTarget) -> str:
+    removed_team_name = await team_manager.force_remove_player_from_teams(interaction, target.user_id)
+    if not removed_team_name:
+        return f"⚠️ {target.display_name} is not on any team."
+
+    if target.member and interaction.guild:
+        team_role = discord.utils.get(interaction.guild.roles, name=removed_team_name)
+        if team_role and team_role in target.member.roles:
+            try:
+                await target.member.remove_roles(team_role)
+            except discord.Forbidden:
+                pass
+
+    return f"✅ Removed {target.mention_text} from team `{removed_team_name}`."
+
+
 def target_has_admin_role(interaction: discord.Interaction, target: ManagedPlayerTarget) -> bool:
     if not interaction.guild or not target.member:
         return False
@@ -260,6 +295,8 @@ __all__ = [
     "find_ppe_or_raise",
     "give_target_admin_role",
     "load_target_player_data",
+    "assign_target_to_team",
+    "remove_target_from_team",
     "remove_target_admin_role",
     "remove_target_from_contest",
     "send_target_quests_followup",

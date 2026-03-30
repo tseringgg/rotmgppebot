@@ -12,7 +12,7 @@ from menus.managesniffer.services import (
 )
 from menus.managesniffer.validators import resolve_member
 from menus.menu_utils import OwnerBoundView
-from menus.menu_utils.sniffer_core import core as realmshark_core
+from menus.menu_utils.sniffer_core.admin_panel import admin_panel
 from menus.menu_utils.sniffer_shared import build_realmshark_link_instructions
 
 
@@ -61,7 +61,7 @@ class ManagePlayerSnifferView(OwnerBoundView):
         if target_member is None:
             await interaction.response.send_message("Player is no longer in this server.", ephemeral=True)
             return
-        await realmshark_core.admin_panel(interaction, target_member, "show_all")
+        await admin_panel(interaction, target_member, "show_all")
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
