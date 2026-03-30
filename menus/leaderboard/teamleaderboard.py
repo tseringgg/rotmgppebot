@@ -1,13 +1,14 @@
 import discord
 
 from menus.leaderboard.common import build_ranked_entry_lines, send_error_response, send_leaderboard
+from menus.leaderboard.services import require_guild
 from utils.team_manager import team_manager
 from utils.team_contest_scoring import format_points_breakdown, load_team_contest_scoring
 
 
 async def command(interaction: discord.Interaction):
-    if not interaction.guild:
-        return await interaction.response.send_message("❌ This command can only be used in a server.")
+    if await require_guild(interaction) is None:
+        return
 
     try:
         leaderboard_data = await team_manager.get_team_leaderboard_data(interaction)

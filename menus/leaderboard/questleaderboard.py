@@ -2,6 +2,7 @@ import discord
 
 from utils.guild_config import get_quest_points
 from menus.leaderboard.common import build_ranked_entry_lines, send_error_response, send_leaderboard
+from menus.leaderboard.services import member_display_name, require_guild
 from utils.player_records import load_player_records
 
 
@@ -10,8 +11,9 @@ def _safe_bucket_len(raw_value: object) -> int:
 
 
 async def command(interaction: discord.Interaction):
-    if not interaction.guild:
-        return await interaction.response.send_message("❌ This command can only be used in a server.", ephemeral=True)
+    guild = await require_guild(interaction)
+    if guild is None:
+        return
 
     try:
         records = await load_player_records(interaction)
@@ -37,7 +39,7 @@ async def command(interaction: discord.Interaction):
             if total_completed <= 0 and total_points <= 0:
                 continue
 
-            player_name = next((m.display_name for m in interaction.guild.members if m.id == pid), f"Unknown User ({pid})")
+            player_name = member_display_name(guild, pid)
             leaderboard_data.append((player_name, completed_regular, completed_shiny, completed_skin, total_points))
 
         leaderboard_data.sort(key=lambda x: (x[4], x[1] + x[2] + x[3]), reverse=True)

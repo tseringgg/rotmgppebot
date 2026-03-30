@@ -6,7 +6,8 @@ import discord
 from discord import ui
 
 from menus.menu_utils import ConfirmCancelView, OwnerBoundView
-from menus.managequests.common import build_global_payload
+from menus.managequests.common import build_global_payload, build_reset_active_lines, build_reset_completion_lines
+from menus.managequests.services import apply_selected_reset_actions
 from utils.guild_config import get_quest_targets, load_guild_config
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.quest_manager import refresh_player_quests
@@ -26,21 +27,6 @@ def _coerce_resets_remaining(player_data, default_reset_limit: int) -> int:
         return max(0, int(value))
     except (TypeError, ValueError):
         return max(0, default_reset_limit)
-
-
-def _build_active_lines(
-    active_item_quests: list[str],
-    active_shiny_quests: list[str],
-    active_skin_quests: list[str],
-) -> list[str]:
-    active_lines = []
-    for item in active_item_quests:
-        active_lines.append(f"- Item: {item}")
-    for shiny in active_shiny_quests:
-        active_lines.append(f"- Shiny: {shiny}")
-    for skin in active_skin_quests:
-        active_lines.append(f"- Skin: {skin}")
-    return active_lines or ["- None"]
 
 
 class ResetQuestSelectionView(OwnerBoundView):
@@ -138,10 +124,24 @@ class ResetQuestSelectionView(OwnerBoundView):
                 ephemeral=True,
             )
 
-        records = await load_player_records(interaction)
-        key = self.member.id
+        summary = await apply_selected_reset_actions(
+            interaction,
+            member_id=self.member.id,
+            selected_values=self.selected_values,
+            active_item_quests=self.active_item_quests,
+            active_shiny_quests=self.active_shiny_quests,
+            active_skin_quests=self.active_skin_quests,
+            default_reset_limit=self.default_reset_limit,
+            consume_reset_on_confirm=self.consume_reset_on_confirm,
+            include_reset_counter_option=self.include_reset_counter_option,
+            action_reset_completed_items=ACTION_RESET_COMPLETED_ITEMS,
+            action_reset_completed_shinies=ACTION_RESET_COMPLETED_SHINIES,
+            action_reset_completed_skins=ACTION_RESET_COMPLETED_SKINS,
+            action_clear_all_info=ACTION_CLEAR_ALL_INFO,
+            action_reset_resets_to_default=ACTION_RESET_RESETS_TO_DEFAULT,
+        )
 
-        if key not in records or not records[key].is_member:
+        if summary.get("error") == "not_member":
             self.stop()
             return await interaction.response.edit_message(
                 content=f"❌ {self.member.display_name} is not part of the PPE contest.",
@@ -149,146 +149,24 @@ class ResetQuestSelectionView(OwnerBoundView):
                 embed=None,
             )
 
-        player_data = records[key]
-        quests = player_data.quests
-
-        current_resets_remaining = _coerce_resets_remaining(player_data, self.default_reset_limit)
-        if player_data.quest_resets_remaining != current_resets_remaining:
-            player_data.quest_resets_remaining = current_resets_remaining
-
-        if self.consume_reset_on_confirm and current_resets_remaining <= 0:
+        if summary.get("error") == "no_resets":
             self.stop()
-            await save_player_records(interaction, records)
             return await interaction.response.edit_message(
                 content="❌ You have no quest resets left.",
                 view=None,
                 embed=None,
             )
 
-        removed_current_items = []
-        removed_current_shinies = []
-        removed_current_skins = []
-        reset_completed_items = False
-        reset_completed_shinies = False
-        reset_completed_skins = False
-        cleared_all_info = False
-        reset_counter_to_default = False
-
-        if ACTION_CLEAR_ALL_INFO in self.selected_values:
-            quests.current_items.clear()
-            quests.current_shinies.clear()
-            quests.current_skins.clear()
-            quests.completed_items.clear()
-            quests.completed_shinies.clear()
-            quests.completed_skins.clear()
-            cleared_all_info = True
-        else:
-            if ACTION_RESET_COMPLETED_ITEMS in self.selected_values:
-                quests.completed_items.clear()
-                reset_completed_items = True
-            if ACTION_RESET_COMPLETED_SHINIES in self.selected_values:
-                quests.completed_shinies.clear()
-                reset_completed_shinies = True
-            if ACTION_RESET_COMPLETED_SKINS in self.selected_values:
-                quests.completed_skins.clear()
-                reset_completed_skins = True
-
-            selected_item_indexes = {
-                int(value.split("::", 1)[1])
-                for value in self.selected_values
-                if value.startswith("item_idx::")
-            }
-            selected_skin_indexes = {
-                int(value.split("::", 1)[1])
-                for value in self.selected_values
-                if value.startswith("skin_idx::")
-            }
-            selected_shiny_indexes = {
-                int(value.split("::", 1)[1])
-                for value in self.selected_values
-                if value.startswith("shiny_idx::")
-            }
-
-            selected_item_quests = {
-                self.active_item_quests[idx]
-                for idx in selected_item_indexes
-                if 0 <= idx < len(self.active_item_quests)
-            }
-            selected_skin_quests = {
-                self.active_skin_quests[idx]
-                for idx in selected_skin_indexes
-                if 0 <= idx < len(self.active_skin_quests)
-            }
-            selected_shiny_quests = {
-                self.active_shiny_quests[idx]
-                for idx in selected_shiny_indexes
-                if 0 <= idx < len(self.active_shiny_quests)
-            }
-
-            if selected_item_quests:
-                before = list(quests.current_items)
-                quests.current_items = [q for q in quests.current_items if q not in selected_item_quests]
-                removed_current_items = [q for q in before if q in selected_item_quests]
-
-            if selected_skin_quests:
-                before = list(quests.current_skins)
-                quests.current_skins = [q for q in quests.current_skins if q not in selected_skin_quests]
-                removed_current_skins = [q for q in before if q in selected_skin_quests]
-
-            if selected_shiny_quests:
-                before = list(quests.current_shinies)
-                quests.current_shinies = [q for q in quests.current_shinies if q not in selected_shiny_quests]
-                removed_current_shinies = [q for q in before if q in selected_shiny_quests]
-
-        config = await load_guild_config(interaction)
-        regular_target = int(config["quest_settings"]["regular_target"])
-        shiny_target = int(config["quest_settings"]["shiny_target"])
-        skin_target = int(config["quest_settings"]["skin_target"])
-        refresh_player_quests(
-            player_data,
-            target_item_quests=regular_target,
-            target_shiny_quests=shiny_target,
-            target_skin_quests=skin_target,
-            global_quests=build_global_payload(config["quest_settings"]),
-        )
-
-        if self.include_reset_counter_option and ACTION_RESET_RESETS_TO_DEFAULT in self.selected_values:
-            player_data.quest_resets_remaining = self.default_reset_limit
-            reset_counter_to_default = True
-
-        if self.consume_reset_on_confirm:
-            player_data.quest_resets_remaining = max(0, current_resets_remaining - 1)
-
-        await save_player_records(interaction, records)
-
-        summary_lines = [f"✅ Updated quest reset for {self.member.display_name}."]
-        if removed_current_items:
-            summary_lines.append(f"- Active item quests reset: {', '.join(removed_current_items)}")
-        if removed_current_shinies:
-            summary_lines.append(f"- Active shiny quests reset: {', '.join(removed_current_shinies)}")
-        if removed_current_skins:
-            summary_lines.append(f"- Active skin quests reset: {', '.join(removed_current_skins)}")
-        if reset_completed_items:
-            summary_lines.append("- Reset all completed item quests")
-        if reset_completed_shinies:
-            summary_lines.append("- Reset all completed shiny quests")
-        if reset_completed_skins:
-            summary_lines.append("- Reset all completed skin quests")
-        if cleared_all_info:
-            summary_lines.append("- Cleared all quest information")
-        if reset_counter_to_default:
-            summary_lines.append(f"- Reset quest reset attempts to default ({self.default_reset_limit})")
-
-        summary_lines.append(f"- Quest resets remaining: {player_data.quest_resets_remaining}")
-        footer_line = (
-            "Use /myquests to verify the updated quest state."
-            if self.consume_reset_on_confirm
-            else "Use /manageplayer or /managequests to view the updated quest state."
+        summary_lines = build_reset_completion_lines(
+            member_display_name=self.member.display_name,
+            summary=summary,
+            default_reset_limit=self.default_reset_limit,
+            consume_reset_on_confirm=self.consume_reset_on_confirm,
         )
 
         self.stop()
         await interaction.response.edit_message(
-            content="\n".join(summary_lines + [footer_line]),
+            content="\n".join(summary_lines),
             view=None,
             embed=None,
         )
@@ -369,7 +247,7 @@ async def open_reset_for_member(
             f"Choose quest sections to reset for {member.display_name}.\n"
             f"Quest resets remaining: **{resets_remaining}**\n"
             "Active quests:\n"
-            + "\n".join(_build_active_lines(active_item_quests, active_shiny_quests, active_skin_quests))
+            + "\n".join(build_reset_active_lines(active_item_quests, active_shiny_quests, active_skin_quests))
             + "\n\nAdditional options:\n"
             "- Reset all completed items\n"
             "- Reset all completed shinies\n"
@@ -453,7 +331,7 @@ async def open_reset_for_self(interaction: discord.Interaction) -> None:
             "Choose quest sections to reset.\n"
             f"Quest resets remaining: **{resets_remaining}**\n"
             "Active quests:\n"
-            + "\n".join(_build_active_lines(active_item_quests, active_shiny_quests, active_skin_quests))
+            + "\n".join(build_reset_active_lines(active_item_quests, active_shiny_quests, active_skin_quests))
             + "\n\nAdditional options:\n"
             "- Reset all completed items\n"
             "- Reset all completed shinies\n"

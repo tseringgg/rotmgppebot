@@ -1,12 +1,14 @@
 import discord
 
 from menus.leaderboard.common import build_ranked_entry_lines, send_error_response, send_leaderboard
+from menus.leaderboard.services import member_display_name, require_guild
 from utils.player_records import load_player_records
 
 
 async def command(interaction: discord.Interaction):
-    if not interaction.guild:
-        return await interaction.response.send_message("❌ This command can only be used in a server.")
+    guild = await require_guild(interaction)
+    if guild is None:
+        return
     try:
         records = await load_player_records(interaction)
 
@@ -19,7 +21,7 @@ async def command(interaction: discord.Interaction):
                 continue
 
             best_ppe = max(ppes, key=lambda p: p.points)
-            player = next((m.display_name for m in interaction.guild.members if m.id == pid), f"Unknown User ({pid})")
+            player = member_display_name(guild, pid)
             is_inactive = data.active_ppe != best_ppe.id
             leaderboard_data.append((player, best_ppe.name, best_ppe.points, is_inactive))
 

@@ -7,7 +7,7 @@ import os
 import discord
 
 from dataclass import PPEData, PlayerData
-from utils.guild_config import get_max_ppes, get_realmshark_settings, load_guild_config
+from utils.guild_config import get_realmshark_settings, load_guild_config
 from utils.helpers.loot_share_commands import share_active_ppe_loot_image
 from utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
 from utils.ppe_list_md_builder import create_ppe_list_markdown_file
@@ -290,46 +290,3 @@ def find_ppe_or_raise(player_data: PlayerData, ppe_id: int) -> PPEData:
         if int(ppe.id) == int(ppe_id):
             return ppe
     raise LookupError(f"PPE #{ppe_id} not found.")
-
-
-async def open_myinfo_home(interaction: discord.Interaction, *, max_ppes: int) -> None:
-    from menus.myinfo.home_view import MyInfoHomeView
-
-    records = await load_player_records(interaction)
-    key = ensure_player_exists(records, interaction.user.id)
-    player_data = records[key]
-
-    active_ppe = None
-    for ppe in player_data.ppes:
-        if ppe.id == player_data.active_ppe:
-            active_ppe = ppe
-            break
-
-    embed = build_home_embed(interaction.user, player_data, active_ppe, max_ppes=max_ppes)
-    view = MyInfoHomeView(interaction.user.id, max_ppes=max_ppes)
-    await interaction.response.edit_message(embed=embed, view=view)
-
-
-async def open_myinfo_menu(interaction: discord.Interaction) -> None:
-    """Open the /myinfo dashboard entry menu for the invoking user."""
-
-    from menus.myinfo.home_view import MyInfoHomeView
-
-    if not interaction.guild:
-        await interaction.response.send_message("❌ This command can only be used in a server.", ephemeral=True)
-        return
-
-    records = await load_player_records(interaction)
-    key = ensure_player_exists(records, interaction.user.id)
-    player_data = records[key]
-    max_ppes = await get_max_ppes(interaction)
-
-    active_ppe = None
-    for ppe in player_data.ppes:
-        if ppe.id == player_data.active_ppe:
-            active_ppe = ppe
-            break
-
-    embed = build_home_embed(interaction.user, player_data, active_ppe, max_ppes=max_ppes)
-    view = MyInfoHomeView(interaction.user.id, max_ppes=max_ppes)
-    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)

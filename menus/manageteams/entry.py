@@ -3,7 +3,8 @@ from __future__ import annotations
 import discord
 
 from menus.manageteams.services import build_team_detail, build_team_summary_pages
-from menus.manageteams.views import ManageSingleTeamView, ManageTeamsHomeView
+from menus.manageteams.submenus.home.views import ManageTeamsHomeView
+from menus.manageteams.submenus.team_detail.views import ManageSingleTeamView
 
 
 async def open_manage_teams_home(interaction: discord.Interaction, *, owner_id: int) -> None:

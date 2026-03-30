@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import discord
 
+from menus.leaderboard.services import require_guild
 from menus.leaderboard.views import LeaderboardHomeView
 from utils.guild_config import get_contest_settings
 
 
 async def open_leaderboard_menu(interaction: discord.Interaction) -> None:
-    if not interaction.guild:
-        await interaction.response.send_message("❌ This command can only be used in a server.", ephemeral=True)
+    if await require_guild(interaction) is None:
         return
 
     contest_settings = await get_contest_settings(interaction)

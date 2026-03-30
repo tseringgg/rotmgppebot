@@ -83,7 +83,7 @@ async def _refresh_point_settings_message(
     if source_message is None:
         return
 
-    from menus.manageseason.views import (
+    from menus.manageseason.submenus.points.views import (
         ManageClassPointSettingsView,
         ManageGlobalPointSettingsView,
         ManagePointSettingsView,
