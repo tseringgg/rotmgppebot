@@ -34,6 +34,8 @@ class ManagePlayerSnifferView(OwnerBoundView):
             return
 
         token = await generate_link_token_for_user(interaction, self.target_user_id)
+        settings, _links = await load_sniffer_settings(interaction)
+        endpoint = settings.get("endpoint", "")
         await render_manage_player_sniffer_home(
             interaction,
             owner_id=self.owner_id,
@@ -41,7 +43,7 @@ class ManagePlayerSnifferView(OwnerBoundView):
         )
         await interaction.followup.send(
             "Generated token for selected player:\n"
-            + build_realmshark_link_instructions(interaction.guild.id if interaction.guild else None, token),
+            + build_realmshark_link_instructions(interaction.guild.id if interaction.guild else None, token, endpoint),
             ephemeral=True,
         )
 

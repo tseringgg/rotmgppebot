@@ -170,17 +170,23 @@ async def reset_all_sniffer_settings(interaction: discord.Interaction) -> dict[s
     }
 
 
-def build_realmshark_link_instructions(guild_id: int | None, token: str) -> str:
+def build_realmshark_link_instructions(guild_id: int | None, token: str, endpoint: str = "") -> str:
     guild_id_text = str(guild_id) if guild_id is not None else "unknown"
+    endpoint_stripped = endpoint.strip() if isinstance(endpoint, str) else ""
+    if endpoint_stripped:
+        endpoint_line = f"Endpoint = {endpoint_stripped}"
+    else:
+        endpoint_line = "Set `Endpoint` to the link provided by your admin. It should be something like: `http://<bot-host>:8080/realmshark/ingest`."
     return (
         "Sniffer token created. Keep it private.\n"
         f"guild_id: `{guild_id_text}`\n"
         f"link_token: `{token}`\n\n"
         "Set these in Bridge Review:\n"
-        "Enabled -> checked\n"
+        f"{endpoint_line}\n"
         f"Guild ID = {guild_id_text}\n"
-        f"Link Token ={token}\n"
-        "Endpoint = *Provided endpoint*\n"
+        f"Link Token = {token}\n"
+        "CSV Path = ./rotmg_loot_drops_updated.csv\n"
+        "Enabled -> checked\n"
     )
 
 

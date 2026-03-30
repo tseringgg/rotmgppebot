@@ -73,7 +73,7 @@ class ManageTeamsHomeView(OwnerBoundView):
                 total_points=total_points,
                 include_quest_points=scoring.include_quest_points,
             )
-            rows.append(f"**{team_name}** - {breakdown} pts ({member_count} members)")
+            rows.append(f"**{team_name}**: {breakdown} pts ({member_count} members)")
         embeds = build_leaderboard_embeds(
             title="Team Leaderboard",
             entries=build_ranked_entry_lines(rows),

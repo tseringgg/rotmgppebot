@@ -40,8 +40,9 @@ class MySnifferHomeView(OwnerBoundView):
 
         token = await generate_user_link_token(interaction, user_id=interaction.user.id)
         await self._refresh_home(interaction)
+        endpoint = settings.get("endpoint", "")
         await interaction.followup.send(
-            build_realmshark_link_instructions(interaction.guild.id if interaction.guild else None, token),
+            build_realmshark_link_instructions(interaction.guild.id if interaction.guild else None, token, endpoint),
             ephemeral=True,
         )
 
