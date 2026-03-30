@@ -1,6 +1,6 @@
 import discord
 
-from menus.sniffer import open_managesniffer_menu
+from menus.managesniffer import open_managesniffer_menu
 
 
 async def command(interaction: discord.Interaction) -> None:

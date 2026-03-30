@@ -5,7 +5,7 @@ from __future__ import annotations
 import discord
 
 from menus.managequests.common import load_managequests_settings
-from menus.managequests.views import ManageQuestsHomeView
+from menus.managequests.submenus.home.views import ManageQuestsHomeView
 
 
 async def open_managequests_menu(interaction: discord.Interaction) -> None:

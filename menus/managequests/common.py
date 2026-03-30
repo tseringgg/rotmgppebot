@@ -138,3 +138,53 @@ def build_global_quests_embed(settings: dict) -> discord.Embed:
     embed.add_field(name="Shiny Global Quests", value=format_list(shiny), inline=False)
     embed.add_field(name="Skin Global Quests", value=format_list(skin), inline=False)
     return embed
+
+
+def build_reset_active_lines(
+    active_item_quests: list[str],
+    active_shiny_quests: list[str],
+    active_skin_quests: list[str],
+) -> list[str]:
+    lines: list[str] = []
+    for item in active_item_quests:
+        lines.append(f"- Item: {item}")
+    for shiny in active_shiny_quests:
+        lines.append(f"- Shiny: {shiny}")
+    for skin in active_skin_quests:
+        lines.append(f"- Skin: {skin}")
+    return lines or ["- None"]
+
+
+def build_reset_completion_lines(
+    *,
+    member_display_name: str,
+    summary: dict,
+    default_reset_limit: int,
+    consume_reset_on_confirm: bool,
+) -> list[str]:
+    lines = [f"✅ Updated quest reset for {member_display_name}."]
+    if summary["removed_current_items"]:
+        lines.append(f"- Active item quests reset: {', '.join(summary['removed_current_items'])}")
+    if summary["removed_current_shinies"]:
+        lines.append(f"- Active shiny quests reset: {', '.join(summary['removed_current_shinies'])}")
+    if summary["removed_current_skins"]:
+        lines.append(f"- Active skin quests reset: {', '.join(summary['removed_current_skins'])}")
+    if summary["reset_completed_items"]:
+        lines.append("- Reset all completed item quests")
+    if summary["reset_completed_shinies"]:
+        lines.append("- Reset all completed shiny quests")
+    if summary["reset_completed_skins"]:
+        lines.append("- Reset all completed skin quests")
+    if summary["cleared_all_info"]:
+        lines.append("- Cleared all quest information")
+    if summary["reset_counter_to_default"]:
+        lines.append(f"- Reset quest reset attempts to default ({default_reset_limit})")
+
+    lines.append(f"- Quest resets remaining: {summary['quest_resets_remaining']}")
+    footer_line = (
+        "Use /myquests to verify the updated quest state."
+        if consume_reset_on_confirm
+        else "Use /manageplayer or /managequests to view the updated quest state."
+    )
+    lines.append(footer_line)
+    return lines

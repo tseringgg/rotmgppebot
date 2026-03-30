@@ -421,7 +421,7 @@ async def myloot(interaction: discord.Interaction):
 async def managequests(interaction: discord.Interaction):
     await managequests_cmd.command(interaction)
 
-@bot.tree.command(name="manageseason", description="Open season admin controls (reset season and point settings).", guilds=guilds)
+@bot.tree.command(name="manageseason", description="Open season admin controls (reset season, point settings, contests).", guilds=guilds)
 @require_ppe_roles(admin_required=True)
 async def manageseason(interaction: discord.Interaction):
     await manageseason_cmd.command(interaction)

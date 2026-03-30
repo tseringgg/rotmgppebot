@@ -7,7 +7,7 @@ from utils.pagination import LootPaginationView
 async def command(interaction: discord.Interaction):
     # --- Commands for everyone ---
     general_cmds = {
-        "leaderboard": "Open leaderboard menu (PPE, Quest, Character-by-class, Season Loot, Team).",
+        "leaderboard": "Open leaderboard menu (PPE, Quest, Character-by-class, Season Loot, Team, Contest default).",
         "ppehelp": "Show this help message.",
         "listroles": "List all roles in this server.",
         "listadmins": "Show all admins.",
@@ -63,7 +63,7 @@ async def command(interaction: discord.Interaction):
         "refreshallpoints": "Recalculate all PPE points.",
         "manageplayer": "Use Manage Player -> Show Quests -> Reset Quests to reset quest sections for a player.",
         "managequests": "View/update quest targets, reset attempts, quest leaderboard point weights, and run Reset All Quests from the menu.",
-        "manageseason": "Open season admin menu: Reset Season (with RealmShark mode selection) and Manage Point Settings.",
+        "manageseason": "Open season admin menu: Reset Season, Manage Point Settings, and Manage Contests/leaderboard behavior.",
         "managesniffer": "Admin sniffer control panel (enable/disable, tokens, output channel, reset, player sniffer management).",
     }
     

@@ -34,13 +34,14 @@ def build_leaderboard_embeds(
     entries: list[str],
     color: discord.Color,
     header_lines: list[str] | None = None,
+    empty_message: str = "No data available yet.",
     per_page: int = LEADERBOARD_PAGE_SIZE,
 ) -> list[discord.Embed]:
     if not entries:
         return [
             discord.Embed(
                 title=title,
-                description="No data available yet.",
+                description=empty_message,
                 color=color,
             )
         ]
@@ -78,13 +79,27 @@ async def send_leaderboard(
     entries: list[str],
     color: discord.Color,
     header_lines: list[str] | None = None,
+    empty_message: str = "No data available yet.",
     per_page: int = LEADERBOARD_PAGE_SIZE,
 ) -> None:
+    if not entries:
+        empty_embed = discord.Embed(
+            title=title,
+            description=empty_message,
+            color=color,
+        )
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=empty_embed, ephemeral=True)
+        else:
+            await interaction.response.send_message(embed=empty_embed, ephemeral=True)
+        return
+
     embeds = build_leaderboard_embeds(
         title=title,
         entries=entries,
         color=color,
         header_lines=header_lines,
+        empty_message=empty_message,
         per_page=per_page,
     )
     if len(embeds) == 1:
@@ -93,3 +108,11 @@ async def send_leaderboard(
 
     view = LootPaginationView(embeds=embeds, user_id=interaction.user.id)
     await interaction.response.send_message(embed=embeds[0], view=view)
+
+
+async def send_error_response(interaction: discord.Interaction, message: str) -> None:
+    """Safely send an ephemeral error regardless of response state."""
+    if interaction.response.is_done():
+        await interaction.followup.send(message, ephemeral=True)
+        return
+    await interaction.response.send_message(message, ephemeral=True)

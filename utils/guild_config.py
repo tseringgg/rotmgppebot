@@ -6,6 +6,7 @@ from typing import Any, Dict
 import discord
 
 from utils.player_records import DATA_DIR, get_lock
+from utils.contest_leaderboards import normalize_contest_leaderboard_id
 
 _DEFAULT_CONFIG: Dict[str, Any] = {
     "ppe_settings": {
@@ -30,6 +31,10 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
         "links": {},
         "announce_channel_id": 0,
         "endpoint": "",
+    },
+    "contest_settings": {
+        "default_contest_leaderboard": None,
+        "team_contest_include_quest_points": False,
     },
     "points_settings": {
         "global": {
@@ -232,8 +237,23 @@ def _merge_defaults(raw: Dict[str, Any]) -> Dict[str, Any]:
     merged["ppe_settings"] = _normalized_ppe_settings(raw)
     merged["quest_settings"] = _normalized_targets(raw)
     merged["realmshark_settings"] = _normalized_realmshark_settings(raw)
+    merged["contest_settings"] = _normalized_contest_settings(raw)
     merged["points_settings"] = _normalized_points_settings(raw)
     return merged
+
+
+def _normalized_contest_settings(config: Dict[str, Any]) -> Dict[str, Any]:
+    settings = config.get("contest_settings", {}) if isinstance(config.get("contest_settings", {}), dict) else {}
+    default_choice = normalize_contest_leaderboard_id(settings.get("default_contest_leaderboard"))
+    return {
+        "default_contest_leaderboard": default_choice,
+        "team_contest_include_quest_points": bool(
+            settings.get(
+                "team_contest_include_quest_points",
+                _DEFAULT_CONFIG["contest_settings"]["team_contest_include_quest_points"],
+            )
+        ),
+    }
 
 
 def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -429,6 +449,18 @@ async def set_realmshark_settings_by_id(guild_id: int, settings: Dict[str, Any])
     config["realmshark_settings"] = settings
     saved = await save_guild_config_by_id(guild_id, config)
     return dict(saved["realmshark_settings"])
+
+
+async def get_contest_settings(interaction: discord.Interaction) -> Dict[str, Any]:
+    config = await load_guild_config(interaction)
+    return dict(config["contest_settings"])
+
+
+async def set_contest_settings(interaction: discord.Interaction, settings: Dict[str, Any]) -> Dict[str, Any]:
+    config = await load_guild_config(interaction)
+    config["contest_settings"] = settings
+    saved = await save_guild_config(interaction, config)
+    return dict(saved["contest_settings"])
 
 
 async def get_points_settings(interaction: discord.Interaction) -> Dict[str, Any]:

@@ -81,7 +81,7 @@ class EditQuestSettingsModal(discord.ui.Modal, title="Edit Quest Settings"):
         )
 
         if self.source_message is not None:
-            from menus.managequests.views import ManageQuestsHomeView
+            from menus.managequests.submenus.home.views import ManageQuestsHomeView
 
             refreshed = await load_managequests_settings(interaction)
             view = ManageQuestsHomeView(owner_id=self.owner_id, settings=refreshed)
@@ -146,7 +146,7 @@ class AddGlobalQuestItemsModal(discord.ui.Modal):
         )
 
         if self.source_message is not None:
-            from menus.managequests.views import GlobalQuestsView
+            from menus.managequests.submenus.global_quests.views import GlobalQuestsView
 
             view = GlobalQuestsView(owner_id=self.owner_id, settings=settings)
             try:
@@ -256,7 +256,7 @@ class RemoveGlobalQuestItemsModal(discord.ui.Modal):
         )
 
         if self.source_message is not None:
-            from menus.managequests.views import GlobalQuestsView
+            from menus.managequests.submenus.global_quests.views import GlobalQuestsView
 
             view = GlobalQuestsView(owner_id=self.owner_id, settings=settings)
             try:

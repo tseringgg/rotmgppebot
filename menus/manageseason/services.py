@@ -8,15 +8,19 @@ from typing import Any
 import discord
 
 from utils.guild_config import (
+    get_contest_settings,
     get_points_settings,
     get_realmshark_settings,
     load_guild_config,
+    set_contest_settings,
     set_points_settings,
     set_realmshark_settings,
     update_global_points_modifiers,
 )
 from utils.player_records import load_player_records, load_teams, save_player_records, save_teams
+from utils.points_service import recompute_ppe_points
 from utils.realmshark_pending_store import clear_all_pending_for_guild
+from utils.contest_leaderboards import normalize_contest_leaderboard_id
 
 
 @dataclass(slots=True)
@@ -36,10 +40,49 @@ class SeasonResetSummary:
     tokens_updated: int = 0
 
 
+@dataclass(slots=True)
+class PointsRefreshSummary:
+    """Structured result payload for bulk PPE point recalculation."""
+
+    ppes_processed: int
+    ppes_updated: int
+
+
 async def load_points_settings_for_menu(interaction: discord.Interaction) -> dict[str, Any]:
     """Load point settings for point-settings embeds/views."""
     settings = await get_points_settings(interaction)
     return dict(settings)
+
+
+async def load_contest_settings_for_menu(interaction: discord.Interaction) -> dict[str, Any]:
+    """Load contest settings for manage-contests embeds/views."""
+    settings = await get_contest_settings(interaction)
+    return dict(settings)
+
+
+async def update_default_contest_leaderboard(
+    interaction: discord.Interaction,
+    *,
+    default_leaderboard: str | None,
+) -> dict[str, Any]:
+    """Persist the default contest leaderboard identifier."""
+    settings = await get_contest_settings(interaction)
+    normalized_default = normalize_contest_leaderboard_id(default_leaderboard)
+    settings["default_contest_leaderboard"] = normalized_default
+    saved = await set_contest_settings(interaction, settings)
+    return dict(saved)
+
+
+async def update_team_contest_quest_points_setting(
+    interaction: discord.Interaction,
+    *,
+    enabled: bool,
+) -> dict[str, Any]:
+    """Toggle whether team contests should include quest points."""
+    settings = await get_contest_settings(interaction)
+    settings["team_contest_include_quest_points"] = bool(enabled)
+    saved = await set_contest_settings(interaction, settings)
+    return dict(saved)
 
 
 async def update_global_point_modifiers(
@@ -49,8 +92,8 @@ async def update_global_point_modifiers(
     bonus_percent: float | None = None,
     penalty_percent: float | None = None,
     total_percent: float | None = None,
-) -> dict[str, Any]:
-    """Update one or more global percent modifiers and return the saved settings."""
+) -> tuple[dict[str, Any], PointsRefreshSummary]:
+    """Update global percent modifiers and refresh all PPE point totals."""
     settings = await update_global_points_modifiers(
         interaction,
         loot_percent=loot_percent,
@@ -58,7 +101,11 @@ async def update_global_point_modifiers(
         penalty_percent=penalty_percent,
         total_percent=total_percent,
     )
-    return dict(settings)
+    refresh_summary = await refresh_all_character_points(
+        interaction,
+        guild_config={"points_settings": settings},
+    )
+    return dict(settings), refresh_summary
 
 
 async def update_class_point_override(
@@ -71,8 +118,8 @@ async def update_class_point_override(
     total_percent: float | None = None,
     minimum_total: float | None = None,
     clear_minimum_total: bool = False,
-) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Update a class override while supporting explicit minimum-total clearing."""
+) -> tuple[dict[str, Any], dict[str, Any], PointsRefreshSummary]:
+    """Update one class override and refresh all PPE point totals."""
     settings = await get_points_settings(interaction)
     class_overrides = dict(settings.get("class_overrides", {}))
 
@@ -102,7 +149,34 @@ async def update_class_point_override(
     settings["class_overrides"] = class_overrides
     saved = await set_points_settings(interaction, settings)
     saved_override = dict(saved.get("class_overrides", {}).get(class_name, {}))
-    return dict(saved), saved_override
+    refresh_summary = await refresh_all_character_points(
+        interaction,
+        guild_config={"points_settings": saved},
+    )
+    return dict(saved), saved_override, refresh_summary
+
+
+async def refresh_all_character_points(
+    interaction: discord.Interaction,
+    *,
+    guild_config: dict[str, Any] | None = None,
+) -> PointsRefreshSummary:
+    """Recompute point totals for every PPE using current guild settings."""
+    records = await load_player_records(interaction)
+    effective_guild_config = guild_config if isinstance(guild_config, dict) else await load_guild_config(interaction)
+
+    ppes_processed = 0
+    ppes_updated = 0
+    for player_data in records.values():
+        for ppe in getattr(player_data, "ppes", []):
+            ppes_processed += 1
+            old_points = float(getattr(ppe, "points", 0.0))
+            result = recompute_ppe_points(ppe, effective_guild_config)
+            if abs(float(result["total"]) - old_points) > 0.01:
+                ppes_updated += 1
+
+    await save_player_records(interaction, records)
+    return PointsRefreshSummary(ppes_processed=ppes_processed, ppes_updated=ppes_updated)
 
 
 async def reset_season_data(

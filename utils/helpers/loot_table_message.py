@@ -3,6 +3,7 @@ import os
 import discord
 
 from utils.embed_builders import build_loot_embed
+from utils.guild_config import load_guild_config
 from utils.loot_table_md_builder import create_loot_markdown_file
 
 
@@ -42,7 +43,11 @@ class LootTableMessage:
                 await self.interaction.response.send_message(error_msg, ephemeral=True)
 
     async def _send_markdown_file(self, active_ppe):
-        temp_file_path = create_loot_markdown_file(active_ppe)
+        guild_config = None
+        if self.interaction.guild is not None:
+            guild_config = await load_guild_config(self.interaction)
+
+        temp_file_path = create_loot_markdown_file(active_ppe, guild_config=guild_config)
 
         try:
             if self.response:

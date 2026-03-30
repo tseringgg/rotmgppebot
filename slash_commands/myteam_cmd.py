@@ -5,11 +5,19 @@ from typing import Optional
 import discord
 
 from utils.player_records import ensure_player_exists, load_player_records, load_teams
+from utils.team_contest_scoring import (
+    TeamContestScoring,
+    compute_team_member_points,
+    format_points_breakdown,
+    load_team_contest_scoring,
+    total_points_label,
+)
 from utils.team_manager import team_manager
-from utils.guild_config import get_quest_points
 
 
 def _format_class_name(raw_class: object) -> str:
+    if raw_class is None:
+        return "No Character"
     return str(getattr(raw_class, "value", raw_class))
 
 
@@ -29,6 +37,56 @@ def _split_lines(lines: list[str], *, page_size: int) -> list[list[str]]:
     for index in range(0, len(lines), page_size):
         pages.append(lines[index:index + page_size])
     return pages
+
+
+def _build_members_with_scoring(
+    *,
+    records: dict,
+    members_info: list[tuple[int, str, float, str]],
+    include_quest_points: bool,
+    scoring: TeamContestScoring,
+) -> list[tuple[int, str, float, float, float, str]]:
+    members_with_scoring: list[tuple[int, str, float, float, float, str]] = []
+    for member_id, member_name, ppe_points, ppe_class in members_info:
+        player_data = records.get(member_id)
+        computed_ppe_points, quest_points, _computed_total = compute_team_member_points(
+            player_data,
+            scoring=scoring,
+        )
+        member_ppe_points = float(ppe_points) if ppe_points else computed_ppe_points
+        contribution = member_ppe_points + quest_points
+        members_with_scoring.append(
+            (
+                member_id,
+                member_name,
+                member_ppe_points,
+                quest_points if include_quest_points else 0.0,
+                contribution,
+                _format_class_name(ppe_class),
+            )
+        )
+
+    members_with_scoring.sort(key=lambda entry: entry[4], reverse=True)
+    return members_with_scoring
+
+
+def _build_ranking_line(
+    *,
+    rank: int,
+    member_name: str,
+    ppe_points: float,
+    quest_points: float,
+    contribution: float,
+    ppe_class: str,
+    include_quest_points: bool,
+) -> str:
+    breakdown = format_points_breakdown(
+        ppe_points=ppe_points,
+        quest_points=quest_points,
+        total_points=contribution,
+        include_quest_points=include_quest_points,
+    )
+    return f"{rank}. {member_name}: {breakdown} pts ({ppe_class})"
 
 
 async def build_team_embeds(
@@ -56,34 +114,31 @@ async def build_team_embeds(
             return [_team_state_embed(title, no_team_message)]
         target_team = user_team
 
-    # Load records and quest points for detailed calculation
     records = await load_player_records(interaction)
-    regular_qp, shiny_qp, skin_qp = await get_quest_points(interaction)
+    scoring = await load_team_contest_scoring(interaction)
 
     team_info = await team_manager.get_team_members_info(interaction, target_team)
     if not team_info:
         return [_team_state_embed(title, f"❌ Team `{target_team}` not found.", color=discord.Color.red())]
 
     team_name_result, leader_id, members_info = team_info
-    
-    # Calculate complete points including quest points
-    members_with_quest: list[tuple[int, str, float, float, float, str]] = []
-    for member_id, member_name, ppe_points, ppe_class in members_info:
-        player_data = records.get(member_id)
-        quest_points = 0.0
-        if player_data:
-            quest_points = float(
-                len(player_data.quests.completed_items) * regular_qp
-                + len(player_data.quests.completed_shinies) * shiny_qp
-                + len(player_data.quests.completed_skins) * skin_qp
-            )
-        contribution = ppe_points + quest_points
-        members_with_quest.append((member_id, member_name, ppe_points, quest_points, contribution, _format_class_name(ppe_class)))
-    
-    members_info_sorted = sorted(members_with_quest, key=lambda x: x[4], reverse=True)
+    members_info_sorted = _build_members_with_scoring(
+        records=records,
+        members_info=members_info,
+        include_quest_points=scoring.include_quest_points,
+        scoring=scoring,
+    )
+
     total_ppe = sum(x[2] for x in members_info_sorted)
     total_quest = sum(x[3] for x in members_info_sorted)
     total_points = total_ppe + total_quest
+    total_label = total_points_label(include_quest_points=scoring.include_quest_points)
+    total_breakdown = format_points_breakdown(
+        ppe_points=total_ppe,
+        quest_points=total_quest,
+        total_points=total_points,
+        include_quest_points=scoring.include_quest_points,
+    )
 
     if not members_info_sorted:
         embed = discord.Embed(
@@ -92,7 +147,7 @@ async def build_team_embeds(
             color=discord.Color.blurple(),
         )
         embed.add_field(name="Members", value="0", inline=True)
-        embed.add_field(name="Total Team Points", value=f"{total_points:.1f}", inline=True)
+        embed.add_field(name=total_label, value=total_breakdown, inline=True)
         embed.add_field(
             name="Rankings",
             value="This team has no active members with PPE characters.",
@@ -101,8 +156,21 @@ async def build_team_embeds(
         return [embed]
 
     all_lines: list[str] = []
-    for rank, (member_id, member_name, ppe_points, quest_points, contribution, ppe_class) in enumerate(members_info_sorted, start=1):
-        all_lines.append(f"{rank}. {member_name}: {ppe_points:.1f} PPE + {quest_points:.1f} Quest = **{contribution:.1f}** pts ({ppe_class})")
+    for rank, (_member_id, member_name, ppe_points, quest_points, contribution, ppe_class) in enumerate(
+        members_info_sorted,
+        start=1,
+    ):
+        all_lines.append(
+            _build_ranking_line(
+                rank=rank,
+                member_name=member_name,
+                ppe_points=ppe_points,
+                quest_points=quest_points,
+                contribution=contribution,
+                ppe_class=ppe_class,
+                include_quest_points=scoring.include_quest_points,
+            )
+        )
 
     line_pages = _split_lines(all_lines, page_size=page_size)
     embeds: list[discord.Embed] = []
@@ -114,7 +182,7 @@ async def build_team_embeds(
             color=discord.Color.blurple(),
         )
         embed.add_field(name="Members", value=str(len(members_info_sorted)), inline=True)
-        embed.add_field(name="Total: PPE + Quest", value=f"{total_ppe:.1f} + {total_quest:.1f} = **{total_points:.1f}**", inline=True)
+        embed.add_field(name=total_label, value=total_breakdown, inline=True)
         embed.add_field(name="Rankings", value="\n".join(page_lines), inline=False)
         if page_total > 1:
             embed.set_footer(text=f"Page {page_number}/{page_total}")
@@ -147,31 +215,21 @@ async def build_team_embed(
             return _team_state_embed(title, no_team_message)
         target_team = user_team
 
-    # Load records and quest points for detailed calculation
     records = await load_player_records(interaction)
-    regular_qp, shiny_qp, skin_qp = await get_quest_points(interaction)
+    scoring = await load_team_contest_scoring(interaction)
 
     team_info = await team_manager.get_team_members_info(interaction, target_team)
     if not team_info:
         return _team_state_embed(title, f"❌ Team `{target_team}` not found.", color=discord.Color.red())
 
     team_name_result, leader_id, members_info = team_info
-    
-    # Calculate complete points including quest points
-    members_with_quest: list[tuple[int, str, float, float, float, str]] = []
-    for member_id, member_name, ppe_points, ppe_class in members_info:
-        player_data = records.get(member_id)
-        quest_points = 0.0
-        if player_data:
-            quest_points = float(
-                len(player_data.quests.completed_items) * regular_qp
-                + len(player_data.quests.completed_shinies) * shiny_qp
-                + len(player_data.quests.completed_skins) * skin_qp
-            )
-        contribution = ppe_points + quest_points
-        members_with_quest.append((member_id, member_name, ppe_points, quest_points, contribution, _format_class_name(ppe_class)))
-    
-    members_info_sorted = sorted(members_with_quest, key=lambda x: x[4], reverse=True)
+    members_info_sorted = _build_members_with_scoring(
+        records=records,
+        members_info=members_info,
+        include_quest_points=scoring.include_quest_points,
+        scoring=scoring,
+    )
+
     total_ppe = sum(x[2] for x in members_info_sorted)
     total_quest = sum(x[3] for x in members_info_sorted)
     total_points = total_ppe + total_quest
@@ -183,12 +241,34 @@ async def build_team_embed(
         color=discord.Color.blurple(),
     )
     embed.add_field(name="Members", value=str(len(members_info_sorted)), inline=True)
-    embed.add_field(name="Total: PPE + Quest", value=f"{total_ppe:.1f} + {total_quest:.1f} = **{total_points:.1f}**", inline=True)
+    embed.add_field(
+        name=total_points_label(include_quest_points=scoring.include_quest_points),
+        value=format_points_breakdown(
+            ppe_points=total_ppe,
+            quest_points=total_quest,
+            total_points=total_points,
+            include_quest_points=scoring.include_quest_points,
+        ),
+        inline=True,
+    )
 
     if members_info_sorted:
         lines: list[str] = []
-        for rank, (member_id, member_name, ppe_points, quest_points, contribution, ppe_class) in enumerate(members_info_sorted, start=1):
-            lines.append(f"{rank}. {member_name}: {ppe_points:.1f} PPE + {quest_points:.1f} Quest = **{contribution:.1f}** pts ({ppe_class})")
+        for rank, (_member_id, member_name, ppe_points, quest_points, contribution, ppe_class) in enumerate(
+            members_info_sorted,
+            start=1,
+        ):
+            lines.append(
+                _build_ranking_line(
+                    rank=rank,
+                    member_name=member_name,
+                    ppe_points=ppe_points,
+                    quest_points=quest_points,
+                    contribution=contribution,
+                    ppe_class=ppe_class,
+                    include_quest_points=scoring.include_quest_points,
+                )
+            )
 
         members_text = "\n".join(lines)
         if len(members_text) > 1024:

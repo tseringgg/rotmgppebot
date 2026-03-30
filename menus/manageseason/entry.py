@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import discord
 
-from menus.manageseason.views import ManageSeasonHomeView
+from menus.manageseason.submenus.home.views import ManageSeasonHomeView
 
 
 async def open_manageseason_menu(interaction: discord.Interaction) -> None:

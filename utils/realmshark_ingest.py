@@ -783,12 +783,9 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
             f"It was logged to {destination}."
         )
 
-        if mode == "addloot" and mapped_ppe_id is not None:
-            points_added = float(result.get("points_added", 0) or 0)
-            new_points = float(result.get("total_points", 0) or 0)
-            old_points = new_points - points_added
+        if routing_reason == "unmapped_character":
             announcement += (
-                    " | new character is still unmapped, use /mysniffer -> Configure Characters to choose PPE vs seasonal"
+                " | new character is still unmapped, use /mysniffer -> Configure Characters to choose PPE vs seasonal"
             )
 
         if bool(result.get("already_present", False)):
@@ -798,7 +795,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
             )
             if routing_reason == "unmapped_character":
                 announcement += (
-                    " | new character is still unmapped, use /realmsharkconfigure to choose PPE vs seasonal"
+                    " | new character is still unmapped, use /mysniffer -> Configure Characters to choose PPE vs seasonal"
                 )
 
         if ingest_warning is not None:

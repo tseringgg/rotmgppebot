@@ -17,7 +17,19 @@ async def create_new_ppe_for_user(
     num_exalts: int,
     percent_loot: float,
     incombat_reduction: float,
+    target_user_id: int | None = None,
 ) -> dict:
+    """Create a new PPE for a user.
+
+    Args:
+        interaction: The discord interaction.
+        class_name: The ROTMG class name.
+        pet_level: Pet level (0-100).
+        num_exalts: Number of exalts (0-40).
+        percent_loot: Loot boost percentage (0-25).
+        incombat_reduction: In-combat reduction value.
+        target_user_id: Optional. The user ID to create the PPE for. Defaults to interaction.user.id.
+    """
     if not interaction.guild:
         raise ValueError("❌ This command can only be used in a server.")
 
@@ -41,7 +53,8 @@ async def create_new_ppe_for_user(
 
     guild_id = interaction.guild.id
     records = await load_player_records(interaction)
-    key = ensure_player_exists(records, interaction.user.id)
+    user_id = target_user_id if target_user_id is not None else interaction.user.id
+    key = ensure_player_exists(records, user_id)
 
     player_data = records[key]
 
