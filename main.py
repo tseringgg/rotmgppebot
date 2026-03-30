@@ -1,4 +1,4 @@
-from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addplayer_cmd, addpointsfor_cmd, addseasonloot_cmd, addseasonlootfor_cmd, addtoteam_cmd, myloot_cmd, listplayers_cmd, listroles_cmd, manageseason_cmd, manageplayer_cmd, manageteams_cmd, myinfo_cmd, myquests_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removefromteam_cmd, setactiveppe_cmd, submitloot_cmd, listadmins_cmd, removeseasonloot_cmd, removeseasonlootfrom_cmd, myteam_cmd, managequests_cmd, mysniffer_cmd, managesniffer_cmd
+from slash_commands import addbonus_cmd, addbonusfor_cmd, addloot_cmd, addlootfor_cmd, addpenalties_cmd, addpenaltiesfor_cmd, addplayer_cmd, addpointsfor_cmd, deleteallppes_cmd, giveppeadminrole_cmd, inspectloot_cmd, leaderboard_cmd, listplayers_cmd, listroles_cmd, myloot_cmd, myquests_cmd, myppes_cmd, newppe_cmd, ppehelp_cmd, refreshallpoints_cmd, refreshpointsfor_cmd, removebonus_cmd, removebonusfrom_cmd, removeloot_cmd, removelootfrom_cmd, removeplayer_cmd, removeppeadminrole_cmd, setactiveppe_cmd, submitloot_cmd, deleteppe_cmd, listadmins_cmd, shareloot_cmd, shareseasonloot_cmd, addseasonloot_cmd, addseasonlootfor_cmd, removeseasonloot_cmd, removeseasonlootfor_cmd, showseasonloot_cmd, seasonleaderboard_cmd, questleaderboard_cmd, resetseason_cmd, migrateapostrophes_cmd, addteam_cmd, addplayer_team_cmd, leaveteam_cmd, teamleaderboard_cmd, myteam_cmd, updateteam_cmd, deleteteam_cmd, characterleaderboard_cmd, listcharactersfor_cmd, viewquestsfor_cmd, resetquestfor_cmd, resetquests_cmd, managequests_cmd, realmshark_cmd, itemsuggestions_cmd
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -7,6 +7,8 @@ import aiosqlite
 import os
 from utils.role_checks import require_ppe_roles
 from utils.loot_data import init_loot_data
+from utils.player_records import get_item_suggestions_enabled
+from utils.item_suggestion import handle_item_suggestion
 from create_loot_table import create_loot_background_and_mapping
 from utils.realmshark_ingest_server import start_realmshark_ingest_server
 from utils.realmshark_notifier import build_realmshark_notifier
@@ -132,20 +134,41 @@ async def on_message(message: discord.Message):
         return
 
     await bot.process_commands(message)
-
-
-@bot.tree.error
-async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
-    # Role/permission checks already provide user-facing feedback in the predicate.
-    if isinstance(error, app_commands.CheckFailure):
-        if not interaction.response.is_done():
-            await interaction.response.send_message(
-                "🚫 You do not have permission to use this command.",
-                ephemeral=True,
-            )
+    @bot.tree.error
+    async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+        # Role/permission checks already provide user-facing feedback in the predicate.
+        if isinstance(error, app_commands.CheckFailure):
+            if not interaction.response.is_done():
+                await interaction.response.send_message(
+                    "🚫 You do not have permission to use this command.",
+                    ephemeral=True,
+                )
+    print("Message received")
+    # --- PNG attachment listener ---
+    # Find the first image attachment (png, jpg, jpeg, webp), if any
+    attachment = next(
+        (a for a in message.attachments if a.filename.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))),
+        None,
+    )
+    if attachment is None:
         return
 
-    print(f"[ERROR] Slash command failed: {type(error).__name__}: {error}")
+    channel_id = message.channel.id
+    print(
+        f"[listener] received message with attachment "
+        f"guild={guild_id} channel={channel_id} file={attachment.filename}"
+    )
+
+    # Check whether item suggestions are enabled for this channel
+    enabled = await get_item_suggestions_enabled(str(guild_id), str(channel_id))
+    print(
+        f"[listener] item_suggestions_enabled={enabled} "
+        f"guild={guild_id} channel={channel_id}"
+    )
+    if not enabled:
+        return
+
+    await handle_item_suggestion(message, attachment)
 
 @bot.tree.command(name="setuproles", description="Check and create required PPE roles in this server.", guilds=guilds)
 @commands.has_permissions(manage_roles=True)
@@ -475,6 +498,18 @@ async def list_roles(interaction: discord.Interaction):
 @bot.tree.command(name="listadmins", description="List all PPE Admins in the server.", guilds=guilds)
 async def list_admins_cmd_handler(interaction: discord.Interaction):
     await listadmins_cmd.list_admins(interaction)
+
+@bot.tree.command(name="itemsuggestions", description="Enable, disable, toggle, or check item suggestions for this channel.", guilds=guilds)
+@app_commands.describe(action="What to do with item suggestions for this channel")
+@app_commands.choices(action=[
+    app_commands.Choice(name="on", value="on"),
+    app_commands.Choice(name="off", value="off"),
+    app_commands.Choice(name="toggle", value="toggle"),
+    app_commands.Choice(name="status", value="status"),
+])
+@require_ppe_roles(admin_required=True)
+async def itemsuggestions(interaction: discord.Interaction, action: app_commands.Choice[str]):
+    await itemsuggestions_cmd.command(interaction, action.value)
 
 if not DISCORD_TOKEN:
     print("Error: DISCORD_TOKEN environment variable not set.")
