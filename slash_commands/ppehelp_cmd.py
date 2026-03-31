@@ -110,7 +110,7 @@ def build_help_embed(section_key: str) -> discord.Embed:
             name="Season Loot (Global Account Progress)",
             value=(
                 "Season loot tracks unique loot across your whole account, not just one PPE.\n" 
-                "You can log season loot with /addseasonloot even if you do not have a PPE character yet."
+                "You can log season loot with /addseasonloot even if you do not have a PPE character yet.\n"
                 f"{_divider()}\n"
             ),
             inline=False,
@@ -154,7 +154,7 @@ def build_help_embed(section_key: str) -> discord.Embed:
                 "- /addlootfor and /removelootfrom for targeted PPE loot edits\n"
                 "- /addbonusfor and /removebonusfrom for admin bonus edits\n"
                 "- /addpointsfor for manual point adjustments\n"
-                "- /refreshpointsfor or /refreshallpoints to repair/recompute point totals after adjusting the rotmg_loot_drops_updated.csv"
+                "- /refreshpointsfor or /refreshallpoints to repair/recompute point totals after adjusting the rotmg_loot_drops_updated.csv\n"
                 "- You can adjust points for items by manually editing and saving the rotmg_loot_drops_updated.csv file in the bot's data folder."
                  " If you do this, make sure to use /refreshpointsfor or /refreshallpoints to apply the changes to player accounts. "
                  "Note that changing point values for items will affect all PPEs with those items, so be cautious when making adjustments."
