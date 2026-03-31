@@ -264,11 +264,12 @@ class ItemSuggestionView(discord.ui.View):
 
 async def handle_item_suggestion(
     message: discord.Message,
-    attachment: discord.Attachment,
+    attachments: list[discord.Attachment],
 ) -> None:
     """
-    Download the PNG, run the detector, and (if an item is found) prompt the
-    uploader with a Yes / No confirmation.
+    Download each image attachment, run the detector on all of them
+    concurrently, and (for each detected item) prompt the uploader with
+    a Yes / No confirmation.
     """
     guild_id = message.guild.id if message.guild else "?"
     channel_id = message.channel.id
@@ -276,27 +277,30 @@ async def handle_item_suggestion(
 
     print(
         f"[item_suggestion] detection started "
-        f"guild={guild_id} channel={channel_id} user={user_id} file={attachment.filename}"
+        f"guild={guild_id} channel={channel_id} user={user_id} "
+        f"files={[a.filename for a in attachments]}"
     )
 
-    suggested_item = await detect_item_from_attachment(attachment)
+    async def _process_one(attachment: discord.Attachment) -> None:
+        suggested_item = await detect_item_from_attachment(attachment)
 
-    if suggested_item is None:
+        if suggested_item is None:
+            print(
+                f"[item_suggestion] no item detected — skipping suggestion "
+                f"guild={guild_id} channel={channel_id} user={user_id} file={attachment.filename}"
+            )
+            return
+
         print(
-            f"[item_suggestion] no item detected — skipping suggestion "
-            f"guild={guild_id} channel={channel_id} user={user_id}"
+            f"[item_suggestion] suggestion triggered "
+            f"guild={guild_id} channel={channel_id} user={user_id} item={suggested_item}"
         )
-        return
 
-    print(
-        f"[item_suggestion] suggestion triggered "
-        f"guild={guild_id} channel={channel_id} user={user_id} item={suggested_item}"
-    )
+        view = ItemSuggestionView(target_user_id=user_id, suggested_item=suggested_item)
+        sent = await message.reply(
+            f"Found **{suggested_item}**. Add it to your active PPE?",
+            view=view,
+        )
+        view.message = sent
 
-    view = ItemSuggestionView(target_user_id=user_id, suggested_item=suggested_item)
-    sent = await message.reply(
-        f"Found **{suggested_item}**. Add it to your active PPE?",
-        view=view,
-    )
-    # Give the view a reference to its message so on_timeout can edit it.
-    view.message = sent
+    await asyncio.gather(*(_process_one(a) for a in attachments))

@@ -178,20 +178,20 @@ async def on_message(message: discord.Message):
                     "🚫 You do not have permission to use this command.",
                     ephemeral=True,
                 )
-    print("Message received")
-    # --- PNG attachment listener ---
-    # Find the first image attachment (png, jpg, jpeg, webp), if any
-    attachment = next(
-        (a for a in message.attachments if a.filename.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))),
-        None,
-    )
-    if attachment is None:
+    # print("Message received")
+    # --- Image attachment listener ---
+    # Collect all image attachments (png, jpg, jpeg, webp)
+    attachments = [
+        a for a in message.attachments
+        if a.filename.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))
+    ]
+    if not attachments:
         return
 
     channel_id = message.channel.id
     print(
-        f"[listener] received message with attachment "
-        f"guild={guild_id} channel={channel_id} file={attachment.filename}"
+        f"[listener] received message with {len(attachments)} image attachment(s) "
+        f"guild={guild_id} channel={channel_id}"
     )
 
     # Check whether item suggestions are enabled for this channel
@@ -203,7 +203,7 @@ async def on_message(message: discord.Message):
     if not enabled:
         return
 
-    await handle_item_suggestion(message, attachment)
+    await handle_item_suggestion(message, attachments)
 
 @bot.tree.command(name="setuproles", description="Check and create required PPE roles in this server.", guilds=guilds)
 @commands.has_permissions(manage_roles=True)

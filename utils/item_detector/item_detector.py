@@ -27,9 +27,10 @@ from rapidfuzz import fuzz
 
 CONFIDENCE_THRESHOLD = 0.7      # Minimum template-match confidence to accept an anchor
 OCR_CONFIDENCE_THRESHOLD = 10   # Minimum per-token Tesseract confidence to keep
+OCR_MIN_AVERAGE_CONFIDENCE = 65 # Minimum average OCR confidence to accept a description line
 OCR_UPSCALE_FACTOR = 4          # Nearest-neighbor upscale multiplier before OCR
 OCR_PADDING_SIZE = 20           # White pixels added around the cropped region
-FUZZY_MATCH_THRESHOLD = 50      # Minimum suffix-match score to accept a result (0-100)
+FUZZY_MATCH_THRESHOLD = 60      # Minimum suffix-match score to accept a result (0-100)
 FUZZY_MATCH_TOP_N = 3           # How many top candidates to evaluate
 
 # Description region geometry (relative to the first anchor position)
@@ -791,6 +792,12 @@ def detect_item_from_image_path(
         print(f"[detect] OCR line 1 text: '{ocr_text}' "
               f"(avg_conf={ocr['average_confidence']:.1f})")
 
+    if ocr["average_confidence"] < OCR_MIN_AVERAGE_CONFIDENCE:
+        if debug:
+            print(f"[detect] OCR line 1 confidence too low "
+                  f"({ocr['average_confidence']:.1f} < {OCR_MIN_AVERAGE_CONFIDENCE}), rejecting image")
+        return None
+
     # --- OCR the line above the first description region (line 2) ---
     line_h = desc_br[1] - desc_tl[1]
     line2_tl = (desc_tl[0], desc_tl[1] - line_h - DESC_LINE_GAP)
@@ -812,6 +819,11 @@ def detect_item_from_image_path(
             if debug:
                 print(f"[detect] OCR line 2 text: '{ocr2_text}' "
                       f"(avg_conf={ocr2['average_confidence']:.1f})")
+            if ocr2["average_confidence"] < OCR_MIN_AVERAGE_CONFIDENCE:
+                if debug:
+                    print(f"[detect] OCR line 2 confidence too low "
+                          f"({ocr2['average_confidence']:.1f} < {OCR_MIN_AVERAGE_CONFIDENCE}), rejecting image")
+                return None
         elif debug:
             print("[detect] OCR line 2 produced no usable text; using single line only")
     elif debug:
