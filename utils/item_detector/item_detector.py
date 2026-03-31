@@ -25,7 +25,7 @@ from rapidfuzz import fuzz
 # (These control detection quality and can be tweaked without touching logic.)
 # ---------------------------------------------------------------------------
 
-CONFIDENCE_THRESHOLD = 0.7      # Minimum template-match confidence to accept an anchor
+CONFIDENCE_THRESHOLD = 0.75      # Minimum template-match confidence to accept an anchor
 OCR_CONFIDENCE_THRESHOLD = 10   # Minimum per-token Tesseract confidence to keep
 OCR_MIN_AVERAGE_CONFIDENCE = 65 # Minimum average OCR confidence to accept a description line
 OCR_UPSCALE_FACTOR = 4          # Nearest-neighbor upscale multiplier before OCR
@@ -220,7 +220,7 @@ def _find_second_anchor(
     first_x = first_anchor["top_left"][0]
 
     # Y-tolerance grows with UI scale to stay robust at larger resolutions.
-    y_tol = max(5, scale_value(5, detected_scale))
+    y_tol = max(10, scale_value(5, detected_scale))
 
     if debug:
         print(f"    [debug] Searching for second anchor on y={first_y} "
@@ -796,6 +796,9 @@ def detect_item_from_image_path(
         if debug:
             print(f"[detect] OCR line 1 confidence too low "
                   f"({ocr['average_confidence']:.1f} < {OCR_MIN_AVERAGE_CONFIDENCE}), rejecting image")
+            _save_debug_artifacts(image, os.path.basename(image_path),
+                                  top_left, bottom_right, second_anchor_pos,
+                                  desc_tl, desc_br, True, ocr, debug_output_dir)
         return None
 
     # --- OCR the line above the first description region (line 2) ---
@@ -823,6 +826,10 @@ def detect_item_from_image_path(
                 if debug:
                     print(f"[detect] OCR line 2 confidence too low "
                           f"({ocr2['average_confidence']:.1f} < {OCR_MIN_AVERAGE_CONFIDENCE}), rejecting image")
+                    _save_debug_artifacts(image, os.path.basename(image_path),
+                                          top_left, bottom_right, second_anchor_pos,
+                                          desc_tl, desc_br, True, ocr, debug_output_dir,
+                                          line2_tl=line2_tl, line2_br=line2_br, ocr2_results=ocr2)
                 return None
         elif debug:
             print("[detect] OCR line 2 produced no usable text; using single line only")
