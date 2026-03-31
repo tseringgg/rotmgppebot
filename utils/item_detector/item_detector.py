@@ -32,6 +32,7 @@ OCR_UPSCALE_FACTOR = 4          # Nearest-neighbor upscale multiplier before OCR
 OCR_PADDING_SIZE = 20           # White pixels added around the cropped region
 FUZZY_MATCH_THRESHOLD = 60      # Minimum suffix-match score to accept a result (0-100)
 FUZZY_MATCH_TOP_N = 3           # How many top candidates to evaluate
+DEBUG = False                    # Set to True to enable verbose logging and debug image output
 
 # Description region geometry (relative to the first anchor position)
 DESC_REGION_OFFSET_Y = -37      # Y offset when no second anchor is found (fallback)
@@ -142,7 +143,6 @@ def match_template_multiscale(
     screenshot_gray: np.ndarray,
     template: np.ndarray,
     scales: Optional[List[float]] = None,
-    debug: bool = False,
 ) -> Tuple[float, Tuple[int, int], float, Tuple[int, int]]:
     """Match *template* against *screenshot_gray* at each scale in *scales*.
 
@@ -153,6 +153,7 @@ def match_template_multiscale(
     Returns:
         (best_confidence, best_top_left, best_scale, (template_w, template_h))
     """
+    debug = DEBUG
     if scales is None:
         scales = TEMPLATE_SCALES
 
@@ -206,7 +207,6 @@ def _find_second_anchor(
     templates: Dict[str, np.ndarray],
     first_anchor: Dict,
     detected_scale: float = 1.0,
-    debug: bool = False,
 ) -> Tuple[Optional[Tuple[int, int]], Optional[int]]:
     """
     Search for a horizontally-flipped anchor template to the right of the
@@ -216,6 +216,7 @@ def _find_second_anchor(
     *detected_scale* should match the scale at which the first anchor was
     found so the flipped template is resized consistently.
     """
+    debug = DEBUG
     first_y = first_anchor["top_left"][1]
     first_x = first_anchor["top_left"][0]
 
@@ -265,7 +266,6 @@ def _find_second_anchor(
 def locate_anchor(
     screenshot_gray: np.ndarray,
     templates: Dict[str, np.ndarray],
-    debug: bool = False,
 ) -> Tuple[str, float, Tuple[int, int], Tuple[int, int],
            Optional[Tuple[int, int]], Optional[int], float]:
     """
@@ -282,6 +282,7 @@ def locate_anchor(
     Returns empty/zero values (with detected_scale=1.0) if no match exceeds
     CONFIDENCE_THRESHOLD.
     """
+    debug = DEBUG
     all_matches: List[Dict] = []
 
     if debug:
@@ -291,7 +292,7 @@ def locate_anchor(
         if debug:
             print(f"    [debug] {template_name}: running multi-scale match...")
         conf, loc, best_scale, size = match_template_multiscale(
-            screenshot_gray, template, TEMPLATE_SCALES, debug=debug
+            screenshot_gray, template, TEMPLATE_SCALES
         )
         if debug:
             print(f"    [debug] {template_name}: best conf={conf:.4f} "
@@ -347,7 +348,7 @@ def locate_anchor(
 
     second_pos, dist = _find_second_anchor(
         screenshot_gray, templates, anchor,
-        detected_scale=detected_scale, debug=debug
+        detected_scale=detected_scale
     )
     return (anchor["template"], anchor["confidence"],
             anchor["top_left"], anchor["bottom_right"],
@@ -363,7 +364,6 @@ def calculate_desc_region(
     second_anchor_pos: Optional[Tuple[int, int]] = None,
     template_width: int = 71,
     scale: float = 1.0,
-    debug: bool = False,
 ) -> Tuple[Tuple[int, int], Tuple[int, int]]:
     """
     Compute the bounding box for the last line of the item description,
@@ -376,6 +376,7 @@ def calculate_desc_region(
     directly from image coordinates, so *scale* is only needed there for the
     template_width correction.
     """
+    debug = DEBUG
     x = first_anchor_pos[0]
 
     if second_anchor_pos is not None:
@@ -470,7 +471,7 @@ def _run_ocr_on_variant(image: np.ndarray, variant_name: str) -> Dict:
         return {"success": False, "data": None, "variant_name": variant_name, "error": str(e)}
 
 
-def ocr_desc_region(cropped: np.ndarray, debug: bool = False) -> Dict:
+def ocr_desc_region(cropped: np.ndarray) -> Dict:
     """
     Run OCR over multiple preprocessing variants and return the best result.
 
@@ -481,6 +482,7 @@ def ocr_desc_region(cropped: np.ndarray, debug: bool = False) -> Dict:
         success, desc_last_line, average_confidence,
         raw_tokens, filtered_tokens, best_variant, all_variants
     """
+    debug = DEBUG
     variants: Dict[str, np.ndarray] = {}
     for name in OCR_VARIANTS:
         fn = _PREPROCESSING_FNS.get(name)
@@ -674,7 +676,6 @@ def detect_item_from_image_path(
     template_dir: str,
     descriptions_csv_path: str,
     tesseract_cmd: Optional[str] = None,
-    debug: bool = True,
     debug_output_dir: str = "./debug_output",
 ) -> Optional[Dict]:
     """
@@ -709,6 +710,7 @@ def detect_item_from_image_path(
         Returns None if the image cannot be read, no anchor is detected,
         OCR yields no usable text, or no candidate meets FUZZY_MATCH_THRESHOLD.
     """
+    debug = DEBUG
     # --- Configure Tesseract if a path was provided ---
     if tesseract_cmd and os.path.exists(tesseract_cmd):
         pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
@@ -744,7 +746,7 @@ def detect_item_from_image_path(
     if debug:
         print("[detect] Locating 'Feed Power:' anchor...")
     template_name, confidence, top_left, bottom_right, second_anchor_pos, _, detected_scale = locate_anchor(
-        gray, templates, debug=debug
+        gray, templates
     )
 
     if confidence < CONFIDENCE_THRESHOLD:
@@ -758,7 +760,7 @@ def detect_item_from_image_path(
 
     # --- Calculate description region ---
     desc_tl, desc_br = calculate_desc_region(
-        top_left, second_anchor_pos, scale=detected_scale, debug=debug
+        top_left, second_anchor_pos, scale=detected_scale
     )
 
     # --- Crop the description line, clamping to image bounds ---
@@ -776,7 +778,7 @@ def detect_item_from_image_path(
     # --- OCR the description line (line 1 — bottom line) ---
     if debug:
         print("[detect] Running OCR on description region (line 1)...")
-    ocr = ocr_desc_region(cropped, debug=debug)
+    ocr = ocr_desc_region(cropped)
     ocr["cropped_region"] = cropped  # attach so debug artifacts can save it
 
     if not ocr["success"] or not ocr["desc_last_line"].strip():
@@ -815,7 +817,7 @@ def detect_item_from_image_path(
         cropped2 = image[line2_y1:line2_y2, line2_x1:line2_x2]
         if debug:
             print("[detect] Running OCR on description region (line 2 — line above)...")
-        ocr2 = ocr_desc_region(cropped2, debug=debug)
+        ocr2 = ocr_desc_region(cropped2)
         ocr2["cropped_region"] = cropped2
         if ocr2["success"] and ocr2["desc_last_line"].strip():
             ocr2_text = ocr2["desc_last_line"]
