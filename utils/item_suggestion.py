@@ -71,7 +71,7 @@ async def detect_item_from_attachment(attachment: discord.Attachment) -> Optiona
 # ---------------------------------------------------------------------------
 
 class ItemSuggestionView(discord.ui.View):
-    """Yes / No prompt shown after a PNG is uploaded in an enabled channel."""
+    """Suggestion prompt shown after a PNG is uploaded in an enabled channel."""
 
     def __init__(self, target_user_id: int, suggested_item: str):
         super().__init__(timeout=180)
@@ -104,57 +104,35 @@ class ItemSuggestionView(discord.ui.View):
         await interaction.response.edit_message(content=result_text, view=None)
 
     # ------------------------------------------------------------------
-    # Dropdowns (with disabled label buttons above each)
+    # Toggle buttons + action buttons (all on row 0)
     # ------------------------------------------------------------------
 
-    @discord.ui.button(label="Shiny?", style=discord.ButtonStyle.secondary, disabled=True, row=0)
-    async def shiny_label(self, interaction: discord.Interaction, button: discord.ui.Button):
-        pass  # label only — never fires
-
-    @discord.ui.select(
-        placeholder="No",
-        options=[
-            discord.SelectOption(label="No", value="no", default=True),
-            discord.SelectOption(label="Yes", value="yes"),
-        ],
-        row=1,
-    )
-    async def shiny_select(self, interaction: discord.Interaction, select: discord.ui.Select):
+    @discord.ui.button(label="Shiny: No", style=discord.ButtonStyle.secondary, row=0)
+    async def shiny_toggle(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not await self._check_authorized(interaction):
             return
-        self.is_shiny = select.values[0] == "yes"
-        await interaction.response.defer()
+        self.is_shiny = not self.is_shiny
+        button.label = "Shiny: Yes" if self.is_shiny else "Shiny: No"
+        button.style = discord.ButtonStyle.success if self.is_shiny else discord.ButtonStyle.secondary
+        await interaction.response.edit_message(view=self)
 
-    @discord.ui.button(label="Divine?", style=discord.ButtonStyle.secondary, disabled=True, row=2)
-    async def divine_label(self, interaction: discord.Interaction, button: discord.ui.Button):
-        pass  # label only — never fires
-
-    @discord.ui.select(
-        placeholder="No",
-        options=[
-            discord.SelectOption(label="No", value="no", default=True),
-            discord.SelectOption(label="Yes", value="yes"),
-        ],
-        row=3,
-    )
-    async def divine_select(self, interaction: discord.Interaction, select: discord.ui.Select):
+    @discord.ui.button(label="Divine: No", style=discord.ButtonStyle.secondary, row=0)
+    async def divine_toggle(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not await self._check_authorized(interaction):
             return
-        self.is_divine = select.values[0] == "yes"
-        await interaction.response.defer()
+        self.is_divine = not self.is_divine
+        button.label = "Divine: Yes" if self.is_divine else "Divine: No"
+        button.style = discord.ButtonStyle.success if self.is_divine else discord.ButtonStyle.secondary
+        await interaction.response.edit_message(view=self)
 
-    # ------------------------------------------------------------------
-    # Buttons
-    # ------------------------------------------------------------------
-
-    @discord.ui.button(label="Yes", style=discord.ButtonStyle.success, row=4)
-    async def yes_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @discord.ui.button(label="Add", style=discord.ButtonStyle.success, row=0)
+    async def add_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not await self._check_authorized(interaction):
             return
 
         guild_id = interaction.guild.id if interaction.guild else "?"
         print(
-            f"[item_suggestion] YES clicked "
+            f"[item_suggestion] ADD clicked "
             f"guild={guild_id} user={interaction.user.id} item={self.suggested_item}"
         )
 
@@ -225,14 +203,14 @@ class ItemSuggestionView(discord.ui.View):
                 f"Could not add **{self.suggested_item}** to your active PPE.",
             )
 
-    @discord.ui.button(label="No", style=discord.ButtonStyle.danger, row=4)
-    async def no_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=0)
+    async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not await self._check_authorized(interaction):
             return
 
         guild_id = interaction.guild.id if interaction.guild else "?"
         print(
-            f"[item_suggestion] NO clicked "
+            f"[item_suggestion] CANCEL clicked "
             f"guild={guild_id} user={interaction.user.id} item={self.suggested_item}"
         )
         await self._finish(
