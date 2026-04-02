@@ -66,7 +66,14 @@ def build_manageseason_home_embed() -> discord.Embed:
     embed.add_field(
         name="Manage Contests",
         value=(
-            "Set the default `/leaderboard` contest board and configure team leaderboard scoring behavior."
+            "Set the default `/leaderboard` contest board, configure team leaderboard scoring, and manage the join-role embed."
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="Character Settings",
+        value=(
+            "Adjust server-wide character limits and prune excess characters when reducing the cap."
         ),
         inline=False,
     )
@@ -86,6 +93,15 @@ def build_manage_contests_embed(settings: dict) -> discord.Embed:
     default_choice = settings.get("default_contest_leaderboard")
     default_label = contest_leaderboard_label(default_choice)
     team_quest_enabled = bool(settings.get("team_contest_include_quest_points", False))
+    join_channel_id = int(settings.get("join_contest_channel_id", 0) or 0)
+    join_message_id = int(settings.get("join_contest_message_id", 0) or 0)
+    if join_channel_id > 0 and join_message_id > 0:
+        join_embed_status = (
+            f"Configured in <#{join_channel_id}>\n"
+            f"Message ID: `{join_message_id}`"
+        )
+    else:
+        join_embed_status = "Not configured."
 
     embed = discord.Embed(
         title="Manage Contests",
@@ -108,7 +124,33 @@ def build_manage_contests_embed(settings: dict) -> discord.Embed:
         ),
         inline=False,
     )
+    embed.add_field(
+        name="Join Contest Embed",
+        value=(
+            "Create or delete the single allowed join-role embed for PPE Player onboarding.\n"
+            f"Current status:\n{join_embed_status}"
+        ),
+        inline=False,
+    )
     embed.set_footer(text="Quest scoring is disabled by default for team contests.")
+    return embed
+
+
+def build_character_settings_home_embed(*, current_max_characters: int) -> discord.Embed:
+    """Build character settings embed for /manageseason character controls."""
+    embed = discord.Embed(
+        title="Character Settings",
+        description="Manage server-wide character capacity settings.",
+        color=discord.Color.dark_gold(),
+    )
+    embed.add_field(
+        name="Change Max Characters",
+        value=(
+            f"Current max characters per player: **{current_max_characters}**\n"
+            "If reduced, excess characters are removed starting from the lowest-point inactive characters."
+        ),
+        inline=False,
+    )
     return embed
 
 

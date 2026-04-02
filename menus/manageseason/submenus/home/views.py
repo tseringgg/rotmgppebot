@@ -7,6 +7,7 @@ import discord
 from menus.manageseason.common import build_manageseason_home_embed
 from menus.manageseason.services import load_contest_settings_for_menu, load_points_settings_for_menu
 from menus.menu_utils import OwnerBoundView
+from utils.guild_config import get_max_ppes
 
 
 def _has_discord_administrator_permission(interaction: discord.Interaction) -> bool:
@@ -59,6 +60,14 @@ class ManageSeasonHomeView(OwnerBoundView):
         from menus.manageseason.submenus.picture_suggestions.entry import open_picture_suggestions_menu
 
         await open_picture_suggestions_menu(interaction, owner_id=self.owner_id)
+
+    @discord.ui.button(label="Character Settings", style=discord.ButtonStyle.success, row=1)
+    async def character_settings(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        from menus.manageseason.submenus.character_settings.views import ManageCharacterSettingsHomeView
+
+        max_characters = await get_max_ppes(interaction)
+        view = ManageCharacterSettingsHomeView(owner_id=self.owner_id, current_max_characters=max_characters)
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
 
 __all__ = ["ManageSeasonHomeView"]

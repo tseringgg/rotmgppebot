@@ -8,9 +8,11 @@ import discord
 from utils.player_records import DATA_DIR, get_lock
 from utils.contest_leaderboards import normalize_contest_leaderboard_id
 
+DEFAULT_MAX_PPE_CHARACTERS = 10
+
 _DEFAULT_CONFIG: Dict[str, Any] = {
     "ppe_settings": {
-        "max_ppes": 10,
+        "max_ppes": DEFAULT_MAX_PPE_CHARACTERS,
     },
     "quest_settings": {
         "regular_target": 8,
@@ -35,6 +37,9 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
     "contest_settings": {
         "default_contest_leaderboard": None,
         "team_contest_include_quest_points": False,
+        "join_contest_channel_id": 0,
+        "join_contest_message_id": 0,
+        "join_contest_emoji": "✅",
     },
     "points_settings": {
         "global": {
@@ -244,6 +249,19 @@ def _merge_defaults(raw: Dict[str, Any]) -> Dict[str, Any]:
 
 def _normalized_contest_settings(config: Dict[str, Any]) -> Dict[str, Any]:
     settings = config.get("contest_settings", {}) if isinstance(config.get("contest_settings", {}), dict) else {}
+
+    def _as_non_negative_int(value: Any, fallback: int = 0) -> int:
+        try:
+            parsed = int(value)
+        except (TypeError, ValueError):
+            return fallback
+        return parsed if parsed >= 0 else fallback
+
+    join_embed_emoji_raw = settings.get("join_contest_emoji", "✅")
+    join_embed_emoji = join_embed_emoji_raw.strip() if isinstance(join_embed_emoji_raw, str) else "✅"
+    if not join_embed_emoji:
+        join_embed_emoji = "✅"
+
     default_choice = normalize_contest_leaderboard_id(settings.get("default_contest_leaderboard"))
     return {
         "default_contest_leaderboard": default_choice,
@@ -253,6 +271,9 @@ def _normalized_contest_settings(config: Dict[str, Any]) -> Dict[str, Any]:
                 _DEFAULT_CONFIG["contest_settings"]["team_contest_include_quest_points"],
             )
         ),
+        "join_contest_channel_id": _as_non_negative_int(settings.get("join_contest_channel_id", 0), 0),
+        "join_contest_message_id": _as_non_negative_int(settings.get("join_contest_message_id", 0), 0),
+        "join_contest_emoji": join_embed_emoji,
     }
 
 
@@ -397,6 +418,14 @@ async def set_quest_targets(
         settings["skin_target"] = max(0, int(skin_target))
 
     config["quest_settings"] = settings
+    return await save_guild_config(interaction, config)
+
+
+async def set_max_ppes(interaction: discord.Interaction, *, max_ppes: int) -> Dict[str, Any]:
+    config = await load_guild_config(interaction)
+    settings = dict(config.get("ppe_settings", {}))
+    settings["max_ppes"] = max(1, int(max_ppes))
+    config["ppe_settings"] = settings
     return await save_guild_config(interaction, config)
 
 

@@ -9,10 +9,12 @@ import discord
 
 from utils.guild_config import (
     get_contest_settings,
+    get_max_ppes,
     get_points_settings,
     get_realmshark_settings,
     load_guild_config,
     set_contest_settings,
+    set_max_ppes,
     set_points_settings,
     set_realmshark_settings,
     update_global_points_modifiers,
@@ -21,6 +23,7 @@ from utils.player_records import load_player_records, load_teams, save_player_re
 from utils.points_service import recompute_ppe_points
 from utils.realmshark_pending_store import clear_all_pending_for_guild
 from utils.contest_leaderboards import normalize_contest_leaderboard_id
+from utils.realmshark_cleanup import clear_ppe_character_links
 
 
 @dataclass(slots=True)
@@ -46,6 +49,18 @@ class PointsRefreshSummary:
 
     ppes_processed: int
     ppes_updated: int
+
+
+@dataclass(slots=True)
+class MaxCharactersUpdateSummary:
+    """Structured result payload for max-character limit updates."""
+
+    old_limit: int
+    new_limit: int
+    players_trimmed: int
+    characters_deleted: int
+    inactive_characters_deleted: int
+    active_characters_deleted: int
 
 
 async def load_points_settings_for_menu(interaction: discord.Interaction) -> dict[str, Any]:
@@ -83,6 +98,202 @@ async def update_team_contest_quest_points_setting(
     settings["team_contest_include_quest_points"] = bool(enabled)
     saved = await set_contest_settings(interaction, settings)
     return dict(saved)
+
+
+def _build_join_contest_embed(*, role: discord.Role, emoji: str) -> discord.Embed:
+    embed = discord.Embed(
+        title="Join the PPE Contest",
+        description=(
+            f"React with {emoji} to this message to receive the {role.mention} role.\n"
+            "After joining, use `/ppehelp` for setup and command guidance."
+        ),
+        color=discord.Color.green(),
+    )
+    embed.set_footer(text="Only one join embed can exist at a time.")
+    return embed
+
+
+async def create_join_contest_embed(
+    interaction: discord.Interaction,
+    *,
+    channel_id: int,
+) -> dict[str, Any]:
+    """Create the single allowed join-contest embed and persist its message reference."""
+    if interaction.guild is None:
+        raise ValueError("This action can only be used in a server.")
+
+    settings = await get_contest_settings(interaction)
+    existing_message_id = int(settings.get("join_contest_message_id", 0) or 0)
+    if existing_message_id > 0:
+        raise ValueError("A join embed is already configured. Delete it first.")
+
+    channel = interaction.guild.get_channel(int(channel_id))
+    if not isinstance(channel, discord.TextChannel):
+        raise ValueError("Please provide a valid text channel in this server.")
+
+    role = discord.utils.get(interaction.guild.roles, name="PPE Player")
+    if role is None:
+        raise ValueError("PPE Player role not found. Create it first.")
+
+    emoji = str(settings.get("join_contest_emoji", "✅") or "✅").strip() or "✅"
+    embed = _build_join_contest_embed(role=role, emoji=emoji)
+    message = await channel.send(embed=embed)
+
+    try:
+        await message.add_reaction(emoji)
+    except discord.HTTPException as exc:
+        try:
+            await message.delete()
+        except discord.HTTPException:
+            pass
+        raise ValueError("Failed to add the reaction emoji to the join embed message.") from exc
+
+    settings["join_contest_channel_id"] = int(channel.id)
+    settings["join_contest_message_id"] = int(message.id)
+    settings["join_contest_emoji"] = emoji
+    saved = await set_contest_settings(interaction, settings)
+    return {
+        "channel_id": int(channel.id),
+        "message_id": int(message.id),
+        "settings": dict(saved),
+    }
+
+
+async def delete_join_contest_embed(interaction: discord.Interaction) -> dict[str, Any]:
+    """Delete and clear the currently configured join-contest embed reference."""
+    if interaction.guild is None:
+        raise ValueError("This action can only be used in a server.")
+
+    settings = await get_contest_settings(interaction)
+    channel_id = int(settings.get("join_contest_channel_id", 0) or 0)
+    message_id = int(settings.get("join_contest_message_id", 0) or 0)
+    deleted_message = False
+
+    if channel_id > 0 and message_id > 0:
+        channel = interaction.guild.get_channel(channel_id)
+        if isinstance(channel, discord.TextChannel):
+            try:
+                message = await channel.fetch_message(message_id)
+            except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                message = None
+
+            if message is not None:
+                try:
+                    await message.delete(reason="Join contest embed removed from Manage Season")
+                    deleted_message = True
+                except (discord.Forbidden, discord.HTTPException):
+                    deleted_message = False
+
+    settings["join_contest_channel_id"] = 0
+    settings["join_contest_message_id"] = 0
+    saved = await set_contest_settings(interaction, settings)
+    return {
+        "deleted_message": deleted_message,
+        "settings": dict(saved),
+    }
+
+
+def _ppe_sort_key_lowest_points(ppe: Any) -> tuple[float, int]:
+    points_raw = getattr(ppe, "points", 0.0)
+    try:
+        points_value = float(points_raw)
+    except (TypeError, ValueError):
+        points_value = 0.0
+
+    try:
+        ppe_id = int(getattr(ppe, "id", 0))
+    except (TypeError, ValueError):
+        ppe_id = 0
+    return (points_value, ppe_id)
+
+
+def _rebuild_unique_items(player_data: Any) -> None:
+    unique_items: set[tuple[str, bool]] = set()
+    for ppe in getattr(player_data, "ppes", []):
+        for loot_item in getattr(ppe, "loot", []):
+            name = str(getattr(loot_item, "item_name", "")).strip()
+            if not name:
+                continue
+            unique_items.add((name, bool(getattr(loot_item, "shiny", False))))
+    player_data.unique_items = unique_items
+
+
+async def update_max_characters_limit(
+    interaction: discord.Interaction,
+    *,
+    new_limit: int,
+) -> MaxCharactersUpdateSummary:
+    """Update max PPE character limit and trim excess characters if reducing the cap."""
+    old_limit = await get_max_ppes(interaction)
+    coerced_new_limit = max(1, int(new_limit))
+
+    players_trimmed = 0
+    total_deleted = 0
+    inactive_deleted = 0
+    active_deleted = 0
+
+    if coerced_new_limit < old_limit:
+        records = await load_player_records(interaction)
+        changed = False
+
+        for user_id, player_data in records.items():
+            ppes = list(getattr(player_data, "ppes", []))
+            overflow = len(ppes) - coerced_new_limit
+            if overflow <= 0:
+                continue
+
+            active_ppe_id = getattr(player_data, "active_ppe", None)
+            inactive_candidates = sorted(
+                [ppe for ppe in ppes if int(getattr(ppe, "id", 0)) != int(active_ppe_id or 0)],
+                key=_ppe_sort_key_lowest_points,
+            )
+            active_candidates = sorted(
+                [ppe for ppe in ppes if int(getattr(ppe, "id", 0)) == int(active_ppe_id or 0)],
+                key=_ppe_sort_key_lowest_points,
+            )
+
+            removal_order = inactive_candidates + active_candidates
+            to_remove = removal_order[:overflow]
+            if not to_remove:
+                continue
+
+            remove_ids = {int(getattr(ppe, "id", 0)) for ppe in to_remove}
+            removed_active_count = sum(1 for ppe in to_remove if int(getattr(ppe, "id", 0)) == int(active_ppe_id or 0))
+            removed_inactive_count = len(to_remove) - removed_active_count
+
+            player_data.ppes = [ppe for ppe in ppes if int(getattr(ppe, "id", 0)) not in remove_ids]
+
+            if active_ppe_id is not None and int(active_ppe_id) in remove_ids:
+                if player_data.ppes:
+                    replacement = max(player_data.ppes, key=_ppe_sort_key_lowest_points)
+                    player_data.active_ppe = int(getattr(replacement, "id", 0))
+                else:
+                    player_data.active_ppe = None
+
+            _rebuild_unique_items(player_data)
+
+            for removed_ppe_id in sorted(remove_ids):
+                await clear_ppe_character_links(interaction, int(user_id), int(removed_ppe_id))
+
+            players_trimmed += 1
+            total_deleted += len(to_remove)
+            inactive_deleted += removed_inactive_count
+            active_deleted += removed_active_count
+            changed = True
+
+        if changed:
+            await save_player_records(interaction, records)
+
+    await set_max_ppes(interaction, max_ppes=coerced_new_limit)
+
+    return MaxCharactersUpdateSummary(
+        old_limit=int(old_limit),
+        new_limit=int(coerced_new_limit),
+        players_trimmed=players_trimmed,
+        characters_deleted=total_deleted,
+        inactive_characters_deleted=inactive_deleted,
+        active_characters_deleted=active_deleted,
+    )
 
 
 async def update_global_point_modifiers(

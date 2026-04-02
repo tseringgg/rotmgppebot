@@ -50,8 +50,8 @@ def overlay_rarity_badge(
             print(f"[IMAGE_UTILS] Scaling rarity badge to {output_size}")
             rarity_img = rarity_img.resize(output_size, Image.Resampling.LANCZOS)
         else:
-            # Default: make badge width roughly 40% of item image width
-            new_width = max(10, int(item_img.width * 0.4))
+            # Default: make badge width roughly 30% of item image width
+            new_width = max(10, int(item_img.width * 0.3))
             
             # Calculate the new height based on the original aspect ratio
             aspect_ratio = rarity_img.height / rarity_img.width

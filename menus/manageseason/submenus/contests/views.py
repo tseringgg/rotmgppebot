@@ -10,11 +10,66 @@ from menus.manageseason.common import (
     build_set_contest_type_embed,
 )
 from menus.manageseason.services import (
+    create_join_contest_embed,
+    delete_join_contest_embed,
     load_contest_settings_for_menu,
     update_default_contest_leaderboard,
     update_team_contest_quest_points_setting,
 )
 from menus.menu_utils import OwnerBoundView
+from menus.menu_utils.lookup_parsing import parse_channel_id
+
+
+class CreateJoinContestEmbedModal(discord.ui.Modal, title="Create Join Contest Embed"):
+    """Prompt admin for target channel where join-role embed should be posted."""
+
+    channel_input = discord.ui.TextInput(
+        label="Channel",
+        placeholder="Use a channel mention like #general or a channel ID",
+        required=True,
+        max_length=64,
+    )
+
+    def __init__(self, *, owner_id: int, source_message: discord.Message | None) -> None:
+        super().__init__(timeout=300)
+        self.owner_id = owner_id
+        self.source_message = source_message
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        channel_id = parse_channel_id(self.channel_input.value)
+        if channel_id is None:
+            await interaction.response.send_message(
+                "ERROR: Provide a valid channel mention or numeric channel ID.",
+                ephemeral=True,
+            )
+            return
+
+        try:
+            result = await create_join_contest_embed(interaction, channel_id=channel_id)
+        except ValueError as exc:
+            await interaction.response.send_message(f"ERROR: {exc}", ephemeral=True)
+            return
+
+        configured_channel_id = int(result["channel_id"])
+        configured_message_id = int(result["message_id"])
+        await interaction.response.send_message(
+            "✅ Join contest embed created.\n"
+            f"Channel: <#{configured_channel_id}>\n"
+            f"Message ID: `{configured_message_id}`",
+            ephemeral=True,
+        )
+
+        if self.source_message is not None:
+            settings = await load_contest_settings_for_menu(interaction)
+            refreshed_view = ManageContestsHomeView(owner_id=self.owner_id, settings=settings)
+            try:
+                await self.source_message.edit(embed=refreshed_view.current_embed(), view=refreshed_view)
+            except discord.HTTPException:
+                pass
 
 
 class ManageContestsHomeView(OwnerBoundView):
@@ -24,6 +79,16 @@ class ManageContestsHomeView(OwnerBoundView):
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.owner_id = owner_id
         self.settings = settings
+        self._sync_join_embed_button()
+
+    def _sync_join_embed_button(self) -> None:
+        message_id = int(self.settings.get("join_contest_message_id", 0) or 0)
+        if message_id > 0:
+            self.join_contest_embed.label = "Delete Join Embed"
+            self.join_contest_embed.style = discord.ButtonStyle.danger
+        else:
+            self.join_contest_embed.label = "Create Join Embed"
+            self.join_contest_embed.style = discord.ButtonStyle.success
 
     def current_embed(self) -> discord.Embed:
         return build_manage_contests_embed(self.settings)
@@ -39,6 +104,22 @@ class ManageContestsHomeView(OwnerBoundView):
         self.settings = await load_contest_settings_for_menu(interaction)
         view = LeaderboardManagerView(owner_id=self.owner_id, settings=self.settings)
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+    @discord.ui.button(label="Create Join Embed", style=discord.ButtonStyle.success, row=1)
+    async def join_contest_embed(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.settings = await load_contest_settings_for_menu(interaction)
+        message_id = int(self.settings.get("join_contest_message_id", 0) or 0)
+
+        if message_id > 0:
+            result = await delete_join_contest_embed(interaction)
+            self.settings = dict(result.get("settings", {}))
+            self._sync_join_embed_button()
+            await interaction.response.edit_message(embed=self.current_embed(), view=self)
+            await interaction.followup.send("✅ Join contest embed configuration cleared.", ephemeral=True)
+            return
+
+        modal = CreateJoinContestEmbedModal(owner_id=self.owner_id, source_message=interaction.message)
+        await interaction.response.send_modal(modal)
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

@@ -45,6 +45,7 @@ from utils.role_checks import require_ppe_roles
 from utils.loot_data import init_loot_data
 from utils.settings.channel_settings import get_item_suggestions_enabled
 from utils.item_suggestion import handle_item_suggestion
+from utils.contest_join_embed import handle_join_contest_reaction
 from create_loot_table import create_loot_background_and_mapping
 from utils.realmshark_ingest_server import start_realmshark_ingest_server
 from utils.realmshark_notifier import build_realmshark_notifier
@@ -159,6 +160,11 @@ async def on_guild_join(guild: discord.Guild | None):
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}")
+
+
+@bot.event
+async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
+    await handle_join_contest_reaction(bot, payload)
 
 @bot.event
 async def on_message(message: discord.Message):
