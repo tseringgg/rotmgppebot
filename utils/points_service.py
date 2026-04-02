@@ -2,6 +2,7 @@ import math
 from typing import Any, Dict, Iterable
 
 from dataclass import Bonus, Loot, PPEData
+from ppe_types import DEFAULT_PPE_TYPE_MULTIPLIERS, normalize_ppe_type, normalize_ppe_type_multipliers
 from utils.calc_points import load_loot_points, normalize_item_name
 
 PENALTY_NAMES = {
@@ -56,6 +57,23 @@ def _get_points_settings(guild_config: Dict[str, Any] | None) -> Dict[str, Any]:
         return {}
     settings = guild_config.get("points_settings", {})
     return settings if isinstance(settings, dict) else {}
+
+
+def _get_ppe_settings(guild_config: Dict[str, Any] | None) -> Dict[str, Any]:
+    if not isinstance(guild_config, dict):
+        return {}
+    settings = guild_config.get("ppe_settings", {})
+    return settings if isinstance(settings, dict) else {}
+
+
+def get_ppe_type_multiplier_for_ppe(
+    ppe: PPEData,
+    guild_config: Dict[str, Any] | None = None,
+) -> float:
+    ppe_settings = _get_ppe_settings(guild_config)
+    normalized_multipliers = normalize_ppe_type_multipliers(ppe_settings.get("ppe_type_multipliers"))
+    ppe_type = normalize_ppe_type(getattr(ppe, "ppe_type", None))
+    return float(normalized_multipliers.get(ppe_type, DEFAULT_PPE_TYPE_MULTIPLIERS["regular"]))
 
 
 def _get_penalty_weights(guild_config: Dict[str, Any] | None) -> Dict[str, float]:
@@ -248,11 +266,15 @@ def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = Non
         min_points = _as_float(minimum_total, fallback=0.0)
         total = max(total, min_points)
 
+    type_multiplier = get_ppe_type_multiplier_for_ppe(ppe, guild_config)
+    total *= type_multiplier
+
     ppe.points = round(total, 2)
     return {
         "loot_raw": round(loot_total, 2),
         "bonus_raw": round(bonus_total, 2),
         "penalty_raw": round(penalty_total, 2),
+        "type_multiplier": round(type_multiplier, 4),
         "total": ppe.points,
     }
 

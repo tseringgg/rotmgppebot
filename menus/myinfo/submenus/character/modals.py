@@ -5,6 +5,7 @@ from __future__ import annotations
 import discord
 
 from dataclass import PPEData
+from ppe_types import DEFAULT_PPE_TYPE, normalize_allowed_ppe_types, ppe_type_label
 from menus.myinfo.common import (
     display_class_name,
     find_ppe_or_raise,
@@ -146,11 +147,19 @@ class NewPPEFromMyInfoModal(discord.ui.Modal, title="Create New PPE"):
         max_length=3,
     )
 
-    def __init__(self, *, owner_id: int, source_message: discord.Message | None, connected_ppe_ids: set[int]) -> None:
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        source_message: discord.Message | None,
+        connected_ppe_ids: set[int],
+        ppe_type: str = DEFAULT_PPE_TYPE,
+    ) -> None:
         super().__init__()
         self.owner_id = owner_id
         self.source_message = source_message
         self.connected_ppe_ids = connected_ppe_ids
+        self.ppe_type = ppe_type
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         if interaction.user.id != self.owner_id:
@@ -165,13 +174,14 @@ class NewPPEFromMyInfoModal(discord.ui.Modal, title="Create New PPE"):
                 num_exalts=int(str(self.num_exalts.value).strip()),
                 percent_loot=float(str(self.percent_loot.value).strip()),
                 incombat_reduction=float(str(self.incombat_reduction.value).strip()),
+                ppe_type=self.ppe_type,
             )
         except ValueError as exc:
             await interaction.response.send_message(str(exc), ephemeral=False)
             return
 
         await interaction.response.send_message(
-            f"✅ Created `PPE #{result['next_id']}` for your `{result['class_name']}` "
+            f"✅ Created `PPE #{result['next_id']}` for your `{result['class_name']}` ({result['ppe_type_label']}) "
             f"and set it as your active PPE.\n"
             f"You now have {result['ppe_count']}/{result['max_ppes']} PPEs.",
             embed=result["embed"],
@@ -196,4 +206,115 @@ class NewPPEFromMyInfoModal(discord.ui.Modal, title="Create New PPE"):
                 pass
 
 
-__all__ = ["ManagePPEPenaltiesModal", "NewPPEFromMyInfoModal"]
+class _PPETypeSelect(discord.ui.Select):
+    def __init__(self, *, allowed_types: list[str], selected_type: str) -> None:
+        options = [
+            discord.SelectOption(label=ppe_type_label(ppe_type), value=ppe_type, default=(ppe_type == selected_type))
+            for ppe_type in allowed_types
+        ]
+        super().__init__(
+            placeholder="Choose a PPE type",
+            min_values=1,
+            max_values=1,
+            options=options,
+            row=0,
+        )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, NewPPETypeChoiceView):
+            await interaction.response.send_message("Invalid selector state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This selector belongs to another user.", ephemeral=True)
+            return
+
+        view.selected_type = self.values[0]
+        for option in self.options:
+            option.default = option.value == view.selected_type
+        await interaction.response.edit_message(view=view)
+
+
+class NewPPETypeChoiceView(discord.ui.View):
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        source_message: discord.Message | None,
+        connected_ppe_ids: set[int],
+        allowed_types: list[str],
+    ) -> None:
+        super().__init__(timeout=180)
+        self.owner_id = owner_id
+        self.source_message = source_message
+        self.connected_ppe_ids = connected_ppe_ids
+        self.allowed_types = allowed_types
+        self.selected_type = allowed_types[0]
+        self.add_item(_PPETypeSelect(allowed_types=allowed_types, selected_type=self.selected_type))
+
+    @discord.ui.button(label="Continue", style=discord.ButtonStyle.success, row=1)
+    async def continue_to_modal(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        await interaction.response.send_modal(
+            NewPPEFromMyInfoModal(
+                owner_id=self.owner_id,
+                source_message=self.source_message,
+                connected_ppe_ids=self.connected_ppe_ids,
+                ppe_type=self.selected_type,
+            )
+        )
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, row=1)
+    async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        await interaction.response.edit_message(content="Cancelled new PPE creation.", view=None)
+
+
+async def launch_new_ppe_modal_flow(
+    interaction: discord.Interaction,
+    *,
+    owner_id: int,
+    source_message: discord.Message | None,
+    connected_ppe_ids: set[int],
+) -> None:
+    guild_config = await load_guild_config(interaction)
+    ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config.get("ppe_settings", {}), dict) else {}
+    enabled = bool(ppe_settings.get("enable_ppe_types", True))
+    allowed_types = normalize_allowed_ppe_types(ppe_settings.get("allowed_ppe_types"))
+
+    if not enabled or len(allowed_types) == 1:
+        forced_type = allowed_types[0] if enabled else DEFAULT_PPE_TYPE
+        await interaction.response.send_modal(
+            NewPPEFromMyInfoModal(
+                owner_id=owner_id,
+                source_message=source_message,
+                connected_ppe_ids=connected_ppe_ids,
+                ppe_type=forced_type,
+            )
+        )
+        return
+
+    chooser = NewPPETypeChoiceView(
+        owner_id=owner_id,
+        source_message=source_message,
+        connected_ppe_ids=connected_ppe_ids,
+        allowed_types=allowed_types,
+    )
+    await interaction.response.send_message(
+        "Choose the PPE type for your new character.",
+        view=chooser,
+        ephemeral=True,
+    )
+
+
+__all__ = [
+    "ManagePPEPenaltiesModal",
+    "NewPPEFromMyInfoModal",
+    "NewPPETypeChoiceView",
+    "launch_new_ppe_modal_flow",
+]

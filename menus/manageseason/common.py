@@ -5,6 +5,7 @@ from __future__ import annotations
 import discord
 
 from menus.manageseason.services import SeasonResetSummary
+from ppe_types import all_ppe_types, ppe_type_label
 from utils.contest_leaderboards import CONTEST_LEADERBOARD_OPTIONS, contest_leaderboard_label
 
 
@@ -35,6 +36,18 @@ def _build_class_override_lines(class_overrides: dict) -> list[str]:
             f"total {_format_percent(override.get('total_percent', 0.0))}, "
             f"minimum {_format_minimum_total(override.get('minimum_total'))}"
         )
+    return lines
+
+
+def _build_ppe_type_multiplier_lines(multipliers: dict) -> list[str]:
+    lines: list[str] = []
+    for ppe_type in all_ppe_types():
+        value = 1.0
+        try:
+            value = float(multipliers.get(ppe_type, 1.0))
+        except (TypeError, ValueError):
+            value = 1.0
+        lines.append(f"• {ppe_type_label(ppe_type)}: {value:.2f}x")
     return lines
 
 
@@ -136,7 +149,12 @@ def build_manage_contests_embed(settings: dict) -> discord.Embed:
     return embed
 
 
-def build_character_settings_home_embed(*, current_max_characters: int) -> discord.Embed:
+def build_character_settings_home_embed(
+    *,
+    current_max_characters: int,
+    ppe_types_enabled: bool,
+    allowed_ppe_types: list[str],
+) -> discord.Embed:
     """Build character settings embed for /manageseason character controls."""
     embed = discord.Embed(
         title="Character Settings",
@@ -148,6 +166,15 @@ def build_character_settings_home_embed(*, current_max_characters: int) -> disco
         value=(
             f"Current max characters per player: **{current_max_characters}**\n"
             "If reduced, excess characters are removed starting from the lowest-point inactive characters."
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="PPE Type Controls",
+        value=(
+            f"Type selection: **{'Enabled' if ppe_types_enabled else 'Disabled'}**\n"
+            f"Allowed types ({len(allowed_ppe_types)}): "
+            + ", ".join(ppe_type_label(ppe_type) for ppe_type in allowed_ppe_types)
         ),
         inline=False,
     )
@@ -262,7 +289,29 @@ def build_point_settings_embed(settings: dict) -> discord.Embed:
         if len(override_lines) > 6:
             preview += f"\n... and {len(override_lines) - 6} more"
     embed.add_field(name="Class Override Snapshot", value=_truncate_field_value(preview), inline=False)
+    embed.add_field(
+        name="PPE Type Multipliers",
+        value="Use **Edit PPE Type Points** to manage per-type point multipliers.",
+        inline=False,
+    )
     embed.set_footer(text="Use Edit Global Modifiers or Edit Class Modifiers to continue.")
+    return embed
+
+
+def build_ppe_type_points_embed(character_settings: dict) -> discord.Embed:
+    multipliers = (
+        character_settings.get("ppe_type_multipliers", {})
+        if isinstance(character_settings.get("ppe_type_multipliers"), dict)
+        else {}
+    )
+    lines = _build_ppe_type_multiplier_lines(multipliers)
+    embed = discord.Embed(
+        title="PPE Type Point Multipliers",
+        description="Edit how much each PPE type scales final points.",
+        color=discord.Color.dark_teal(),
+    )
+    embed.add_field(name="Current Multipliers", value="\n".join(lines), inline=False)
+    embed.set_footer(text="Changing multipliers recalculates all character totals immediately.")
     return embed
 
 

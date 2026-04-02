@@ -7,14 +7,17 @@ from typing import Any
 
 import discord
 
+from ppe_types import normalize_allowed_ppe_types, normalize_ppe_type_multipliers
 from utils.guild_config import (
     get_contest_settings,
     get_max_ppes,
+    get_ppe_settings,
     get_points_settings,
     get_realmshark_settings,
     load_guild_config,
     set_contest_settings,
     set_max_ppes,
+    set_ppe_settings,
     set_points_settings,
     set_realmshark_settings,
     update_global_points_modifiers,
@@ -66,6 +69,12 @@ class MaxCharactersUpdateSummary:
 async def load_points_settings_for_menu(interaction: discord.Interaction) -> dict[str, Any]:
     """Load point settings for point-settings embeds/views."""
     settings = await get_points_settings(interaction)
+    return dict(settings)
+
+
+async def load_character_settings_for_menu(interaction: discord.Interaction) -> dict[str, Any]:
+    """Load character settings for character-settings embeds/views."""
+    settings = await get_ppe_settings(interaction)
     return dict(settings)
 
 
@@ -179,7 +188,7 @@ async def delete_join_contest_embed(interaction: discord.Interaction) -> dict[st
 
             if message is not None:
                 try:
-                    await message.delete(reason="Join contest embed removed from Manage Season")
+                    await message.delete()
                     deleted_message = True
                 except (discord.Forbidden, discord.HTTPException):
                     deleted_message = False
@@ -265,7 +274,7 @@ async def update_max_characters_limit(
 
             if active_ppe_id is not None and int(active_ppe_id) in remove_ids:
                 if player_data.ppes:
-                    replacement = max(player_data.ppes, key=_ppe_sort_key_lowest_points)
+                    replacement = max(player_data.ppes, key=lambda p: (float(getattr(p, "points", 0.0)), int(getattr(p, "id", 0))))
                     player_data.active_ppe = int(getattr(replacement, "id", 0))
                 else:
                     player_data.active_ppe = None
@@ -294,6 +303,46 @@ async def update_max_characters_limit(
         inactive_characters_deleted=inactive_deleted,
         active_characters_deleted=active_deleted,
     )
+
+
+async def update_ppe_type_feature_enabled(
+    interaction: discord.Interaction,
+    *,
+    enabled: bool,
+) -> dict[str, Any]:
+    settings = await get_ppe_settings(interaction)
+    settings["enable_ppe_types"] = bool(enabled)
+    saved = await set_ppe_settings(interaction, settings)
+    return dict(saved)
+
+
+async def update_allowed_ppe_types(
+    interaction: discord.Interaction,
+    *,
+    allowed_types: list[str],
+) -> dict[str, Any]:
+    settings = await get_ppe_settings(interaction)
+    settings["allowed_ppe_types"] = normalize_allowed_ppe_types(allowed_types)
+    saved = await set_ppe_settings(interaction, settings)
+    return dict(saved)
+
+
+async def update_ppe_type_multipliers(
+    interaction: discord.Interaction,
+    *,
+    multipliers: dict[str, float],
+) -> tuple[dict[str, Any], PointsRefreshSummary]:
+    settings = await get_ppe_settings(interaction)
+    settings["ppe_type_multipliers"] = normalize_ppe_type_multipliers(multipliers)
+    saved = await set_ppe_settings(interaction, settings)
+
+    guild_config = await load_guild_config(interaction)
+    guild_config["ppe_settings"] = dict(saved)
+    refresh_summary = await refresh_all_character_points(
+        interaction,
+        guild_config=guild_config,
+    )
+    return dict(saved), refresh_summary
 
 
 async def update_global_point_modifiers(

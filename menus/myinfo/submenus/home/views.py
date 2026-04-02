@@ -122,14 +122,13 @@ class NoCharactersView(OwnerBoundView):
 
     @discord.ui.button(label="New PPE", style=discord.ButtonStyle.success, row=0)
     async def new_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        from menus.myinfo.submenus.character.modals import NewPPEFromMyInfoModal
+        from menus.myinfo.submenus.character.modals import launch_new_ppe_modal_flow
 
-        await interaction.response.send_modal(
-            NewPPEFromMyInfoModal(
-                owner_id=interaction.user.id,
-                source_message=interaction.message,
-                connected_ppe_ids=set(),
-            )
+        await launch_new_ppe_modal_flow(
+            interaction,
+            owner_id=interaction.user.id,
+            source_message=interaction.message,
+            connected_ppe_ids=set(),
         )
 
     @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary, row=1)

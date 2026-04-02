@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import discord
 
+from ppe_types import ppe_type_label
 from menus.manageseason.services import (
+    load_character_settings_for_menu,
     load_points_settings_for_menu,
     update_class_point_override,
     update_global_point_modifiers,
+    update_ppe_type_multipliers,
 )
 from menus.menu_utils import ConfirmCancelView
 
@@ -86,6 +89,7 @@ async def _refresh_point_settings_message(
     from menus.manageseason.submenus.points.views import (
         ManageClassPointSettingsView,
         ManageGlobalPointSettingsView,
+        ManagePpeTypePointSettingsView,
         ManagePointSettingsView,
     )
 
@@ -94,6 +98,9 @@ async def _refresh_point_settings_message(
         view = ManageGlobalPointSettingsView(owner_id=owner_id, settings=refreshed)
     elif source_screen == "class":
         view = ManageClassPointSettingsView(owner_id=owner_id, settings=refreshed, selected_class=selected_class)
+    elif source_screen == "ppe_type":
+        character_settings = await load_character_settings_for_menu(interaction)
+        view = ManagePpeTypePointSettingsView(owner_id=owner_id, character_settings=character_settings)
     else:
         view = ManagePointSettingsView(owner_id=owner_id, settings=refreshed)
 
@@ -345,4 +352,82 @@ class EditClassPointSettingsModal(discord.ui.Modal):
             settings=settings,
             source_screen=self.source_screen,
             selected_class=self.class_name,
+        )
+
+
+class EditPpeTypeMultiplierModal(discord.ui.Modal):
+    multiplier = discord.ui.TextInput(
+        label="Multiplier",
+        placeholder="Example: 1.3",
+        required=True,
+        max_length=20,
+    )
+
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        ppe_type: str,
+        current_value: float,
+        source_message: discord.Message | None,
+    ) -> None:
+        super().__init__(title=f"Edit PPE Type Points - {ppe_type_label(ppe_type)}", timeout=300)
+        self.owner_id = owner_id
+        self.ppe_type = ppe_type
+        self.source_message = source_message
+        self.multiplier.default = f"{float(current_value):.2f}"
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        try:
+            parsed = float(str(self.multiplier.value).strip())
+        except ValueError:
+            await interaction.response.send_message("ERROR: Multiplier must be a number.", ephemeral=True)
+            return
+
+        if parsed <= 0:
+            await interaction.response.send_message("ERROR: Multiplier must be greater than 0.", ephemeral=True)
+            return
+
+        character_settings = await load_character_settings_for_menu(interaction)
+        multipliers = (
+            dict(character_settings.get("ppe_type_multipliers", {}))
+            if isinstance(character_settings.get("ppe_type_multipliers"), dict)
+            else {}
+        )
+        multipliers[self.ppe_type] = parsed
+
+        confirm_text = (
+            f"⚠️ **Apply PPE type multiplier update for {ppe_type_label(self.ppe_type)}?**\n"
+            "This will recalculate all PPE characters.\n\n"
+            f"New multiplier: `{parsed:.2f}x`"
+        )
+        confirmed = await _confirm_points_update(
+            interaction=interaction,
+            owner_id=self.owner_id,
+            confirmation_text=confirm_text,
+        )
+        if not confirmed:
+            return
+
+        settings, refresh_summary = await update_ppe_type_multipliers(
+            interaction,
+            multipliers=multipliers,
+        )
+
+        await interaction.followup.send(
+            f"Updated {ppe_type_label(self.ppe_type)} multiplier to {float(settings.get('ppe_type_multipliers', {}).get(self.ppe_type, parsed)):.2f}x.\n"
+            f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
+            f"PPE totals changed: {refresh_summary.ppes_updated}",
+            ephemeral=True,
+        )
+
+        await _refresh_point_settings_message(
+            interaction=interaction,
+            owner_id=self.owner_id,
+            source_message=self.source_message,
+            source_screen="ppe_type",
         )

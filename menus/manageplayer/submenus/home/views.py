@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import discord
 
+from ppe_types import DEFAULT_PPE_TYPE, normalize_allowed_ppe_types, ppe_type_label
 from menus.manageplayer.common import (
     close_manageplayer_menu,
     send_followup_text,
@@ -41,11 +42,13 @@ class CreateCharacterModal(discord.ui.Modal, title="Create New Character"):
         owner_id: int,
         target: ManagedPlayerTarget,
         max_ppes: int,
+        ppe_type: str = DEFAULT_PPE_TYPE,
     ) -> None:
         super().__init__()
         self.owner_id = owner_id
         self.target = target
         self.max_ppes = max_ppes
+        self.ppe_type = ppe_type
 
         self.class_name = discord.ui.TextInput(
             label="Class Name",
@@ -104,6 +107,7 @@ class CreateCharacterModal(discord.ui.Modal, title="Create New Character"):
                 num_exalts=int(self.num_exalts.value),
                 percent_loot=float(self.percent_loot.value),
                 incombat_reduction=float(self.incombat_reduction.value),
+                ppe_type=self.ppe_type,
                 target_user_id=self.target.user_id,
             )
         except ValueError as e:
@@ -112,7 +116,7 @@ class CreateCharacterModal(discord.ui.Modal, title="Create New Character"):
 
         await interaction.response.send_message(
             f"✅ Created `PPE #{result['next_id']}` for **{self.target.display_name}** "
-            f"(`{result['class_name']}`) and set it as their active PPE.\n"
+            f"(`{result['class_name']}`, {result['ppe_type_label']}) and set it as their active PPE.\n"
             f"They now have {result['ppe_count']}/{result['max_ppes']} PPEs.",
             embed=result["embed"],
             ephemeral=False,
@@ -125,6 +129,74 @@ class CreateCharacterModal(discord.ui.Modal, title="Create New Character"):
             target=self.target,
             max_ppes=self.max_ppes,
         )
+
+
+class _CreateCharacterTypeSelect(discord.ui.Select):
+    def __init__(self, *, allowed_types: list[str], selected_type: str) -> None:
+        options = [
+            discord.SelectOption(label=ppe_type_label(ppe_type), value=ppe_type, default=(ppe_type == selected_type))
+            for ppe_type in allowed_types
+        ]
+        super().__init__(
+            placeholder="Select PPE type",
+            min_values=1,
+            max_values=1,
+            options=options,
+            row=0,
+        )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, CreateCharacterTypePickerView):
+            await interaction.response.send_message("Invalid selector state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This selector belongs to another user.", ephemeral=True)
+            return
+        view.selected_type = self.values[0]
+        for option in self.options:
+            option.default = option.value == view.selected_type
+        await interaction.response.edit_message(view=view)
+
+
+class CreateCharacterTypePickerView(discord.ui.View):
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        target: ManagedPlayerTarget,
+        max_ppes: int,
+        allowed_types: list[str],
+    ) -> None:
+        super().__init__(timeout=180)
+        self.owner_id = owner_id
+        self.target = target
+        self.max_ppes = max_ppes
+        self.allowed_types = allowed_types
+        self.selected_type = allowed_types[0]
+        self.add_item(_CreateCharacterTypeSelect(allowed_types=allowed_types, selected_type=self.selected_type))
+
+    @discord.ui.button(label="Continue", style=discord.ButtonStyle.success, row=1)
+    async def continue_to_modal(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        await interaction.response.send_modal(
+            CreateCharacterModal(
+                owner_id=self.owner_id,
+                target=self.target,
+                max_ppes=self.max_ppes,
+                ppe_type=self.selected_type,
+            )
+        )
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, row=1)
+    async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        await interaction.response.edit_message(content="Cancelled character creation.", view=None)
 
 
 class NoCharactersView(OwnerBoundView):
@@ -143,12 +215,33 @@ class NoCharactersView(OwnerBoundView):
 
     @discord.ui.button(label="Create Character", style=discord.ButtonStyle.success, row=0)
     async def create_character(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        modal = CreateCharacterModal(
-            owner_id=interaction.user.id,
-            target=self.target,
-            max_ppes=self.max_ppes,
+        guild_config = await load_guild_config(interaction)
+        ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config.get("ppe_settings", {}), dict) else {}
+        enabled = bool(ppe_settings.get("enable_ppe_types", True))
+        allowed_types = normalize_allowed_ppe_types(ppe_settings.get("allowed_ppe_types"))
+
+        if not enabled or len(allowed_types) == 1:
+            forced_type = allowed_types[0] if enabled else DEFAULT_PPE_TYPE
+            await interaction.response.send_modal(
+                CreateCharacterModal(
+                    owner_id=interaction.user.id,
+                    target=self.target,
+                    max_ppes=self.max_ppes,
+                    ppe_type=forced_type,
+                )
+            )
+            return
+
+        await interaction.response.send_message(
+            f"Choose a PPE type for {self.target.display_name}.",
+            view=CreateCharacterTypePickerView(
+                owner_id=interaction.user.id,
+                target=self.target,
+                max_ppes=self.max_ppes,
+                allowed_types=allowed_types,
+            ),
+            ephemeral=True,
         )
-        await interaction.response.send_modal(modal)
 
     @discord.ui.button(label="Go Back", style=discord.ButtonStyle.secondary, row=0)
     async def go_back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

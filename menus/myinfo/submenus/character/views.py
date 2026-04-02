@@ -19,7 +19,7 @@ from menus.myinfo.common import (
     temporarily_switch_active_ppe_and_share,
 )
 from menus.myinfo.entry import open_myinfo_home
-from menus.myinfo.submenus.character.modals import ManagePPEPenaltiesModal, NewPPEFromMyInfoModal
+from menus.myinfo.submenus.character.modals import ManagePPEPenaltiesModal, launch_new_ppe_modal_flow
 from utils.guild_config import get_max_ppes, load_guild_config
 from utils.helpers.shareloot_image import variant_image_label
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
@@ -124,12 +124,12 @@ class ManageCharactersView(OwnerBoundView):
 
     @discord.ui.button(label="New PPE", style=discord.ButtonStyle.success, row=1)
     async def new_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        modal = NewPPEFromMyInfoModal(
+        await launch_new_ppe_modal_flow(
+            interaction,
             owner_id=interaction.user.id,
             source_message=interaction.message,
             connected_ppe_ids=self.connected_ppe_ids,
         )
-        await interaction.response.send_modal(modal)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

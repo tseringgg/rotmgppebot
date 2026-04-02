@@ -3,6 +3,8 @@ from typing import Dict, List, Optional, Set
 
 from enum import Enum
 
+from ppe_types import DEFAULT_PPE_TYPE
+
 ROTMG_CLASSES = [
     "Wizard", "Priest", "Archer", "Rogue", "Warrior", "Knight", "Paladin",
     "Assassin", "Necromancer", "Huntress", "Mystic", "Trickster",
@@ -52,6 +54,7 @@ class PPEData:
     points: float = 0.0
     loot: List[Loot] = field(default_factory=list)
     bonuses: List[Bonus] = field(default_factory=list)
+    ppe_type: str = DEFAULT_PPE_TYPE
 
 @dataclass
 class TeamData:

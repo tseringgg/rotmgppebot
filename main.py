@@ -47,6 +47,8 @@ from utils.settings.channel_settings import get_item_suggestions_enabled
 from utils.item_suggestion import handle_item_suggestion
 from utils.contest_join_embed import handle_join_contest_reaction
 from create_loot_table import create_loot_background_and_mapping
+from ppe_types import DEFAULT_PPE_TYPE, normalize_allowed_ppe_types, ppe_type_label
+from utils.guild_config import load_guild_config
 from utils.realmshark_ingest_server import start_realmshark_ingest_server
 from utils.realmshark_notifier import build_realmshark_notifier
 
@@ -103,6 +105,31 @@ intents.message_content = True
 intents.members = True  # Enable members intent
 
 bot = PPEBot(command_prefix="!", intents=intents)
+
+
+async def ppe_type_autocomplete(
+    interaction: discord.Interaction,
+    current: str,
+) -> list[app_commands.Choice[str]]:
+    if interaction.guild is None:
+        return [app_commands.Choice(name=ppe_type_label(DEFAULT_PPE_TYPE), value=DEFAULT_PPE_TYPE)]
+
+    guild_config = await load_guild_config(interaction)
+    ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config.get("ppe_settings", {}), dict) else {}
+    if not bool(ppe_settings.get("enable_ppe_types", True)):
+        return [app_commands.Choice(name=ppe_type_label(DEFAULT_PPE_TYPE), value=DEFAULT_PPE_TYPE)]
+
+    allowed = normalize_allowed_ppe_types(ppe_settings.get("allowed_ppe_types"))
+    current_text = str(current or "").casefold().strip()
+    matches: list[app_commands.Choice[str]] = []
+
+    for ppe_type in allowed:
+        label = ppe_type_label(ppe_type)
+        if current_text and current_text not in label.casefold() and current_text not in ppe_type.casefold():
+            continue
+        matches.append(app_commands.Choice(name=label, value=ppe_type))
+
+    return matches[:25]
 
 @bot.event
 async def on_guild_join(guild: discord.Guild | None):
@@ -228,10 +255,20 @@ async def setup_roles(interaction: discord.Interaction):
 @app_commands.describe(num_exalts="Number of exalts (0-40)")
 @app_commands.describe(percent_loot="Percent loot boost from exalts (0-25%)")
 @app_commands.describe(incombat_reduction="In-combat damage reduction seconds (0, 0.2, 0.4, 0.6, 0.8, 1.0)")
+@app_commands.describe(ppe_type="Optional PPE type (defaults to Regular PPE)")
 @app_commands.autocomplete(class_name=class_autocomplete)
+@app_commands.autocomplete(ppe_type=ppe_type_autocomplete)
 @require_ppe_roles(player_required=True)
-async def newppe(interaction: discord.Interaction, class_name: str, pet_level: int, num_exalts: int, percent_loot: float, incombat_reduction: float):
-    await newppe_cmd.command(interaction, class_name, pet_level, num_exalts, percent_loot, incombat_reduction)
+async def newppe(
+    interaction: discord.Interaction,
+    class_name: str,
+    pet_level: int,
+    num_exalts: int,
+    percent_loot: float,
+    incombat_reduction: float,
+    ppe_type: str | None = None,
+):
+    await newppe_cmd.command(interaction, class_name, pet_level, num_exalts, percent_loot, incombat_reduction, ppe_type)
 
 @bot.tree.command(name="setactiveppe", description="Set which PPE is active for point tracking.", guilds=guilds)
 @require_ppe_roles(player_required=True)

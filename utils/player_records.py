@@ -9,6 +9,7 @@ from dataclasses import asdict
 
 import discord
 from dataclass import Loot, PPEData, PlayerData, Bonus, TeamData, QuestData
+from ppe_types import normalize_ppe_type
 
 # Persistent data directory (Railway Volume)
 DATA_DIR = "/data"
@@ -77,7 +78,8 @@ def normalize_ppe(ppe: dict) -> PPEData:
         name=ppe.get("name", "Unknown"),
         points=float(ppe.get("points", 0)),
         loot=loot_objects,
-        bonuses=bonus_objects
+        bonuses=bonus_objects,
+        ppe_type=normalize_ppe_type(ppe.get("ppe_type")),
     )
 
 
@@ -197,7 +199,8 @@ async def save_player_records(interaction: discord.Interaction, records: Dict[in
                     "name": p.name,
                     "points": p.points,
                     "loot": [asdict(l) for l in p.loot],
-                    "bonuses": [asdict(b) for b in p.bonuses]
+                    "bonuses": [asdict(b) for b in p.bonuses],
+                    "ppe_type": normalize_ppe_type(getattr(p, "ppe_type", None)),
                 }
                 for p in data.ppes
             ],

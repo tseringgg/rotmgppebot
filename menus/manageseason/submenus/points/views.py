@@ -6,12 +6,18 @@ import discord
 
 from dataclass import ROTMG_CLASSES
 from menus.manageseason.common import (
+    build_ppe_type_points_embed,
     build_class_modifier_settings_embed,
     build_global_modifier_settings_embed,
     build_point_settings_embed,
 )
-from menus.manageseason.modals import EditClassPointSettingsModal, EditGlobalPointSettingsModal
-from menus.manageseason.services import load_points_settings_for_menu
+from menus.manageseason.modals import (
+    EditClassPointSettingsModal,
+    EditGlobalPointSettingsModal,
+    EditPpeTypeMultiplierModal,
+)
+from menus.manageseason.services import load_character_settings_for_menu, load_points_settings_for_menu
+from ppe_types import all_ppe_types, ppe_type_label
 from menus.menu_utils import OwnerBoundView
 
 
@@ -38,7 +44,13 @@ class ManagePointSettingsView(OwnerBoundView):
         view = ManageClassPointSettingsView(owner_id=self.owner_id, settings=self.settings)
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Edit PPE Type Points", style=discord.ButtonStyle.success, row=1)
+    async def edit_ppe_type_points(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        character_settings = await load_character_settings_for_menu(interaction)
+        view = ManagePpeTypePointSettingsView(owner_id=self.owner_id, character_settings=character_settings)
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=2)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         from menus.manageseason.submenus.home.views import ManageSeasonHomeView
 
@@ -161,9 +173,75 @@ class ManageClassPointSettingsView(OwnerBoundView):
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
 
+class _PpeTypeSelect(discord.ui.Select):
+    def __init__(self, *, selected_type: str) -> None:
+        options = [
+            discord.SelectOption(label=ppe_type_label(ppe_type), value=ppe_type, default=(ppe_type == selected_type))
+            for ppe_type in all_ppe_types()
+        ]
+        super().__init__(
+            placeholder="Select a PPE type to edit its multiplier",
+            min_values=1,
+            max_values=1,
+            options=options,
+            row=0,
+        )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManagePpeTypePointSettingsView):
+            await interaction.response.send_message("Invalid selector state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This selector belongs to another user.", ephemeral=True)
+            return
+
+        view.selected_type = self.values[0]
+        for option in self.options:
+            option.default = option.value == view.selected_type
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+
+class ManagePpeTypePointSettingsView(OwnerBoundView):
+    def __init__(self, *, owner_id: int, character_settings: dict, selected_type: str | None = None) -> None:
+        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
+        self.owner_id = owner_id
+        self.character_settings = character_settings
+        all_types = all_ppe_types()
+        self.selected_type = selected_type if selected_type in all_types else all_types[0]
+        self.add_item(_PpeTypeSelect(selected_type=self.selected_type))
+
+    def current_embed(self) -> discord.Embed:
+        return build_ppe_type_points_embed(self.character_settings)
+
+    @discord.ui.button(label="Edit Selected PPE Type", style=discord.ButtonStyle.success, row=1)
+    async def edit_selected_type(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.character_settings = await load_character_settings_for_menu(interaction)
+        multipliers = (
+            self.character_settings.get("ppe_type_multipliers", {})
+            if isinstance(self.character_settings.get("ppe_type_multipliers"), dict)
+            else {}
+        )
+        await interaction.response.send_modal(
+            EditPpeTypeMultiplierModal(
+                owner_id=self.owner_id,
+                ppe_type=self.selected_type,
+                current_value=float(multipliers.get(self.selected_type, 1.0)),
+                source_message=interaction.message,
+            )
+        )
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
+    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        settings = await load_points_settings_for_menu(interaction)
+        view = ManagePointSettingsView(owner_id=self.owner_id, settings=settings)
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+
 __all__ = [
     "ManagePointSettingsView",
     "ManageGlobalPointSettingsView",
     "ManageClassPointSettingsView",
+    "ManagePpeTypePointSettingsView",
     "_ClassModifierSelect",
 ]

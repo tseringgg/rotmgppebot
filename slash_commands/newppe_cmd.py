@@ -3,6 +3,7 @@
 import discord
 
 from dataclass import PPEData, ROTMGClass
+from ppe_types import resolve_creation_ppe_type, ppe_type_label
 from utils.penalty_embed import build_penalty_infographic_embed
 from utils.guild_config import get_max_ppes, load_guild_config
 from utils.points_service import apply_penalties_to_ppe, parse_penalty_inputs, recompute_ppe_points
@@ -17,6 +18,7 @@ async def create_new_ppe_for_user(
     num_exalts: int,
     percent_loot: float,
     incombat_reduction: float,
+    ppe_type: str | None = None,
     target_user_id: int | None = None,
 ) -> dict:
     """Create a new PPE for a user.
@@ -51,7 +53,6 @@ async def create_new_ppe_for_user(
     percent_loot = float(parsed_inputs["percent_loot"])
     incombat_reduction = float(parsed_inputs["incombat_reduction"])
 
-    guild_id = interaction.guild.id
     records = await load_player_records(interaction)
     user_id = target_user_id if target_user_id is not None else interaction.user.id
     key = ensure_player_exists(records, user_id)
@@ -77,10 +78,19 @@ async def create_new_ppe_for_user(
         name=class_enum,
         points=0.0,
         loot=[],
-        bonuses=[]
+        bonuses=[],
     )
 
     guild_config = await load_guild_config(interaction)
+    ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config.get("ppe_settings", {}), dict) else {}
+    resolved_type, type_error = resolve_creation_ppe_type(
+        ppe_type,
+        enabled=bool(ppe_settings.get("enable_ppe_types", True)),
+        allowed_types=ppe_settings.get("allowed_ppe_types", []),
+    )
+    if type_error:
+        raise ValueError(type_error)
+    new_ppe.ppe_type = resolved_type
 
     penalty_result = apply_penalties_to_ppe(
         new_ppe,
@@ -119,13 +129,23 @@ async def create_new_ppe_for_user(
     return {
         "next_id": next_id,
         "class_name": class_enum.value,
+        "ppe_type": resolved_type,
+        "ppe_type_label": ppe_type_label(resolved_type),
         "ppe_count": ppe_count + 1,
         "max_ppes": max_ppes,
         "embed": embed,
     }
 
 
-async def command(interaction: discord.Interaction, class_name: str, pet_level: int, num_exalts: int, percent_loot: float, incombat_reduction: float):
+async def command(
+    interaction: discord.Interaction,
+    class_name: str,
+    pet_level: int,
+    num_exalts: int,
+    percent_loot: float,
+    incombat_reduction: float,
+    ppe_type: str | None = None,
+):
     if not interaction.guild:
         return await interaction.response.send_message("❌ This command can only be used in a server.")
 
@@ -137,12 +157,14 @@ async def command(interaction: discord.Interaction, class_name: str, pet_level: 
             num_exalts=num_exalts,
             percent_loot=percent_loot,
             incombat_reduction=incombat_reduction,
+            ppe_type=ppe_type,
         )
     except ValueError as exc:
         return await interaction.response.send_message(str(exc), ephemeral=True)
 
     await interaction.response.send_message(
         f"✅ Created `PPE #{result['next_id']}` for your `{result['class_name']}` "
+        f"({result['ppe_type_label']}) "
         f"and set it as your active PPE.\n"
         f"You now have {result['ppe_count']}/{result['max_ppes']} PPEs.",
         embed=result["embed"],
