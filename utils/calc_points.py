@@ -39,6 +39,8 @@ def load_loot_points():
     with open(LOOT_POINTS_CSV, newline='', encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
+            if not (row.get("Item Name") and row.get("Points")):
+                continue
             name = normalize_item_name(row["Item Name"])
             points = float(row["Points"])
             loot_points[name] = points

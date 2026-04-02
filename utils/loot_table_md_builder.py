@@ -1,4 +1,4 @@
-import json
+import csv
 
 from dataclass import PPEData
 from utils.markdown_message_builder import MarkdownMessageBuilder
@@ -13,23 +13,19 @@ from utils.points_service import (
 
 
 def load_dungeon_data():
-    """Load the dungeon loot JSON file and create item-to-dungeon mapping."""
+    """Load the loot CSV and create item-to-dungeon mapping from the Dungeon column."""
     try:
-        with open("loot/dungeon_loot.json", "r", encoding="utf-8") as f:
-            dungeon_data = json.load(f)
-
-        # Create mapping: item_name -> dungeon_name
-        item_to_dungeon = {}
-        for dungeon_name, dungeon_info in dungeon_data.items():
-            for item in dungeon_info.get("items", []):
-                item_to_dungeon[item["name"]] = dungeon_name
-
-        return dungeon_data, item_to_dungeon
+        item_to_dungeon: dict[str, str] = {}
+        with open("rotmg_loot_drops_updated.csv", "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                item_name = (row.get("Item Name") or "").strip()
+                dungeon = (row.get("Dungeon") or "").strip()
+                if item_name and dungeon:
+                    item_to_dungeon[item_name] = dungeon
+        return {}, item_to_dungeon
     except FileNotFoundError:
-        print("Warning: dungeon_loot.json not found, falling back to alphabetical sorting")
-        return {}, {}
-    except json.JSONDecodeError as e:
-        print(f"Warning: Error parsing dungeon_loot.json: {e}, falling back to alphabetical sorting")
+        print("Warning: rotmg_loot_drops_updated.csv not found, falling back to alphabetical sorting")
         return {}, {}
 
 
