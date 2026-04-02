@@ -5,10 +5,8 @@ import tempfile
 
 from PIL import Image
 
-
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _RARITY_PICS_DIR = os.path.join(_PROJECT_ROOT, "helper_pics", "rarity_pics")
-
 
 def overlay_rarity_badge(
     item_image_path: str,
@@ -47,13 +45,18 @@ def overlay_rarity_badge(
         # Load the rarity image
         rarity_img = Image.open(rarity_image_path).convert("RGBA")
         
-        # Scale the rarity badge if size specified
+        # Scale the rarity badge while preserving aspect ratio
         if output_size:
             rarity_img = rarity_img.resize(output_size, Image.Resampling.LANCZOS)
         else:
-            # Default: make badge roughly 20% of item image width
-            badge_size = max(10, int(item_img.width * 0.2))
-            rarity_img = rarity_img.resize((badge_size, badge_size), Image.Resampling.LANCZOS)
+            # Default: make badge width roughly 20% of item image width
+            new_width = max(10, int(item_img.width * 0.2))
+            
+            # Calculate the new height based on the original aspect ratio
+            aspect_ratio = rarity_img.height / rarity_img.width
+            new_height = int(new_width * aspect_ratio)
+            
+            rarity_img = rarity_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
         
         # Create a copy of the item image to preserve the original
         result_img = item_img.convert("RGBA")
