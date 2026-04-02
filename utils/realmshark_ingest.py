@@ -830,7 +830,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
                 False,
                 mapped_ppe_id,
                 mode == "addloot" and mapped_ppe_id is not None,
-                item_rarity if mode == "addloot" and mapped_ppe_id is not None else None,
+                item_rarity,
             )
             _debug_log(
                 f"Loot announcement sent guild_id={guild_id} user_id={linked_user_id} item={result.get('item', item_name)}"

@@ -2,8 +2,12 @@
 
 import os
 import tempfile
-from pathlib import Path
+
 from PIL import Image
+
+
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_RARITY_PICS_DIR = os.path.join(_PROJECT_ROOT, "helper_pics", "rarity_pics")
 
 
 def overlay_rarity_badge(
@@ -34,9 +38,8 @@ def overlay_rarity_badge(
         item_img = Image.open(item_image_path)
         
         # Construct path to rarity image
-        rarity_pics_dir = os.path.join("helper_pics", "rarity_pics")
         rarity_file = f"{rarity.lower()}.png"
-        rarity_image_path = os.path.join(rarity_pics_dir, rarity_file)
+        rarity_image_path = os.path.join(_RARITY_PICS_DIR, rarity_file)
         
         if not os.path.exists(rarity_image_path):
             return None
