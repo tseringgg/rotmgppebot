@@ -44,7 +44,7 @@ class _SyntheticInteraction:
 
 _DEBUG = os.getenv("REALMSHARK_DEBUG", "false").strip().lower() in {"1", "true", "yes", "on"}
 _MISSING_ITEMS_LOG_PATH = "/data/realmshark_not_logged_items.jsonl"
-_DUNGEONS_PATH = os.getenv("REALMSHARK_DUNGEONS_PATH", "dungeons")
+_DUNGEONS_PATH = os.getenv("REALMSHARK_DUNGEONS_PATH", "helper_pics/dungeon_pics")
 _ITEM_IMAGE_INDEX: Dict[str, str] = {}
 _ITEM_IMAGE_INDEX_READY = False
 Notifier = Callable[
@@ -57,6 +57,7 @@ Notifier = Callable[
         bool,
         int | None,
         bool,
+        str | None,
     ],
     Awaitable[None],
 ]
@@ -775,17 +776,26 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
         display_rarity = _display_rarity(item_rarity)
 
         destination = "seasonal loot"
+        points_suffix = ""
         if mode == "addloot" and mapped_ppe_id is not None:
             destination = f"PPE #{mapped_ppe_id}"
+            # Add points information if available
+            total_points = result.get("total_points")
+            points_added = result.get("points_added")
+            if total_points is not None and points_added is not None:
+                old_points = total_points - points_added
+                formatted_old = _format_points(old_points)
+                formatted_new = _format_points(total_points)
+                points_suffix = f" Points: {formatted_old} -> {formatted_new}"
 
         announcement = (
             f"{{player}} got {display_rarity} {announced_item}. "
-            f"It was logged to {destination}."
+            f"It was logged to {destination}.{points_suffix}"
         )
 
         if routing_reason == "unmapped_character":
             announcement += (
-                " | new character is still unmapped, use /mysniffer -> Configure Characters to choose PPE vs seasonal"
+                " | This new character is still unmapped, use /mysniffer -> Configure Characters to choose PPE vs seasonal"
             )
 
         if bool(result.get("already_present", False)):
@@ -795,7 +805,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
             )
             if routing_reason == "unmapped_character":
                 announcement += (
-                    " | new character is still unmapped, use /mysniffer -> Configure Characters to choose PPE vs seasonal"
+                    " | This new character is still unmapped, use /mysniffer -> Configure Characters to choose PPE vs seasonal"
                 )
 
         if ingest_warning is not None:
@@ -820,6 +830,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
                 False,
                 mapped_ppe_id,
                 mode == "addloot" and mapped_ppe_id is not None,
+                item_rarity if mode == "addloot" and mapped_ppe_id is not None else None,
             )
             _debug_log(
                 f"Loot announcement sent guild_id={guild_id} user_id={linked_user_id} item={result.get('item', item_name)}"

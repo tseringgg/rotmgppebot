@@ -90,7 +90,7 @@ async def command(
 
     
 
-    found_items = find_items_in_image(file_path, templates_folder=f"./dungeons/{dungeon}")
+    found_items = find_items_in_image(file_path, templates_folder=f"./helper_pics/dungeon_pics/{dungeon}")
     if found_items:
         message = "✅ **Detected the following items in your screenshot:**\n"
 

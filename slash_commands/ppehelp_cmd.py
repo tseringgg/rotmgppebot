@@ -106,11 +106,25 @@ def build_help_embed(section_key: str) -> discord.Embed:
             ),
             color=discord.Color.blurple(),
         )
+        
+        embed.add_field(
+            name="General Bot Information",
+            value=(
+                "This bot allows you to track season progress, track PPE characters, and setup competitions.\n" 
+                "The bot supports team play, quest tracking, and dynamic point systems.\n"
+                "**Normal Players** will primarily be using `/myinfo` and other `/my...` commands.\n"
+                "**Admins** will have access to additional `/manage...` commands for overseeing the season and assisting players.\n"
+                f"{_divider()}\n"
+            ),
+            inline=False,
+        )
+
         embed.add_field(
             name="Season Loot (Global Account Progress)",
             value=(
                 "Season loot tracks unique loot across your whole account, not just one PPE.\n" 
                 "You can log season loot with /addseasonloot even if you do not have a PPE character yet.\n"
+                "Note that all ppe loot is auto-logged as season loot.\n"
                 f"{_divider()}\n"
             ),
             inline=False,

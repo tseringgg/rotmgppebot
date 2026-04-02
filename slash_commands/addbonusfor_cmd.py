@@ -5,6 +5,7 @@ from utils.bonus_data import load_bonuses
 from utils.embed_builders import build_loot_embed
 from utils.guild_config import load_guild_config
 from utils.points_service import recompute_ppe_points
+from utils.helpers.loot_table_message import LootTableMessage
 
 async def command(interaction: discord.Interaction, user: discord.Member, id: int, bonus_name: str):
     if not interaction.guild:
@@ -82,17 +83,24 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     # Save records
     await save_player_records(interaction=interaction, records=records)
     
-    # Create response message and embed
+    # Create response message
     repeatable_text = " (repeatable)" if bonus_data.repeatable else " (one-time)"
-    embed = await build_loot_embed(target_ppe, user_id=user.id, recently_added=bonus_name)
-    
-    await interaction.response.send_message(
+    response_msg = (
         f"✅ Added bonus `{bonus_name}` to {user.display_name}'s PPE #{target_ppe.id} ({target_ppe.name})!{quantity_text}\n"
         f"**+{bonus_data.points} points**{repeatable_text}\n"
     )
-    await interaction.followup.send(
-        f"Your PPE now has **{target_ppe.points} total points**.",
-        view=embed,
-        embed=embed.embeds[0],
-        ephemeral=True
+    
+    # Use LootTableMessage to handle response + markdown file
+    loot_message = LootTableMessage(
+        interaction=interaction,
+        message_type="markdown",
+        response=response_msg,
+        response_ephemeral=False,
+        ephemeral=True,
+    )
+    
+    await loot_message.send_player_loot(
+        target_ppe, 
+        user_id=user.id, 
+        recently_added=bonus_name
     )

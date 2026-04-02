@@ -11,6 +11,9 @@ from utils.calc_points import normalize_item_name
 
 LootSourceItems = Sequence[tuple[str, bool]]
 
+_LOOTSUMMARY_DIR = os.path.join("helper_pics", "lootsummary_pics")
+_DUNGEONS_PATH = os.path.join("helper_pics", "dungeon_pics")
+
 VARIANT_DISPLAY_NAMES = {
     "normal": "Normal loot",
     "normal_skins": "Normal + Skins loot",
@@ -97,7 +100,7 @@ def _load_item_type_lookup() -> dict[str, str]:
 def _load_sprite_images() -> dict[str, Image.Image]:
     sprite_images: dict[str, Image.Image] = {}
 
-    dungeons_path = "dungeons"
+    dungeons_path = _DUNGEONS_PATH
     ignored_folders = {"Forging", "Tiered Garbage", "_misc"}
 
     pattern = os.path.join(dungeons_path, "**", "*.png")
@@ -142,8 +145,8 @@ async def generate_loot_share_image(
     all_variant_extra_lines: Sequence[str] | None = None,
 ) -> None:
     variant = variant_from_flags(include_skins, include_limited)
-    sprite_csv = f"sprite_positions_{variant}.csv"
-    background_file = f"loot_background_{variant}.png"
+    sprite_csv = os.path.join(_LOOTSUMMARY_DIR, f"sprite_positions_{variant}.csv")
+    background_file = os.path.join(_LOOTSUMMARY_DIR, f"loot_background_{variant}.png")
 
     if not os.path.exists(sprite_csv):
         await _send_interaction_text(interaction, f"❌ Sprite mapping not found! ({sprite_csv})", ephemeral=True)

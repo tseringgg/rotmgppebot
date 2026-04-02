@@ -1,0 +1,79 @@
+"""Image utility functions for processing and enhancing images."""
+
+import os
+import tempfile
+from pathlib import Path
+from PIL import Image
+
+
+def overlay_rarity_badge(
+    item_image_path: str,
+    rarity: str,
+    output_size: tuple[int, int] | None = None
+) -> str | None:
+    """
+    Overlay a rarity badge image on the bottom right of an item image.
+    
+    Args:
+        item_image_path: Path to the item image
+        rarity: Rarity level (common, uncommon, rare, legendary, divine)
+        output_size: Optional size (width, height) to scale the rarity badge
+    
+    Returns:
+        Path to the temporary image with overlay, or None if overlay fails
+    """
+    # Common items have no overlay
+    if rarity.lower() == "common":
+        return item_image_path
+    
+    try:
+        # Load the item image
+        if not os.path.exists(item_image_path):
+            return None
+        
+        item_img = Image.open(item_image_path)
+        
+        # Construct path to rarity image
+        rarity_pics_dir = os.path.join("helper_pics", "rarity_pics")
+        rarity_file = f"{rarity.lower()}.png"
+        rarity_image_path = os.path.join(rarity_pics_dir, rarity_file)
+        
+        if not os.path.exists(rarity_image_path):
+            return None
+        
+        # Load the rarity image
+        rarity_img = Image.open(rarity_image_path).convert("RGBA")
+        
+        # Scale the rarity badge if size specified
+        if output_size:
+            rarity_img = rarity_img.resize(output_size, Image.Resampling.LANCZOS)
+        else:
+            # Default: make badge roughly 20% of item image width
+            badge_size = max(10, int(item_img.width * 0.2))
+            rarity_img = rarity_img.resize((badge_size, badge_size), Image.Resampling.LANCZOS)
+        
+        # Create a copy of the item image to preserve the original
+        result_img = item_img.convert("RGBA")
+        
+        # Calculate position: bottom right with small margin
+        margin = 2
+        x_pos = result_img.width - rarity_img.width - margin
+        y_pos = result_img.height - rarity_img.height - margin
+        
+        # Paste the rarity badge onto the item image
+        result_img.paste(rarity_img, (x_pos, y_pos), rarity_img)
+        
+        # Convert back to RGB if original was RGB
+        if item_img.mode == "RGB":
+            result_img = result_img.convert("RGB")
+        
+        # Save to temporary file
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_file:
+            temp_path = tmp_file.name
+        
+        result_img.save(temp_path)
+        return temp_path
+        
+    except Exception as e:
+        print(f"[IMAGE_UTILS] Failed to overlay rarity badge: {e}")
+        return None

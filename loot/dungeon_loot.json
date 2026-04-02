@@ -4854,14 +4854,24 @@
         "name": "Eternal Echo",
         "type": "Limited",
         "points": 10.0
-      },
-      {
-        "name": "Eden's Embrace",
-        "type": "Limited",
-        "points": 15.0
-      },
+      }
+    ]
+  },
+  "Stromwell 3": {
+    "default_points": 15.0,
+    "items": [
       {
         "name": "Nightmatter Circlet",
+        "type": "Limited",
+        "points": 15.0
+      }
+    ]
+  },
+  "Snake Invasion 3": {
+    "default_points": 15.0,
+    "items": [
+      {
+        "name": "Eden's Embrace",
         "type": "Limited",
         "points": 15.0
       }

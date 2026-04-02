@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
 from typing import Awaitable, Callable
 
 import discord
 
 from utils.player_records import ensure_player_exists, load_player_records
+from utils.image_utils import overlay_rarity_badge
 
 
 def _discord_absolute_now() -> str:
@@ -47,7 +49,7 @@ async def _get_target_ppe(
 
 def build_realmshark_notifier(
     bot: discord.Client,
-) -> Callable[[int, str, int | None, int | None, str | None, bool, int | None, bool], Awaitable[None]]:
+) -> Callable[[int, str, int | None, int | None, str | None, bool, int | None, bool, str | None], Awaitable[None]]:
     async def notifier(
         guild_id: int,
         message: str,
@@ -57,6 +59,7 @@ def build_realmshark_notifier(
         allow_user_ping: bool = False,
         ppe_id: int | None = None,
         include_ppe_sheet: bool = False,
+        rarity: str | None = None,
     ) -> None:
         guild = bot.get_guild(guild_id)
         if guild is None:
@@ -122,11 +125,19 @@ def build_realmshark_notifier(
                     )
 
         sent_public_message = False
+        overlay_image_path: str | None = None
+        
         if image_path:
+            # Apply rarity overlay if rarity is provided
+            if rarity and rarity.lower() != "common":
+                overlay_image_path = overlay_rarity_badge(image_path, rarity)
+            
+            image_to_send = overlay_image_path if overlay_image_path else image_path
+            
             try:
                 await channel.send(
                     content=f"[RealmShark] {final_message}",
-                    file=discord.File(image_path),
+                    file=discord.File(image_to_send),
                     allowed_mentions=allowed_mentions,
                 )
                 sent_public_message = True
@@ -134,6 +145,13 @@ def build_realmshark_notifier(
                 print(
                     f"[REALMSHARK] Failed to attach image '{image_path}' for guild {guild_id}: {e}. Sending message without image."
                 )
+            finally:
+                # Clean up overlay image if it was created
+                if overlay_image_path and os.path.exists(overlay_image_path):
+                    try:
+                        os.remove(overlay_image_path)
+                    except Exception as e:
+                        print(f"[REALMSHARK] Failed to clean up overlay image: {e}")
 
         if not sent_public_message:
             await channel.send(f"[RealmShark] {final_message}", allowed_mentions=allowed_mentions)

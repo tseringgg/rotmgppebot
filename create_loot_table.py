@@ -3,6 +3,10 @@ import math
 from PIL import Image, ImageEnhance
 import csv
 
+
+_DUNGEONS_PATH = os.path.join("helper_pics", "dungeon_pics")
+_LOOTSUMMARY_DIR = os.path.join("helper_pics", "lootsummary_pics")
+
 def find_item_image(item_name, dungeons_path):
     """
     Search for an item's PNG file across all dungeon folders.
@@ -39,9 +43,10 @@ def create_loot_images_from_csv():
     """
     
     # Paths
-    dungeons_path = "dungeons"
+    dungeons_path = _DUNGEONS_PATH
     csv_file = "rotmg_loot_drops_updated.csv"
     target_size = (40, 40)
+    os.makedirs(_LOOTSUMMARY_DIR, exist_ok=True)
     
     if not os.path.exists(dungeons_path):
         print(f"Error: '{dungeons_path}' folder not found!")
@@ -190,12 +195,12 @@ def create_loot_background_image(items, variant_name, target_size):
         })
     
     # Save the background image
-    background_path = f"loot_background_{variant_name}.png"
+    background_path = os.path.join(_LOOTSUMMARY_DIR, f"loot_background_{variant_name}.png")
     background_image.save(background_path, "PNG")
     print(f"   ✅ Image saved: {background_path} ({total_width}x{total_height}px)")
     
     # Save the mapping CSV
-    csv_path = f"sprite_positions_{variant_name}.csv"
+    csv_path = os.path.join(_LOOTSUMMARY_DIR, f"sprite_positions_{variant_name}.csv")
     with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
         fieldnames = ['item_name', 'grid_x', 'grid_y', 'pixel_x', 'pixel_y']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
