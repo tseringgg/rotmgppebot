@@ -48,10 +48,19 @@ def overlay_rarity_badge(
         # Scale the rarity badge while preserving aspect ratio
         if output_size:
             print(f"[IMAGE_UTILS] Scaling rarity badge to {output_size}")
-            rarity_img = rarity_img.resize(output_size, Image.Resampling.LANCZOS)
+            target_width, target_height = output_size
+            
+            # Halve the size for uncommon so the single diamond matches the scale of others
+            if rarity.lower() == "uncommon":
+                target_width = max(1, target_width // 2)
+                target_height = max(1, target_height // 2)
+                
+            rarity_img = rarity_img.resize((target_width, target_height), Image.Resampling.LANCZOS)
         else:
             # Default: make badge width roughly 30% of item image width
-            new_width = max(10, int(item_img.width * 0.3))
+            # Halve the scale factor for uncommon items (15% instead of 30%)
+            scale_factor = 0.15 if rarity.lower() == "uncommon" else 0.30
+            new_width = max(10, int(item_img.width * scale_factor))
             
             # Calculate the new height based on the original aspect ratio
             aspect_ratio = rarity_img.height / rarity_img.width
