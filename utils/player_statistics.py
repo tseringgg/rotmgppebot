@@ -34,6 +34,21 @@ def _format_points(value: float) -> str:
     return f"{rounded:.2f}".rstrip("0").rstrip(".")
 
 
+def _pick_phrase(options: list[str], *seed_values: float | int) -> str:
+    """Pick a stable phrase variant so embeds feel less repetitive."""
+    if not options:
+        return ""
+
+    seed = 0
+    for idx, value in enumerate(seed_values, start=1):
+        try:
+            numeric = int(abs(float(value)) * 100)
+        except (TypeError, ValueError):
+            numeric = 0
+        seed += numeric * idx * 31
+    return options[seed % len(options)]
+
+
 def _load_item_to_dungeon() -> dict[str, str]:
     try:
         with _DUNGEON_LOOT_PATH.open("r", encoding="utf-8") as fp:
@@ -179,16 +194,95 @@ def _character_top_valued_drops(
 
 def _season_performance_phrase(total_points: float, chars: int, unique_count: int) -> str:
     if chars <= 0:
-        return "No active arc yet. Drop into your first run and start the story."
+        if unique_count <= 0:
+            return _pick_phrase(
+                [
+                    "No active arc yet. Drop into your first run and start the story.",
+                    "Fresh season slate. Spin up a character and get that first white logged.",
+                    "Nothing tracked yet. Your highlight reel is still in pre-production.",
+                ],
+                total_points,
+                chars,
+                unique_count,
+            )
+
+        if unique_count >= 200:
+            return _pick_phrase(
+                [
+                    "No characters, no problem. Your season loot stash is absurdly stacked.",
+                    "Season-only grind is elite. You're speedrunning the loot museum.",
+                    "You skipped the roster and still farmed a legendary season collection.",
+                ],
+                total_points,
+                chars,
+                unique_count,
+            )
+        if unique_count >= 120:
+            return _pick_phrase(
+                [
+                    "Season-only tracker is cooking. Great coverage even without a main PPE yet.",
+                    "Strong season item pool so far. Character arc can start whenever.",
+                    "You're banking serious season value before committing to a roster.",
+                ],
+                total_points,
+                chars,
+                unique_count,
+            )
+        return _pick_phrase(
+            [
+                "Nice season-only start. Your first PPE arc will launch with a head start.",
+                "Loot diary is awake even without a character run. Keep stacking uniques.",
+                "Good early season tracking. Build the character roster when you're ready.",
+            ],
+            total_points,
+            chars,
+            unique_count,
+        )
 
     avg = total_points / max(1, chars)
     if avg >= 350 or unique_count >= 200:
-        return "Legendary season! You're crushing the charts, but maybe you should touch grass."
+        return _pick_phrase(
+            [
+                "Legendary season! You're crushing the charts, but maybe you should touch grass.",
+                "Top-tier run. The numbers are outrageous and the loot tab is glowing.",
+                "Absolute heater season. You're farming highlights faster than recaps can load.",
+            ],
+            total_points,
+            chars,
+            unique_count,
+        )
     if avg >= 140 or unique_count >= 120:
-        return "Momentum is up and your loot diary is healthy. You're on track for a great season."
+        return _pick_phrase(
+            [
+                "Momentum is up and your loot diary is healthy. You're on track for a great season.",
+                "Clean progress across the board. Keep this pace and you'll finish strong.",
+                "Strong mid-season form. Your account is building a serious trophy shelf.",
+            ],
+            total_points,
+            chars,
+            unique_count,
+        )
     if avg >= 70 or unique_count >= 70:
-        return "Nice start. Keep it up and you might make something of yourself."
-    return "Slow season. The comeback montage is loading."
+        return _pick_phrase(
+            [
+                "Nice start. Keep it up and you might make something of yourself.",
+                "Solid baseline season. One lucky streak and this jumps tiers fast.",
+                "You're in the mix. Keep logging and the recap will look way juicier.",
+            ],
+            total_points,
+            chars,
+            unique_count,
+        )
+    return _pick_phrase(
+        [
+            "Slow season. The comeback montage is loading.",
+            "Quiet start so far, but every run can flip the script.",
+            "Low tempo right now. Queue up the redemption arc.",
+        ],
+        total_points,
+        chars,
+        unique_count,
+    )
 
 
 def _character_performance_phrase(ppe: PPEData, player_data: PlayerData) -> str:
@@ -197,10 +291,37 @@ def _character_performance_phrase(ppe: PPEData, player_data: PlayerData) -> str:
     avg = (sum(all_points) / len(all_points)) if all_points else 0.0
 
     if points >= avg + 20:
-        return "This character is your chart-topper right now."
+        return _pick_phrase(
+            [
+                "This character is your chart-topper right now.",
+                "Main-character energy detected. This one is carrying your board.",
+                "Your MVP at the moment. This PPE keeps delivering.",
+            ],
+            points,
+            avg,
+            ppe.id,
+        )
     if points <= max(0.0, avg - 20):
-        return "Underdog arc in progress. One cracked white and this flips fast."
-    return "Steady groove. This one is holding lane with the roster average."
+        return _pick_phrase(
+            [
+                "Underdog arc in progress. One cracked white and this flips fast.",
+                "This one is behind pace, but a single heater session can rewrite it.",
+                "Comeback candidate. Needs one big pop-off to catch the pack.",
+            ],
+            points,
+            avg,
+            ppe.id,
+        )
+    return _pick_phrase(
+        [
+            "Steady groove. This one is holding lane with the roster average.",
+            "Reliable run. This character is tracking right around your season pace.",
+            "Balanced arc so far. Not flashy, not falling off.",
+        ],
+        points,
+        avg,
+        ppe.id,
+    )
 
 
 def build_season_wrapped_embed(
@@ -213,11 +334,18 @@ def build_season_wrapped_embed(
     ppes = list(player_data.ppes)
     all_loot = [loot for ppe in ppes for loot in ppe.loot]
     item_to_dungeon = _load_item_to_dungeon()
+    season_items = getattr(player_data, "unique_items", set())
 
     total_points = sum(float(getattr(ppe, "points", 0.0) or 0.0) for ppe in ppes)
     total_drops = _total_logged_drops(all_loot)
-    unique_count = len(player_data.unique_items)
-    shiny_uniques = sum(1 for _, shiny in player_data.unique_items if shiny)
+    unique_count = len(season_items)
+    shiny_uniques = sum(
+        1
+        for item in season_items
+        if isinstance(item, (tuple, list)) and len(item) >= 2 and bool(item[1])
+    )
+    season_only_mode = (len(ppes) == 0 and unique_count > 0)
+    tracked_drop_count = total_drops if total_drops > 0 else unique_count
 
     top_ppe = max(ppes, key=lambda p: float(getattr(p, "points", 0.0) or 0.0), default=None)
     low_ppe = min(ppes, key=lambda p: float(getattr(p, "points", 0.0) or 0.0), default=None)
@@ -237,6 +365,8 @@ def build_season_wrapped_embed(
     )
 
     roster_line = f"Characters: **{len(ppes)}**\nSeason points: **{_format_points(total_points)}**\nUnique season items: **{unique_count}**"
+    if season_only_mode:
+        roster_line += "\nSeason-only tracker: **Enabled** (no active PPE yet)"
     if top_ppe is not None:
         roster_line += (
             f"\nTop character: **{_class_name(top_ppe)} #{top_ppe.id}**"
@@ -260,9 +390,9 @@ def build_season_wrapped_embed(
     embed.add_field(
         name="Chaos Metrics",
         value=(
-            f"Logged drops: **{total_drops}**\n"
+            f"Tracked drops: **{tracked_drop_count}**\n"
             f"Shiny uniques: **{shiny_uniques}**\n"
-            f"Duplicate energy: **{max(0, total_drops - unique_count)}**"
+            f"Duplicate energy: **{max(0, tracked_drop_count - unique_count)}**"
         ),
         inline=True,
     )
@@ -290,6 +420,15 @@ def build_season_wrapped_embed(
             "Collector behavior is officially detected."
         )
         embed.add_field(name="Weird But True", value=weird_line, inline=False)
+    elif season_only_mode:
+        embed.add_field(
+            name="Weird But True",
+            value=(
+                "No character logs yet, but your season tracker already has "
+                f"**{unique_count}** uniques. Pure season-loot speedrun behavior."
+            ),
+            inline=False,
+        )
 
     embed.set_footer(text="PPE Wrapped: Season Edition")
     return embed
