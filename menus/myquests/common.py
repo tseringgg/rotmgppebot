@@ -17,9 +17,9 @@ from utils.quest_manager import refresh_player_quests
 
 
 _BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-_DUNGEONS_DIR = os.path.join(_BASE_DIR, "dungeons")
+_DUNGEONS_DIR = os.path.join(_BASE_DIR, "helper_pics", "dungeon_pics")
 _LOOT_CSV_PATH = os.path.join(_BASE_DIR, "rotmg_loot_drops_updated.csv")
-_MISSING_IMAGE_PATH = os.path.join(_BASE_DIR, "image_missing.png")
+_MISSING_IMAGE_PATH = os.path.join(_BASE_DIR, "helper_pics", "image_missing.png")
 
 _ITEM_IMAGE_INDEX: Dict[str, str] = {}
 _ITEM_IMAGE_INDEX_READY = False

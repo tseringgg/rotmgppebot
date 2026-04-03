@@ -42,7 +42,7 @@ async def command(
             ephemeral=True
         )
 
-    templates_folder = f"./dungeons/{dungeon}"
+    templates_folder = f"./helper_pics/dungeon_pics/{dungeon}"
     if not os.path.isdir(templates_folder):
         return await interaction.response.send_message(
             f"❌ `{dungeon}` is in the loot CSV but has no screenshot template folder yet.\n"
