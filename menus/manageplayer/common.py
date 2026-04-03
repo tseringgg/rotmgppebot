@@ -14,6 +14,7 @@ from menus.myinfo.common import (
     display_class_name,
     format_points,
     penalty_input_defaults,
+    ppe_type_text,
 )
 from utils.guild_config import load_guild_config
 from utils.loot_table_md_builder import create_season_loot_markdown_file
@@ -38,12 +39,18 @@ def target_home_embed(
     best_ppe = max(player_data.ppes, key=lambda p: float(p.points), default=None)
 
     if best_ppe:
-        best_line = f"PPE #{best_ppe.id} ({display_class_name(best_ppe)}): {format_points(best_ppe.points)}"
+        best_line = (
+            f"PPE #{best_ppe.id} ({display_class_name(best_ppe)}, {ppe_type_text(best_ppe, compact=True)}): "
+            f"{format_points(best_ppe.points)}"
+        )
     else:
         best_line = "None"
 
     if active_ppe:
-        active_line = f"PPE #{active_ppe.id} ({display_class_name(active_ppe)}): {format_points(active_ppe.points)}"
+        active_line = (
+            f"PPE #{active_ppe.id} ({display_class_name(active_ppe)}, {ppe_type_text(active_ppe, compact=True)}): "
+            f"{format_points(active_ppe.points)}"
+        )
     else:
         active_line = "No active PPE"
 

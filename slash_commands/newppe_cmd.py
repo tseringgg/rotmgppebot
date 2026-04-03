@@ -3,7 +3,7 @@
 import discord
 
 from dataclass import PPEData, ROTMGClass
-from ppe_types import resolve_creation_ppe_type, ppe_type_label
+from utils.ppe_types import resolve_creation_ppe_type, ppe_type_label
 from utils.penalty_embed import build_penalty_infographic_embed
 from utils.guild_config import get_max_ppes, load_guild_config
 from utils.points_service import apply_penalties_to_ppe, parse_penalty_inputs, recompute_ppe_points

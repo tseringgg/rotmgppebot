@@ -2,7 +2,7 @@ import math
 from typing import Any, Dict, Iterable
 
 from dataclass import Bonus, Loot, PPEData
-from ppe_types import DEFAULT_PPE_TYPE_MULTIPLIERS, normalize_ppe_type, normalize_ppe_type_multipliers
+from utils.ppe_types import DEFAULT_PPE_TYPE_MULTIPLIERS, normalize_ppe_type, normalize_ppe_type_multipliers
 from utils.calc_points import load_loot_points, normalize_item_name
 
 PENALTY_NAMES = {

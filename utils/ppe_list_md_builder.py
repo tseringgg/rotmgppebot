@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclass import PlayerData
+from utils.ppe_types import normalize_ppe_type, ppe_type_short_label
 from utils.markdown_message_builder import MarkdownMessageBuilder
 from utils.points_service import non_default_points_adjustment_lines
 
@@ -14,6 +15,11 @@ def _format_points(value: float) -> str:
 
 def _display_class_name(ppe) -> str:
     return str(getattr(ppe.name, "value", ppe.name))
+
+
+def _display_ppe_type(ppe) -> str:
+    normalized = normalize_ppe_type(getattr(ppe, "ppe_type", None))
+    return ppe_type_short_label(normalized)
 
 
 def create_ppe_list_markdown_file(
@@ -48,7 +54,8 @@ def create_ppe_list_markdown_file(
 
             suffix = f" [{' | '.join(labels)}]" if labels else ""
             lines.append(
-                f"PPE #{ppe.id} | Class: {_display_class_name(ppe)} | Points: {_format_points(ppe.points)}{suffix}"
+                f"PPE #{ppe.id} | Class: {_display_class_name(ppe)} | Type: {_display_ppe_type(ppe)} "
+                f"| Points: {_format_points(ppe.points)}{suffix}"
             )
 
         builder.add_numbered_list(lines, heading="Characters")

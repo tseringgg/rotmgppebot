@@ -99,6 +99,7 @@ def normalize_ppe_type(value: Any) -> str:
         "no_pet_ppe": PPE_TYPE_NO_PET,
         PPE_TYPE_DIVINE_SHINY: PPE_TYPE_DIVINE_SHINY,
         "dspe": PPE_TYPE_DIVINE_SHINY,
+        "dplusspe": PPE_TYPE_DIVINE_SHINY,
         "d_plus_spe": PPE_TYPE_DIVINE_SHINY,
         "d+spe": PPE_TYPE_DIVINE_SHINY,
         "divine_shiny_ppe": PPE_TYPE_DIVINE_SHINY,

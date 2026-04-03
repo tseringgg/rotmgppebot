@@ -1,6 +1,7 @@
 import json
 
 from dataclass import PPEData
+from utils.ppe_types import normalize_ppe_type, ppe_type_short_label
 from utils.markdown_message_builder import MarkdownMessageBuilder
 from utils.points_service import (
     PENALTY_NAMES,
@@ -140,8 +141,9 @@ def create_loot_markdown_file(
     modifier_bucket = get_effective_modifier_bucket_for_ppe(ppe_data, guild_config)
     point_adjustment_lines = non_default_points_adjustment_lines(guild_config, class_names=[class_name])
     total_before_floor, scaled_total, minimum_total, floor_applied = _compute_scaled_totals(ppe_data, modifier_bucket)
+    ppe_type = ppe_type_short_label(normalize_ppe_type(getattr(ppe_data, "ppe_type", None)))
 
-    builder = MarkdownMessageBuilder(f"Loot Table: {class_name} (PPE #{ppe_data.id})")
+    builder = MarkdownMessageBuilder(f"Loot Table: {class_name} (PPE #{ppe_data.id}, {ppe_type})")
     builder.add_section(
         heading="Point Adjustments From Defaults",
         lines=point_adjustment_lines or ["No point adjustments from defaults."],

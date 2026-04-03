@@ -8,6 +8,7 @@ import discord
 
 from dataclass import PPEData, PlayerData
 from menus.menu_utils import SafeResponse
+from utils.ppe_types import normalize_ppe_type, ppe_type_label, ppe_type_short_label
 from utils.guild_config import get_realmshark_settings, load_guild_config
 from utils.helpers.loot_share_commands import share_active_ppe_loot_image
 from utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
@@ -41,6 +42,18 @@ def get_best_ppe(player_data: PlayerData) -> PPEData | None:
     return max(sorted_ppes, key=lambda p: float(p.points), default=None)
 
 
+def ppe_type_text(ppe: PPEData, *, compact: bool = False) -> str:
+    normalized = normalize_ppe_type(getattr(ppe, "ppe_type", None))
+    if compact:
+        return ppe_type_short_label(normalized)
+
+    full = ppe_type_label(normalized)
+    short = ppe_type_short_label(normalized)
+    if full == short:
+        return full
+    return f"{full} ({short})"
+
+
 def penalty_stats_text(ppe: PPEData, guild_config: dict | None = None) -> str:
     """Convert stored penalty bonuses into user-friendly stat values."""
 
@@ -59,10 +72,6 @@ def penalty_input_defaults(ppe: PPEData, guild_config: dict | None = None) -> di
     return penalty_inputs_from_bonuses(ppe.bonuses, guild_config=guild_config)
 
 
-def team_type_text(player_data: PlayerData) -> str:
-    return "Team PPE" if player_data.team_name else "Regular PPE"
-
-
 def build_home_embed(
     user: discord.abc.User,
     player_data: PlayerData,
@@ -73,12 +82,18 @@ def build_home_embed(
     best_ppe = get_best_ppe(player_data)
 
     if best_ppe:
-        best_line = f"PPE #{best_ppe.id} ({display_class_name(best_ppe)}): **{format_points(best_ppe.points)}**"
+        best_line = (
+            f"PPE #{best_ppe.id} ({display_class_name(best_ppe)}, {ppe_type_text(best_ppe, compact=True)}): "
+            f"**{format_points(best_ppe.points)}**"
+        )
     else:
         best_line = "None"
 
     if active_ppe:
-        active_line = f"PPE #{active_ppe.id} ({display_class_name(active_ppe)}): **{format_points(active_ppe.points)}**"
+        active_line = (
+            f"PPE #{active_ppe.id} ({display_class_name(active_ppe)}, {ppe_type_text(active_ppe, compact=True)}): "
+            f"**{format_points(active_ppe.points)}**"
+        )
     else:
         active_line = "No active PPE"
 
@@ -118,7 +133,8 @@ def build_character_embed(
     is_realmshark_connected: bool,
     guild_config: dict | None = None,
 ) -> discord.Embed:
-    character_type = team_type_text(player_data)
+    character_type = ppe_type_text(ppe)
+    compact_type = ppe_type_text(ppe, compact=True)
     distinct_loot_items = len([loot for loot in ppe.loot if int(loot.quantity) > 0])
 
     title_prefix: list[str] = []
@@ -127,11 +143,8 @@ def build_character_embed(
     if is_active:
         title_prefix.append("⭐")
 
-    title = (
-        f"{' '.join(title_prefix)} PPE #{ppe.id} - {display_class_name(ppe)}"
-        if title_prefix
-        else f"PPE #{ppe.id} - {display_class_name(ppe)}"
-    )
+    title_core = f"PPE #{ppe.id} - {display_class_name(ppe)} [{compact_type}]"
+    title = f"{' '.join(title_prefix)} {title_core}" if title_prefix else title_core
 
     embed = discord.Embed(
         title=title,

@@ -47,7 +47,7 @@ from utils.settings.channel_settings import get_item_suggestions_enabled
 from utils.item_suggestion import handle_item_suggestion
 from utils.contest_join_embed import handle_join_contest_reaction
 from create_loot_table import create_loot_background_and_mapping
-from ppe_types import DEFAULT_PPE_TYPE, normalize_allowed_ppe_types, ppe_type_label
+from utils.ppe_types import DEFAULT_PPE_TYPE, normalize_allowed_ppe_types, ppe_type_label
 from utils.guild_config import load_guild_config
 from utils.realmshark_ingest_server import start_realmshark_ingest_server
 from utils.realmshark_notifier import build_realmshark_notifier

@@ -2,6 +2,7 @@
 
 import discord
 
+from utils.ppe_types import normalize_ppe_type, ppe_type_short_label
 from utils.player_records import ensure_player_exists, get_active_ppe, load_player_records, save_player_records
 
 
@@ -30,14 +31,15 @@ async def command(interaction: discord.Interaction, ppe_id: int):
     for ppe in sorted(player_data.ppes, key=lambda x: x.id):
         id_ = ppe.id
         pts = ppe.points  # ✅
+        ppe_type = ppe_type_short_label(normalize_ppe_type(getattr(ppe, "ppe_type", None)))
         marker = " (Active)"
         pts_str = f"{int(pts)}" if pts == int(pts) else f"{pts:.1f}"
 
         if id_ == active_id:
             # Format points without decimal if whole number
-            lines.append(f"**#{id_} {ppe.name}: {pts_str} points {marker}**")
+            lines.append(f"**#{id_} {ppe.name} [{ppe_type}]: {pts_str} points {marker}**")
         else:
-            lines.append(f"*#{id_} {ppe.name}: {pts_str} points*")
+            lines.append(f"*#{id_} {ppe.name} [{ppe_type}]: {pts_str} points*")
 
     embed = discord.Embed(
         title=f"{interaction.user.display_name}'s PPEs",
@@ -47,5 +49,6 @@ async def command(interaction: discord.Interaction, ppe_id: int):
     # for line in lines:
     #     embed.add_field(name="", value=line, inline=False)
 
-    await interaction.response.send_message(content=f"> ✅ Set **PPE #{ppe_id}** ({active_ppe.name}) as your active PPE.",
+    active_type = ppe_type_short_label(normalize_ppe_type(getattr(active_ppe, "ppe_type", None)))
+    await interaction.response.send_message(content=f"> ✅ Set **PPE #{ppe_id}** ({active_ppe.name}, {active_type}) as your active PPE.",
                                     embed=embed, ephemeral=False)  # public response

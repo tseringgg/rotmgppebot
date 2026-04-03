@@ -5,7 +5,7 @@ from __future__ import annotations
 import discord
 
 from menus.manageseason.services import SeasonResetSummary
-from ppe_types import all_ppe_types, ppe_type_label
+from utils.ppe_types import all_ppe_types, ppe_type_label
 from utils.contest_leaderboards import CONTEST_LEADERBOARD_OPTIONS, contest_leaderboard_label
 
 

@@ -6,10 +6,12 @@ import discord
 
 from dataclass import PPEData, PlayerData
 from menus.menu_utils.character_carousel import CharacterCarouselPolicy
+from utils.ppe_types import ppe_type_short_label, resolve_edit_ppe_type
 from menus.manageplayer.common import (
     character_embed_for_target,
     close_manageplayer_menu,
     penalty_input_defaults,
+    ppe_type_text,
     realmshark_connected_ppe_ids,
     send_followup_text,
     send_target_loot_markdown_followup,
@@ -37,6 +39,12 @@ class ManagePlayerPenaltiesModal(discord.ui.Modal, title="Set PPE Penalties"):
         required=True,
         max_length=3,
     )
+    ppe_type = discord.ui.TextInput(
+        label="PPE Type",
+        placeholder="Examples: PPE, Duo PPE, DPE, UPE, SPE, NPE, D+SPE",
+        required=True,
+        max_length=32,
+    )
 
     def __init__(
         self,
@@ -44,6 +52,7 @@ class ManagePlayerPenaltiesModal(discord.ui.Modal, title="Set PPE Penalties"):
         owner_id: int,
         target: ManagedPlayerTarget,
         ppe_id: int,
+        current_ppe_type: str,
         defaults: dict[str, float],
         max_ppes: int,
         source_message: discord.Message | None,
@@ -60,6 +69,7 @@ class ManagePlayerPenaltiesModal(discord.ui.Modal, title="Set PPE Penalties"):
         self.num_exalts.default = str(int(defaults["num_exalts"]))
         self.percent_loot.default = f"{float(defaults['percent_loot']):g}"
         self.incombat_reduction.default = f"{float(defaults['incombat_reduction']):g}"
+        self.ppe_type.default = ppe_type_short_label(current_ppe_type)
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         parsed_inputs, error = parse_penalty_inputs(
@@ -80,6 +90,18 @@ class ManagePlayerPenaltiesModal(discord.ui.Modal, title="Set PPE Penalties"):
         ppe = find_ppe_or_raise(player_data, self.ppe_id)
 
         guild_config = await load_guild_config(interaction)
+        ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config.get("ppe_settings", {}), dict) else {}
+        resolved_type, type_error = resolve_edit_ppe_type(
+            self.ppe_type.value,
+            current_type=getattr(ppe, "ppe_type", None),
+            enabled=bool(ppe_settings.get("enable_ppe_types", True)),
+            allowed_types=ppe_settings.get("allowed_ppe_types", []),
+        )
+        if type_error:
+            await interaction.response.send_message(type_error, ephemeral=False)
+            return
+
+        ppe.ppe_type = resolved_type
 
         penalty_result = apply_penalties_to_ppe(
             ppe,
@@ -108,7 +130,7 @@ class ManagePlayerPenaltiesModal(discord.ui.Modal, title="Set PPE Penalties"):
         from menus.manageplayer.common import display_class_name, format_points
 
         await interaction.response.send_message(
-            f"✅ Updated penalties for PPE #{ppe.id} ({display_class_name(ppe)}). "
+            f"✅ Updated PPE #{ppe.id} ({display_class_name(ppe)}, {ppe_type_text(ppe, compact=True)}). "
             f"New total: {format_points(points_breakdown['total'])} points.",
             embed=embed,
             ephemeral=False,
@@ -226,6 +248,7 @@ class ManagePlayerCharactersView(OwnerBoundView):
             owner_id=interaction.user.id,
             target=self.target,
             ppe_id=int(selected.id),
+            current_ppe_type=str(getattr(selected, "ppe_type", "regular")),
             defaults=defaults,
             max_ppes=self.max_ppes,
             source_message=interaction.message,
@@ -267,6 +290,7 @@ class ManagePlayerCharacterLootView(OwnerBoundView):
             color=discord.Color.blue(),
         )
         embed.add_field(name="Character", value=f"{display_class_name(ppe)}", inline=True)
+        embed.add_field(name="Type", value=ppe_type_text(ppe, compact=True), inline=True)
         embed.add_field(name="Points", value=f"{format_points(ppe.points)}", inline=True)
         return embed
 
@@ -286,7 +310,8 @@ class ManagePlayerCharacterLootView(OwnerBoundView):
             embed_title="🎒 PPE Loot Share",
             embed_color=0x00FF00,
             embed_description=(
-                f"**{self.target.display_name}'s** {display_class_name(selected)} PPE #{selected.id}"
+                f"**{self.target.display_name}'s** {display_class_name(selected)} PPE #{selected.id} "
+                f"[{ppe_type_text(selected, compact=True)}]"
             ),
             total_items_label="Total Loot",
             all_variant_extra_lines=[f"**Points:** {format_points(selected.points)}"],

@@ -9,7 +9,7 @@ from dataclasses import asdict
 
 import discord
 from dataclass import Loot, PPEData, PlayerData, Bonus, TeamData, QuestData
-from ppe_types import normalize_ppe_type
+from utils.ppe_types import normalize_ppe_type
 
 # Persistent data directory (Railway Volume)
 DATA_DIR = "/data"

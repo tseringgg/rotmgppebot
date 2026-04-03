@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import discord
 
-from ppe_types import DEFAULT_PPE_TYPE, normalize_allowed_ppe_types, ppe_type_label
+from utils.ppe_types import DEFAULT_PPE_TYPE, normalize_allowed_ppe_types, ppe_type_label
 from menus.manageplayer.common import (
     close_manageplayer_menu,
     send_followup_text,

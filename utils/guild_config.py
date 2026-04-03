@@ -5,7 +5,7 @@ from typing import Any, Dict
 
 import discord
 
-from ppe_types import all_ppe_types, normalize_allowed_ppe_types, normalize_ppe_type_multipliers
+from utils.ppe_types import all_ppe_types, normalize_allowed_ppe_types, normalize_ppe_type_multipliers
 
 from utils.player_records import DATA_DIR, get_lock
 from utils.contest_leaderboards import normalize_contest_leaderboard_id

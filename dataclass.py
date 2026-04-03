@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Set
 
 from enum import Enum
 
-from ppe_types import DEFAULT_PPE_TYPE
+from utils.ppe_types import DEFAULT_PPE_TYPE
 
 ROTMG_CLASSES = [
     "Wizard", "Priest", "Archer", "Rogue", "Warrior", "Knight", "Paladin",

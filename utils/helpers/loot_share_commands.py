@@ -1,5 +1,6 @@
 import discord
 
+from utils.ppe_types import normalize_ppe_type, ppe_type_short_label
 from utils.player_records import ensure_player_exists, get_active_ppe_of_user, load_player_records
 from utils.helpers.shareloot_image import generate_loot_share_image
 
@@ -24,6 +25,7 @@ async def share_active_ppe_loot_image(
         return
 
     source_items = [(loot_item.item_name, bool(loot_item.shiny)) for loot_item in active_ppe.loot]
+    ppe_type = ppe_type_short_label(normalize_ppe_type(getattr(active_ppe, "ppe_type", None)))
 
     await generate_loot_share_image(
         interaction,
@@ -33,7 +35,7 @@ async def share_active_ppe_loot_image(
         filename_suffix=f"ppe{active_ppe.id}_loot",
         embed_title="🎒 PPE Loot Share",
         embed_color=0x00FF00,
-        embed_description=f"**{active_ppe.name}** PPE #{active_ppe.id}",
+        embed_description=f"**{active_ppe.name}** PPE #{active_ppe.id} [{ppe_type}]",
         total_items_label="Total Loot",
         all_variant_extra_lines=[f"**Points:** {active_ppe.points:.1f}"],
     )

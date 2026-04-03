@@ -7,7 +7,7 @@ from typing import Any
 
 import discord
 
-from ppe_types import normalize_allowed_ppe_types, normalize_ppe_type_multipliers
+from utils.ppe_types import normalize_allowed_ppe_types, normalize_ppe_type_multipliers
 from utils.guild_config import (
     get_contest_settings,
     get_max_ppes,

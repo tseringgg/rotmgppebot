@@ -14,6 +14,7 @@ from menus.myinfo.common import (
     find_ppe_or_raise,
     format_points,
     penalty_input_defaults,
+    ppe_type_text,
     refresh_player_data,
     send_myloot_markdown_followup,
     temporarily_switch_active_ppe_and_share,
@@ -151,6 +152,7 @@ class CharacterLootVariantView(OwnerBoundView):
             color=discord.Color.blue(),
         )
         embed.add_field(name="Character", value=f"{display_class_name(ppe)}", inline=True)
+        embed.add_field(name="Type", value=ppe_type_text(ppe, compact=True), inline=True)
         embed.add_field(name="Points", value=f"{format_points(ppe.points)}", inline=True)
         return embed
 

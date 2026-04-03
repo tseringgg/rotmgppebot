@@ -11,7 +11,7 @@ from menus.manageseason.services import (
     load_points_settings_for_menu,
 )
 from menus.menu_utils import OwnerBoundView
-from ppe_types import normalize_allowed_ppe_types
+from utils.ppe_types import normalize_allowed_ppe_types
 from utils.guild_config import get_max_ppes
 
 

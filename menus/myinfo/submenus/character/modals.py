@@ -5,7 +5,7 @@ from __future__ import annotations
 import discord
 
 from dataclass import PPEData
-from ppe_types import DEFAULT_PPE_TYPE, normalize_allowed_ppe_types, ppe_type_label
+from utils.ppe_types import DEFAULT_PPE_TYPE, normalize_allowed_ppe_types, ppe_type_label
 from menus.myinfo.common import (
     display_class_name,
     find_ppe_or_raise,

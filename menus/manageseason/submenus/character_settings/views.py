@@ -12,7 +12,7 @@ from menus.manageseason.services import (
     update_ppe_type_feature_enabled,
 )
 from menus.menu_utils import ConfirmCancelView, OwnerBoundView
-from ppe_types import all_ppe_types, normalize_allowed_ppe_types, ppe_type_label
+from utils.ppe_types import all_ppe_types, normalize_allowed_ppe_types, ppe_type_label
 from utils.guild_config import get_max_ppes
 from utils.player_records import load_player_records
 

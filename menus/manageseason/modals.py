@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import discord
 
-from ppe_types import ppe_type_label
+from utils.ppe_types import ppe_type_label
 from menus.manageseason.services import (
     load_character_settings_for_menu,
     load_points_settings_for_menu,

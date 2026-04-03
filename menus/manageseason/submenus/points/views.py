@@ -17,7 +17,7 @@ from menus.manageseason.modals import (
     EditPpeTypeMultiplierModal,
 )
 from menus.manageseason.services import load_character_settings_for_menu, load_points_settings_for_menu
-from ppe_types import all_ppe_types, ppe_type_label
+from utils.ppe_types import all_ppe_types, ppe_type_label
 from menus.menu_utils import OwnerBoundView
 
 

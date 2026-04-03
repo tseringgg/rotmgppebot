@@ -3,10 +3,21 @@
 import discord
 
 from menus.menu_utils.base_views import OwnerBoundView
+from utils.ppe_types import (
+    PPE_TYPE_DIVINE_ONLY,
+    PPE_TYPE_DIVINE_SHINY,
+    PPE_TYPE_DUO,
+    PPE_TYPE_NO_PET,
+    PPE_TYPE_REGULAR,
+    PPE_TYPE_SHINY_ONLY,
+    PPE_TYPE_UT_ONLY,
+    ppe_type_short_label,
+)
 
 
 SECTIONS: list[str] = [
     "home",
+    "types",
     "loot_bonuses",
     "quests",
     "teams",
@@ -16,6 +27,7 @@ SECTIONS: list[str] = [
 
 BUTTON_LABELS: dict[str, str] = {
     "home": "Home",
+    "types": "Types of PPEs",
     "loot_bonuses": "Loot & Bonuses",
     "quests": "Quests",
     "teams": "Teams",
@@ -135,6 +147,33 @@ def build_help_embed(section_key: str) -> discord.Embed:
                 "PPEs track your per-character run, loot, points, and penalties.\n"
                 "Start with /newppe, then use /myinfo to view and manage your account's PPE + season data."
             ),
+            inline=False,
+        )
+        embed.set_footer(text=_common_footer())
+        return embed
+
+    if section_key == "types":
+        embed = discord.Embed(
+            title="PPE Bot Help - Types of PPEs",
+            description=(
+                "The PPE types available in your server may change depending on what admins configure in "
+                "`/manageseason` under Character Settings."
+            ),
+            color=discord.Color.blurple(),
+        )
+        lines = [
+            f"- **{ppe_type_short_label(PPE_TYPE_REGULAR)}**: Standard PPE rules.",
+            f"- **{ppe_type_short_label(PPE_TYPE_DUO)}**: Run with a duo partner.",
+            f"- **{ppe_type_short_label(PPE_TYPE_DIVINE_ONLY)}**: Divine-only challenge rules.",
+            f"- **{ppe_type_short_label(PPE_TYPE_UT_ONLY)}**: UT-only challenge rules.",
+            f"- **{ppe_type_short_label(PPE_TYPE_SHINY_ONLY)}**: Shiny-only challenge rules.",
+            f"- **{ppe_type_short_label(PPE_TYPE_NO_PET)}**: No-pet challenge rules.",
+            f"- **{ppe_type_short_label(PPE_TYPE_DIVINE_SHINY)}**: Divine + Shiny combined challenge.",
+        ]
+        embed.add_field(name="Available PPE Types", value="\n".join(lines), inline=False)
+        embed.add_field(
+            name="Tip",
+            value="Use `/newppe` (or MyInfo -> Manage Characters -> New PPE) to pick a type when multiple are enabled.",
             inline=False,
         )
         embed.set_footer(text=_common_footer())
