@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import discord
 
-from menus.menu_utils import OwnerBoundView
 from menus.manageplayer.common import (
     close_manageplayer_menu,
     send_target_season_loot_markdown_followup,
@@ -12,6 +11,7 @@ from menus.manageplayer.common import (
 from menus.manageplayer.services import load_target_player_data
 from menus.manageplayer.targets import ManagedPlayerTarget
 from menus.menu_utils.season_loot_variants import SeasonLootVariantActionsView
+from utils.guild_config import load_guild_config
 from utils.player_statistics import build_season_wrapped_embed
 from utils.helpers.loot_share_commands import share_season_loot_image
 
@@ -48,32 +48,15 @@ class ManagePlayerSeasonLootView(SeasonLootVariantActionsView):
 
     async def _show_statistics(self, interaction: discord.Interaction) -> None:
         player_data = await load_target_player_data(interaction, self.target.user_id)
-        view = ManagePlayerSeasonStatisticsView(
-            owner_id=interaction.user.id,
-            target=self.target,
-            max_ppes=self.max_ppes,
+        guild_config = await load_guild_config(interaction)
+        embed = build_season_wrapped_embed(
+            player_data=player_data,
+            display_name=self.target.display_name,
+            guild_config=guild_config,
         )
-        embed = build_season_wrapped_embed(player_data=player_data, display_name=self.target.display_name)
-        await interaction.response.edit_message(embed=embed, view=view)
+        await close_manageplayer_menu(interaction)
+        await interaction.followup.send(embed=embed, ephemeral=False)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)
-    async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await close_manageplayer_menu(interaction)
-
-
-class ManagePlayerSeasonStatisticsView(OwnerBoundView):
-    """Spotify Wrapped-style season recap view for /manageplayer target users."""
-
-    def __init__(self, *, owner_id: int, target: ManagedPlayerTarget, max_ppes: int) -> None:
-        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
-        self.target = target
-        self.max_ppes = max_ppes
-
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=0)
-    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        view = ManagePlayerSeasonLootView(owner_id=interaction.user.id, target=self.target, max_ppes=self.max_ppes)
-        await interaction.response.edit_message(embed=view.current_embed(), view=view)
-
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=0)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_manageplayer_menu(interaction)

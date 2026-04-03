@@ -207,43 +207,17 @@ class CharacterLootVariantView(OwnerBoundView):
     async def show_character_statistics(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         refreshed = await refresh_player_data(interaction, interaction.user.id)
         selected = find_ppe_or_raise(refreshed, self.ppe_id)
-        view = CharacterStatisticsSummaryView(
-            owner_id=interaction.user.id,
-            ppe_id=self.ppe_id,
-            preferred_ppe_id=self.preferred_ppe_id,
-        )
+        guild_config = await load_guild_config(interaction)
         embed = build_character_wrapped_embed(
             player_data=refreshed,
             ppe=selected,
             display_name=interaction.user.display_name,
+            guild_config=guild_config,
         )
-        await interaction.response.edit_message(embed=embed, view=view)
+        await close_myinfo_menu(interaction)
+        await interaction.followup.send(embed=embed, ephemeral=False)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=3)
-    async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await close_myinfo_menu(interaction)
-
-
-class CharacterStatisticsSummaryView(OwnerBoundView):
-    """Wrapped-style summary page for a single character in /myinfo."""
-
-    def __init__(self, *, owner_id: int, ppe_id: int, preferred_ppe_id: int) -> None:
-        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
-        self.ppe_id = ppe_id
-        self.preferred_ppe_id = preferred_ppe_id
-
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=0)
-    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        refreshed = await refresh_player_data(interaction, interaction.user.id)
-        selected = find_ppe_or_raise(refreshed, self.ppe_id)
-        view = CharacterLootVariantView(
-            owner_id=interaction.user.id,
-            ppe_id=self.ppe_id,
-            preferred_ppe_id=self.preferred_ppe_id,
-        )
-        await interaction.response.edit_message(embed=view.current_embed(selected), view=view)
-
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=0)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_myinfo_menu(interaction)
 

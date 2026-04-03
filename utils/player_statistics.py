@@ -11,7 +11,14 @@ import discord
 
 from dataclass import Loot, PPEData, PlayerData
 from utils.calc_points import normalize_item_name
-from utils.points_service import calculate_drop_points, load_loot_points
+from utils.points_service import (
+    apply_percent_modifier,
+    calculate_drop_points,
+    calculate_item_points,
+    get_effective_modifier_bucket_for_ppe,
+    get_ppe_type_multiplier_for_ppe,
+    load_loot_points,
+)
 
 _DUNGEON_LOOT_PATH = Path("loot/dungeon_loot.json")
 
@@ -96,26 +103,73 @@ def _top_dungeon_from_loot(loot_entries: Iterable[Loot], item_to_dungeon: dict[s
     return dungeon, int(count)
 
 
-def _top_valued_unique_items(unique_items: set[tuple[str, bool]]) -> list[tuple[str, float, bool]]:
-    loot_points = load_loot_points()
-    scored: list[tuple[str, float, bool]] = []
-    for item_name, shiny in unique_items:
-        points = calculate_drop_points(item_name=item_name, divine=False, shiny=bool(shiny), loot_points=loot_points)
-        scored.append((item_name, float(points), bool(shiny)))
+def _safe_float(value: object) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
 
+
+def _effective_drop_points_for_ppe(
+    ppe: PPEData,
+    *,
+    item_name: str,
+    shiny: bool,
+    divine: bool,
+    guild_config: dict | None,
+) -> float:
+    # Drop-level value with active class/season modifiers and PPE type multiplier.
+    base_points = calculate_item_points(item_name=item_name, divine=divine, shiny=shiny, quantity=1)
+    modifier_bucket = get_effective_modifier_bucket_for_ppe(ppe, guild_config)
+    adjusted = apply_percent_modifier(base_points, _safe_float(modifier_bucket.get("loot_percent")))
+    adjusted = apply_percent_modifier(adjusted, _safe_float(modifier_bucket.get("total_percent")))
+    adjusted *= get_ppe_type_multiplier_for_ppe(ppe, guild_config)
+    return float(adjusted)
+
+
+def _season_top_valued_finds(
+    ppes: Iterable[PPEData],
+    *,
+    guild_config: dict | None,
+) -> list[tuple[str, float, bool, bool, str, int]]:
+    best_by_key: dict[tuple[str, bool, bool], tuple[str, float, bool, bool, str, int]] = {}
+
+    for ppe in ppes:
+        for entry in ppe.loot:
+            item_name = str(entry.item_name)
+            shiny = bool(entry.shiny)
+            divine = bool(entry.divine)
+            score = _effective_drop_points_for_ppe(
+                ppe,
+                item_name=item_name,
+                shiny=shiny,
+                divine=divine,
+                guild_config=guild_config,
+            )
+            key = (normalize_item_name(item_name), shiny, divine)
+            candidate = (item_name, score, shiny, divine, _class_name(ppe), int(ppe.id))
+            existing = best_by_key.get(key)
+            if existing is None or candidate[1] > existing[1]:
+                best_by_key[key] = candidate
+
+    scored = list(best_by_key.values())
     scored.sort(key=lambda row: (row[1], row[0].lower()), reverse=True)
     return scored[:3]
 
 
-def _character_top_valued_drops(loot_entries: Iterable[Loot]) -> list[tuple[str, float, bool, bool]]:
-    loot_points = load_loot_points()
+def _character_top_valued_drops(
+    ppe: PPEData,
+    *,
+    guild_config: dict | None,
+) -> list[tuple[str, float, bool, bool]]:
     scored: list[tuple[str, float, bool, bool]] = []
-    for entry in loot_entries:
-        points = calculate_drop_points(
-            item_name=entry.item_name,
-            divine=bool(entry.divine),
+    for entry in ppe.loot:
+        points = _effective_drop_points_for_ppe(
+            ppe,
+            item_name=str(entry.item_name),
             shiny=bool(entry.shiny),
-            loot_points=loot_points,
+            divine=bool(entry.divine),
+            guild_config=guild_config,
         )
         scored.append((str(entry.item_name), float(points), bool(entry.shiny), bool(entry.divine)))
 
@@ -128,11 +182,13 @@ def _season_performance_phrase(total_points: float, chars: int, unique_count: in
         return "No active arc yet. Drop into your first run and start the story."
 
     avg = total_points / max(1, chars)
-    if avg >= 70 or unique_count >= 80:
-        return "Absolute heater. You are speedrunning main-character energy this season."
-    if avg >= 35 or unique_count >= 40:
-        return "Solid season pace. Momentum is up and your loot diary is healthy."
-    return "Slow-burn season. The comeback montage is loading."
+    if avg >= 350 or unique_count >= 200:
+        return "Legendary season! You're crushing the charts, but maybe you should touch grass."
+    if avg >= 140 or unique_count >= 120:
+        return "Momentum is up and your loot diary is healthy. You're on track for a great season."
+    if avg >= 70 or unique_count >= 70:
+        return "Nice start. Keep it up and you might make something of yourself."
+    return "Slow season. The comeback montage is loading."
 
 
 def _character_performance_phrase(ppe: PPEData, player_data: PlayerData) -> str:
@@ -147,7 +203,12 @@ def _character_performance_phrase(ppe: PPEData, player_data: PlayerData) -> str:
     return "Steady groove. This one is holding lane with the roster average."
 
 
-def build_season_wrapped_embed(*, player_data: PlayerData, display_name: str) -> discord.Embed:
+def build_season_wrapped_embed(
+    *,
+    player_data: PlayerData,
+    display_name: str,
+    guild_config: dict | None = None,
+) -> discord.Embed:
     """Build a Spotify Wrapped-style season summary embed."""
     ppes = list(player_data.ppes)
     all_loot = [loot for ppe in ppes for loot in ppe.loot]
@@ -162,11 +223,11 @@ def build_season_wrapped_embed(*, player_data: PlayerData, display_name: str) ->
     low_ppe = min(ppes, key=lambda p: float(getattr(p, "points", 0.0) or 0.0), default=None)
     most_logged = _most_logged_item(all_loot)
     top_dungeon = _top_dungeon_from_loot(all_loot, item_to_dungeon)
-    top_values = _top_valued_unique_items(player_data.unique_items)
+    top_values = _season_top_valued_finds(ppes, guild_config=guild_config)
 
     embed = discord.Embed(
         title=f"{display_name}'s Season Wrapped",
-        description="Your season recap just dropped. Here are the weird, fun, and very real stats.",
+        description="Your season recap is here. Here's some stats for you.",
         color=discord.Color.from_rgb(29, 185, 84),
     )
     embed.add_field(
@@ -208,9 +269,16 @@ def build_season_wrapped_embed(*, player_data: PlayerData, display_name: str) ->
 
     if top_values:
         lines = []
-        for item_name, points, shiny in top_values:
-            suffix = " [shiny]" if shiny else ""
-            lines.append(f"- {item_name}{suffix} ({_format_points(points)} pts)")
+        for item_name, points, shiny, divine, class_name, ppe_id in top_values:
+            tags: list[str] = []
+            if shiny:
+                tags.append("shiny")
+            if divine:
+                tags.append("divine")
+            tag_text = f" [{' + '.join(tags)}]" if tags else ""
+            lines.append(
+                f"- {item_name}{tag_text} ({_format_points(points)} pts on {class_name} #{ppe_id})"
+            )
         embed.add_field(name="Most Valuable Finds", value="\n".join(lines), inline=False)
 
     if total_drops > 0:
@@ -227,8 +295,14 @@ def build_season_wrapped_embed(*, player_data: PlayerData, display_name: str) ->
     return embed
 
 
-def build_character_wrapped_embed(*, player_data: PlayerData, ppe: PPEData, display_name: str) -> discord.Embed:
-    """Build a Spotify Wrapped-style single-character summary embed."""
+def build_character_wrapped_embed(
+    *,
+    player_data: PlayerData,
+    ppe: PPEData,
+    display_name: str,
+    guild_config: dict | None = None,
+) -> discord.Embed:
+    """Build a Wrapped-style single-character summary embed."""
     loot_entries = list(ppe.loot)
     item_to_dungeon = _load_item_to_dungeon()
 
@@ -239,11 +313,11 @@ def build_character_wrapped_embed(*, player_data: PlayerData, ppe: PPEData, disp
 
     most_logged = _most_logged_item(loot_entries)
     top_dungeon = _top_dungeon_from_loot(loot_entries, item_to_dungeon)
-    top_values = _character_top_valued_drops(loot_entries)
+    top_values = _character_top_valued_drops(ppe, guild_config=guild_config)
 
     embed = discord.Embed(
-        title=f"{display_name}'s Character Wrapped",
-        description=f"PPE #{ppe.id} ({_class_name(ppe)}) just got its highlight reel.",
+        title=f"{display_name}'s {_class_name(ppe)} #{ppe.id} Wrapped",
+        description=f"PPE #{ppe.id} ({_class_name(ppe)}) just got its reel.",
         color=discord.Color.from_rgb(30, 215, 96),
     )
 

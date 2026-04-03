@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import discord
 
-from menus.menu_utils import OwnerBoundView
 from menus.menu_utils.season_loot_variants import SeasonLootVariantActionsView
 from menus.myinfo.common import (
     close_myinfo_menu,
     send_interaction_text,
     send_season_loot_markdown_followup,
 )
+from utils.guild_config import load_guild_config
 from utils.player_statistics import build_season_wrapped_embed
 from utils.helpers.loot_share_commands import share_season_loot_image
 from utils.player_records import ensure_player_exists, load_player_records
@@ -60,28 +60,16 @@ class SeasonLootVariantView(SeasonLootVariantActionsView):
         records = await load_player_records(interaction)
         key = ensure_player_exists(records, interaction.user.id)
         player_data = records[key]
-        view = SeasonStatisticsView(owner_id=interaction.user.id, max_ppes=self.max_ppes)
-        embed = build_season_wrapped_embed(player_data=player_data, display_name=interaction.user.display_name)
-        await interaction.response.edit_message(embed=embed, view=view)
+        guild_config = await load_guild_config(interaction)
+        embed = build_season_wrapped_embed(
+            player_data=player_data,
+            display_name=interaction.user.display_name,
+            guild_config=guild_config,
+        )
+        await close_myinfo_menu(interaction)
+        await interaction.followup.send(embed=embed, ephemeral=False)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)
-    async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await close_myinfo_menu(interaction)
-
-
-class SeasonStatisticsView(OwnerBoundView):
-    """Spotify Wrapped-style season recap view for /myinfo."""
-
-    def __init__(self, *, owner_id: int, max_ppes: int) -> None:
-        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
-        self.max_ppes = max_ppes
-
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=0)
-    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        view = SeasonLootVariantView(owner_id=interaction.user.id, max_ppes=self.max_ppes)
-        await interaction.response.edit_message(embed=view.current_embed(), view=view)
-
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=0)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_myinfo_menu(interaction)
 
