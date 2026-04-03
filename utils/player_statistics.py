@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import json
+import csv
 from collections import Counter
 from pathlib import Path
 from typing import Iterable
@@ -13,14 +13,12 @@ from dataclass import Loot, PPEData, PlayerData
 from utils.calc_points import normalize_item_name
 from utils.points_service import (
     apply_percent_modifier,
-    calculate_drop_points,
     calculate_item_points,
     get_effective_modifier_bucket_for_ppe,
     get_ppe_type_multiplier_for_ppe,
-    load_loot_points,
 )
 
-_DUNGEON_LOOT_PATH = Path("loot/dungeon_loot.json")
+_LOOT_CSV_PATH = Path("rotmg_loot_drops_updated.csv")
 
 
 def _class_name(ppe: PPEData) -> str:
@@ -50,21 +48,22 @@ def _pick_phrase(options: list[str], *seed_values: float | int) -> str:
 
 
 def _load_item_to_dungeon() -> dict[str, str]:
+    mapping: dict[str, str] = {}
+
     try:
-        with _DUNGEON_LOOT_PATH.open("r", encoding="utf-8") as fp:
-            data = json.load(fp)
-    except (FileNotFoundError, json.JSONDecodeError):
+        with _LOOT_CSV_PATH.open("r", encoding="utf-8", newline="") as fp:
+            reader = csv.DictReader(fp)
+            for row in reader:
+                item_name = normalize_item_name(str(row.get("Item Name", "")).strip())
+                dungeon_name = str(row.get("Dungeon", "")).strip()
+                if not item_name or not dungeon_name:
+                    continue
+
+                # Preserve the first non-empty dungeon assignment for a given normalized item.
+                mapping.setdefault(item_name, dungeon_name)
+    except OSError:
         return {}
 
-    mapping: dict[str, str] = {}
-    for dungeon_name, dungeon_info in data.items():
-        items = dungeon_info.get("items", []) if isinstance(dungeon_info, dict) else []
-        for item in items:
-            if not isinstance(item, dict):
-                continue
-            name = str(item.get("name", "")).strip()
-            if name:
-                mapping[normalize_item_name(name)] = str(dungeon_name)
     return mapping
 
 

@@ -1,3 +1,4 @@
+import csv
 import discord
 from dataclass import ROTMGClass
 from discord import app_commands
@@ -6,22 +7,36 @@ from .bonus_data import get_bonus_names
 from .player_records import load_teams
 
 
-DUNGEONS = [
-    "Pirate Cave", "Forest Maze", "Spider Den", "Forbidden Jungle", "The Hive",
-    "Snake Pit", "Sprite World", "Cave of a Thousand Treasures", "Ancient Ruins", "Magic Woods", 
-    "Candyland Hunting Grounds", "Undead Lair", "Puppet Master's Theatre", "Toxic Sewers", "Cursed Library", "Mad Lab","Abyss of Demons",
-    "Manor of the Immortals", "Haunted Cemetery", "The Machine", "Davy Jones' Locker", "Ocean Trench", "The Crawling Depths", "Woodland Labyrinth",
-    "Deadwater Docks", "Puppet Master's Encore", "Cnidarian Reef", "Parasite Chambers", "The Tavern", "Sulfurous Wetlands", "Mountain Temple", 
-    "Lair of Draconis", "Tomb of the Ancients", "The Third Dimension", "Lair of Shaitan", "Secluded Thicket", "High Tech Terror", "Ice Citadel", "Moonlight Village",
-    "The Nest", "Cultist Hideout", "Fungal Cavern", "Crystal Cavern", "Spectral Penitentiary", "Kogbold Steamworks", "Lost Halls", "The Void", "The Shatters",
-    "Heroic Undead Lair", "Infernal Abyss of Demons", "Plagued Nest", "Advanced Kogbold Steamworks", 
-    "Oryx's Castle", "Oryx's Chamber", "Wine Cellar", "Oryx's Sanctuary",
-    "Malogia", "Untaris", "Katalund", "Forax",
-    "Legacy Heroic Undead Lair", "Legacy Heroic Abyss of Demons",
-    "Rainbow Road", "Santa's Workshop", "Ice Tomb", "Battle for the Nexus", "Stromwell's Rift I", "Stromwell's Rift II", "Stromwell's Rift III",
-    "Belladonna's Garden", "Queen Bunny Chamber", "Mad God Mayhem", "The Trials of Cronus", "Hidden Interregnum", "Oryxmania", "White Snake Invasion",
-    "The Realm"
-]
+_LOOT_CSV = "rotmg_loot_drops_updated.csv"
+_DUNGEON_CACHE: list[str] = []
+_DUNGEON_CACHE_READY = False
+
+
+def _load_dungeons_from_csv() -> list[str]:
+    global _DUNGEON_CACHE_READY
+    if _DUNGEON_CACHE_READY:
+        return _DUNGEON_CACHE
+
+    seen: set[str] = set()
+    _DUNGEON_CACHE.clear()
+
+    try:
+        with open(_LOOT_CSV, newline="", encoding="utf-8") as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                dungeon = str(row.get("Dungeon", "")).strip()
+                if not dungeon:
+                    continue
+                dungeon_norm = dungeon.lower()
+                if dungeon_norm in seen:
+                    continue
+                seen.add(dungeon_norm)
+                _DUNGEON_CACHE.append(dungeon)
+    except OSError:
+        _DUNGEON_CACHE = []
+
+    _DUNGEON_CACHE_READY = True
+    return _DUNGEON_CACHE
 
 # Autocomplete function
 async def class_autocomplete(interaction: discord.Interaction, current: str):
@@ -39,9 +54,10 @@ async def class_autocomplete(interaction: discord.Interaction, current: str):
 
 async def dungeon_autocomplete(interaction: discord.Interaction, current: str):
     current = current.lower()
+    dungeons = _load_dungeons_from_csv()
 
     matches = [
-        d for d in DUNGEONS
+        d for d in dungeons
         if current in d.lower()
     ]
 
@@ -164,7 +180,7 @@ async def target_user_ppe_id_autocomplete(interaction: discord.Interaction, curr
         return []
 
 def get_dungeons() -> list[str]:
-    return DUNGEONS
+    return _load_dungeons_from_csv()
 
 async def team_name_autocomplete(interaction: discord.Interaction, current: str):
     """Autocomplete function for team names"""

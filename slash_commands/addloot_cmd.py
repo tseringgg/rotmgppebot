@@ -4,7 +4,7 @@ from utils.embed_builders import build_loot_embed
 from utils.loot_data import LOOT
 from utils.helpers.loot_table_message import LootTableMessage
 from utils.player_manager import player_manager
-from utils.points_service import calculate_drop_points, get_item_base_points
+from utils.points_service import calculate_drop_points, has_item_variant
 from utils.player_records import get_active_ppe_of_user
 
 
@@ -23,7 +23,7 @@ async def command(
     
     # Validate that shiny variant exists in database
     if shiny:
-        if get_item_base_points(item_name, shiny=True) <= 0:
+        if not has_item_variant(item_name, shiny=True):
             return await interaction.response.send_message(
                 f"❌ Shiny variant of `{item_name}` is not currently in bot.",
                 ephemeral=True
