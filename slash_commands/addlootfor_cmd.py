@@ -1,6 +1,6 @@
 import discord
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
-from utils.points_service import calculate_drop_points, get_item_base_points
+from utils.points_service import calculate_drop_points, has_item_variant
 from utils.player_manager import player_manager
 from utils.embed_builders import build_loot_embed
 from utils.loot_data import LOOT
@@ -18,7 +18,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     
     # Validate that shiny variant exists in database
     if shiny:
-        if get_item_base_points(item_name, shiny=True) <= 0:
+        if not has_item_variant(item_name, shiny=True):
             return await interaction.response.send_message(
                 f"❌ Shiny variant of `{item_name}` is not currently in bot.",
                 ephemeral=True

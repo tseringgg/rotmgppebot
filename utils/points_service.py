@@ -182,6 +182,13 @@ def get_item_base_points(item_name: str, shiny: bool, loot_points: Dict[str, flo
     return float(points_map.get(lookup, 0.0))
 
 
+def has_item_variant(item_name: str, shiny: bool, loot_points: Dict[str, float] | None = None) -> bool:
+    points_map = loot_points or load_loot_points()
+    normalized_item = normalize_item_name(item_name)
+    lookup = f"{normalized_item} (shiny)" if shiny else normalized_item
+    return lookup in points_map
+
+
 def calculate_drop_points(item_name: str, divine: bool, shiny: bool, loot_points: Dict[str, float] | None = None) -> float:
     base_points = get_item_base_points(item_name, shiny, loot_points=loot_points)
     if base_points <= 0:
