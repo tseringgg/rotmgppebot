@@ -62,8 +62,15 @@ def create_loot_images_from_csv():
         with open(csv_file, newline='', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
-                item_name = row["Item Name"].strip()
-                loot_type = row["Loot Type"].strip()
+                item_name = row.get("Item Name")
+                loot_type = row.get("Loot Type")
+                
+                # Skip rows with missing or empty values
+                if not item_name or not loot_type:
+                    continue
+                
+                item_name = item_name.strip()
+                loot_type = loot_type.strip()
                 
                 if not item_name or not loot_type:
                     continue
