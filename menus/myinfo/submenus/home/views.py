@@ -25,7 +25,7 @@ class MyInfoHomeView(OwnerBoundView):
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.max_ppes = max_ppes
 
-    @discord.ui.button(label="Show Season Loot", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="Show Season Stats", style=discord.ButtonStyle.primary, row=0)
     async def show_season_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         from menus.myinfo.submenus.season.views import SeasonLootVariantView
 

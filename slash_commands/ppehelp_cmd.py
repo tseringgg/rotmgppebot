@@ -193,9 +193,9 @@ def build_help_embed(section_key: str) -> discord.Embed:
             value=(
                 "- /addloot and /removeloot to update active PPE loot\n"
                 "- /addbonus and /removebonus to manage active PPE bonuses\n"
-                "- /myinfo -> Manage Characters -> Show Loot for a graphic of all loot earned on that specific PPE.\n"
+                "- /myinfo -> Manage Characters -> Statistics for loot/stats tools on that specific PPE.\n"
                 "- /myinfo -> Manage Characters to manage characters\n"
-                "- /myinfo -> Show Season Loot for a graphic of all loot earned over the season. Note that season"
+                "- /myinfo -> Show Season Stats for a graphic + wrapped recap over the season. Note that season"
                  " loot is account-wide and not tied to specific PPE characters, so it can be logged separately as well as through a specific PPE."
             ),
             inline=False,
@@ -329,7 +329,7 @@ def build_help_embed(section_key: str) -> discord.Embed:
         name="Normal Player",
         value=(
             "- /addseasonloot and /removeseasonloot for your global account season collection\n"
-            "- /myinfo -> Show Season Loot for list/image views\n"
+            "- /myinfo -> Show Season Stats for list/image/wrapped views\n"
             "- You can use season tracking without creating a PPE"
         ),
         inline=False,

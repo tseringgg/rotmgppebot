@@ -470,7 +470,7 @@ class ManagePlayerHomeView(OwnerBoundView):
             target_is_admin=target_has_admin_role(interaction, self.target),
         )
 
-    @discord.ui.button(label="Show Season Loot", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="Show Season Stats", style=discord.ButtonStyle.primary, row=0)
     async def show_season_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         from menus.manageplayer.submenus.season.views import ManagePlayerSeasonLootView
 

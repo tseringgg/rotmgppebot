@@ -22,6 +22,7 @@ from menus.manageplayer.targets import ManagedPlayerTarget
 from menus.menu_utils import OwnerBoundView
 from utils.guild_config import load_guild_config
 from utils.helpers.shareloot_image import generate_loot_share_image, variant_image_label
+from utils.player_statistics import build_character_wrapped_embed
 from utils.penalty_embed import build_penalty_infographic_embed
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.points_service import apply_penalties_to_ppe, parse_penalty_inputs, recompute_ppe_points
@@ -218,7 +219,7 @@ class ManagePlayerCharactersView(OwnerBoundView):
     async def home(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await open_manageplayer_home(interaction, owner_id=interaction.user.id, target=self.target, max_ppes=self.max_ppes)
 
-    @discord.ui.button(label="Show Loot", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="Statistics", style=discord.ButtonStyle.primary, row=0)
     async def show_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         selected = self.current_ppe()
         view = ManagePlayerCharacterLootView(
@@ -285,7 +286,7 @@ class ManagePlayerCharacterLootView(OwnerBoundView):
         from menus.manageplayer.common import display_class_name, format_points
 
         embed = discord.Embed(
-            title=f"Show Loot for PPE #{ppe.id}",
+            title=f"Statistics for PPE #{ppe.id}",
             description="Choose an action.",
             color=discord.Color.blue(),
         )
@@ -355,7 +356,57 @@ class ManagePlayerCharacterLootView(OwnerBoundView):
         selected = find_ppe_or_raise(refreshed, self.ppe_id)
         await send_target_loot_markdown_followup(interaction, ppe=selected)
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)
+    @discord.ui.button(label="Show Character Statistics", style=discord.ButtonStyle.success, row=2)
+    async def show_character_statistics(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        refreshed = await load_target_player_data(interaction, self.target.user_id)
+        selected = find_ppe_or_raise(refreshed, self.ppe_id)
+        view = ManagePlayerCharacterStatisticsSummaryView(
+            owner_id=interaction.user.id,
+            target=self.target,
+            ppe_id=self.ppe_id,
+            preferred_ppe_id=self.preferred_ppe_id,
+        )
+        embed = build_character_wrapped_embed(
+            player_data=refreshed,
+            ppe=selected,
+            display_name=self.target.display_name,
+        )
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=3)
+    async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await close_manageplayer_menu(interaction)
+
+
+class ManagePlayerCharacterStatisticsSummaryView(OwnerBoundView):
+    """Wrapped-style summary page for a single target character in /manageplayer."""
+
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        target: ManagedPlayerTarget,
+        ppe_id: int,
+        preferred_ppe_id: int,
+    ) -> None:
+        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
+        self.target = target
+        self.ppe_id = ppe_id
+        self.preferred_ppe_id = preferred_ppe_id
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=0)
+    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        refreshed = await load_target_player_data(interaction, self.target.user_id)
+        selected = find_ppe_or_raise(refreshed, self.ppe_id)
+        view = ManagePlayerCharacterLootView(
+            owner_id=interaction.user.id,
+            target=self.target,
+            ppe_id=self.ppe_id,
+            preferred_ppe_id=self.preferred_ppe_id,
+        )
+        await interaction.response.edit_message(embed=view.current_embed(selected), view=view)
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=0)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_manageplayer_menu(interaction)
 
