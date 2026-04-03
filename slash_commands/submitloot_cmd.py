@@ -42,6 +42,14 @@ async def command(
             ephemeral=True
         )
 
+    templates_folder = f"./dungeons/{dungeon}"
+    if not os.path.isdir(templates_folder):
+        return await interaction.response.send_message(
+            f"❌ `{dungeon}` is in the loot CSV but has no screenshot template folder yet.\n"
+            "Please ask an admin to add templates before using /submitloot for this dungeon.",
+            ephemeral=True,
+        )
+
     # --- Validate screenshot attachment (basic check only) ---
     if not screenshot.filename.lower().endswith((".png", ".jpg", ".jpeg")):
         return await interaction.response.send_message(
@@ -90,7 +98,7 @@ async def command(
 
     
 
-    found_items = find_items_in_image(file_path, templates_folder=f"./dungeons/{dungeon}")
+    found_items = find_items_in_image(file_path, templates_folder=templates_folder)
     if found_items:
         message = "✅ **Detected the following items in your screenshot:**\n"
 

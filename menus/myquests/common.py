@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import glob
-import json
+import csv
 import os
 from typing import Dict, Sequence
 
@@ -18,7 +18,7 @@ from utils.quest_manager import refresh_player_quests
 
 _BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 _DUNGEONS_DIR = os.path.join(_BASE_DIR, "dungeons")
-_DUNGEON_LOOT_PATH = os.path.join(_BASE_DIR, "loot", "dungeon_loot.json")
+_LOOT_CSV_PATH = os.path.join(_BASE_DIR, "rotmg_loot_drops_updated.csv")
 _MISSING_IMAGE_PATH = os.path.join(_BASE_DIR, "image_missing.png")
 
 _ITEM_IMAGE_INDEX: Dict[str, str] = {}
@@ -87,7 +87,7 @@ def resolve_item_image_path(item_name: str) -> str | None:
 
 
 def build_dungeon_lookup_if_needed() -> None:
-    """Build a normalized item->dungeon cache from dungeon_loot.json once."""
+    """Build a normalized item->dungeon cache from rotmg_loot_drops_updated.csv once."""
 
     global _ITEM_DUNGEON_INDEX_READY
     if _ITEM_DUNGEON_INDEX_READY:
@@ -95,33 +95,23 @@ def build_dungeon_lookup_if_needed() -> None:
 
     _ITEM_DUNGEON_INDEX.clear()
     try:
-        with open(_DUNGEON_LOOT_PATH, "r", encoding="utf-8") as file_handle:
-            payload = json.load(file_handle)
-    except (OSError, json.JSONDecodeError):
-        _ITEM_DUNGEON_INDEX_READY = True
-        return
-
-    if isinstance(payload, dict):
-        for dungeon_name, dungeon_data in payload.items():
-            if not isinstance(dungeon_data, dict):
-                continue
-            items = dungeon_data.get("items", [])
-            if not isinstance(items, list):
-                continue
-
-            for entry in items:
-                if not isinstance(entry, dict):
-                    continue
-                item_name = str(entry.get("name", "")).strip()
-                if not item_name:
+        with open(_LOOT_CSV_PATH, "r", encoding="utf-8", newline="") as file_handle:
+            reader = csv.DictReader(file_handle)
+            for row in reader:
+                item_name = normalize_item_name(str(row.get("Item Name", "")).strip())
+                dungeon_name = str(row.get("Dungeon", "")).strip()
+                if not item_name or not dungeon_name:
                     continue
 
                 full_norm = normalize_item_name(item_name).lower()
                 base_norm = normalize_item_name(strip_shiny_suffix(item_name)).lower()
                 if full_norm and full_norm not in _ITEM_DUNGEON_INDEX:
-                    _ITEM_DUNGEON_INDEX[full_norm] = str(dungeon_name)
+                    _ITEM_DUNGEON_INDEX[full_norm] = dungeon_name
                 if base_norm and base_norm not in _ITEM_DUNGEON_INDEX:
-                    _ITEM_DUNGEON_INDEX[base_norm] = str(dungeon_name)
+                    _ITEM_DUNGEON_INDEX[base_norm] = dungeon_name
+    except OSError:
+        _ITEM_DUNGEON_INDEX_READY = True
+        return
 
     _ITEM_DUNGEON_INDEX_READY = True
 
