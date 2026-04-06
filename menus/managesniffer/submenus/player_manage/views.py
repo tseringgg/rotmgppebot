@@ -261,9 +261,9 @@ class ManagePlayerSnifferView(OwnerBoundView):
                 has_pending = True
                 break
 
-    # Show pending characters if any, otherwise show all
-    view_mode = "show_pending" if has_pending else "show_all"
-    await admin_panel(interaction, target_member, view_mode)
+        # Show pending characters if any, otherwise show all
+        view_mode = "show_pending" if has_pending else "show_all"
+        await admin_panel(interaction, target_member, view_mode)
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
