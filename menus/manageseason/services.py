@@ -77,7 +77,15 @@ class ResetPPECharactersSummary:
 
     players_updated: int
     ppes_cleared: int
-    unique_items_cleared: int
+
+
+@dataclass(slots=True)
+class ResetQuestsSummary:
+    """Structured result payload for clearing quest progress only."""
+
+    players_updated: int
+    quest_entries_cleared: int
+    default_reset_limit: int
 
 
 @dataclass(slots=True)
@@ -105,7 +113,7 @@ class ResetSnifferOptions:
 
     clear_character_mappings: bool = True
     revoke_tokens: bool = False
-    clear_pending_files: bool = False
+    clear_pending_files: bool = True
     clear_output_channel: bool = False
     clear_endpoint: bool = False
     disable_sniffer: bool = False
@@ -144,6 +152,8 @@ class BulkRoleUpdateSummary:
     role_found: bool
     members_updated: int
     members_failed: int
+    records_cleared: int = 0
+    tokens_revoked: int = 0
 
 
 @dataclass(slots=True)
@@ -558,12 +568,11 @@ def _collect_team_names_from_records(records: dict[int, Any]) -> set[str]:
 
 
 async def reset_all_ppe_characters(interaction: discord.Interaction) -> ResetPPECharactersSummary:
-    """Reset all character records and per-character loot while preserving membership and quests."""
+    """Reset all character records while preserving seasonal and quest progress."""
     records = await load_player_records(interaction)
 
     players_updated = 0
     ppes_cleared = 0
-    unique_items_cleared = 0
 
     for player_data in records.values():
         player_changed = False
@@ -578,12 +587,6 @@ async def reset_all_ppe_characters(interaction: discord.Interaction) -> ResetPPE
             player_data.active_ppe = None
             player_changed = True
 
-        unique_items = getattr(player_data, "unique_items", set())
-        if unique_items:
-            unique_items_cleared += len(unique_items)
-            unique_items.clear()
-            player_changed = True
-
         if player_changed:
             players_updated += 1
 
@@ -591,7 +594,42 @@ async def reset_all_ppe_characters(interaction: discord.Interaction) -> ResetPPE
     return ResetPPECharactersSummary(
         players_updated=players_updated,
         ppes_cleared=ppes_cleared,
-        unique_items_cleared=unique_items_cleared,
+    )
+
+
+async def reset_all_quests(interaction: discord.Interaction) -> ResetQuestsSummary:
+    """Reset quest progress and quest reset counters while preserving other seasonal data."""
+    records = await load_player_records(interaction)
+    config = await load_guild_config(interaction)
+    default_reset_limit = int(config["quest_settings"]["num_resets"])
+
+    players_updated = 0
+    quest_entries_cleared = 0
+
+    for player_data in records.values():
+        player_changed = False
+
+        quests = getattr(player_data, "quests", None)
+        if quests is not None:
+            for field_name in _iter_player_quest_fields():
+                entries = getattr(quests, field_name, [])
+                if entries:
+                    quest_entries_cleared += len(entries)
+                    entries.clear()
+                    player_changed = True
+
+        if getattr(player_data, "quest_resets_remaining", None) != default_reset_limit:
+            player_data.quest_resets_remaining = default_reset_limit
+            player_changed = True
+
+        if player_changed:
+            players_updated += 1
+
+    await save_player_records(interaction, records)
+    return ResetQuestsSummary(
+        players_updated=players_updated,
+        quest_entries_cleared=quest_entries_cleared,
+        default_reset_limit=default_reset_limit,
     )
 
 
@@ -808,6 +846,8 @@ async def _remove_role_from_all_members(
             role_found=False,
             members_updated=0,
             members_failed=0,
+            records_cleared=0,
+            tokens_revoked=0,
         )
 
     members_updated = 0
@@ -824,19 +864,35 @@ async def _remove_role_from_all_members(
         role_found=True,
         members_updated=members_updated,
         members_failed=members_failed,
+        records_cleared=0,
+        tokens_revoked=0,
     )
 
 
 async def remove_ppe_player_role_from_everyone(interaction: discord.Interaction) -> BulkRoleUpdateSummary:
-    """Remove PPE Player role from all members who currently have it."""
+    """Remove PPE Player role from all members, revoke tokens, and clear all player records."""
     if interaction.guild is None:
         raise ValueError("This action can only be used in a server.")
 
-    return await _remove_role_from_all_members(
+    summary = await _remove_role_from_all_members(
         interaction.guild,
         role_name="PPE Player",
         reason="Season reset action - remove PPE Player role from everyone",
     )
+
+    records = await load_player_records(interaction)
+    records_cleared = len(records)
+    await save_player_records(interaction, {})
+
+    realmshark_settings = await get_realmshark_settings(interaction)
+    links = realmshark_settings.get("links", {}) if isinstance(realmshark_settings.get("links", {}), dict) else {}
+    tokens_revoked = len(links)
+    realmshark_settings["links"] = {}
+    await set_realmshark_settings(interaction, realmshark_settings)
+
+    summary.records_cleared = records_cleared
+    summary.tokens_revoked = tokens_revoked
+    return summary
 
 
 async def remove_ppe_admin_role_from_everyone(interaction: discord.Interaction) -> BulkRoleUpdateSummary:
