@@ -29,6 +29,7 @@ from utils.points_service import recompute_ppe_points
 from utils.realmshark_pending_store import clear_all_pending_for_guild
 from utils.contest_leaderboards import normalize_contest_leaderboard_id
 from utils.realmshark_cleanup import clear_ppe_character_links
+from utils.item_log_timestamps import seasonal_item_key
 from utils.settings.channel_settings import (
     clear_item_suggestions_enabled_channels,
     set_item_suggestions_mode_enabled,
@@ -334,6 +335,17 @@ def _rebuild_unique_items(player_data: Any) -> None:
                 continue
             unique_items.add((name, bool(getattr(loot_item, "shiny", False))))
     player_data.unique_items = unique_items
+    raw_timestamps = getattr(player_data, "item_log_timestamps", {})
+    if not isinstance(raw_timestamps, dict):
+        player_data.item_log_timestamps = {}
+        return
+
+    valid_keys = {seasonal_item_key(item_name, shiny) for item_name, shiny in unique_items}
+    player_data.item_log_timestamps = {
+        key: value
+        for key, value in raw_timestamps.items()
+        if isinstance(key, str) and key in valid_keys
+    }
 
 
 async def update_max_characters_limit(
@@ -484,6 +496,7 @@ async def update_pet_point_modifiers(
     exalts_percent_reduction: float | None = None,
     loot_percent_reduction: float | None = None,
     incombat_percent_reduction: float | None = None,
+    pet_points_per_level: float | None = None,
 ) -> tuple[dict[str, Any], PointsRefreshSummary]:
     """Update starting penalty reductions and refresh all PPE totals."""
     settings = await update_starting_penalty_modifiers(
@@ -493,6 +506,21 @@ async def update_pet_point_modifiers(
         loot_percent_reduction=loot_percent_reduction,
         incombat_percent_reduction=incombat_percent_reduction,
     )
+
+    if pet_points_per_level is not None:
+        safe_points = abs(float(pet_points_per_level))
+        if safe_points <= 0:
+            raise ValueError("Pet starting points-per-level must be non-zero.")
+
+        penalty_weights = (
+            dict(settings.get("penalty_weights", {}))
+            if isinstance(settings.get("penalty_weights"), dict)
+            else {}
+        )
+        penalty_weights["pet_level_per_point"] = 1.0 / safe_points
+        settings["penalty_weights"] = penalty_weights
+        settings = await set_points_settings(interaction, settings)
+
     refresh_summary = await refresh_all_character_points(
         interaction,
         guild_config={"points_settings": settings},
@@ -696,6 +724,10 @@ async def reset_all_seasonal_information(interaction: discord.Interaction) -> Re
         if unique_items:
             unique_items_cleared += len(unique_items)
             unique_items.clear()
+            player_changed = True
+        item_log_timestamps = getattr(player_data, "item_log_timestamps", {})
+        if isinstance(item_log_timestamps, dict) and item_log_timestamps:
+            item_log_timestamps.clear()
             player_changed = True
 
         quests = getattr(player_data, "quests", None)
@@ -1111,6 +1143,9 @@ def _reset_player_records(records: dict[str, Any], default_reset_limit: int) -> 
         unique_items = getattr(player_data, "unique_items", set())
         items_cleared += len(unique_items)
         unique_items.clear()
+        item_log_timestamps = getattr(player_data, "item_log_timestamps", {})
+        if isinstance(item_log_timestamps, dict):
+            item_log_timestamps.clear()
 
         quests = getattr(player_data, "quests", None)
         if quests is not None:

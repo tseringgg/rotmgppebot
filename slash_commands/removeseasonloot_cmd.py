@@ -3,6 +3,7 @@ from utils.player_records import load_player_records, save_player_records, ensur
 from utils.loot_data import LOOT
 from utils.guild_config import get_quest_targets, load_guild_config
 from utils.quest_manager import refresh_player_quests, remove_item_from_completed_quests
+from utils.item_log_timestamps import seasonal_item_key
 
 
 async def command(
@@ -39,6 +40,7 @@ async def command(
             )
         
         player_data.unique_items.discard(item_key)
+        player_data.item_log_timestamps.pop(seasonal_item_key(item_name, shiny), None)
         removed_quest_entries = remove_item_from_completed_quests(player_data, item_name, shiny)
 
         regular_target, shiny_target, skin_target = await get_quest_targets(interaction)

@@ -74,12 +74,16 @@ def _is_in_variant(item_type: str, variant: str) -> bool:
     return True
 
 
+def _lookup_key(name: str) -> str:
+    return normalize_item_name(name).casefold()
+
+
 def _load_sprite_positions(sprite_csv: str) -> dict[str, dict[str, int]]:
     sprite_positions: dict[str, dict[str, int]] = {}
     with open(sprite_csv, "r", encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            normalized_name = normalize_item_name(row["item_name"])
+            normalized_name = _lookup_key(row["item_name"])
             sprite_positions[normalized_name] = {
                 "pixel_x": int(row["pixel_x"]),
                 "pixel_y": int(row["pixel_y"]),
@@ -92,7 +96,7 @@ def _load_item_type_lookup() -> dict[str, str]:
     with open("rotmg_loot_drops_updated.csv", "r", encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            normalized_name = normalize_item_name(row["Item Name"])
+            normalized_name = _lookup_key(row["Item Name"])
             item_type_lookup[normalized_name] = row["Loot Type"].strip().lower()
     return item_type_lookup
 
@@ -112,7 +116,7 @@ def _load_sprite_images() -> dict[str, Image.Image]:
         if any(part in ignored_folders for part in folder_parts):
             continue
 
-        item_name = normalize_item_name(os.path.splitext(os.path.basename(png_file))[0])
+        item_name = _lookup_key(os.path.splitext(os.path.basename(png_file))[0])
         try:
             img = Image.open(png_file)
             if img.mode != "RGBA":
@@ -168,7 +172,7 @@ async def generate_loot_share_image(
 
     normalized_items: list[tuple[str, str, bool, str]] = []
     for raw_name, shiny in source_items:
-        normalized_name = normalize_item_name(raw_name)
+        normalized_name = _lookup_key(raw_name)
         display_name = f"{raw_name} (shiny)" if shiny else raw_name
         item_type = item_type_lookup.get(normalized_name, "")
         normalized_items.append((raw_name, normalized_name, shiny, item_type))

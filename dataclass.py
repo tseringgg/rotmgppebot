@@ -39,6 +39,8 @@ class Loot:
     quantity: int
     divine: bool = False
     shiny: bool = False
+    first_logged_at: int | None = None
+    last_logged_at: int | None = None
 
 @dataclass
 class Bonus:
@@ -79,6 +81,7 @@ class PlayerData:
     active_ppe: Optional[int] = None
     is_member: bool = False
     unique_items: Set[tuple] = field(default_factory=set)  # (item_name, shiny)
+    item_log_timestamps: Dict[str, int] = field(default_factory=dict)  # seasonal item key -> unix timestamp
     team_name: Optional[str] = None  # Name of the team this player is on (None if not on a team)
     quests: QuestData = field(default_factory=QuestData)
     quest_resets_remaining: Optional[int] = None

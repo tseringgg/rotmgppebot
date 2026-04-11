@@ -74,7 +74,9 @@ def normalize_ppe(ppe: dict) -> PPEData:
             "item_name": loot_dict.get("item_name", "Unknown Item"),
             "quantity": loot_dict.get("quantity", 0),
             "divine": loot_dict.get("divine", False),
-            "shiny": loot_dict.get("shiny", False)
+            "shiny": loot_dict.get("shiny", False),
+            "first_logged_at": loot_dict.get("first_logged_at"),
+            "last_logged_at": loot_dict.get("last_logged_at"),
         }
         loot_objects.append(Loot(**normalized_loot))
     
@@ -146,11 +148,25 @@ def normalize_player(player: dict) -> PlayerData:
             for loot in ppe.loot:
                 unique_items.add((loot.item_name, loot.shiny))
 
+    raw_item_log_timestamps = player.get("item_log_timestamps", {})
+    item_log_timestamps: Dict[str, int] = {}
+    if isinstance(raw_item_log_timestamps, dict):
+        for raw_key, raw_ts in raw_item_log_timestamps.items():
+            if not isinstance(raw_key, str) or not raw_key.strip():
+                continue
+            try:
+                parsed_ts = int(raw_ts)
+            except (TypeError, ValueError):
+                continue
+            if parsed_ts > 0:
+                item_log_timestamps[raw_key] = parsed_ts
+
     return PlayerData(
         ppes=ppes,
         active_ppe=player.get("active_ppe"),
         is_member=bool(player.get("is_member", False)),
         unique_items=unique_items,
+        item_log_timestamps=item_log_timestamps,
         team_name=player.get("team_name", None),
         quests=normalized_quests,
         quest_resets_remaining=safe_optional_non_negative_int(player.get("quest_resets_remaining")),
@@ -255,6 +271,7 @@ def _serialize_player_data(data: PlayerData) -> Dict[str, Any]:
         ],
         "active_ppe": data.active_ppe,
         "unique_items": list(data.unique_items),
+        "item_log_timestamps": dict(data.item_log_timestamps),
         "team_name": data.team_name,
         "quest_resets_remaining": data.quest_resets_remaining,
         "quests": {

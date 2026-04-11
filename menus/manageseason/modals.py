@@ -227,8 +227,14 @@ class EditGlobalPointSettingsModal(discord.ui.Modal, title="Edit Global Point Mo
 
 
 class EditPetModifierModal(discord.ui.Modal, title="Edit Pet Modifiers"):
+    pet_points_per_level = discord.ui.TextInput(
+        label="Pet Starting Rate (pts per level)",
+        placeholder="Example: -0.25",
+        required=False,
+        max_length=20,
+    )
     pet_level_percent_reduction = discord.ui.TextInput(
-        label="Pet Strength Reduction %",
+        label="Pet Level Reduction %",
         placeholder="Example: 10",
         required=False,
         max_length=20,
@@ -270,6 +276,17 @@ class EditPetModifierModal(discord.ui.Modal, title="Edit Pet Modifiers"):
             if isinstance(settings.get("starting_penalty_modifiers"), dict)
             else {}
         )
+        penalty_weights = (
+            settings.get("penalty_weights", {}) if isinstance(settings.get("penalty_weights"), dict) else {}
+        )
+        try:
+            pet_level_per_point = float(penalty_weights.get("pet_level_per_point", 4.0))
+        except (TypeError, ValueError):
+            pet_level_per_point = 4.0
+        if pet_level_per_point <= 0:
+            pet_level_per_point = 4.0
+
+        self.pet_points_per_level.default = f"{-1.0 / pet_level_per_point:.2f}"
         self.pet_level_percent_reduction.default = f"{float(modifiers.get('pet_level_percent_reduction', 0.0)):.2f}"
         self.exalts_percent_reduction.default = f"{float(modifiers.get('exalts_percent_reduction', 0.0)):.2f}"
         self.loot_percent_reduction.default = f"{float(modifiers.get('loot_percent_reduction', 0.0)):.2f}"
@@ -281,6 +298,10 @@ class EditPetModifierModal(discord.ui.Modal, title="Edit Pet Modifiers"):
             return
 
         try:
+            pet_points_per_level = _parse_optional_float(
+                self.pet_points_per_level.value,
+                field_name="pet_points_per_level",
+            )
             pet_level_percent_reduction = _parse_optional_float(
                 self.pet_level_percent_reduction.value,
                 field_name="pet_level_percent_reduction",
@@ -304,6 +325,7 @@ class EditPetModifierModal(discord.ui.Modal, title="Edit Pet Modifiers"):
         if all(
             value is None
             for value in (
+                pet_points_per_level,
                 pet_level_percent_reduction,
                 exalts_percent_reduction,
                 loot_percent_reduction,
@@ -313,9 +335,14 @@ class EditPetModifierModal(discord.ui.Modal, title="Edit Pet Modifiers"):
             await interaction.response.send_message("ERROR: Provide at least one modifier to update.", ephemeral=True)
             return
 
+        if pet_points_per_level is not None and abs(pet_points_per_level) <= 0:
+            await interaction.response.send_message("ERROR: Pet starting rate must be non-zero.", ephemeral=True)
+            return
+
         confirm_text = (
             "⚠️ **Apply pet modifier changes and recalculate all PPE characters?**\n"
             "These reductions stack additively per starting-penalty stat.\n\n"
+            f"Pet Starting Rate: `{self.pet_points_per_level.value or '(unchanged)'}`\n"
             f"Pet Strength: `{self.pet_level_percent_reduction.value or '(unchanged)'}`\n"
             f"Exalts: `{self.exalts_percent_reduction.value or '(unchanged)'}`\n"
             f"Loot Bonus: `{self.loot_percent_reduction.value or '(unchanged)'}`\n"
@@ -335,11 +362,21 @@ class EditPetModifierModal(discord.ui.Modal, title="Edit Pet Modifiers"):
             exalts_percent_reduction=exalts_percent_reduction,
             loot_percent_reduction=loot_percent_reduction,
             incombat_percent_reduction=incombat_percent_reduction,
+            pet_points_per_level=pet_points_per_level,
         )
 
         modifiers = settings.get("starting_penalty_modifiers", {})
+        weights = settings.get("penalty_weights", {})
+        try:
+            pet_level_per_point = float(weights.get("pet_level_per_point", 4.0))
+        except (TypeError, ValueError):
+            pet_level_per_point = 4.0
+        if pet_level_per_point <= 0:
+            pet_level_per_point = 4.0
+
         await interaction.followup.send(
             "Updated starting penalty modifiers.\n"
+            f"Pet Starting Rate: {-1.0 / pet_level_per_point:.2f} pts/level\n"
             f"Pet Strength: {float(modifiers.get('pet_level_percent_reduction', 0.0)):.2f}%\n"
             f"Exalts: {float(modifiers.get('exalts_percent_reduction', 0.0)):.2f}%\n"
             f"Loot Bonus: {float(modifiers.get('loot_percent_reduction', 0.0)):.2f}%\n"

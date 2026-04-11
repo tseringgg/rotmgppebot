@@ -16,6 +16,7 @@ from utils.player_manager import player_manager
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.quest_manager import update_quests_for_item
 from utils.realmshark_pending_store import append_pending_event, migrate_legacy_pending_map
+from utils.item_log_timestamps import now_unix_utc, seasonal_item_key
 
 
 class IngestValidationError(Exception):
@@ -391,6 +392,7 @@ async def _addseasonloot_for_user(guild_id: int, user_id: int, item_name: str, s
         )
 
     player_data.unique_items.add(item_key)
+    player_data.item_log_timestamps[seasonal_item_key(item_name, shiny)] = now_unix_utc()
     regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
     config = await load_guild_config(interaction)
     update_quests_for_item(

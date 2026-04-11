@@ -4,6 +4,7 @@ from utils.loot_data import LOOT
 from utils.points_service import has_item_variant
 from utils.quest_manager import update_quests_for_item
 from utils.guild_config import get_quest_targets
+from utils.item_log_timestamps import now_unix_utc, seasonal_item_key
 
 
 async def command(
@@ -54,6 +55,7 @@ async def command(
             )
         
         player_data.unique_items.add(item_key)
+        player_data.item_log_timestamps[seasonal_item_key(item_name, shiny)] = now_unix_utc()
         regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
         update_quests_for_item(
             player_data,

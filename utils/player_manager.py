@@ -7,6 +7,7 @@ from utils.quest_manager import update_quests_for_item
 from utils.guild_config import get_max_ppes, get_quest_targets
 from utils.guild_config import load_guild_config
 from utils.points_service import recompute_ppe_points
+from utils.item_log_timestamps import now_unix_utc, seasonal_item_key
 
 class PlayerManager:
     """Centralized manager for player data operations to prevent race conditions."""
@@ -68,13 +69,27 @@ class PlayerManager:
             # Add loot
             from utils.player_records import get_item_from_ppe
             match = get_item_from_ppe(active_ppe, item_name, divine, shiny)
+            logged_at = now_unix_utc()
             if match:
                 match.quantity += 1
+                if getattr(match, "first_logged_at", None) is None:
+                    match.first_logged_at = logged_at
+                match.last_logged_at = logged_at
             else:
-                active_ppe.loot.append(Loot(item_name=item_name, quantity=1, divine=divine, shiny=shiny))
+                active_ppe.loot.append(
+                    Loot(
+                        item_name=item_name,
+                        quantity=1,
+                        divine=divine,
+                        shiny=shiny,
+                        first_logged_at=logged_at,
+                        last_logged_at=logged_at,
+                    )
+                )
             
             # Update unique_items cache
             player_data.unique_items.add((item_name, shiny))
+            player_data.item_log_timestamps[seasonal_item_key(item_name, shiny)] = logged_at
             
             guild_config = await load_guild_config(interaction)
             recompute_ppe_points(active_ppe, guild_config)
@@ -143,6 +158,7 @@ class PlayerManager:
                 # Only remove from unique_items if not found in any PPE
                 if not item_exists_elsewhere:
                     player_data.unique_items.discard(item_key)
+                    player_data.item_log_timestamps.pop(seasonal_item_key(item_name, shiny), None)
             
             guild_config = await load_guild_config(interaction)
             recompute_ppe_points(active_ppe, guild_config)

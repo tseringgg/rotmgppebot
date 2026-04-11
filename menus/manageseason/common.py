@@ -60,6 +60,27 @@ def _build_starting_penalty_modifier_lines(modifiers: dict) -> list[str]:
     ]
 
 
+def _safe_positive_float(value: object, fallback: float) -> float:
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return fallback
+    return parsed if parsed > 0 else fallback
+
+
+def _build_penalty_rate_lines(penalty_weights: dict) -> list[str]:
+    pet_level_per_point = _safe_positive_float(penalty_weights.get("pet_level_per_point"), 4.0)
+    exalts_per_point = _safe_positive_float(penalty_weights.get("exalts_per_point"), 2.0)
+    loot_percent_per_point = _safe_positive_float(penalty_weights.get("loot_percent_per_point"), 0.5)
+    incombat_seconds_per_point = _safe_positive_float(penalty_weights.get("incombat_seconds_per_point"), 0.1)
+    return [
+        f"• Pet Level: **{-1.0 / pet_level_per_point:.2f}** pts per level",
+        f"• Exalts: **{-1.0 / exalts_per_point:.2f}** pts per exalt",
+        f"• Loot Boost: **{-1.0 / loot_percent_per_point:.2f}** pts per 1% boost",
+        f"• In-Combat Reduction: **{-0.2 / incombat_seconds_per_point:.2f}** pts per 0.2 seconds",
+    ]
+
+
 def build_manageseason_home_embed() -> discord.Embed:
     """Build the top-level /manageseason embed with action guidance."""
     embed = discord.Embed(
@@ -272,6 +293,7 @@ def build_point_settings_embed(settings: dict) -> discord.Embed:
     """Build the point-settings landing embed."""
     global_settings = settings.get("global", {}) if isinstance(settings.get("global"), dict) else {}
     class_overrides = settings.get("class_overrides", {}) if isinstance(settings.get("class_overrides"), dict) else {}
+    penalty_weights = settings.get("penalty_weights", {}) if isinstance(settings.get("penalty_weights"), dict) else {}
     starting_penalty_modifiers = (
         settings.get("starting_penalty_modifiers", {})
         if isinstance(settings.get("starting_penalty_modifiers"), dict)
@@ -287,18 +309,17 @@ def build_point_settings_embed(settings: dict) -> discord.Embed:
     embed = discord.Embed(
         title="Manage Point Settings",
         description=(
-            "Choose which modifier group to manage.\n"
-            "Each submenu explains exactly how modifiers affect final points."
+            "Point controls are split into global/class modifiers, starting-penalty tuning, and duplicate/type scaling."
         ),
         color=discord.Color.dark_teal(),
     )
     embed.add_field(
-        name="Global Snapshot",
+        name="Global Modifiers",
         value=(
-            f"Loot: **{_format_percent(global_settings.get('loot_percent', 0.0))}**\n"
-            f"Bonus: **{_format_percent(global_settings.get('bonus_percent', 0.0))}**\n"
-            f"Penalty: **{_format_percent(global_settings.get('penalty_percent', 0.0))}**\n"
-            f"Total: **{_format_percent(global_settings.get('total_percent', 0.0))}**"
+            f"• Loot: **{_format_percent(global_settings.get('loot_percent', 0.0))}**\n"
+            f"• Bonus: **{_format_percent(global_settings.get('bonus_percent', 0.0))}**\n"
+            f"• Penalty: **{_format_percent(global_settings.get('penalty_percent', 0.0))}**\n"
+            f"• Total: **{_format_percent(global_settings.get('total_percent', 0.0))}**"
         ),
         inline=False,
     )
@@ -308,28 +329,33 @@ def build_point_settings_embed(settings: dict) -> discord.Embed:
         preview = "\n".join(override_lines[:6])
         if len(override_lines) > 6:
             preview += f"\n... and {len(override_lines) - 6} more"
-    embed.add_field(name="Class Override Snapshot", value=_truncate_field_value(preview), inline=False)
+    embed.add_field(name="Class Overrides", value=_truncate_field_value(preview), inline=False)
     embed.add_field(
-        name="Pet Modifier Snapshot",
-        value=(
-            "\n".join(_build_starting_penalty_modifier_lines(starting_penalty_modifiers))
-            + "\nReductions stack additively per starting-penalty stat."
-        ),
+        name="Penalty Base Rates",
+        value="\n".join(_build_penalty_rate_lines(penalty_weights)),
+        inline=False,
+    )
+    embed.add_field(
+        name="Penalty Reduction Modifiers",
+        value=("\n".join(_build_starting_penalty_modifier_lines(starting_penalty_modifiers))
+               + "\n• Reductions stack additively per starting stat."),
         inline=False,
     )
     embed.add_field(
         name="Duplicate Item Points",
         value=(
-            f"Point Reduction: **{duplicate_reduction:.2f}x** | Quantity 2+ formula: final_points + (final_points × reduction × (quantity - 1)) | Set `0` to disable duplicates."
+            f"• Point Reduction: **{duplicate_reduction:.2f}x**\n"
+            "• Quantity 2+ formula: `final_points + (final_points * reduction * (quantity - 1))`\n"
+            "• Set `0` to disable duplicate points"
         ),
         inline=False,
     )
     embed.add_field(
         name="PPE Type Multipliers",
-        value="Use **Edit PPE Type Points** to manage per-type point multipliers.",
+        value="Use **Edit PPE Type Points** to manage final-score multipliers per PPE type.",
         inline=False,
     )
-    embed.set_footer(text="Editing duplicate or type multipliers recalculates all character totals immediately.")
+    embed.set_footer(text="Any points-setting change triggers a full PPE points recalculation.")
     return embed
 
 
