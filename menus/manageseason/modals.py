@@ -228,31 +228,31 @@ class EditGlobalPointSettingsModal(discord.ui.Modal, title="Edit Global Point Mo
 
 class EditPetModifierModal(discord.ui.Modal, title="Edit Pet Modifiers"):
     pet_points_per_level = discord.ui.TextInput(
-        label="Pet Starting Rate (pts per level)",
+        label="Pet Level Rate (pts per level reduction)",
         placeholder="Example: -0.25",
         required=False,
         max_length=20,
     )
     pet_level_percent_reduction = discord.ui.TextInput(
-        label="Pet Level Reduction %",
+        label="Pet Level Reduction (% item points)",
         placeholder="Example: 10",
         required=False,
         max_length=20,
     )
     exalts_percent_reduction = discord.ui.TextInput(
-        label="Exalts Reduction %",
+        label="Exalts Reduction (% item points)",
         placeholder="Example: 10",
         required=False,
         max_length=20,
     )
     loot_percent_reduction = discord.ui.TextInput(
-        label="Loot Bonus Reduction %",
+        label="Loot Boost Reduction (% item points)",
         placeholder="Example: 10",
         required=False,
         max_length=20,
     )
     incombat_percent_reduction = discord.ui.TextInput(
-        label="In-Combat Reduction %",
+        label="In-Combat Reduction (% item points)",
         placeholder="Example: 10",
         required=False,
         max_length=20,
@@ -336,17 +336,17 @@ class EditPetModifierModal(discord.ui.Modal, title="Edit Pet Modifiers"):
             return
 
         if pet_points_per_level is not None and abs(pet_points_per_level) <= 0:
-            await interaction.response.send_message("ERROR: Pet starting rate must be non-zero.", ephemeral=True)
+            await interaction.response.send_message("ERROR: Pet level rate must be non-zero.", ephemeral=True)
             return
 
         confirm_text = (
             "⚠️ **Apply pet modifier changes and recalculate all PPE characters?**\n"
             "These reductions stack additively per starting-penalty stat.\n\n"
-            f"Pet Starting Rate: `{self.pet_points_per_level.value or '(unchanged)'}`\n"
-            f"Pet Strength: `{self.pet_level_percent_reduction.value or '(unchanged)'}`\n"
-            f"Exalts: `{self.exalts_percent_reduction.value or '(unchanged)'}`\n"
-            f"Loot Bonus: `{self.loot_percent_reduction.value or '(unchanged)'}`\n"
-            f"In-Combat: `{self.incombat_percent_reduction.value or '(unchanged)'}`"
+            f"Pet Level Rate: `{self.pet_points_per_level.value or '(unchanged)'}`\n"
+            f"Pet Level Reduction: `{self.pet_level_percent_reduction.value or '(unchanged)'}`\n"
+            f"Exalts Reduction: `{self.exalts_percent_reduction.value or '(unchanged)'}`\n"
+            f"Loot Boost Reduction: `{self.loot_percent_reduction.value or '(unchanged)'}`\n"
+            f"In-Combat Reduction: `{self.incombat_percent_reduction.value or '(unchanged)'}`"
         )
         confirmed = await _confirm_points_update(
             interaction=interaction,
@@ -376,11 +376,11 @@ class EditPetModifierModal(discord.ui.Modal, title="Edit Pet Modifiers"):
 
         await interaction.followup.send(
             "Updated starting penalty modifiers.\n"
-            f"Pet Starting Rate: {-1.0 / pet_level_per_point:.2f} pts/level\n"
-            f"Pet Strength: {float(modifiers.get('pet_level_percent_reduction', 0.0)):.2f}%\n"
-            f"Exalts: {float(modifiers.get('exalts_percent_reduction', 0.0)):.2f}%\n"
-            f"Loot Bonus: {float(modifiers.get('loot_percent_reduction', 0.0)):.2f}%\n"
-            f"In-Combat: {float(modifiers.get('incombat_percent_reduction', 0.0)):.2f}%\n"
+            f"Pet Level Rate: {-1.0 / pet_level_per_point:.2f} pts/level\n"
+            f"Pet Level Reduction: {float(modifiers.get('pet_level_percent_reduction', 0.0)):.2f}%\n"
+            f"Exalts Reduction: {float(modifiers.get('exalts_percent_reduction', 0.0)):.2f}%\n"
+            f"Loot Boost Reduction: {float(modifiers.get('loot_percent_reduction', 0.0)):.2f}%\n"
+            f"In-Combat Reduction: {float(modifiers.get('incombat_percent_reduction', 0.0)):.2f}%\n"
             f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
             f"PPE totals changed: {refresh_summary.ppes_updated}",
             ephemeral=True,

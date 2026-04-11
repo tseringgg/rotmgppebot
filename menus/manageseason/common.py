@@ -53,9 +53,9 @@ def _build_ppe_type_multiplier_lines(multipliers: dict) -> list[str]:
 
 def _build_starting_penalty_modifier_lines(modifiers: dict) -> list[str]:
     return [
-        f"• Pet Strength: {_format_percent(modifiers.get('pet_level_percent_reduction', 0.0))}",
-        f"• Exalts: {_format_percent(modifiers.get('exalts_percent_reduction', 0.0))}",
-        f"• Loot Bonus: {_format_percent(modifiers.get('loot_percent_reduction', 0.0))}",
+        f"• Pet Level Reduction: {_format_percent(modifiers.get('pet_level_percent_reduction', 0.0))}",
+        f"• Exalts Reduction: {_format_percent(modifiers.get('exalts_percent_reduction', 0.0))}",
+        f"• Loot Boost Reduction: {_format_percent(modifiers.get('loot_percent_reduction', 0.0))}",
         f"• In-Combat Reduction: {_format_percent(modifiers.get('incombat_percent_reduction', 0.0))}",
     ]
 
@@ -345,7 +345,7 @@ def build_point_settings_embed(settings: dict) -> discord.Embed:
         name="Duplicate Item Points",
         value=(
             f"• Point Reduction: **{duplicate_reduction:.2f}x**\n"
-            "• Quantity 2+ formula: `final_points + (final_points * reduction * (quantity - 1))`\n"
+            "• Applies to every duplicate copy after the first.\n"
             "• Set `0` to disable duplicate points"
         ),
         inline=False,

@@ -13,7 +13,7 @@ from utils.guild_config import get_realmshark_settings, load_guild_config
 from utils.helpers.loot_share_commands import share_active_ppe_loot_image
 from utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
 from utils.ppe_list_md_builder import create_ppe_list_markdown_file
-from utils.points_service import penalty_inputs_from_bonuses, starting_penalty_breakdown_from_inputs
+from utils.points_service import format_starting_penalty_line, penalty_inputs_from_bonuses, starting_penalty_breakdown_from_inputs
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 
 
@@ -67,15 +67,7 @@ def penalty_stats_text(ppe: PPEData, guild_config: dict | None = None) -> str:
     )
 
     def _line(label: str, value_text: str, details: dict[str, float]) -> str:
-        reduction_points = format_points(details["reduction_points"])
-        final_points = format_points(details["adjusted_points"])
-        reduction_percent = float(details["reduction_percent"])
-        if reduction_percent <= 0:
-            return f"{label}: **{value_text}** -> **{format_points(details['raw_points'])}** points (no reduction, final **{final_points}**)"
-        return (
-            f"{label}: **{value_text}** -> **{format_points(details['raw_points'])}** points "
-            f"(-**{reduction_points}** at **{reduction_percent:.2f}%**, final **{final_points}**)"
-        )
+        return format_starting_penalty_line(label, value_text, details)
 
     return (
         _line("Pet Level", str(int(defaults["pet_level"])), breakdown["Pet Level Penalty"])

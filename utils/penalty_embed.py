@@ -1,6 +1,6 @@
 import discord
 
-from utils.points_service import starting_penalty_breakdown_from_inputs
+from utils.points_service import format_starting_penalty_line, starting_penalty_breakdown_from_inputs
 
 
 def _format_points(value: float) -> str:
@@ -31,16 +31,8 @@ def build_penalty_infographic_embed(
         guild_config=guild_config,
     )
 
-    def _line(prefix: str, details: dict[str, float], raw_value: float) -> str:
-        reduction_points = _format_points(details["reduction_points"])
-        final_points = _format_points(details["adjusted_points"])
-        reduction_percent = float(details["reduction_percent"])
-        if reduction_percent <= 0:
-            return f"{prefix} -> {_format_points(abs(raw_value))} points (no reduction, final {final_points})"
-        return (
-            f"{prefix} -> {_format_points(abs(raw_value))} points "
-            f"(-{reduction_points} from {reduction_percent:.2f}% reduction, final {final_points})"
-        )
+    def _line(label: str, value_text: str, details: dict[str, float]) -> str:
+        return format_starting_penalty_line(label, value_text, details)
 
     embed = discord.Embed(
         title="🧾 Starting Points Breakdown",
@@ -50,22 +42,22 @@ def build_penalty_infographic_embed(
 
     embed.add_field(
         name="Pet Level Penalty",
-        value=_line(f"Level {pet_level}", breakdown["Pet Level Penalty"], pet_penalty),
+        value=_line("Pet Level", str(pet_level), breakdown["Pet Level Penalty"]),
         inline=True,
     )
     embed.add_field(
         name="Exalts Penalty",
-        value=_line(f"{num_exalts} exalts", breakdown["Exalts Penalty"], exalt_penalty),
+        value=_line("Exalts", str(num_exalts), breakdown["Exalts Penalty"]),
         inline=True,
     )
     embed.add_field(
         name="Loot Boost Penalty",
-        value=_line(f"{percent_loot:g}% boost", breakdown["Loot Boost Penalty"], loot_penalty),
+        value=_line("Loot Boost", f"{percent_loot:g}%", breakdown["Loot Boost Penalty"]),
         inline=True,
     )
     embed.add_field(
         name="In-Combat Reduction Penalty",
-        value=_line(f"{incombat_reduction:g}s", breakdown["In-Combat Reduction Penalty"], incombat_penalty),
+        value=_line("In-Combat Reduction", f"{incombat_reduction:g}s", breakdown["In-Combat Reduction Penalty"]),
         inline=True,
     )
     embed.add_field(

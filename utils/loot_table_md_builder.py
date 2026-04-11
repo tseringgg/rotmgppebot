@@ -206,7 +206,12 @@ def create_loot_markdown_file(
             scaled_bonus_points *= type_multiplier
             points_display = _format_signed_points(scaled_bonus_points)
 
-            line = f"- {bonus.name} × {bonus.quantity} ({points_display} pts)"
+            if bonus.name in PENALTY_NAMES:
+                penalty_details = penalty_breakdown.get(bonus.name, {})
+                raw_penalty_points = _as_float(penalty_details.get("raw_points"), abs(total_bonus_points))
+                line = f"- {bonus.name} × {bonus.quantity} ({_format_points(raw_penalty_points)} pts -> {points_display} pts)"
+            else:
+                line = f"- {bonus.name} × {bonus.quantity} ({points_display} pts)"
             if bonus.repeatable:
                 line += " [repeatable]"
             bonus_lines.append(line)

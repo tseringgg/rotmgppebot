@@ -207,6 +207,23 @@ def _starting_penalty_breakdown_from_raw_components(
     return breakdown
 
 
+def _format_points(value: float) -> str:
+    rounded = round(float(value), 2)
+    if rounded.is_integer():
+        return str(int(rounded))
+    return f"{rounded:.2f}".rstrip("0").rstrip(".")
+
+
+def format_starting_penalty_line(label: str, value_text: str, details: Dict[str, float]) -> str:
+    """Format a single starting-penalty line for embeds and markdown exports."""
+    final_points = _format_points(_as_float(details.get("signed_adjusted_points"), 0.0))
+    reduction_percent = _as_float(details.get("reduction_percent"), 0.0)
+    line = f"{label}: **{value_text}** -> **{final_points}** Points"
+    if reduction_percent > 0:
+        line += f" (-{reduction_percent:g}% Item Points)"
+    return line
+
+
 def starting_penalty_breakdown_from_inputs(
     pet_level: int,
     num_exalts: int,
