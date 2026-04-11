@@ -1,4 +1,5 @@
 from slash_commands import (
+    addadmin_cmd,
     addbonus_cmd,
     addbonusfor_cmd,
     addloot_cmd,
@@ -8,6 +9,7 @@ from slash_commands import (
     addseasonloot_cmd,
     addseasonlootfor_cmd,
     addtoteam_cmd,
+    forcereset_cmd,
     leaderboard_cmd,
     listadmins_cmd,
     listplayers_cmd,
@@ -424,6 +426,16 @@ async def manageplayer(interaction: discord.Interaction, member: discord.Member 
 @require_ppe_roles(admin_required=True)
 async def addplayer(interaction: discord.Interaction, member: discord.Member):
     await addplayer_cmd.command(interaction, member)
+
+
+@bot.tree.command(name="addadmin", description="Add PPE Admin role to a member (server owner only).", guilds=guilds)
+async def addadmin(interaction: discord.Interaction, member: discord.Member):
+    await addadmin_cmd.command(interaction, member)
+
+
+@bot.tree.command(name="forcereset", description="Force wipe all stored bot data for this guild (server owner only).", guilds=guilds)
+async def forcereset(interaction: discord.Interaction):
+    await forcereset_cmd.command(interaction)
 
 
 

@@ -220,6 +220,7 @@ If you don't want to set up the Sniffer, you can easily enable text-based image 
 | Command | Description |
 |---------|-------------|
 | `/addplayer` | Register a player for the contest |
+| `/addadmin` | Grant PPE Admin role to a member (server owner only) |
 | `/listplayers` | View all contest participants |
 | `/manageplayer` | Open the admin menu to manage a player's PPE, season loot, quests, team state, and roles (owner-only buttons for Make/Remove Admin) |
 | `/addlootfor` | Add items to any player's specific PPE |
@@ -325,7 +326,7 @@ TeamData
 ### Data Files
 - `rotmg_loot_drops_updated.csv`: Item point values
 - `bonuses.csv`: Available achievement bonuses
-- `{guild_id}_loot_records.json`: Player data storage (per guild)
+- `{guild_id}_{user_id}_loot_records.json`: Player data storage (one file per player)
 - `{guild_id}_teams.json`: Team data storage (per guild)
 - `{guild_id}_config.json`: Per-server settings storage (quest target counts and future config)
 - `{guild_id}_{user_id}_realmshark_pending.json`: Pending unmapped character logs for each player

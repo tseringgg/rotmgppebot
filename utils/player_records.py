@@ -1,8 +1,8 @@
-from csv import Error
 import os
 import json
 import asyncio
 import re
+import glob
 from typing import Dict, Any, List
 
 from dataclasses import asdict
@@ -26,9 +26,28 @@ def get_lock(guild_id: int) -> asyncio.Lock:
     return _locks[guild_id]
 
 
-def get_guild_data_path(guild_id: int) -> str:
-    """Return the file path for this guild's data file."""
-    return os.path.join(DATA_DIR, f"{guild_id}_loot_records.json")
+def get_player_data_path(guild_id: int, user_id: int) -> str:
+    """Return the file path for one player's data file."""
+    return os.path.join(DATA_DIR, f"{guild_id}_{user_id}_loot_records.json")
+
+
+def get_guild_player_data_pattern(guild_id: int) -> str:
+    """Return glob pattern for all player record files in a guild."""
+    return os.path.join(DATA_DIR, f"{guild_id}_*_loot_records.json")
+
+
+def _parse_user_id_from_player_data_path(guild_id: int, path: str) -> int | None:
+    """Extract the user_id from a per-user player-record path."""
+    filename = os.path.basename(path)
+    match = re.match(r"^(\d+)_(\d+)_loot_records\.json$", filename)
+    if not match:
+        return None
+
+    parsed_guild_id = int(match.group(1))
+    parsed_user_id = int(match.group(2))
+    if parsed_guild_id != guild_id:
+        return None
+    return parsed_user_id
 
 
 # -------------------------------------------------------------------------
@@ -142,27 +161,33 @@ async def load_player_records(interaction: discord.Interaction) -> Dict[int, Pla
     if interaction.guild is None:
             raise ValueError("Interaction guild is None.")
     guild_id = interaction.guild.id
-    path = get_guild_data_path(guild_id)
-
-    if not os.path.exists(path):
-        return {}
+    pattern = get_guild_player_data_pattern(guild_id)
 
     async with get_lock(guild_id):
         try:
-            raw_data = await asyncio.to_thread(_read_json_file, path)
-            # Handle migration from string keys to int keys
-            migrated_data = {}
-            for key, value in raw_data.items():
-                try:
-                    # Try to convert key to int (new format)
-                    int_key = int(key)
-                    migrated_data[int_key] = normalize_player(value)
-                except ValueError:
-                    # Skip string keys (old format) for now
-                    # You could add logic here to migrate based on username lookup if needed
-                    print(f"Skipping old string key: {key}")
+            paths = await asyncio.to_thread(glob.glob, pattern)
+            loaded_records: Dict[int, PlayerData] = {}
+
+            for path in paths:
+                user_id = _parse_user_id_from_player_data_path(guild_id, path)
+                if user_id is None:
                     continue
-            return migrated_data
+
+                raw_data = await asyncio.to_thread(_read_json_file, path)
+                if not isinstance(raw_data, dict):
+                    continue
+
+                # Current format stores exactly one player's payload in each file.
+                if "ppes" in raw_data:
+                    loaded_records[user_id] = normalize_player(raw_data)
+                    continue
+
+                # Allow accidental nested format and read the matching user entry if present.
+                nested = raw_data.get(str(user_id))
+                if isinstance(nested, dict):
+                    loaded_records[user_id] = normalize_player(nested)
+
+            return loaded_records
         except Exception as e:
             print(f"Error loading player records for guild {guild_id}: {type(e).__name__}: {e}")
             import traceback
@@ -186,41 +211,61 @@ async def save_player_records(interaction: discord.Interaction, records: Dict[in
     if interaction.guild is None:
         raise ValueError("Interaction guild is None.")
     guild_id = interaction.guild.id
-    path = get_guild_data_path(guild_id)
-    temp_path = f"{path}.tmp"
+    pattern = get_guild_player_data_pattern(guild_id)
 
-    # Convert typed PlayerData objects into plain dicts
-    json_ready = {
-        str(user_id): {  # Convert int key to string for JSON
-            "is_member": data.is_member,
-            "ppes": [
-                {
-                    "id": p.id,
-                    "name": p.name,
-                    "points": p.points,
-                    "loot": [asdict(l) for l in p.loot],
-                    "bonuses": [asdict(b) for b in p.bonuses],
-                    "ppe_type": normalize_ppe_type(getattr(p, "ppe_type", None)),
-                }
-                for p in data.ppes
-            ],
-            "active_ppe": data.active_ppe,
-            "unique_items": list(data.unique_items),  # Convert set to list for JSON
-            "team_name": data.team_name,
-            "quest_resets_remaining": data.quest_resets_remaining,
-            "quests": {
-                "current_items": data.quests.current_items,
-                "current_shinies": data.quests.current_shinies,
-                "current_skins": data.quests.current_skins,
-                "completed_items": data.quests.completed_items,
-                "completed_shinies": data.quests.completed_shinies,
-                "completed_skins": data.quests.completed_skins,
-            }
-        }
-        for user_id, data in records.items()
-    }
+    normalized_records: Dict[int, PlayerData] = {}
+    for user_id, data in records.items():
+        normalized_records[int(user_id)] = data
+
     async with get_lock(guild_id):
-        await asyncio.to_thread(_write_atomic_json, path, temp_path, json_ready)
+        existing_paths = await asyncio.to_thread(glob.glob, pattern)
+        existing_ids: set[int] = set()
+        for existing_path in existing_paths:
+            parsed_user_id = _parse_user_id_from_player_data_path(guild_id, existing_path)
+            if parsed_user_id is not None:
+                existing_ids.add(parsed_user_id)
+
+        desired_ids = set(normalized_records.keys())
+
+        for user_id, data in normalized_records.items():
+            path = get_player_data_path(guild_id, user_id)
+            temp_path = f"{path}.tmp"
+            await asyncio.to_thread(_write_atomic_json, path, temp_path, _serialize_player_data(data))
+
+        stale_ids = existing_ids - desired_ids
+        for stale_user_id in stale_ids:
+            stale_path = get_player_data_path(guild_id, stale_user_id)
+            await asyncio.to_thread(_delete_file_if_exists, stale_path)
+
+
+def _serialize_player_data(data: PlayerData) -> Dict[str, Any]:
+    """Convert PlayerData into JSON-ready dict for one per-user file."""
+    return {
+        "is_member": data.is_member,
+        "ppes": [
+            {
+                "id": p.id,
+                "name": p.name,
+                "points": p.points,
+                "loot": [asdict(l) for l in p.loot],
+                "bonuses": [asdict(b) for b in p.bonuses],
+                "ppe_type": normalize_ppe_type(getattr(p, "ppe_type", None)),
+            }
+            for p in data.ppes
+        ],
+        "active_ppe": data.active_ppe,
+        "unique_items": list(data.unique_items),
+        "team_name": data.team_name,
+        "quest_resets_remaining": data.quest_resets_remaining,
+        "quests": {
+            "current_items": data.quests.current_items,
+            "current_shinies": data.quests.current_shinies,
+            "current_skins": data.quests.current_skins,
+            "completed_items": data.quests.completed_items,
+            "completed_shinies": data.quests.completed_shinies,
+            "completed_skins": data.quests.completed_skins,
+        },
+    }
 
 
 def _write_atomic_json(path: str, temp_path: str, data: dict):
@@ -235,6 +280,14 @@ def _write_atomic_json(path: str, temp_path: str, data: dict):
 
     # Atomically replace the real file
     os.replace(temp_path, path)
+
+
+def _delete_file_if_exists(path: str):
+    """Delete a file if present; ignore races/missing files."""
+    try:
+        os.remove(path)
+    except FileNotFoundError:
+        return
 
 
 # -------------------------------------------------------------------------

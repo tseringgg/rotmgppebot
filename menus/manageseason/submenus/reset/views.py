@@ -203,15 +203,27 @@ async def _ask_confirmation(
     return bool(confirm_view.confirmed)
 
 
-async def _show_sequence_step_on_message(message: discord.Message | None, *, owner_id: int, step_index: int) -> None:
-    if message is None:
-        return
-
+async def _show_sequence_step_on_message(
+    message: discord.Message | None,
+    *,
+    owner_id: int,
+    step_index: int,
+    interaction: discord.Interaction | None = None,
+) -> None:
     next_view = ResetSeasonActionsView(owner_id=owner_id, step_index=step_index)
-    try:
-        await message.edit(embed=next_view.current_embed(), view=next_view)
-    except discord.HTTPException:
-        pass
+
+    if message is not None:
+        try:
+            await message.edit(embed=next_view.current_embed(), view=next_view)
+            return
+        except discord.HTTPException:
+            pass
+
+    if interaction is not None:
+        try:
+            await interaction.followup.send(embed=next_view.current_embed(), view=next_view, ephemeral=True)
+        except discord.HTTPException:
+            pass
 
 
 class ResetSnifferOptionsView(OwnerBoundView):
@@ -244,6 +256,7 @@ class ResetSnifferOptionsView(OwnerBoundView):
             interaction.message,
             owner_id=self.owner_id,
             step_index=self.next_step_index,
+            interaction=interaction,
         )
 
     @discord.ui.button(label="Mappings: ON", style=discord.ButtonStyle.primary, row=0)
@@ -349,6 +362,7 @@ class ResetPlayerRoleJoinEmbedView(OwnerBoundView):
             interaction.message,
             owner_id=self.owner_id,
             step_index=self.next_step_index,
+            interaction=interaction,
         )
 
     async def _refresh_from_settings(self, interaction: discord.Interaction) -> None:
@@ -482,6 +496,7 @@ class ResetSeasonActionsView(OwnerBoundView):
             interaction.message,
             owner_id=self.owner_id,
             step_index=self.step_index + 1,
+            interaction=interaction,
         )
 
     async def _run_confirmed_reset(self, interaction: discord.Interaction, *, warning_text: str, confirm_label: str) -> bool:
