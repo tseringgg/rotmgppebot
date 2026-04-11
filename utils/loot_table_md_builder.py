@@ -9,6 +9,7 @@ from utils.points_service import (
     apply_percent_modifier,
     calculate_bonus_points,
     calculate_item_points as calculate_item_points_service,
+    compute_item_reduction_multiplier_from_bonuses,
     get_effective_modifier_bucket_for_ppe,
     get_ppe_type_multiplier_for_ppe,
     format_starting_penalty_line,
@@ -116,13 +117,16 @@ def create_loot_markdown_file(
     point_adjustment_lines = non_default_points_adjustment_lines(guild_config, class_names=[class_name])
     points_breakdown = recompute_ppe_points(ppe_data, guild_config)
     scaled_total = _as_float(points_breakdown.get("total"), 0.0)
-    penalty_breakdown = starting_penalty_breakdown_from_bonuses(ppe_data.bonuses, guild_config=guild_config)
     penalty_inputs = penalty_inputs_from_bonuses(ppe_data.bonuses, guild_config=guild_config)
     penalty_input_breakdown = starting_penalty_breakdown_from_inputs(
         int(penalty_inputs["pet_level"]),
         int(penalty_inputs["num_exalts"]),
         float(penalty_inputs["percent_loot"]),
         float(penalty_inputs["incombat_reduction"]),
+        guild_config=guild_config,
+    )
+    item_reduction_multiplier = compute_item_reduction_multiplier_from_bonuses(
+        ppe_data.bonuses,
         guild_config=guild_config,
     )
     minimum_total_raw = modifier_bucket.get("minimum_total")
@@ -152,6 +156,7 @@ def create_loot_markdown_file(
                     int(loot.quantity),
                     guild_config=guild_config,
                 )
+                raw_item_points *= item_reduction_multiplier
                 scaled_item_points = _scaled_loot_entry_points(raw_item_points, modifier_bucket)
                 scaled_item_points *= type_multiplier
 
@@ -181,6 +186,7 @@ def create_loot_markdown_file(
                     int(loot.quantity),
                     guild_config=guild_config,
                 )
+                raw_item_points *= item_reduction_multiplier
                 scaled_item_points = _scaled_loot_entry_points(raw_item_points, modifier_bucket)
                 scaled_item_points *= type_multiplier
 
@@ -208,31 +214,35 @@ def create_loot_markdown_file(
             total_bonus_points = calculate_bonus_points(bonus)
             if bonus.name in PENALTY_NAMES:
                 if bonus.name == "Pet Level Penalty":
-                    line = f"- {bonus.name} × {bonus.quantity} ({format_starting_penalty_line(
+                    detail = format_starting_penalty_line(
                         "Pet Level",
                         str(int(penalty_inputs["pet_level"])),
                         penalty_input_breakdown["Pet Level Penalty"],
-                    )})"
+                    )
+                    line = f"- {bonus.name} x {bonus.quantity} ({detail})"
                 elif bonus.name == "Exalts Penalty":
-                    line = f"- {bonus.name} × {bonus.quantity} ({format_starting_penalty_line(
+                    detail = format_starting_penalty_line(
                         "Exalts",
                         str(int(penalty_inputs["num_exalts"])),
                         penalty_input_breakdown["Exalts Penalty"],
-                    )})"
+                    )
+                    line = f"- {bonus.name} x {bonus.quantity} ({detail})"
                 elif bonus.name == "Loot Boost Penalty":
-                    line = f"- {bonus.name} × {bonus.quantity} ({format_starting_penalty_line(
+                    detail = format_starting_penalty_line(
                         "Loot Boost",
                         f"{float(penalty_inputs['percent_loot']):g}%",
                         penalty_input_breakdown["Loot Boost Penalty"],
-                    )})"
+                    )
+                    line = f"- {bonus.name} x {bonus.quantity} ({detail})"
                 elif bonus.name == "In-Combat Reduction Penalty":
-                    line = f"- {bonus.name} × {bonus.quantity} ({format_starting_penalty_line(
+                    detail = format_starting_penalty_line(
                         "In-Combat Reduction",
                         f"{float(penalty_inputs['incombat_reduction']):g}s",
                         penalty_input_breakdown["In-Combat Reduction Penalty"],
-                    )})"
+                    )
+                    line = f"- {bonus.name} x {bonus.quantity} ({detail})"
                 else:
-                    line = f"- {bonus.name} × {bonus.quantity} ({_format_points(total_bonus_points)} pts)"
+                    line = f"- {bonus.name} x {bonus.quantity} ({_format_points(total_bonus_points)} pts)"
             else:
                 scaled_bonus_points = _scaled_bonus_entry_points(
                     total_bonus_points,
@@ -241,7 +251,7 @@ def create_loot_markdown_file(
                 )
                 scaled_bonus_points *= type_multiplier
                 points_display = _format_signed_points(scaled_bonus_points)
-                line = f"- {bonus.name} × {bonus.quantity} ({points_display} pts)"
+                line = f"- {bonus.name} x {bonus.quantity} ({points_display} pts)"
             if bonus.repeatable:
                 line += " [repeatable]"
             bonus_lines.append(line)

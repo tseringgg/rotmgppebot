@@ -528,6 +528,56 @@ async def update_pet_point_modifiers(
     return dict(settings), refresh_summary
 
 
+async def update_penalty_base_rates(
+    interaction: discord.Interaction,
+    *,
+    pet_points_per_level: float | None = None,
+    exalts_points_per_exalt: float | None = None,
+    loot_points_per_percent: float | None = None,
+    incombat_points_per_second: float | None = None,
+) -> tuple[dict[str, Any], PointsRefreshSummary]:
+    """Update penalty base-rate weights and refresh all PPE totals."""
+    settings = await get_points_settings(interaction)
+    penalty_weights = (
+        dict(settings.get("penalty_weights", {}))
+        if isinstance(settings.get("penalty_weights"), dict)
+        else {}
+    )
+
+    if pet_points_per_level is not None:
+        safe_points = abs(float(pet_points_per_level))
+        if safe_points <= 0:
+            raise ValueError("Pet level rate must be non-zero.")
+        penalty_weights["pet_level_per_point"] = 1.0 / safe_points
+
+    if exalts_points_per_exalt is not None:
+        safe_points = abs(float(exalts_points_per_exalt))
+        if safe_points <= 0:
+            raise ValueError("Exalts rate must be non-zero.")
+        penalty_weights["exalts_per_point"] = 1.0 / safe_points
+
+    if loot_points_per_percent is not None:
+        safe_points = abs(float(loot_points_per_percent))
+        if safe_points <= 0:
+            raise ValueError("Loot boost rate must be non-zero.")
+        penalty_weights["loot_percent_per_point"] = 1.0 / safe_points
+
+    if incombat_points_per_second is not None:
+        safe_points = abs(float(incombat_points_per_second))
+        if safe_points <= 0:
+            raise ValueError("In-combat rate must be non-zero.")
+        penalty_weights["incombat_seconds_per_point"] = 1.0 / safe_points
+
+    settings["penalty_weights"] = penalty_weights
+    settings = await set_points_settings(interaction, settings)
+
+    refresh_summary = await refresh_all_character_points(
+        interaction,
+        guild_config={"points_settings": settings},
+    )
+    return dict(settings), refresh_summary
+
+
 async def update_duplicate_item_point_reduction(
     interaction: discord.Interaction,
     *,

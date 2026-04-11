@@ -53,10 +53,10 @@ def _build_ppe_type_multiplier_lines(multipliers: dict) -> list[str]:
 
 def _build_starting_penalty_modifier_lines(modifiers: dict) -> list[str]:
     return [
-        f"• Pet Level Reduction: {_format_percent(modifiers.get('pet_level_percent_reduction', 0.0))}",
-        f"• Exalts Reduction: {_format_percent(modifiers.get('exalts_percent_reduction', 0.0))}",
-        f"• Loot Boost Reduction: {_format_percent(modifiers.get('loot_percent_reduction', 0.0))}",
-        f"• In-Combat Reduction: {_format_percent(modifiers.get('incombat_percent_reduction', 0.0))}",
+        f"• Pet Level Reduction Rate: {_format_percent(modifiers.get('pet_level_percent_reduction', 0.0))} per level",
+        f"• Exalts Reduction Rate: {_format_percent(modifiers.get('exalts_percent_reduction', 0.0))} per exalt",
+        f"• Loot Boost Reduction Rate: {_format_percent(modifiers.get('loot_percent_reduction', 0.0))} per 1% boost",
+        f"• In-Combat Reduction Rate: {_format_percent(modifiers.get('incombat_percent_reduction', 0.0))} per 1.0s",
     ]
 
 

@@ -12,6 +12,7 @@ from menus.manageseason.common import (
     build_point_settings_embed,
 )
 from menus.manageseason.modals import (
+    EditPenaltyBaseRatesModal,
     EditClassPointSettingsModal,
     EditDuplicateItemPointsModal,
     EditGlobalPointSettingsModal,
@@ -57,6 +58,17 @@ class ManagePointSettingsView(OwnerBoundView):
         self.settings = await load_points_settings_for_menu(interaction)
         await interaction.response.send_modal(
             EditPetModifierModal(
+                owner_id=self.owner_id,
+                settings=self.settings,
+                source_message=interaction.message,
+            )
+        )
+
+    @discord.ui.button(label="Edit Penalty Base Rates", style=discord.ButtonStyle.success, row=2)
+    async def edit_penalty_base_rates(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.settings = await load_points_settings_for_menu(interaction)
+        await interaction.response.send_modal(
+            EditPenaltyBaseRatesModal(
                 owner_id=self.owner_id,
                 settings=self.settings,
                 source_message=interaction.message,
