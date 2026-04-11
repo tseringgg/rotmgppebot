@@ -94,13 +94,14 @@ def loot_adjustments_text(ppe: PPEData, guild_config: dict | None = None) -> str
     defaults = penalty_input_defaults(ppe, guild_config)
     adjustments = loot_adjustments_for_ppe(ppe, guild_config)
     combined_multiplier = float(adjustments["combined_item_multiplier"])
+    
     return (
-        f"Pet: {int(defaults['pet_level'])} -> -{float(adjustments['pet_reduction_percent']):.2f}%\\n"
-        f"Exalts: {int(defaults['num_exalts'])} -> -{float(adjustments['exalts_reduction_percent']):.2f}%\\n"
-        f"Loot Boost: {float(defaults['percent_loot']):g}% -> -{float(adjustments['loot_reduction_percent']):.2f}%\\n"
-        f"In-Combat: {float(defaults['incombat_reduction']):g}s -> -{float(adjustments['incombat_reduction_percent']):.2f}%\\n"
-        f"Stat Reduction: **-{float(adjustments['total_reduction_percent']):.2f}%** ({float(adjustments['reduction_multiplier']):.2f}x)\\n"
-        f"Type Multiplier: **{float(adjustments['type_multiplier']):.2f}x**\\n"
+        f"Pet: {int(defaults['pet_level'])} -> -{float(adjustments['pet_reduction_percent']):.2f}%\n"
+        f"Exalts: {int(defaults['num_exalts'])} -> -{float(adjustments['exalts_reduction_percent']):.2f}%\n"
+        f"Loot Boost: {float(defaults['percent_loot']):g}% -> -{float(adjustments['loot_reduction_percent']):.2f}%\n"
+        f"In-Combat: {float(defaults['incombat_reduction']):g}s -> -{float(adjustments['incombat_reduction_percent']):.2f}%\n"
+        f"Stat Reduction: **-{float(adjustments['total_reduction_percent']):.2f}%** ({float(adjustments['reduction_multiplier']):.2f}x)\n"
+        f"Type Multiplier: **{float(adjustments['type_multiplier']):.2f}x**\n"
         f"Combined Multiplier: **{combined_multiplier:.2f}x**"
     )
 
