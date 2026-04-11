@@ -234,6 +234,7 @@ def create_loot_markdown_file(
                         "Pet Level",
                         str(int(penalty_inputs["pet_level"])),
                         penalty_input_breakdown["Pet Level Penalty"],
+                        bold_values=False,
                     )
                     line = f"- {bonus.name} x {bonus.quantity} ({detail})"
                 elif bonus.name == "Exalts Penalty":
@@ -241,6 +242,7 @@ def create_loot_markdown_file(
                         "Exalts",
                         str(int(penalty_inputs["num_exalts"])),
                         penalty_input_breakdown["Exalts Penalty"],
+                        bold_values=False,
                     )
                     line = f"- {bonus.name} x {bonus.quantity} ({detail})"
                 elif bonus.name == "Loot Boost Penalty":
@@ -248,6 +250,7 @@ def create_loot_markdown_file(
                         "Loot Boost",
                         f"{float(penalty_inputs['percent_loot']):g}%",
                         penalty_input_breakdown["Loot Boost Penalty"],
+                        bold_values=False,
                     )
                     line = f"- {bonus.name} x {bonus.quantity} ({detail})"
                 elif bonus.name == "In-Combat Reduction Penalty":
@@ -255,6 +258,7 @@ def create_loot_markdown_file(
                         "In-Combat Reduction",
                         f"{float(penalty_inputs['incombat_reduction']):g}s",
                         penalty_input_breakdown["In-Combat Reduction Penalty"],
+                        bold_values=False,
                     )
                     line = f"- {bonus.name} x {bonus.quantity} ({detail})"
                 else:

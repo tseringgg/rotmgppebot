@@ -53,7 +53,7 @@ class ManagePointSettingsView(OwnerBoundView):
         view = ManagePpeTypePointSettingsView(owner_id=self.owner_id, character_settings=character_settings)
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
-    @discord.ui.button(label="Edit Pet Modifiers", style=discord.ButtonStyle.success, row=2)
+    @discord.ui.button(label="Penalty Reduction Modifiers", style=discord.ButtonStyle.success, row=2)
     async def edit_pet_modifiers(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.settings = await load_points_settings_for_menu(interaction)
         await interaction.response.send_modal(
