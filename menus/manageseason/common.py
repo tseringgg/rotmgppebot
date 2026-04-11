@@ -263,6 +263,12 @@ def build_point_settings_embed(settings: dict) -> discord.Embed:
     """Build the point-settings landing embed."""
     global_settings = settings.get("global", {}) if isinstance(settings.get("global"), dict) else {}
     class_overrides = settings.get("class_overrides", {}) if isinstance(settings.get("class_overrides"), dict) else {}
+    try:
+        duplicate_reduction = float(settings.get("duplicate_point_reduction", 0.5))
+    except (TypeError, ValueError):
+        duplicate_reduction = 0.5
+    if duplicate_reduction < 0:
+        duplicate_reduction = 0.5
 
     embed = discord.Embed(
         title="Manage Point Settings",
@@ -290,11 +296,20 @@ def build_point_settings_embed(settings: dict) -> discord.Embed:
             preview += f"\n... and {len(override_lines) - 6} more"
     embed.add_field(name="Class Override Snapshot", value=_truncate_field_value(preview), inline=False)
     embed.add_field(
+        name="Duplicate Item Points",
+        value=(
+            f"Point Reduction: **{duplicate_reduction:.2f}x**\n"
+            "Duplicate copies are worth base value multiplied by this reduction.\n"
+            "Set to `0` to disable duplicate item points entirely."
+        ),
+        inline=False,
+    )
+    embed.add_field(
         name="PPE Type Multipliers",
         value="Use **Edit PPE Type Points** to manage per-type point multipliers.",
         inline=False,
     )
-    embed.set_footer(text="Use Edit Global Modifiers or Edit Class Modifiers to continue.")
+    embed.set_footer(text="Editing duplicate or type multipliers recalculates all character totals immediately.")
     return embed
 
 

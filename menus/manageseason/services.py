@@ -476,6 +476,23 @@ async def update_global_point_modifiers(
     return dict(settings), refresh_summary
 
 
+async def update_duplicate_item_point_reduction(
+    interaction: discord.Interaction,
+    *,
+    duplicate_point_reduction: float,
+) -> tuple[dict[str, Any], PointsRefreshSummary]:
+    """Update duplicate item reduction multiplier and refresh all PPE totals."""
+    settings = await update_global_points_modifiers(
+        interaction,
+        duplicate_point_reduction=max(0.0, float(duplicate_point_reduction)),
+    )
+    refresh_summary = await refresh_all_character_points(
+        interaction,
+        guild_config={"points_settings": settings},
+    )
+    return dict(settings), refresh_summary
+
+
 async def update_class_point_override(
     interaction: discord.Interaction,
     *,
@@ -531,7 +548,12 @@ async def refresh_all_character_points(
 ) -> PointsRefreshSummary:
     """Recompute point totals for every PPE using current guild settings."""
     records = await load_player_records(interaction)
-    effective_guild_config = guild_config if isinstance(guild_config, dict) else await load_guild_config(interaction)
+    if isinstance(guild_config, dict):
+        base_config = await load_guild_config(interaction)
+        effective_guild_config = dict(base_config)
+        effective_guild_config.update(guild_config)
+    else:
+        effective_guild_config = await load_guild_config(interaction)
 
     ppes_processed = 0
     ppes_updated = 0

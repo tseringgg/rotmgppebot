@@ -53,6 +53,7 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
             "penalty_percent": 0.0,
             "total_percent": 0.0,
         },
+        "duplicate_point_reduction": 0.5,
         "penalty_weights": {
             "pet_level_per_point": 4.0,
             "exalts_per_point": 2.0,
@@ -305,6 +306,13 @@ def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
         "total_percent": _as_float(raw_global.get("total_percent"), _DEFAULT_CONFIG["points_settings"]["global"]["total_percent"]),
     }
 
+    duplicate_point_reduction = _as_float(
+        raw.get("duplicate_point_reduction"),
+        _DEFAULT_CONFIG["points_settings"]["duplicate_point_reduction"],
+    )
+    if duplicate_point_reduction < 0:
+        duplicate_point_reduction = _DEFAULT_CONFIG["points_settings"]["duplicate_point_reduction"]
+
     raw_penalty_weights = raw.get("penalty_weights", {}) if isinstance(raw.get("penalty_weights", {}), dict) else {}
 
     def _positive_float(value: Any, fallback: float) -> float:
@@ -351,6 +359,7 @@ def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
 
     return {
         "global": normalized_global,
+        "duplicate_point_reduction": duplicate_point_reduction,
         "penalty_weights": normalized_penalty_weights,
         "class_overrides": normalized_overrides,
     }
@@ -534,6 +543,7 @@ async def update_global_points_modifiers(
     bonus_percent: float | None = None,
     penalty_percent: float | None = None,
     total_percent: float | None = None,
+    duplicate_point_reduction: float | None = None,
 ) -> Dict[str, Any]:
     settings = await get_points_settings(interaction)
     global_settings = dict(settings.get("global", {}))
@@ -546,6 +556,8 @@ async def update_global_points_modifiers(
         global_settings["penalty_percent"] = float(penalty_percent)
     if total_percent is not None:
         global_settings["total_percent"] = float(total_percent)
+    if duplicate_point_reduction is not None:
+        settings["duplicate_point_reduction"] = max(0.0, float(duplicate_point_reduction))
 
     settings["global"] = global_settings
     return await set_points_settings(interaction, settings)

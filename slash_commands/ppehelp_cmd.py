@@ -320,8 +320,8 @@ def build_help_embed(section_key: str) -> discord.Embed:
     embed = discord.Embed(
         title="PPE Bot Help - Season Setup",
         description=(
-            "Season setup controls global contest configuration including season reset actions, point settings, "
-            "and optional screenshot suggestion channels."
+            "Season setup controls global contest configuration including the step-by-step season reset flow, "
+            "point settings, and optional screenshot suggestion channels."
         ),
         color=discord.Color.blurple(),
     )
@@ -338,12 +338,14 @@ def build_help_embed(section_key: str) -> discord.Embed:
     embed.add_field(
         name="Admin",
         value=(
-            
             "- /addseasonlootfor and /removeseasonlootfrom for admin season adjustments\n"
             "- /manageseason can adjust the core functionalities and values of the season.\n"
-            "- /manageseason -> Picture Suggestions to configure automatic image detection of loot in specified channels.\n"
-            "- /manageseason -> Manage Contests to set up and choose default leaderboard."
-            "- /manageseason -> Manage Point Settings to adjust point values at scale."
+            "- /manageseason -> Reset Season opens a step-by-step reset workflow with confirmations for each action.\n"
+            "- /manageseason -> Reset Season -> Reset Sniffer Information lets you choose exactly which sniffer data to clear.\n"
+            "- /manageseason -> Manage Point Settings -> Edit Duplicate Item Points controls duplicate scoring (set Point Reduction to 0 to disable duplicate points).\n"
+            "- /manageseason -> Picture Suggestions configures automatic image detection of loot in specified channels.\n"
+            "- /manageseason -> Manage Contests sets up contest defaults and leaderboard behavior.\n"
+            "- /forcereset is an emergency full-data wipe for this guild (server owner only). Use it only when you need a complete restart."
         ),
         inline=False,
     )

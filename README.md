@@ -231,7 +231,8 @@ If you don't want to set up the Sniffer, you can easily enable text-based image 
 | `/refreshpointsfor` | Recalculate points for a specific PPE |
 | `/refreshallpoints` | Fix all PPE point totals server-wide |
 | `/managequests` | View or update per-server quest targets (regular/shiny/skin), global quest pools, and run Reset All Quests from the menu |
-| `/manageseason` | Open season admin controls: Reset Season and Manage Point Settings |
+| `/manageseason` | Open season admin controls: step-by-step Reset Season, contests, picture suggestions, and point settings |
+| `/forcereset` | Emergency full data wipe for this guild (server owner only); use when you need a complete restart |
 | `/addseasonlootfor` | Add a unique item to another player's season collection |
 | `/removeseasonlootfrom` | Remove a unique item from another player's season collection |
 
@@ -241,6 +242,12 @@ Quest reset actions are now menu-integrated:
 - Use `/myquests` -> `Reset Quests` for self resets.
 - Use `/manageplayer` -> `Show Quests` -> `Reset Quests` for admin resets.
 - Use `/managequests` -> `Reset All Quests` for server-wide quest resets.
+
+Season reset and recovery flow:
+- Use `/manageseason` -> `Reset Season` for the guided multi-step reset flow (each action has its own confirmation).
+- Use `/manageseason` -> `Reset Season` -> `Reset Sniffer Information` to selectively clear sniffer data.
+- Use `/manageseason` -> `Manage Point Settings` -> `Edit Duplicate Item Points` to set duplicate scoring reduction (set Point Reduction to `0` to disable duplicate points).
+- Use `/forcereset` only as an emergency full wipe when you want to delete all stored bot data for the guild and restart setup.
 
 ### Team Commands
 | Command | Description |
@@ -344,7 +351,8 @@ TeamData
 
 ### Duplicate Handling
 - **First item**: Full point value
-- **Additional copies**: Half points (except 1-point items)
+- **Additional copies**: Base value multiplied by the configurable Point Reduction setting (default `0.5`)
+- **Disable duplicates**: Set Point Reduction to `0` in `/manageseason` -> `Manage Point Settings` -> `Edit Duplicate Item Points`
 - **Removal**: Correctly calculates which points to subtract
 
 ### Penalties

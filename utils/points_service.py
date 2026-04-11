@@ -59,6 +59,13 @@ def _get_points_settings(guild_config: Dict[str, Any] | None) -> Dict[str, Any]:
     return settings if isinstance(settings, dict) else {}
 
 
+def _get_duplicate_point_reduction(guild_config: Dict[str, Any] | None) -> float:
+    points_settings = _get_points_settings(guild_config)
+    raw_value = points_settings.get("duplicate_point_reduction", 0.5)
+    parsed = _as_float(raw_value, 0.5)
+    return parsed if parsed >= 0 else 0.5
+
+
 def _get_ppe_settings(guild_config: Dict[str, Any] | None) -> Dict[str, Any]:
     if not isinstance(guild_config, dict):
         return {}
@@ -216,15 +223,28 @@ def calculate_drop_points(item_name: str, divine: bool, shiny: bool, loot_points
     return math.floor(value * 2) / 2
 
 
-def calculate_item_points(item_name: str, divine: bool, shiny: bool, quantity: int, loot_points: Dict[str, float] | None = None) -> float:
+def calculate_item_points(
+    item_name: str,
+    divine: bool,
+    shiny: bool,
+    quantity: int,
+    loot_points: Dict[str, float] | None = None,
+    guild_config: Dict[str, Any] | None = None,
+) -> float:
     base_points = get_item_base_points(item_name, shiny, loot_points=loot_points)
     if base_points <= 0:
         return 0.0
 
+    quantity = max(0, int(quantity))
+    if quantity <= 0:
+        return 0.0
+
     final_points = base_points * (2 if divine else 1)
-    if quantity > 1 and final_points > 1:
-        return final_points + (math.floor(final_points) / 2) * (quantity - 1)
-    return final_points * quantity
+    if quantity == 1:
+        return final_points
+
+    duplicate_reduction = _get_duplicate_point_reduction(guild_config)
+    return final_points + (final_points * duplicate_reduction * (quantity - 1))
 
 
 def calculate_bonus_points(bonus: Bonus) -> float:
@@ -257,6 +277,7 @@ def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = Non
             shiny=loot.shiny,
             quantity=loot.quantity,
             loot_points=loot_points,
+            guild_config=guild_config,
         )
 
     bonus_total, penalty_total = split_bonus_points(ppe.bonuses)

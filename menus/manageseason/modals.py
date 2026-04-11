@@ -9,6 +9,7 @@ from menus.manageseason.services import (
     load_character_settings_for_menu,
     load_points_settings_for_menu,
     update_class_point_override,
+    update_duplicate_item_point_reduction,
     update_global_point_modifiers,
     update_ppe_type_multipliers,
 )
@@ -430,4 +431,83 @@ class EditPpeTypeMultiplierModal(discord.ui.Modal):
             owner_id=self.owner_id,
             source_message=self.source_message,
             source_screen="ppe_type",
+        )
+
+
+class EditDuplicateItemPointsModal(discord.ui.Modal, title="Edit Duplicate Item Points"):
+    point_reduction = discord.ui.TextInput(
+        label="Point Reduction",
+        placeholder="Example: 0.5 (set 0 to disable duplicates)",
+        required=True,
+        max_length=20,
+    )
+
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        settings: dict,
+        source_message: discord.Message | None,
+    ) -> None:
+        super().__init__(timeout=300)
+        self.owner_id = owner_id
+        self.source_message = source_message
+
+        raw_reduction = settings.get("duplicate_point_reduction", 0.5)
+        try:
+            parsed_reduction = float(raw_reduction)
+        except (TypeError, ValueError):
+            parsed_reduction = 0.5
+        if parsed_reduction < 0:
+            parsed_reduction = 0.5
+        self.point_reduction.default = f"{parsed_reduction:.2f}"
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        try:
+            parsed = float(str(self.point_reduction.value).strip())
+        except ValueError:
+            await interaction.response.send_message("ERROR: Point Reduction must be a number.", ephemeral=True)
+            return
+
+        if parsed < 0:
+            await interaction.response.send_message("ERROR: Point Reduction must be 0 or greater.", ephemeral=True)
+            return
+
+        confirm_text = (
+            "⚠️ **Apply duplicate point reduction changes and recalculate all PPE characters?**\n"
+            "Set `0` to disable duplicate item points.\n\n"
+            f"Point Reduction: `{parsed:.2f}`"
+        )
+        confirmed = await _confirm_points_update(
+            interaction=interaction,
+            owner_id=self.owner_id,
+            confirmation_text=confirm_text,
+        )
+        if not confirmed:
+            return
+
+        settings, refresh_summary = await update_duplicate_item_point_reduction(
+            interaction,
+            duplicate_point_reduction=parsed,
+        )
+
+        await interaction.followup.send(
+            "Updated duplicate item point reduction.\n"
+            f"Point Reduction: {float(settings.get('duplicate_point_reduction', parsed)):.2f}x\n"
+            "Set to 0 to disable duplicate item points.\n"
+            f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
+            f"PPE totals changed: {refresh_summary.ppes_updated}",
+            ephemeral=True,
+        )
+
+        await _refresh_point_settings_message(
+            interaction=interaction,
+            owner_id=self.owner_id,
+            source_message=self.source_message,
+            settings=settings,
+            source_screen="landing",
         )
