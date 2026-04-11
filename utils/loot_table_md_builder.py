@@ -87,10 +87,17 @@ def calculate_item_points(
     return calculate_item_points_service(item_name, divine, shiny, quantity, guild_config=guild_config)
 
 
-def _scaled_loot_entry_points(raw_points: float, modifier_bucket: dict[str, float | None]) -> float:
+def _combined_item_multiplier(
+    *,
+    item_reduction_multiplier: float,
+    modifier_bucket: dict[str, float | None],
+    type_multiplier: float,
+) -> float:
     loot_percent = _as_float(modifier_bucket.get("loot_percent"), 0.0)
     total_percent = _as_float(modifier_bucket.get("total_percent"), 0.0)
-    return apply_percent_modifier(apply_percent_modifier(raw_points, loot_percent), total_percent)
+    loot_multiplier = apply_percent_modifier(1.0, loot_percent)
+    total_multiplier = apply_percent_modifier(1.0, total_percent)
+    return item_reduction_multiplier * loot_multiplier * total_multiplier * type_multiplier
 
 
 def _scaled_bonus_entry_points(
@@ -117,6 +124,11 @@ def create_loot_markdown_file(
     point_adjustment_lines = non_default_points_adjustment_lines(guild_config, class_names=[class_name])
     points_breakdown = recompute_ppe_points(ppe_data, guild_config)
     scaled_total = _as_float(points_breakdown.get("total"), 0.0)
+    unweighted_total = (
+        _as_float(points_breakdown.get("loot_raw"), 0.0)
+        + _as_float(points_breakdown.get("bonus_raw"), 0.0)
+        + _as_float(points_breakdown.get("penalty_raw"), 0.0)
+    )
     penalty_inputs = penalty_inputs_from_bonuses(ppe_data.bonuses, guild_config=guild_config)
     penalty_input_breakdown = starting_penalty_breakdown_from_inputs(
         int(penalty_inputs["pet_level"]),
@@ -129,6 +141,11 @@ def create_loot_markdown_file(
         ppe_data.bonuses,
         guild_config=guild_config,
     )
+    total_item_multiplier = _combined_item_multiplier(
+        item_reduction_multiplier=item_reduction_multiplier,
+        modifier_bucket=modifier_bucket,
+        type_multiplier=type_multiplier,
+    )
     minimum_total_raw = modifier_bucket.get("minimum_total")
     minimum_total = _as_float(minimum_total_raw, 0.0) if minimum_total_raw is not None else None
     ppe_type = ppe_type_short_label(normalize_ppe_type(getattr(ppe_data, "ppe_type", None)))
@@ -138,7 +155,12 @@ def create_loot_markdown_file(
         heading="Point Adjustments From Defaults",
         lines=point_adjustment_lines or ["No point adjustments from defaults."],
     )
-    builder.add_paragraph(f"Total Points: {_format_points(scaled_total)}")
+    builder.add_section(
+        lines=[
+            f"Total Unweighted Points: {_format_points(unweighted_total)}",
+            f"Total Points: {_format_points(scaled_total)}",
+        ]
+    )
 
     if ppe_data.loot:
         sorted_dungeons, dungeon_groups, unassigned_items = _group_entries_by_dungeon(
@@ -156,9 +178,6 @@ def create_loot_markdown_file(
                     int(loot.quantity),
                     guild_config=guild_config,
                 )
-                raw_item_points *= item_reduction_multiplier
-                scaled_item_points = _scaled_loot_entry_points(raw_item_points, modifier_bucket)
-                scaled_item_points *= type_multiplier
 
                 tags: list[str] = []
                 if loot.divine:
@@ -166,7 +185,7 @@ def create_loot_markdown_file(
                 if loot.shiny:
                     tags.append("shiny")
 
-                line = f"- {loot.item_name} × {loot.quantity} ({_format_points(scaled_item_points)} pts)"
+                line = f"- {loot.item_name} × {loot.quantity} ({_format_points(raw_item_points)} pts)"
                 if tags:
                     line += f" [{', '.join(tags)}]"
                 logged_text = format_unix_utc(getattr(loot, "last_logged_at", None))
@@ -186,9 +205,6 @@ def create_loot_markdown_file(
                     int(loot.quantity),
                     guild_config=guild_config,
                 )
-                raw_item_points *= item_reduction_multiplier
-                scaled_item_points = _scaled_loot_entry_points(raw_item_points, modifier_bucket)
-                scaled_item_points *= type_multiplier
 
                 tags: list[str] = []
                 if loot.divine:
@@ -196,7 +212,7 @@ def create_loot_markdown_file(
                 if loot.shiny:
                     tags.append("shiny")
 
-                line = f"- {loot.item_name} × {loot.quantity} ({_format_points(scaled_item_points)} pts)"
+                line = f"- {loot.item_name} × {loot.quantity} ({_format_points(raw_item_points)} pts)"
                 if tags:
                     line += f" [{', '.join(tags)}]"
                 logged_text = format_unix_utc(getattr(loot, "last_logged_at", None))
@@ -263,10 +279,13 @@ def create_loot_markdown_file(
     summary_lines = [
         f"Loot entries: {total_loot_items}",
         f"Bonus entries: {total_bonus_items}",
+        "",
     ]
     if minimum_total is not None:
         summary_lines.append(f"Minimum total floor: {_format_points(minimum_total)}")
     summary_lines.append(f"PPE type multiplier: {type_multiplier:.2f}x")
+    summary_lines.append(f"PPE reduction multiplier: {item_reduction_multiplier:.2f}x")
+    summary_lines.append(f"Total multiplier: {total_item_multiplier:.2f}x")
 
     builder.add_section(
         heading="Summary",

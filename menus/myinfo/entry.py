@@ -4,17 +4,14 @@ from __future__ import annotations
 
 import discord
 
-from menus.myinfo.common import build_home_embed
+from menus.myinfo.common import build_home_embed, refresh_player_data
 from utils.guild_config import get_max_ppes
-from utils.player_records import ensure_player_exists, load_player_records
 
 
 async def open_myinfo_home(interaction: discord.Interaction, *, max_ppes: int) -> None:
     from menus.myinfo.submenus.home.views import MyInfoHomeView
 
-    records = await load_player_records(interaction)
-    key = ensure_player_exists(records, interaction.user.id)
-    player_data = records[key]
+    player_data = await refresh_player_data(interaction, interaction.user.id)
 
     active_ppe = None
     for ppe in player_data.ppes:
@@ -36,9 +33,7 @@ async def open_myinfo_menu(interaction: discord.Interaction) -> None:
         await interaction.response.send_message("❌ This command can only be used in a server.", ephemeral=True)
         return
 
-    records = await load_player_records(interaction)
-    key = ensure_player_exists(records, interaction.user.id)
-    player_data = records[key]
+    player_data = await refresh_player_data(interaction, interaction.user.id)
     max_ppes = await get_max_ppes(interaction)
 
     active_ppe = None

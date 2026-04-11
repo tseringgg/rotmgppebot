@@ -14,6 +14,7 @@ from utils.helpers.loot_share_commands import share_active_ppe_loot_image
 from utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
 from utils.ppe_list_md_builder import create_ppe_list_markdown_file
 from utils.points_service import format_starting_penalty_line, penalty_inputs_from_bonuses, starting_penalty_breakdown_from_inputs
+from utils.points_service import recompute_ppe_points
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 
 
@@ -302,9 +303,22 @@ async def temporarily_switch_active_ppe_and_share(
 
 
 async def refresh_player_data(interaction: discord.Interaction, user_id: int) -> PlayerData:
+    guild_config = await load_guild_config(interaction)
     records = await load_player_records(interaction)
     key = ensure_player_exists(records, user_id)
-    return records[key]
+    player_data = records[key]
+
+    changed = False
+    for ppe in player_data.ppes:
+        previous_points = round(float(ppe.points), 2)
+        breakdown = recompute_ppe_points(ppe, guild_config)
+        if round(float(breakdown.get("total", ppe.points)), 2) != previous_points:
+            changed = True
+
+    if changed:
+        await save_player_records(interaction, records)
+
+    return player_data
 
 
 def find_ppe_or_raise(player_data: PlayerData, ppe_id: int) -> PPEData:

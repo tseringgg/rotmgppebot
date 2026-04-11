@@ -11,11 +11,11 @@ from menus.myinfo.common import (
     build_home_embed,
     close_myinfo_menu,
     realmshark_connected_ppe_ids,
+    refresh_player_data,
     send_ppe_list_markdown_followup,
 )
 from menus.myinfo.entry import open_myinfo_home
 from utils.guild_config import load_guild_config
-from utils.player_records import ensure_player_exists, load_player_records
 
 
 class MyInfoHomeView(OwnerBoundView):
@@ -39,16 +39,15 @@ class MyInfoHomeView(OwnerBoundView):
 
     @discord.ui.button(label="List PPEs", style=discord.ButtonStyle.primary, row=0)
     async def list_ppes(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        records = await load_player_records(interaction)
-        key = ensure_player_exists(records, interaction.user.id)
+        player_data = await refresh_player_data(interaction, interaction.user.id)
 
-        if not records[key].ppes:
+        if not player_data.ppes:
             view = NoCharactersView(owner_id=interaction.user.id, max_ppes=self.max_ppes)
             await interaction.response.edit_message(embed=view.current_embed(), view=view)
             return
 
         await close_myinfo_menu(interaction)
-        await send_ppe_list_markdown_followup(interaction, records[key])
+        await send_ppe_list_markdown_followup(interaction, player_data)
 
     @discord.ui.button(label="My Team", style=discord.ButtonStyle.primary, row=0)
     async def my_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -66,9 +65,7 @@ class MyInfoHomeView(OwnerBoundView):
     async def manage_characters(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         from menus.myinfo.submenus.character.views import ManageCharactersView
 
-        records = await load_player_records(interaction)
-        key = ensure_player_exists(records, interaction.user.id)
-        player_data = records[key]
+        player_data = await refresh_player_data(interaction, interaction.user.id)
 
         if not player_data.ppes:
             view = NoCharactersView(owner_id=interaction.user.id, max_ppes=self.max_ppes)
