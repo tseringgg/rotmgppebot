@@ -39,9 +39,9 @@ class ManageSeasonHomeView(OwnerBoundView):
             )
             return
 
-        from menus.manageseason.submenus.reset.views import ResetSeasonModeView
+        from menus.manageseason.submenus.reset.views import ResetSeasonActionsView
 
-        view = ResetSeasonModeView(owner_id=self.owner_id)
+        view = ResetSeasonActionsView(owner_id=self.owner_id)
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
     @discord.ui.button(label="Manage Point Settings", style=discord.ButtonStyle.success, row=0)

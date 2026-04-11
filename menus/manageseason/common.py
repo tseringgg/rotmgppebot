@@ -64,8 +64,8 @@ def build_manageseason_home_embed() -> discord.Embed:
     embed.add_field(
         name="Reset Season",
         value=(
-            "Clears all PPE characters, season uniques, quest progress, and teams.\n"
-            "This action requires **Discord Administrator** permission and always asks for confirmation."
+            "Open granular season reset actions and choose exactly what to reset.\n"
+            "Each reset action requires **Discord Administrator** permission and always asks for confirmation."
         ),
         inline=False,
     )

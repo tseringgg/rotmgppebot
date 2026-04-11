@@ -1,5 +1,5 @@
 """Reset submenu exports for /manageseason."""
 
-from menus.manageseason.submenus.reset.views import ResetSeasonModeView
+from menus.manageseason.submenus.reset.views import ResetSeasonActionsView
 
-__all__ = ["ResetSeasonModeView"]
+__all__ = ["ResetSeasonActionsView"]
