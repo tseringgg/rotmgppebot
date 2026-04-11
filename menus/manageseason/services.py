@@ -22,6 +22,7 @@ from utils.guild_config import (
     set_points_settings,
     set_realmshark_settings,
     update_global_points_modifiers,
+    update_starting_penalty_modifiers,
 )
 from utils.player_records import load_player_records, load_teams, save_player_records, save_teams
 from utils.points_service import recompute_ppe_points
@@ -468,6 +469,29 @@ async def update_global_point_modifiers(
         bonus_percent=bonus_percent,
         penalty_percent=penalty_percent,
         total_percent=total_percent,
+    )
+    refresh_summary = await refresh_all_character_points(
+        interaction,
+        guild_config={"points_settings": settings},
+    )
+    return dict(settings), refresh_summary
+
+
+async def update_pet_point_modifiers(
+    interaction: discord.Interaction,
+    *,
+    pet_level_percent_reduction: float | None = None,
+    exalts_percent_reduction: float | None = None,
+    loot_percent_reduction: float | None = None,
+    incombat_percent_reduction: float | None = None,
+) -> tuple[dict[str, Any], PointsRefreshSummary]:
+    """Update starting penalty reductions and refresh all PPE totals."""
+    settings = await update_starting_penalty_modifiers(
+        interaction,
+        pet_level_percent_reduction=pet_level_percent_reduction,
+        exalts_percent_reduction=exalts_percent_reduction,
+        loot_percent_reduction=loot_percent_reduction,
+        incombat_percent_reduction=incombat_percent_reduction,
     )
     refresh_summary = await refresh_all_character_points(
         interaction,

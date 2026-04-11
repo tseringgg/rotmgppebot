@@ -126,6 +126,7 @@ class ManagePlayerPenaltiesModal(discord.ui.Modal, title="Set PPE Penalties"):
             loot_penalty=components["Loot Boost Penalty"],
             incombat_penalty=components["In-Combat Reduction Penalty"],
             total_points=points_breakdown["total"],
+            guild_config=guild_config,
         )
 
         from menus.manageplayer.common import display_class_name, format_points

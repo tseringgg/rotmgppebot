@@ -101,6 +101,7 @@ class ManagePPEPenaltiesModal(discord.ui.Modal, title="Manage PPE Penalties"):
             loot_penalty=components["Loot Boost Penalty"],
             incombat_penalty=components["In-Combat Reduction Penalty"],
             total_points=points_breakdown["total"],
+            guild_config=guild_config,
         )
 
         await interaction.response.send_message(

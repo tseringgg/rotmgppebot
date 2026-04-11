@@ -35,6 +35,13 @@ POINT_MODIFIER_KEYS = (
     ("total_percent", "total"),
 )
 
+STARTING_PENALTY_REDUCTION_KEYS = {
+    "pet": "pet_level_percent_reduction",
+    "exalts": "exalts_percent_reduction",
+    "loot": "loot_percent_reduction",
+    "incombat": "incombat_percent_reduction",
+}
+
 
 def _as_float(value: Any, fallback: float = 0.0) -> float:
     try:
@@ -71,6 +78,22 @@ def _get_ppe_settings(guild_config: Dict[str, Any] | None) -> Dict[str, Any]:
         return {}
     settings = guild_config.get("ppe_settings", {})
     return settings if isinstance(settings, dict) else {}
+
+
+def _get_starting_penalty_modifiers(guild_config: Dict[str, Any] | None) -> Dict[str, float]:
+    points_settings = _get_points_settings(guild_config)
+    raw_modifiers = (
+        points_settings.get("starting_penalty_modifiers", {})
+        if isinstance(points_settings.get("starting_penalty_modifiers", {}), dict)
+        else {}
+    )
+
+    return {
+        "pet": max(0.0, _as_float(raw_modifiers.get(STARTING_PENALTY_REDUCTION_KEYS["pet"]), 0.0)),
+        "exalts": max(0.0, _as_float(raw_modifiers.get(STARTING_PENALTY_REDUCTION_KEYS["exalts"]), 0.0)),
+        "loot": max(0.0, _as_float(raw_modifiers.get(STARTING_PENALTY_REDUCTION_KEYS["loot"]), 0.0)),
+        "incombat": max(0.0, _as_float(raw_modifiers.get(STARTING_PENALTY_REDUCTION_KEYS["incombat"]), 0.0)),
+    }
 
 
 def get_ppe_type_multiplier_for_ppe(
@@ -135,6 +158,11 @@ def get_effective_modifier_bucket_for_ppe(
     return get_effective_modifier_bucket_for_class(_class_name_for_ppe(ppe), guild_config)
 
 
+def get_starting_penalty_modifiers_for_guild(guild_config: Dict[str, Any] | None = None) -> Dict[str, float]:
+    """Return the configured percent reductions for starting penalty components."""
+    return _get_starting_penalty_modifiers(guild_config)
+
+
 def _is_non_default_percent(value: Any) -> bool:
     return abs(_as_float(value, 0.0)) > 1e-9
 
@@ -155,6 +183,53 @@ def _modifier_parts_from_bucket(bucket: Dict[str, Any]) -> list[str]:
     if minimum_total is not None:
         parts.append(f"minimum total {_as_float(minimum_total, 0.0):.2f}")
     return parts
+
+
+def _starting_penalty_breakdown_from_raw_components(
+    raw_components: Dict[str, float],
+    guild_config: Dict[str, Any] | None = None,
+) -> Dict[str, Dict[str, float]]:
+    modifiers = _get_starting_penalty_modifiers(guild_config)
+    breakdown: Dict[str, Dict[str, float]] = {}
+
+    for component_key, label in PENALTY_COMPONENT_NAMES.items():
+        raw_points = abs(_as_float(raw_components.get(label, 0.0)))
+        reduction_percent = modifiers.get(component_key, 0.0)
+        adjusted_points = max(0.0, raw_points * (1.0 - reduction_percent / 100.0))
+        breakdown[label] = {
+            "raw_points": raw_points,
+            "reduction_percent": reduction_percent,
+            "reduction_points": raw_points - adjusted_points,
+            "adjusted_points": adjusted_points,
+            "signed_adjusted_points": -adjusted_points,
+        }
+
+    return breakdown
+
+
+def starting_penalty_breakdown_from_inputs(
+    pet_level: int,
+    num_exalts: int,
+    percent_loot: float,
+    incombat_reduction: float,
+    guild_config: Dict[str, Any] | None = None,
+) -> Dict[str, Dict[str, float]]:
+    raw_components = compute_penalty_components(
+        pet_level,
+        num_exalts,
+        percent_loot,
+        incombat_reduction,
+        guild_config=guild_config,
+    )
+    return _starting_penalty_breakdown_from_raw_components(raw_components, guild_config=guild_config)
+
+
+def starting_penalty_breakdown_from_bonuses(
+    bonuses: Iterable[Bonus],
+    guild_config: Dict[str, Any] | None = None,
+) -> Dict[str, Dict[str, float]]:
+    raw_components = penalty_map_from_bonuses(bonuses)
+    return _starting_penalty_breakdown_from_raw_components(raw_components, guild_config=guild_config)
 
 
 def non_default_points_adjustment_lines(
@@ -282,10 +357,12 @@ def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = Non
 
     bonus_total, penalty_total = split_bonus_points(ppe.bonuses)
     modifier_bucket = get_effective_modifier_bucket_for_ppe(ppe, guild_config)
+    penalty_breakdown = starting_penalty_breakdown_from_bonuses(ppe.bonuses, guild_config=guild_config)
 
     adjusted_loot = _apply_percent(loot_total, float(modifier_bucket["loot_percent"]))
     adjusted_bonus = _apply_percent(bonus_total, float(modifier_bucket["bonus_percent"]))
-    adjusted_penalty = _apply_percent(penalty_total, float(modifier_bucket["penalty_percent"]))
+    adjusted_penalty = sum(float(details["signed_adjusted_points"]) for details in penalty_breakdown.values())
+    adjusted_penalty = _apply_percent(adjusted_penalty, float(modifier_bucket["penalty_percent"]))
     total = adjusted_loot + adjusted_bonus + adjusted_penalty
     total = _apply_percent(total, float(modifier_bucket["total_percent"]))
 

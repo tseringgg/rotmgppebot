@@ -11,6 +11,7 @@ from menus.manageseason.services import (
     update_class_point_override,
     update_duplicate_item_point_reduction,
     update_global_point_modifiers,
+    update_pet_point_modifiers,
     update_ppe_type_multipliers,
 )
 from menus.menu_utils import ConfirmCancelView
@@ -211,6 +212,138 @@ class EditGlobalPointSettingsModal(discord.ui.Modal, title="Edit Global Point Mo
             f"Bonus: {float(global_settings.get('bonus_percent', 0.0)):.2f}%\n"
             f"Penalty: {float(global_settings.get('penalty_percent', 0.0)):.2f}%\n"
             f"Total: {float(global_settings.get('total_percent', 0.0)):.2f}%\n"
+            f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
+            f"PPE totals changed: {refresh_summary.ppes_updated}",
+            ephemeral=True,
+        )
+
+        await _refresh_point_settings_message(
+            interaction=interaction,
+            owner_id=self.owner_id,
+            source_message=self.source_message,
+            settings=settings,
+            source_screen=self.source_screen,
+        )
+
+
+class EditPetModifierModal(discord.ui.Modal, title="Edit Pet Modifiers"):
+    pet_level_percent_reduction = discord.ui.TextInput(
+        label="Pet Strength Reduction %",
+        placeholder="Example: 10",
+        required=False,
+        max_length=20,
+    )
+    exalts_percent_reduction = discord.ui.TextInput(
+        label="Exalts Reduction %",
+        placeholder="Example: 10",
+        required=False,
+        max_length=20,
+    )
+    loot_percent_reduction = discord.ui.TextInput(
+        label="Loot Bonus Reduction %",
+        placeholder="Example: 10",
+        required=False,
+        max_length=20,
+    )
+    incombat_percent_reduction = discord.ui.TextInput(
+        label="In-Combat Reduction %",
+        placeholder="Example: 10",
+        required=False,
+        max_length=20,
+    )
+
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        settings: dict,
+        source_message: discord.Message | None,
+        source_screen: str = "landing",
+    ) -> None:
+        super().__init__(timeout=300)
+        self.owner_id = owner_id
+        self.source_message = source_message
+        self.source_screen = source_screen
+
+        modifiers = (
+            settings.get("starting_penalty_modifiers", {})
+            if isinstance(settings.get("starting_penalty_modifiers"), dict)
+            else {}
+        )
+        self.pet_level_percent_reduction.default = f"{float(modifiers.get('pet_level_percent_reduction', 0.0)):.2f}"
+        self.exalts_percent_reduction.default = f"{float(modifiers.get('exalts_percent_reduction', 0.0)):.2f}"
+        self.loot_percent_reduction.default = f"{float(modifiers.get('loot_percent_reduction', 0.0)):.2f}"
+        self.incombat_percent_reduction.default = f"{float(modifiers.get('incombat_percent_reduction', 0.0)):.2f}"
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        try:
+            pet_level_percent_reduction = _parse_optional_float(
+                self.pet_level_percent_reduction.value,
+                field_name="pet_level_percent_reduction",
+            )
+            exalts_percent_reduction = _parse_optional_float(
+                self.exalts_percent_reduction.value,
+                field_name="exalts_percent_reduction",
+            )
+            loot_percent_reduction = _parse_optional_float(
+                self.loot_percent_reduction.value,
+                field_name="loot_percent_reduction",
+            )
+            incombat_percent_reduction = _parse_optional_float(
+                self.incombat_percent_reduction.value,
+                field_name="incombat_percent_reduction",
+            )
+        except ValueError as exc:
+            await interaction.response.send_message(str(exc), ephemeral=True)
+            return
+
+        if all(
+            value is None
+            for value in (
+                pet_level_percent_reduction,
+                exalts_percent_reduction,
+                loot_percent_reduction,
+                incombat_percent_reduction,
+            )
+        ):
+            await interaction.response.send_message("ERROR: Provide at least one modifier to update.", ephemeral=True)
+            return
+
+        confirm_text = (
+            "⚠️ **Apply pet modifier changes and recalculate all PPE characters?**\n"
+            "These reductions stack additively per starting-penalty stat.\n\n"
+            f"Pet Strength: `{self.pet_level_percent_reduction.value or '(unchanged)'}`\n"
+            f"Exalts: `{self.exalts_percent_reduction.value or '(unchanged)'}`\n"
+            f"Loot Bonus: `{self.loot_percent_reduction.value or '(unchanged)'}`\n"
+            f"In-Combat: `{self.incombat_percent_reduction.value or '(unchanged)'}`"
+        )
+        confirmed = await _confirm_points_update(
+            interaction=interaction,
+            owner_id=self.owner_id,
+            confirmation_text=confirm_text,
+        )
+        if not confirmed:
+            return
+
+        settings, refresh_summary = await update_pet_point_modifiers(
+            interaction,
+            pet_level_percent_reduction=pet_level_percent_reduction,
+            exalts_percent_reduction=exalts_percent_reduction,
+            loot_percent_reduction=loot_percent_reduction,
+            incombat_percent_reduction=incombat_percent_reduction,
+        )
+
+        modifiers = settings.get("starting_penalty_modifiers", {})
+        await interaction.followup.send(
+            "Updated starting penalty modifiers.\n"
+            f"Pet Strength: {float(modifiers.get('pet_level_percent_reduction', 0.0)):.2f}%\n"
+            f"Exalts: {float(modifiers.get('exalts_percent_reduction', 0.0)):.2f}%\n"
+            f"Loot Bonus: {float(modifiers.get('loot_percent_reduction', 0.0)):.2f}%\n"
+            f"In-Combat: {float(modifiers.get('incombat_percent_reduction', 0.0)):.2f}%\n"
             f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
             f"PPE totals changed: {refresh_summary.ppes_updated}",
             ephemeral=True,

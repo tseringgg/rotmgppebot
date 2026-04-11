@@ -124,6 +124,7 @@ async def create_new_ppe_for_user(
         loot_penalty=loot_penalty,
         incombat_penalty=incombat_penalty,
         total_points=points,
+        guild_config=guild_config,
     )
 
     return {

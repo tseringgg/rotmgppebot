@@ -53,6 +53,12 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
             "penalty_percent": 0.0,
             "total_percent": 0.0,
         },
+        "starting_penalty_modifiers": {
+            "pet_level_percent_reduction": 0.0,
+            "exalts_percent_reduction": 0.0,
+            "loot_percent_reduction": 0.0,
+            "incombat_percent_reduction": 0.0,
+        },
         "duplicate_point_reduction": 0.5,
         "penalty_weights": {
             "pet_level_per_point": 4.0,
@@ -292,6 +298,9 @@ def _normalized_contest_settings(config: Dict[str, Any]) -> Dict[str, Any]:
 def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
     raw = config.get("points_settings", {}) if isinstance(config.get("points_settings", {}), dict) else {}
     raw_global = raw.get("global", {}) if isinstance(raw.get("global", {}), dict) else {}
+    raw_starting_penalty_modifiers = (
+        raw.get("starting_penalty_modifiers", {}) if isinstance(raw.get("starting_penalty_modifiers", {}), dict) else {}
+    )
 
     def _as_float(value: Any, fallback: float = 0.0) -> float:
         try:
@@ -304,6 +313,13 @@ def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
         "bonus_percent": _as_float(raw_global.get("bonus_percent"), _DEFAULT_CONFIG["points_settings"]["global"]["bonus_percent"]),
         "penalty_percent": _as_float(raw_global.get("penalty_percent"), _DEFAULT_CONFIG["points_settings"]["global"]["penalty_percent"]),
         "total_percent": _as_float(raw_global.get("total_percent"), _DEFAULT_CONFIG["points_settings"]["global"]["total_percent"]),
+    }
+
+    normalized_starting_penalty_modifiers = {
+        "pet_level_percent_reduction": max(0.0, _as_float(raw_starting_penalty_modifiers.get("pet_level_percent_reduction"), 0.0)),
+        "exalts_percent_reduction": max(0.0, _as_float(raw_starting_penalty_modifiers.get("exalts_percent_reduction"), 0.0)),
+        "loot_percent_reduction": max(0.0, _as_float(raw_starting_penalty_modifiers.get("loot_percent_reduction"), 0.0)),
+        "incombat_percent_reduction": max(0.0, _as_float(raw_starting_penalty_modifiers.get("incombat_percent_reduction"), 0.0)),
     }
 
     duplicate_point_reduction = _as_float(
@@ -359,6 +375,7 @@ def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
 
     return {
         "global": normalized_global,
+        "starting_penalty_modifiers": normalized_starting_penalty_modifiers,
         "duplicate_point_reduction": duplicate_point_reduction,
         "penalty_weights": normalized_penalty_weights,
         "class_overrides": normalized_overrides,
@@ -560,6 +577,30 @@ async def update_global_points_modifiers(
         settings["duplicate_point_reduction"] = max(0.0, float(duplicate_point_reduction))
 
     settings["global"] = global_settings
+    return await set_points_settings(interaction, settings)
+
+
+async def update_starting_penalty_modifiers(
+    interaction: discord.Interaction,
+    *,
+    pet_level_percent_reduction: float | None = None,
+    exalts_percent_reduction: float | None = None,
+    loot_percent_reduction: float | None = None,
+    incombat_percent_reduction: float | None = None,
+) -> Dict[str, Any]:
+    settings = await get_points_settings(interaction)
+    modifier_settings = dict(settings.get("starting_penalty_modifiers", {}))
+
+    if pet_level_percent_reduction is not None:
+        modifier_settings["pet_level_percent_reduction"] = max(0.0, float(pet_level_percent_reduction))
+    if exalts_percent_reduction is not None:
+        modifier_settings["exalts_percent_reduction"] = max(0.0, float(exalts_percent_reduction))
+    if loot_percent_reduction is not None:
+        modifier_settings["loot_percent_reduction"] = max(0.0, float(loot_percent_reduction))
+    if incombat_percent_reduction is not None:
+        modifier_settings["incombat_percent_reduction"] = max(0.0, float(incombat_percent_reduction))
+
+    settings["starting_penalty_modifiers"] = modifier_settings
     return await set_points_settings(interaction, settings)
 
 

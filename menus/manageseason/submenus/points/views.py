@@ -15,6 +15,7 @@ from menus.manageseason.modals import (
     EditClassPointSettingsModal,
     EditDuplicateItemPointsModal,
     EditGlobalPointSettingsModal,
+    EditPetModifierModal,
     EditPpeTypeMultiplierModal,
 )
 from menus.manageseason.services import load_character_settings_for_menu, load_points_settings_for_menu
@@ -51,6 +52,17 @@ class ManagePointSettingsView(OwnerBoundView):
         view = ManagePpeTypePointSettingsView(owner_id=self.owner_id, character_settings=character_settings)
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
+    @discord.ui.button(label="Edit Pet Modifiers", style=discord.ButtonStyle.success, row=2)
+    async def edit_pet_modifiers(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.settings = await load_points_settings_for_menu(interaction)
+        await interaction.response.send_modal(
+            EditPetModifierModal(
+                owner_id=self.owner_id,
+                settings=self.settings,
+                source_message=interaction.message,
+            )
+        )
+
     @discord.ui.button(label="Edit Duplicate Item Points", style=discord.ButtonStyle.success, row=1)
     async def edit_duplicate_item_points(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.settings = await load_points_settings_for_menu(interaction)
@@ -62,7 +74,7 @@ class ManagePointSettingsView(OwnerBoundView):
             )
         )
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=3)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         from menus.manageseason.submenus.home.views import ManageSeasonHomeView
 

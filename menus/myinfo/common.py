@@ -13,7 +13,7 @@ from utils.guild_config import get_realmshark_settings, load_guild_config
 from utils.helpers.loot_share_commands import share_active_ppe_loot_image
 from utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
 from utils.ppe_list_md_builder import create_ppe_list_markdown_file
-from utils.points_service import penalty_inputs_from_bonuses
+from utils.points_service import penalty_inputs_from_bonuses, starting_penalty_breakdown_from_inputs
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 
 
@@ -58,12 +58,37 @@ def penalty_stats_text(ppe: PPEData, guild_config: dict | None = None) -> str:
     """Convert stored penalty bonuses into user-friendly stat values."""
 
     defaults = penalty_input_defaults(ppe, guild_config)
+    breakdown = starting_penalty_breakdown_from_inputs(
+        int(defaults["pet_level"]),
+        int(defaults["num_exalts"]),
+        float(defaults["percent_loot"]),
+        float(defaults["incombat_reduction"]),
+        guild_config=guild_config,
+    )
+
+    def _line(label: str, value_text: str, details: dict[str, float]) -> str:
+        reduction_points = format_points(details["reduction_points"])
+        final_points = format_points(details["adjusted_points"])
+        reduction_percent = float(details["reduction_percent"])
+        if reduction_percent <= 0:
+            return f"{label}: **{value_text}** -> **{format_points(details['raw_points'])}** points (no reduction, final **{final_points}**)"
+        return (
+            f"{label}: **{value_text}** -> **{format_points(details['raw_points'])}** points "
+            f"(-**{reduction_points}** at **{reduction_percent:.2f}%**, final **{final_points}**)"
+        )
 
     return (
-        f"Pet Level: **{int(defaults['pet_level'])}**\n"
-        f"Exalts: **{int(defaults['num_exalts'])}**\n"
-        f"Loot Boost: **{float(defaults['percent_loot']):g}%**\n"
-        f"In-Combat Reduction: **{float(defaults['incombat_reduction']):g}s**"
+        _line("Pet Level", str(int(defaults["pet_level"])), breakdown["Pet Level Penalty"])
+        + "\n"
+        + _line("Exalts", str(int(defaults["num_exalts"])), breakdown["Exalts Penalty"])
+        + "\n"
+        + _line("Loot Boost", f"{float(defaults['percent_loot']):g}%", breakdown["Loot Boost Penalty"])
+        + "\n"
+        + _line(
+            "In-Combat Reduction",
+            f"{float(defaults['incombat_reduction']):g}s",
+            breakdown["In-Combat Reduction Penalty"],
+        )
     )
 
 

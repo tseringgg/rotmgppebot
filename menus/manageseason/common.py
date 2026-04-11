@@ -51,6 +51,15 @@ def _build_ppe_type_multiplier_lines(multipliers: dict) -> list[str]:
     return lines
 
 
+def _build_starting_penalty_modifier_lines(modifiers: dict) -> list[str]:
+    return [
+        f"• Pet Strength: {_format_percent(modifiers.get('pet_level_percent_reduction', 0.0))}",
+        f"• Exalts: {_format_percent(modifiers.get('exalts_percent_reduction', 0.0))}",
+        f"• Loot Bonus: {_format_percent(modifiers.get('loot_percent_reduction', 0.0))}",
+        f"• In-Combat Reduction: {_format_percent(modifiers.get('incombat_percent_reduction', 0.0))}",
+    ]
+
+
 def build_manageseason_home_embed() -> discord.Embed:
     """Build the top-level /manageseason embed with action guidance."""
     embed = discord.Embed(
@@ -72,7 +81,7 @@ def build_manageseason_home_embed() -> discord.Embed:
     embed.add_field(
         name="Manage Point Settings",
         value=(
-            "Open point modifier menus to review and edit global or class-specific percentage modifiers."
+            "Open point modifier menus to review and edit global, pet, or class-specific percentage modifiers."
         ),
         inline=False,
     )
@@ -263,6 +272,11 @@ def build_point_settings_embed(settings: dict) -> discord.Embed:
     """Build the point-settings landing embed."""
     global_settings = settings.get("global", {}) if isinstance(settings.get("global"), dict) else {}
     class_overrides = settings.get("class_overrides", {}) if isinstance(settings.get("class_overrides"), dict) else {}
+    starting_penalty_modifiers = (
+        settings.get("starting_penalty_modifiers", {})
+        if isinstance(settings.get("starting_penalty_modifiers"), dict)
+        else {}
+    )
     try:
         duplicate_reduction = float(settings.get("duplicate_point_reduction", 0.5))
     except (TypeError, ValueError):
@@ -296,11 +310,17 @@ def build_point_settings_embed(settings: dict) -> discord.Embed:
             preview += f"\n... and {len(override_lines) - 6} more"
     embed.add_field(name="Class Override Snapshot", value=_truncate_field_value(preview), inline=False)
     embed.add_field(
+        name="Pet Modifier Snapshot",
+        value=(
+            "\n".join(_build_starting_penalty_modifier_lines(starting_penalty_modifiers))
+            + "\nReductions stack additively per starting-penalty stat."
+        ),
+        inline=False,
+    )
+    embed.add_field(
         name="Duplicate Item Points",
         value=(
-            f"Point Reduction: **{duplicate_reduction:.2f}x**\n"
-            "Duplicate copies are worth base value multiplied by this reduction.\n"
-            "Set to `0` to disable duplicate item points entirely."
+            f"Point Reduction: **{duplicate_reduction:.2f}x** | Quantity 2+ formula: final_points + (final_points × reduction × (quantity - 1)) | Set `0` to disable duplicates."
         ),
         inline=False,
     )
