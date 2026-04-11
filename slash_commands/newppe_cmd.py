@@ -6,7 +6,7 @@ from dataclass import PPEData, ROTMGClass
 from utils.ppe_types import resolve_creation_ppe_type, ppe_type_label
 from utils.penalty_embed import build_penalty_infographic_embed
 from utils.guild_config import get_max_ppes, load_guild_config
-from utils.points_service import apply_penalties_to_ppe, parse_penalty_inputs, recompute_ppe_points
+from utils.points_service import apply_penalties_to_ppe, loot_adjustments_for_ppe, parse_penalty_inputs, recompute_ppe_points
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 
 
@@ -108,6 +108,7 @@ async def create_new_ppe_for_user(
 
     points_breakdown = recompute_ppe_points(new_ppe, guild_config)
     points = points_breakdown["total"]
+    loot_adjustments = loot_adjustments_for_ppe(new_ppe, guild_config)
 
     player_data.ppes.append(new_ppe)
     player_data.active_ppe = next_id
@@ -134,6 +135,7 @@ async def create_new_ppe_for_user(
         "ppe_type_label": ppe_type_label(resolved_type),
         "ppe_count": ppe_count + 1,
         "max_ppes": max_ppes,
+        "loot_adjustments": loot_adjustments,
         "embed": embed,
     }
 
@@ -167,6 +169,12 @@ async def command(
         f"✅ Created `PPE #{result['next_id']}` for your `{result['class_name']}` "
         f"({result['ppe_type_label']}) "
         f"and set it as your active PPE.\n"
-        f"You now have {result['ppe_count']}/{result['max_ppes']} PPEs.",
+        f"You now have {result['ppe_count']}/{result['max_ppes']} PPEs.\n\n"
+        f"**Loot Adjustments**\n"
+        f"Stat Reduction: **-{float(result['loot_adjustments']['total_reduction_percent']):.2f}%** "
+        f"({float(result['loot_adjustments']['reduction_multiplier']):.2f}x)\n"
+        f"Type Multiplier: **{float(result['loot_adjustments']['type_multiplier']):.2f}x**\n"
+        f"Combined Multiplier: **{float(result['loot_adjustments']['combined_item_multiplier']):.2f}x**\n"
+        f"All items will be worth **{float(result['loot_adjustments']['combined_item_multiplier']):.2f}x more** for you.",
         embed=result["embed"],
     )

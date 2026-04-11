@@ -230,6 +230,31 @@ def compute_item_reduction_percent_from_inputs(
     return min(100.0, max(0.0, reduction_percent))
 
 
+def compute_item_reduction_breakdown_from_inputs(
+    pet_level: int,
+    num_exalts: int,
+    percent_loot: float,
+    incombat_reduction: float,
+    guild_config: Dict[str, Any] | None = None,
+) -> Dict[str, float]:
+    """Return contribution percentages for each starting-stat reduction input."""
+    modifiers = _get_starting_penalty_modifiers(guild_config)
+    pet_contribution = max(0, int(pet_level)) * modifiers["pet"]
+    exalts_contribution = max(0, int(num_exalts)) * modifiers["exalts"]
+    loot_contribution = max(0.0, float(percent_loot)) * modifiers["loot"]
+    incombat_contribution = max(0.0, float(incombat_reduction)) * modifiers["incombat"]
+    uncapped_total = pet_contribution + exalts_contribution + loot_contribution + incombat_contribution
+    capped_total = min(100.0, max(0.0, uncapped_total))
+    return {
+        "pet_reduction_percent": pet_contribution,
+        "exalts_reduction_percent": exalts_contribution,
+        "loot_reduction_percent": loot_contribution,
+        "incombat_reduction_percent": incombat_contribution,
+        "uncapped_total_reduction_percent": uncapped_total,
+        "total_reduction_percent": capped_total,
+    }
+
+
 def compute_item_reduction_percent_from_bonuses(
     bonuses: Iterable[Bonus],
     guild_config: Dict[str, Any] | None = None,
@@ -244,12 +269,60 @@ def compute_item_reduction_percent_from_bonuses(
     )
 
 
+def compute_item_reduction_breakdown_from_bonuses(
+    bonuses: Iterable[Bonus],
+    guild_config: Dict[str, Any] | None = None,
+) -> Dict[str, float]:
+    inputs = penalty_inputs_from_bonuses(bonuses, guild_config=guild_config)
+    return compute_item_reduction_breakdown_from_inputs(
+        int(inputs["pet_level"]),
+        int(inputs["num_exalts"]),
+        float(inputs["percent_loot"]),
+        float(inputs["incombat_reduction"]),
+        guild_config=guild_config,
+    )
+
+
 def compute_item_reduction_multiplier_from_bonuses(
     bonuses: Iterable[Bonus],
     guild_config: Dict[str, Any] | None = None,
 ) -> float:
     reduction_percent = compute_item_reduction_percent_from_bonuses(bonuses, guild_config=guild_config)
     return max(0.0, 1.0 - (reduction_percent / 100.0))
+
+
+def loot_adjustments_for_ppe(
+    ppe: PPEData,
+    guild_config: Dict[str, Any] | None = None,
+) -> Dict[str, float]:
+    """Return item-only multipliers and reduction details for a PPE."""
+    inputs = penalty_inputs_from_bonuses(ppe.bonuses, guild_config=guild_config)
+    reduction_breakdown = compute_item_reduction_breakdown_from_inputs(
+        int(inputs["pet_level"]),
+        int(inputs["num_exalts"]),
+        float(inputs["percent_loot"]),
+        float(inputs["incombat_reduction"]),
+        guild_config=guild_config,
+    )
+    reduction_percent = float(reduction_breakdown["total_reduction_percent"])
+    reduction_multiplier = max(0.0, 1.0 - (reduction_percent / 100.0))
+    modifier_bucket = get_effective_modifier_bucket_for_ppe(ppe, guild_config)
+    loot_multiplier = apply_percent_modifier(1.0, _as_float(modifier_bucket.get("loot_percent"), 0.0))
+    total_multiplier = apply_percent_modifier(1.0, _as_float(modifier_bucket.get("total_percent"), 0.0))
+    type_multiplier = get_ppe_type_multiplier_for_ppe(ppe, guild_config)
+    combined_multiplier = reduction_multiplier * loot_multiplier * total_multiplier * type_multiplier
+    return {
+        "pet_reduction_percent": float(reduction_breakdown["pet_reduction_percent"]),
+        "exalts_reduction_percent": float(reduction_breakdown["exalts_reduction_percent"]),
+        "loot_reduction_percent": float(reduction_breakdown["loot_reduction_percent"]),
+        "incombat_reduction_percent": float(reduction_breakdown["incombat_reduction_percent"]),
+        "total_reduction_percent": reduction_percent,
+        "reduction_multiplier": reduction_multiplier,
+        "loot_percent_multiplier": loot_multiplier,
+        "total_percent_multiplier": total_multiplier,
+        "type_multiplier": type_multiplier,
+        "combined_item_multiplier": combined_multiplier,
+    }
 
 
 def _format_points(value: float) -> str:
@@ -429,36 +502,38 @@ def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = Non
     bonus_total, penalty_total = split_bonus_points(ppe.bonuses)
     modifier_bucket = get_effective_modifier_bucket_for_ppe(ppe, guild_config)
     penalty_breakdown = starting_penalty_breakdown_from_bonuses(ppe.bonuses, guild_config=guild_config)
-    item_reduction_multiplier = compute_item_reduction_multiplier_from_bonuses(
-        ppe.bonuses,
-        guild_config=guild_config,
-    )
+    loot_adjustments = loot_adjustments_for_ppe(ppe, guild_config)
 
     adjusted_loot = _apply_percent(loot_total, float(modifier_bucket["loot_percent"]))
     adjusted_bonus = _apply_percent(bonus_total, float(modifier_bucket["bonus_percent"]))
     adjusted_penalty = sum(float(details["signed_adjusted_points"]) for details in penalty_breakdown.values())
     adjusted_penalty = _apply_percent(adjusted_penalty, float(modifier_bucket["penalty_percent"]))
-    subtotal_before_reduction = adjusted_loot + adjusted_bonus + adjusted_penalty
-    total = subtotal_before_reduction * item_reduction_multiplier
-    total = _apply_percent(total, float(modifier_bucket["total_percent"]))
+    adjusted_loot = _apply_percent(adjusted_loot, float(modifier_bucket["total_percent"]))
+
+    loot_after_item_multipliers = adjusted_loot * float(loot_adjustments["reduction_multiplier"])
+    loot_after_item_multipliers *= float(loot_adjustments["type_multiplier"])
+
+    subtotal_before_item_multipliers = adjusted_loot + adjusted_bonus + adjusted_penalty
+    total = loot_after_item_multipliers + adjusted_bonus + adjusted_penalty
 
     minimum_total = modifier_bucket.get("minimum_total")
     if minimum_total is not None:
         min_points = _as_float(minimum_total, fallback=0.0)
         total = max(total, min_points)
 
-    type_multiplier = get_ppe_type_multiplier_for_ppe(ppe, guild_config)
-    total *= type_multiplier
-
     ppe.points = round(total, 2)
     return {
         "loot_raw": round(loot_total, 2),
-        "loot_after_item_reduction": round(adjusted_loot * item_reduction_multiplier, 2),
+        "loot_after_item_reduction": round(loot_after_item_multipliers, 2),
+        "loot_after_item_multipliers": round(loot_after_item_multipliers, 2),
         "bonus_raw": round(bonus_total, 2),
+        "bonus_after_modifiers": round(adjusted_bonus, 2),
         "penalty_raw": round(penalty_total, 2),
-        "subtotal_before_item_reduction": round(subtotal_before_reduction, 2),
-        "item_reduction_multiplier": round(item_reduction_multiplier, 4),
-        "type_multiplier": round(type_multiplier, 4),
+        "penalty_after_modifiers": round(adjusted_penalty, 2),
+        "subtotal_before_item_reduction": round(subtotal_before_item_multipliers, 2),
+        "item_reduction_multiplier": round(float(loot_adjustments["reduction_multiplier"]), 4),
+        "type_multiplier": round(float(loot_adjustments["type_multiplier"]), 4),
+        "combined_item_multiplier": round(float(loot_adjustments["combined_item_multiplier"]), 4),
         "total": ppe.points,
     }
 

@@ -15,7 +15,7 @@ from utils.points_service import (
     apply_percent_modifier,
     calculate_item_points,
     get_effective_modifier_bucket_for_ppe,
-    get_ppe_type_multiplier_for_ppe,
+    loot_adjustments_for_ppe,
 )
 
 _LOOT_CSV_PATH = Path("rotmg_loot_drops_updated.csv")
@@ -132,12 +132,14 @@ def _effective_drop_points_for_ppe(
     divine: bool,
     guild_config: dict | None,
 ) -> float:
-    # Drop-level value with active class/season modifiers and PPE type multiplier.
+    # Drop-level value with item-only class/season and PPE multipliers.
     base_points = calculate_item_points(item_name=item_name, divine=divine, shiny=shiny, quantity=1)
     modifier_bucket = get_effective_modifier_bucket_for_ppe(ppe, guild_config)
+    adjustments = loot_adjustments_for_ppe(ppe, guild_config)
     adjusted = apply_percent_modifier(base_points, _safe_float(modifier_bucket.get("loot_percent")))
     adjusted = apply_percent_modifier(adjusted, _safe_float(modifier_bucket.get("total_percent")))
-    adjusted *= get_ppe_type_multiplier_for_ppe(ppe, guild_config)
+    adjusted *= _safe_float(adjustments.get("reduction_multiplier"))
+    adjusted *= _safe_float(adjustments.get("type_multiplier"))
     return float(adjusted)
 
 

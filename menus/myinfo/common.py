@@ -14,7 +14,7 @@ from utils.helpers.loot_share_commands import share_active_ppe_loot_image
 from utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
 from utils.ppe_list_md_builder import create_ppe_list_markdown_file
 from utils.points_service import format_starting_penalty_line, penalty_inputs_from_bonuses, starting_penalty_breakdown_from_inputs
-from utils.points_service import recompute_ppe_points
+from utils.points_service import loot_adjustments_for_ppe, recompute_ppe_points
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 
 
@@ -88,6 +88,21 @@ def penalty_stats_text(ppe: PPEData, guild_config: dict | None = None) -> str:
 def penalty_input_defaults(ppe: PPEData, guild_config: dict | None = None) -> dict[str, float]:
     """Return editable penalty form defaults derived from stored penalty bonuses."""
     return penalty_inputs_from_bonuses(ppe.bonuses, guild_config=guild_config)
+
+
+def loot_adjustments_text(ppe: PPEData, guild_config: dict | None = None) -> str:
+    defaults = penalty_input_defaults(ppe, guild_config)
+    adjustments = loot_adjustments_for_ppe(ppe, guild_config)
+    combined_multiplier = float(adjustments["combined_item_multiplier"])
+    return (
+        f"Pet: {int(defaults['pet_level'])} -> -{float(adjustments['pet_reduction_percent']):.2f}%\\n"
+        f"Exalts: {int(defaults['num_exalts'])} -> -{float(adjustments['exalts_reduction_percent']):.2f}%\\n"
+        f"Loot Boost: {float(defaults['percent_loot']):g}% -> -{float(adjustments['loot_reduction_percent']):.2f}%\\n"
+        f"In-Combat: {float(defaults['incombat_reduction']):g}s -> -{float(adjustments['incombat_reduction_percent']):.2f}%\\n"
+        f"Stat Reduction: **-{float(adjustments['total_reduction_percent']):.2f}%** ({float(adjustments['reduction_multiplier']):.2f}x)\\n"
+        f"Type Multiplier: **{float(adjustments['type_multiplier']):.2f}x**\\n"
+        f"Combined Multiplier: **{combined_multiplier:.2f}x**"
+    )
 
 
 def build_home_embed(
@@ -177,6 +192,7 @@ def build_character_embed(
     embed.add_field(name="RealmShark Connected", value="Yes" if is_realmshark_connected else "No", inline=True)
     embed.add_field(name="Different Loot Items", value=str(distinct_loot_items), inline=True)
     embed.add_field(name="Starting Penalty Stats", value=penalty_stats_text(ppe, guild_config), inline=False)
+    embed.add_field(name="Loot Adjustments", value=loot_adjustments_text(ppe, guild_config), inline=False)
     embed.add_field(name="Character Type", value=character_type, inline=True)
     embed.add_field(name="Active Status", value="⭐ Active PPE" if is_active else "Not Active", inline=True)
 

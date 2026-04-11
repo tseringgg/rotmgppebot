@@ -47,7 +47,7 @@ from utils.role_checks import require_ppe_roles
 from utils.loot_data import init_loot_data
 from utils.settings.channel_settings import get_item_suggestions_enabled
 from utils.item_suggestion import handle_item_suggestion
-from utils.contest_join_embed import handle_join_contest_reaction
+from utils.contest_join_embed import handle_join_contest_reaction, handle_leave_contest_reaction
 from create_loot_table import create_loot_background_and_mapping
 from utils.ppe_types import DEFAULT_PPE_TYPE, normalize_allowed_ppe_types, ppe_type_label
 from utils.guild_config import load_guild_config
@@ -194,6 +194,11 @@ async def on_ready():
 @bot.event
 async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
     await handle_join_contest_reaction(bot, payload)
+
+
+@bot.event
+async def on_raw_reaction_remove(payload: discord.RawReactionActionEvent):
+    await handle_leave_contest_reaction(bot, payload)
 
 @bot.event
 async def on_message(message: discord.Message):

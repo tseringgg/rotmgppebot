@@ -6,17 +6,14 @@ from utils.markdown_message_builder import MarkdownMessageBuilder
 from utils.item_log_timestamps import format_unix_utc, seasonal_item_key
 from utils.points_service import (
     PENALTY_NAMES,
-    apply_percent_modifier,
     calculate_bonus_points,
     calculate_item_points as calculate_item_points_service,
-    compute_item_reduction_multiplier_from_bonuses,
     get_effective_modifier_bucket_for_ppe,
-    get_ppe_type_multiplier_for_ppe,
     format_starting_penalty_line,
+    loot_adjustments_for_ppe,
     non_default_points_adjustment_lines,
     recompute_ppe_points,
     penalty_inputs_from_bonuses,
-    starting_penalty_breakdown_from_bonuses,
     starting_penalty_breakdown_from_inputs,
 )
 
@@ -87,19 +84,6 @@ def calculate_item_points(
     return calculate_item_points_service(item_name, divine, shiny, quantity, guild_config=guild_config)
 
 
-def _combined_item_multiplier(
-    *,
-    item_reduction_multiplier: float,
-    modifier_bucket: dict[str, float | None],
-    type_multiplier: float,
-) -> float:
-    loot_percent = _as_float(modifier_bucket.get("loot_percent"), 0.0)
-    total_percent = _as_float(modifier_bucket.get("total_percent"), 0.0)
-    loot_multiplier = apply_percent_modifier(1.0, loot_percent)
-    total_multiplier = apply_percent_modifier(1.0, total_percent)
-    return item_reduction_multiplier * loot_multiplier * total_multiplier * type_multiplier
-
-
 def _scaled_bonus_entry_points(
     raw_points: float,
     *,
@@ -108,8 +92,7 @@ def _scaled_bonus_entry_points(
 ) -> float:
     category_key = "penalty_percent" if is_penalty else "bonus_percent"
     category_percent = _as_float(modifier_bucket.get(category_key), 0.0)
-    total_percent = _as_float(modifier_bucket.get("total_percent"), 0.0)
-    return apply_percent_modifier(apply_percent_modifier(raw_points, category_percent), total_percent)
+    return raw_points * (1.0 + (category_percent / 100.0))
 
 
 def create_loot_markdown_file(
@@ -120,9 +103,10 @@ def create_loot_markdown_file(
     """Create a temporary markdown file with the loot table and return the file path."""
     class_name = str(getattr(ppe_data.name, "value", ppe_data.name))
     modifier_bucket = get_effective_modifier_bucket_for_ppe(ppe_data, guild_config)
-    type_multiplier = get_ppe_type_multiplier_for_ppe(ppe_data, guild_config)
     point_adjustment_lines = non_default_points_adjustment_lines(guild_config, class_names=[class_name])
     points_breakdown = recompute_ppe_points(ppe_data, guild_config)
+    loot_adjustments = loot_adjustments_for_ppe(ppe_data, guild_config)
+    type_multiplier = float(loot_adjustments["type_multiplier"])
     scaled_total = _as_float(points_breakdown.get("total"), 0.0)
     unweighted_total = (
         _as_float(points_breakdown.get("loot_raw"), 0.0)
@@ -137,15 +121,8 @@ def create_loot_markdown_file(
         float(penalty_inputs["incombat_reduction"]),
         guild_config=guild_config,
     )
-    item_reduction_multiplier = compute_item_reduction_multiplier_from_bonuses(
-        ppe_data.bonuses,
-        guild_config=guild_config,
-    )
-    total_item_multiplier = _combined_item_multiplier(
-        item_reduction_multiplier=item_reduction_multiplier,
-        modifier_bucket=modifier_bucket,
-        type_multiplier=type_multiplier,
-    )
+    item_reduction_multiplier = float(loot_adjustments["reduction_multiplier"])
+    total_item_multiplier = float(loot_adjustments["combined_item_multiplier"])
     minimum_total_raw = modifier_bucket.get("minimum_total")
     minimum_total = _as_float(minimum_total_raw, 0.0) if minimum_total_raw is not None else None
     ppe_type = ppe_type_short_label(normalize_ppe_type(getattr(ppe_data, "ppe_type", None)))
@@ -269,7 +246,6 @@ def create_loot_markdown_file(
                     is_penalty=False,
                     modifier_bucket=modifier_bucket,
                 )
-                scaled_bonus_points *= type_multiplier
                 points_display = _format_signed_points(scaled_bonus_points)
                 line = f"- {bonus.name} x {bonus.quantity} ({points_display} pts)"
             if bonus.repeatable:
@@ -287,9 +263,18 @@ def create_loot_markdown_file(
     ]
     if minimum_total is not None:
         summary_lines.append(f"Minimum total floor: {_format_points(minimum_total)}")
-    summary_lines.append(f"PPE type multiplier: {type_multiplier:.2f}x")
-    summary_lines.append(f"PPE reduction multiplier: {item_reduction_multiplier:.2f}x")
-    summary_lines.append(f"Total multiplier: {total_item_multiplier:.2f}x")
+    summary_lines.append("")
+    summary_lines.append("Loot Adjustments:")
+    summary_lines.append(f"- Pet reduction: -{float(loot_adjustments['pet_reduction_percent']):.2f}%")
+    summary_lines.append(f"- Exalts reduction: -{float(loot_adjustments['exalts_reduction_percent']):.2f}%")
+    summary_lines.append(f"- Loot boost reduction: -{float(loot_adjustments['loot_reduction_percent']):.2f}%")
+    summary_lines.append(f"- In-combat reduction: -{float(loot_adjustments['incombat_reduction_percent']):.2f}%")
+    summary_lines.append(
+        f"- Stat reduction total: -{float(loot_adjustments['total_reduction_percent']):.2f}% ({item_reduction_multiplier:.2f}x)"
+    )
+    summary_lines.append(f"- Type multiplier: {type_multiplier:.2f}x")
+    summary_lines.append(f"- Combined item multiplier: {total_item_multiplier:.2f}x")
+    summary_lines.append(f"All items are worth {total_item_multiplier:.2f}x for this character.")
 
     builder.add_section(
         heading="Summary",

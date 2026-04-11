@@ -184,7 +184,13 @@ class NewPPEFromMyInfoModal(discord.ui.Modal, title="Create New PPE"):
         await interaction.response.send_message(
             f"✅ Created `PPE #{result['next_id']}` for your `{result['class_name']}` ({result['ppe_type_label']}) "
             f"and set it as your active PPE.\n"
-            f"You now have {result['ppe_count']}/{result['max_ppes']} PPEs.",
+            f"You now have {result['ppe_count']}/{result['max_ppes']} PPEs.\n\n"
+            f"**Loot Adjustments**\n"
+            f"Stat Reduction: **-{float(result['loot_adjustments']['total_reduction_percent']):.2f}%** "
+            f"({float(result['loot_adjustments']['reduction_multiplier']):.2f}x)\n"
+            f"Type Multiplier: **{float(result['loot_adjustments']['type_multiplier']):.2f}x**\n"
+            f"Combined Multiplier: **{float(result['loot_adjustments']['combined_item_multiplier']):.2f}x**\n"
+            f"All items will be worth **{float(result['loot_adjustments']['combined_item_multiplier']):.2f}x more** for you.",
             embed=result["embed"],
             ephemeral=False,
         )
