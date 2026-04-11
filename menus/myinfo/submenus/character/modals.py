@@ -190,7 +190,7 @@ class NewPPEFromMyInfoModal(discord.ui.Modal, title="Create New PPE"):
             f"({float(result['loot_adjustments']['reduction_multiplier']):.2f}x)\n"
             f"Type Multiplier: **{float(result['loot_adjustments']['type_multiplier']):.2f}x**\n"
             f"Combined Multiplier: **{float(result['loot_adjustments']['combined_item_multiplier']):.2f}x**\n"
-            f"All items will be worth **{float(result['loot_adjustments']['combined_item_multiplier']):.2f}x more** for you.",
+            f"All items will be worth **{float(result['loot_adjustments']['combined_item_multiplier']):.2f}x more** for you.\n",
             embed=result["embed"],
             ephemeral=False,
         )
