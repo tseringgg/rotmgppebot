@@ -4,8 +4,7 @@ from utils.loot_data import LOOT
 from utils.points_service import has_item_variant
 from utils.quest_manager import update_quests_for_item
 from utils.guild_config import get_quest_targets
-from utils.player_records import highest_rarity
-from utils.item_log_timestamps import now_unix_utc, seasonal_item_key
+from utils.season_loot_history import add_season_item_log, normalize_rarity, unique_season_item_count
 
 
 async def command(
@@ -15,6 +14,7 @@ async def command(
     shiny: bool = False,
     rarity: str = "common"
     ):
+    rarity = normalize_rarity(rarity)
     if not interaction.guild:
         return await interaction.response.send_message("❌ This command can only be used in a server.", ephemeral=True)
     
@@ -46,21 +46,12 @@ async def command(
         
         player_data = records[key]
         
-        # Add to unique_items
-        item_key = (item_name, shiny)
-
-        rarity_key = f"{item_name}|{1 if shiny else 0}"
-        current_rarity = player_data.season_item_rarities.get(rarity_key, "common")
-        updated_rarity = highest_rarity(current_rarity, rarity)
-        if item_key in player_data.unique_items and current_rarity == updated_rarity:
-            return await interaction.response.send_message(
-                f"⚠️ **{item_name}{' (shiny)' if shiny else ''}** is already in {user.display_name}'s season loot collection!",
-                ephemeral=True
-            )
-
-        player_data.unique_items.add(item_key)
-        player_data.season_item_rarities[rarity_key] = updated_rarity
-        player_data.item_log_timestamps[seasonal_item_key(item_name, shiny)] = now_unix_utc()
+        add_season_item_log(
+            player_data,
+            item_name=item_name,
+            shiny=shiny,
+            rarity=rarity,
+        )
         regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
         update_quests_for_item(
             player_data,
@@ -73,10 +64,10 @@ async def command(
         
         await save_player_records(interaction, records)
         
-        total_count = player_data.get_unique_item_count()
+        total_count = unique_season_item_count(player_data)
         
         await interaction.response.send_message(
-            f"✅ Added **{item_name}{' (shiny)' if shiny else ''}** to {user.display_name}'s season loot!\n"
+            f"✅ Added **{item_name}{' (shiny)' if shiny else ''} [{rarity}]** to {user.display_name}'s season loot!\n"
             f"They now have **{total_count}** unique items collected.",
             ephemeral=False
         )

@@ -10,6 +10,7 @@ from dataclasses import asdict
 import discord
 from dataclass import Loot, PPEData, PlayerData, Bonus, TeamData, QuestData
 from utils.ppe_types import normalize_ppe_type
+from utils.season_loot_history import ensure_history_from_legacy, sync_legacy_season_fields
 import re
 
 _ALLOWED_RARITIES = {"common", "uncommon", "rare", "legendary", "divine"}
@@ -109,6 +110,34 @@ def normalize_ppe(ppe: dict) -> PPEData:
         # Ensure all required fields exist with defaults
         legacy_divine = bool(loot_dict.get("divine", False))
         rarity = _normalize_rarity(loot_dict.get("rarity"), "divine" if legacy_divine else "common")
+        raw_logged_times = loot_dict.get("logged_times", [])
+        logged_times: list[int] = []
+        if isinstance(raw_logged_times, list):
+            for raw_ts in raw_logged_times:
+                try:
+                    parsed_ts = int(raw_ts)
+                except (TypeError, ValueError):
+                    continue
+                if parsed_ts > 0:
+                    logged_times.append(parsed_ts)
+        logged_times.sort()
+
+        if not logged_times:
+            first_ts = loot_dict.get("first_logged_at")
+            last_ts = loot_dict.get("last_logged_at")
+            try:
+                first_ts_int = int(first_ts) if first_ts is not None else None
+            except (TypeError, ValueError):
+                first_ts_int = None
+            try:
+                last_ts_int = int(last_ts) if last_ts is not None else None
+            except (TypeError, ValueError):
+                last_ts_int = None
+            seed_ts = last_ts_int or first_ts_int
+            if seed_ts is not None and seed_ts > 0:
+                quantity = max(1, int(loot_dict.get("quantity", 1)))
+                logged_times = [seed_ts for _ in range(quantity)]
+
         normalized_loot = {
             "item_name": loot_dict.get("item_name", "Unknown Item"),
             "quantity": loot_dict.get("quantity", 0),
@@ -117,6 +146,7 @@ def normalize_ppe(ppe: dict) -> PPEData:
             "rarity": rarity,
             "first_logged_at": loot_dict.get("first_logged_at"),
             "last_logged_at": loot_dict.get("last_logged_at"),
+            "logged_times": logged_times,
         }
         loot_objects.append(Loot(**normalized_loot))
     
@@ -209,17 +239,28 @@ def normalize_player(player: dict) -> PlayerData:
             if parsed_ts > 0:
                 item_log_timestamps[raw_key] = parsed_ts
 
-    return PlayerData(
+    season_item_history = player.get("season_item_history", {})
+    if not isinstance(season_item_history, dict) or not season_item_history:
+        season_item_history = ensure_history_from_legacy(
+            unique_items=unique_items,
+            season_item_rarities=season_item_rarities,
+            item_log_timestamps=item_log_timestamps,
+        )
+
+    normalized_player = PlayerData(
         ppes=ppes,
         active_ppe=player.get("active_ppe"),
         is_member=bool(player.get("is_member", False)),
         unique_items=unique_items,
         season_item_rarities=season_item_rarities,
         item_log_timestamps=item_log_timestamps,
+        season_item_history=season_item_history,
         team_name=player.get("team_name", None),
         quests=normalized_quests,
         quest_resets_remaining=safe_optional_non_negative_int(player.get("quest_resets_remaining")),
     )
+    sync_legacy_season_fields(normalized_player)
+    return normalized_player
 
 async def load_player_records(interaction: discord.Interaction) -> Dict[int, PlayerData]:
     """Load player records for a specific guild safely and non-blockingly."""
@@ -305,6 +346,7 @@ async def save_player_records(interaction: discord.Interaction, records: Dict[in
 
 def _serialize_player_data(data: PlayerData) -> Dict[str, Any]:
     """Convert PlayerData into JSON-ready dict for one per-user file."""
+    sync_legacy_season_fields(data)
     return {
         "is_member": data.is_member,
         "ppes": [
@@ -322,6 +364,7 @@ def _serialize_player_data(data: PlayerData) -> Dict[str, Any]:
         "unique_items": list(data.unique_items),
         "season_item_rarities": dict(getattr(data, "season_item_rarities", {})),
         "item_log_timestamps": dict(data.item_log_timestamps),
+        "season_item_history": dict(getattr(data, "season_item_history", {})),
         "team_name": data.team_name,
         "quest_resets_remaining": data.quest_resets_remaining,
         "quests": {

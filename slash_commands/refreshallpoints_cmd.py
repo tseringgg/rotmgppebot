@@ -5,6 +5,7 @@ from utils.calc_points import load_loot_points, normalize_item_name
 from utils.pagination import chunk_lines_to_pages
 from utils.points_service import recompute_ppe_points
 from utils.item_log_timestamps import seasonal_item_key
+from utils.season_loot_history import delete_season_item_all_rarities, sync_legacy_season_fields
 
 async def command(interaction: discord.Interaction):
     if not interaction.guild:
@@ -45,10 +46,10 @@ async def command(interaction: discord.Interaction):
 
                 removed_unique_items_by_player.setdefault(player_name, [])
                 for item_name, shiny in invalid_unique_items:
-                    player_data.unique_items.discard((item_name, shiny))
-                    player_data.item_log_timestamps.pop(seasonal_item_key(item_name, shiny), None)
+                    delete_season_item_all_rarities(player_data, item_name=item_name, shiny=shiny)
                     item_label = f"{item_name}{' (shiny)' if shiny else ''}"
                     removed_unique_items_by_player[player_name].append(item_label)
+                sync_legacy_season_fields(player_data)
             continue
             
         # Process each PPE for this player
@@ -128,10 +129,10 @@ async def command(interaction: discord.Interaction):
 
             removed_unique_items_by_player.setdefault(player_name, [])
             for item_name, shiny in invalid_unique_items:
-                player_data.unique_items.discard((item_name, shiny))
-                player_data.item_log_timestamps.pop(seasonal_item_key(item_name, shiny), None)
+                delete_season_item_all_rarities(player_data, item_name=item_name, shiny=shiny)
                 item_label = f"{item_name}{' (shiny)' if shiny else ''}"
                 removed_unique_items_by_player[player_name].append(item_label)
+            sync_legacy_season_fields(player_data)
     
     # Save all records
     await save_player_records(interaction=interaction, records=records)

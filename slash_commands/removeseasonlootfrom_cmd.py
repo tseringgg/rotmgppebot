@@ -3,15 +3,17 @@ from utils.player_records import load_player_records, save_player_records, ensur
 from utils.loot_data import LOOT
 from utils.guild_config import get_quest_targets, load_guild_config
 from utils.quest_manager import refresh_player_quests, remove_item_from_completed_quests
-from utils.item_log_timestamps import seasonal_item_key
+from utils.season_loot_history import normalize_rarity, remove_season_item_log, unique_season_item_count
 
 
 async def command(
         interaction: discord.Interaction,
         user: discord.Member,
         item_name: str,
-        shiny: bool = False
+        shiny: bool = False,
+        rarity: str = "common"
     ):
+    rarity = normalize_rarity(rarity)
     if not interaction.guild:
         return await interaction.response.send_message("❌ This command can only be used in a server.", ephemeral=True)
     
@@ -35,19 +37,20 @@ async def command(
         
         player_data = records[key]
         
-        # Remove from unique_items
-        item_key = (item_name, shiny)
-        
-        # Check if exists
-        if item_key not in player_data.unique_items:
+        removed = remove_season_item_log(
+            player_data,
+            item_name=item_name,
+            shiny=shiny,
+            rarity=rarity,
+            remove_all=False,
+        )
+
+        if removed <= 0:
             return await interaction.response.send_message(
-                f"❌ **{item_name}{' (shiny)' if shiny else ''}** is not in {user.display_name}'s season loot collection!",
+                f"❌ **{item_name}{' (shiny)' if shiny else ''} [{rarity}]** is not in {user.display_name}'s season loot collection!",
                 ephemeral=True
             )
-        
-        player_data.unique_items.discard(item_key)
-        player_data.item_log_timestamps.pop(seasonal_item_key(item_name, shiny), None)
-        player_data.season_item_rarities.pop(f"{item_name}|{1 if shiny else 0}", None)
+
         removed_quest_entries = remove_item_from_completed_quests(player_data, item_name, shiny)
 
         regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
@@ -67,10 +70,10 @@ async def command(
         
         await save_player_records(interaction, records)
         
-        total_count = player_data.get_unique_item_count()
+        total_count = unique_season_item_count(player_data)
         
         response_lines = [
-            f"✅ Removed **{item_name}{' (shiny)' if shiny else ''}** from {user.display_name}'s season loot!",
+            f"✅ Removed **{item_name}{' (shiny)' if shiny else ''} [{rarity}]** from {user.display_name}'s season loot!",
             f"They now have **{total_count}** unique items collected.",
         ]
 

@@ -12,8 +12,10 @@ from menus.myinfo.common import (
 )
 from utils.guild_config import load_guild_config
 from utils.player_statistics import build_season_wrapped_embed
+from utils.time_graphs import build_item_graph
 from utils.helpers.loot_share_commands import share_season_loot_image
 from utils.player_records import ensure_player_exists, load_player_records
+from utils.season_loot_history import iter_season_variants
 
 
 class SeasonLootVariantView(SeasonLootVariantActionsView):
@@ -32,7 +34,7 @@ class SeasonLootVariantView(SeasonLootVariantActionsView):
             await send_interaction_text(interaction, "❌ You're not part of the PPE contest.", ephemeral=True)
             return
 
-        if not player_data.unique_items:
+        if not iter_season_variants(player_data):
             await send_interaction_text(
                 interaction,
                 "You haven't collected any season loot yet!\nUse `/addseasonloot` to start tracking your unique items.",
@@ -69,7 +71,27 @@ class SeasonLootVariantView(SeasonLootVariantActionsView):
         await close_myinfo_menu(interaction)
         await interaction.followup.send(embed=embed, ephemeral=False)
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)
+    async def _show_item_graph(self, interaction: discord.Interaction) -> None:
+        records = await load_player_records(interaction)
+        key = ensure_player_exists(records, interaction.user.id)
+        player_data = records[key]
+
+        graph_image = build_item_graph(player_data, display_name=interaction.user.display_name)
+        if graph_image is None:
+            await send_interaction_text(
+                interaction,
+                "No season loot timestamps found yet. Add season loot first to generate an item graph.",
+                ephemeral=True,
+            )
+            return
+
+        await close_myinfo_menu(interaction)
+        await interaction.followup.send(
+            file=discord.File(graph_image, filename="season_item_graph.png"),
+            ephemeral=False,
+        )
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=3)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await close_myinfo_menu(interaction)
 

@@ -16,6 +16,7 @@ from utils.ppe_list_md_builder import create_ppe_list_markdown_file
 from utils.points_service import format_starting_penalty_line, penalty_inputs_from_bonuses, starting_penalty_breakdown_from_inputs
 from utils.points_service import loot_adjustments_for_ppe, recompute_ppe_points
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
+from utils.season_loot_history import iter_season_variants, unique_season_item_count
 
 
 async def send_interaction_text(interaction: discord.Interaction, content: str, *, ephemeral: bool) -> None:
@@ -139,7 +140,7 @@ def build_home_embed(
     team_name = player_data.team_name or "N/A"
     embed.add_field(name="Number of PPEs", value=f"**{len(player_data.ppes)}/{max_ppes}**", inline=True)
     embed.add_field(name="Best PPE", value=best_line, inline=True)
-    embed.add_field(name="Number of Season Items", value=f"**{len(player_data.unique_items)}**", inline=True)
+    embed.add_field(name="Number of Season Items", value=f"**{unique_season_item_count(player_data)}**", inline=True)
     embed.add_field(name="Team", value=f"**{team_name}**", inline=True)
     embed.add_field(name="Current Active PPE", value=active_line, inline=False)
 
@@ -242,9 +243,9 @@ async def send_season_loot_markdown_followup(interaction: discord.Interaction) -
         return
 
     player_data = records[key]
-    items_list = sorted(player_data.unique_items, key=lambda x: (x[0].lower(), x[1]))
+    season_variants = iter_season_variants(player_data)
 
-    if not items_list:
+    if not season_variants:
         await interaction.followup.send(
             "You haven't collected any season loot yet!\nUse `/addseasonloot` to start tracking your unique items.",
             ephemeral=True,
@@ -252,10 +253,8 @@ async def send_season_loot_markdown_followup(interaction: discord.Interaction) -
         return
 
     temp_file_path = create_season_loot_markdown_file(
-        player_data.unique_items,
+        player_data.season_item_history,
         display_name=interaction.user.display_name,
-        season_item_rarities=player_data.season_item_rarities,
-        item_log_timestamps=player_data.item_log_timestamps,
     )
 
     try:

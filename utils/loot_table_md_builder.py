@@ -3,7 +3,7 @@ import csv
 from dataclass import PPEData
 from utils.ppe_types import normalize_ppe_type, ppe_type_short_label
 from utils.markdown_message_builder import MarkdownMessageBuilder
-from utils.item_log_timestamps import format_unix_utc, seasonal_item_key
+from utils.item_log_timestamps import format_unix_utc, seasonal_item_variant_key
 from utils.points_service import (
     PENALTY_NAMES,
     calculate_bonus_points,
@@ -332,59 +332,77 @@ def create_loot_markdown_file(
 
 
 def create_season_loot_markdown_file(
-    unique_items: set[tuple[str, bool]],
+    season_item_history: dict[str, list[int]] | None,
     *,
     display_name: str,
-    season_item_rarities: dict[str, str] | None = None,
-    item_log_timestamps: dict[str, int] | None = None,
 ) -> str:
-    """Create a markdown file for season loot, grouped by dungeon when possible."""
+    """Create a markdown file for season loot variants, grouped by dungeon when possible."""
 
-    sorted_items = sorted(unique_items, key=lambda x: (x[0].lower(), x[1]))
+    raw_history = season_item_history if isinstance(season_item_history, dict) else {}
+    variant_rows: list[tuple[str, bool, str, list[int]]] = []
+    for raw_key, raw_timestamps in raw_history.items():
+        parts = str(raw_key).split("|")
+        if len(parts) != 3:
+            continue
+        item_name = parts[0].strip()
+        if not item_name:
+            continue
+        shiny = parts[1].strip() == "1"
+        rarity = parts[2].strip().lower() or "common"
+        timestamps = []
+        if isinstance(raw_timestamps, list):
+            for raw_ts in raw_timestamps:
+                try:
+                    parsed_ts = int(raw_ts)
+                except (TypeError, ValueError):
+                    continue
+                if parsed_ts > 0:
+                    timestamps.append(parsed_ts)
+        timestamps.sort()
+        variant_rows.append((item_name, shiny, rarity, timestamps))
+
+    variant_rows.sort(key=lambda row: (row[0].lower(), row[1], row[2]))
     builder = MarkdownMessageBuilder(f"Season Loot for {display_name}")
-    builder.add_paragraph(f"Total unique items: {len(sorted_items)}")
+    unique_items = {(item_name, shiny) for item_name, shiny, _rarity, _timestamps in variant_rows}
+    total_logs = sum(len(timestamps) for _item_name, _shiny, _rarity, timestamps in variant_rows)
+    builder.add_paragraph(f"Total unique items: {len(unique_items)}")
+    builder.add_paragraph(f"Total variant entries: {len(variant_rows)}")
+    builder.add_paragraph(f"Total logged pickups: {total_logs}")
 
-    if not sorted_items:
+    if not variant_rows:
         builder.add_section(heading="Items", lines=["No season loot recorded yet."])
         return builder.write_temp_file(prefix="season_loot", username=display_name, temp_dir="temp")
 
     sorted_dungeons, dungeon_groups, unassigned_items = _group_entries_by_dungeon(
-        sorted_items,
+        variant_rows,
         key_name_fn=lambda item_entry: item_entry[0],
     )
 
-    rarity_lookup = season_item_rarities if isinstance(season_item_rarities, dict) else {}
-
-    def _season_rarity(item_name: str, shiny: bool) -> str:
-        normalized_key = seasonal_item_key(item_name, shiny)
-        legacy_key = f"{item_name}|{1 if shiny else 0}"
-        normalized_rarity = str(rarity_lookup.get(normalized_key, "common")).strip().lower()
-        legacy_rarity = str(rarity_lookup.get(legacy_key, "common")).strip().lower()
-        return highest_rarity(normalized_rarity, legacy_rarity)
-
     for dungeon_name in sorted_dungeons:
         lines = []
-        for item_name, shiny in sorted(dungeon_groups[dungeon_name], key=lambda entry: (entry[0].lower(), entry[1])):
-            rarity = _season_rarity(item_name, shiny)
-            line = f"{item_name}{' [shiny]' if shiny else ''} [{rarity}]"
-            if item_log_timestamps:
-                ts = item_log_timestamps.get(seasonal_item_key(item_name, shiny))
-                ts_text = format_unix_utc(ts)
-                if ts_text:
-                    line += f" (logged: {ts_text})"
+        for item_name, shiny, rarity, timestamps in sorted(
+            dungeon_groups[dungeon_name], key=lambda entry: (entry[0].lower(), entry[1], entry[2])
+        ):
+            line = f"{item_name}{' [shiny]' if shiny else ''} [{rarity}] x{len(timestamps)}"
+            if timestamps:
+                formatted = [format_unix_utc(ts) for ts in timestamps]
+                cleaned = [text for text in formatted if text]
+                if cleaned:
+                    line += f" (times: {', '.join(cleaned)})"
             lines.append(line)
         builder.add_numbered_list(lines, heading=dungeon_name)
 
     if unassigned_items:
         lines = []
-        for item_name, shiny in sorted(unassigned_items, key=lambda entry: (entry[0].lower(), entry[1])):
-            rarity = _season_rarity(item_name, shiny)
-            line = f"{item_name}{' [shiny]' if shiny else ''} [{rarity}]"
-            if item_log_timestamps:
-                ts = item_log_timestamps.get(seasonal_item_key(item_name, shiny))
-                ts_text = format_unix_utc(ts)
-                if ts_text:
-                    line += f" (logged: {ts_text})"
+        for item_name, shiny, rarity, timestamps in sorted(
+            unassigned_items, key=lambda entry: (entry[0].lower(), entry[1], entry[2])
+        ):
+            line = f"{item_name}{' [shiny]' if shiny else ''} [{rarity}] x{len(timestamps)}"
+            if timestamps:
+                formatted = [format_unix_utc(ts) for ts in timestamps]
+                cleaned = [text for text in formatted if text]
+                if cleaned:
+                    line += f" (times: {', '.join(cleaned)})"
             lines.append(line)
         builder.add_numbered_list(lines, heading="Unassigned Items")
 

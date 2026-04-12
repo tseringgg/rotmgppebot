@@ -5,6 +5,7 @@ from utils.player_records import ensure_player_exists, get_active_ppe_of_user, l
 from utils.player_records import highest_rarity
 from utils.helpers.shareloot_image import generate_loot_share_image
 from utils.item_log_timestamps import seasonal_item_key
+from utils.season_loot_history import iter_season_variants
 
 
 async def _send_interaction_text(interaction: discord.Interaction, content: str, *, ephemeral: bool) -> None:
@@ -71,7 +72,8 @@ async def share_season_loot_image(
 
         player_data = records[key]
 
-        if not player_data.unique_items:
+        season_variants = iter_season_variants(player_data)
+        if not season_variants:
             await _send_interaction_text(
                 interaction,
                 (
@@ -87,17 +89,7 @@ async def share_season_loot_image(
 
     await generate_loot_share_image(
         interaction,
-        source_items=[
-            (
-                item_name,
-                shiny,
-                highest_rarity(
-                    str(player_data.season_item_rarities.get(seasonal_item_key(item_name, shiny), "common")),
-                    str(player_data.season_item_rarities.get(f"{item_name}|{1 if shiny else 0}", "common")),
-                ),
-            )
-            for item_name, shiny in player_data.unique_items
-        ],
+        source_items=[(item_name, shiny, rarity) for item_name, shiny, rarity, _timestamps in season_variants],
         include_skins=include_skins,
         include_limited=include_limited,
         filename_suffix="season_loot",

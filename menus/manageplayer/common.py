@@ -19,6 +19,7 @@ from menus.myinfo.common import (
 from utils.guild_config import load_guild_config
 from utils.loot_table_md_builder import create_season_loot_markdown_file
 from utils.ppe_list_md_builder import create_ppe_list_markdown_file
+from utils.season_loot_history import iter_season_variants, unique_season_item_count
 
 
 async def close_manageplayer_menu(interaction: discord.Interaction) -> None:
@@ -75,7 +76,7 @@ def target_home_embed(
     embed.add_field(name="Team", value=player_data.team_name or "N/A", inline=True)
     embed.add_field(name="Best PPE", value=best_line, inline=False)
     embed.add_field(name="Active PPE", value=active_line, inline=False)
-    embed.add_field(name="Season Items", value=str(len(player_data.unique_items)), inline=True)
+    embed.add_field(name="Season Items", value=str(unique_season_item_count(player_data)), inline=True)
     embed.set_footer(text="Use buttons below to manage player data, roles, and loot views.")
     return embed
 
@@ -128,17 +129,15 @@ async def send_target_season_loot_markdown_followup(
     target: ManagedPlayerTarget,
     player_data: PlayerData,
 ) -> None:
-    items_list = sorted(player_data.unique_items, key=lambda x: (x[0].lower(), x[1]))
+    season_variants = iter_season_variants(player_data)
 
-    if not items_list:
+    if not season_variants:
         await interaction.followup.send(f"{target.display_name} has no season loot tracked yet.", ephemeral=True)
         return
 
     temp_file_path = create_season_loot_markdown_file(
-        player_data.unique_items,
+        player_data.season_item_history,
         display_name=target.display_name,
-        season_item_rarities=player_data.season_item_rarities,
-        item_log_timestamps=player_data.item_log_timestamps,
     )
     try:
         await interaction.followup.send(file=discord.File(temp_file_path), ephemeral=True)

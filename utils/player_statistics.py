@@ -17,6 +17,7 @@ from utils.points_service import (
     get_effective_modifier_bucket_for_ppe,
     loot_adjustments_for_ppe,
 )
+from utils.season_loot_history import iter_season_variants
 
 _LOOT_CSV_PATH = Path("rotmg_loot_drops_updated.csv")
 
@@ -335,18 +336,20 @@ def build_season_wrapped_embed(
     ppes = list(player_data.ppes)
     all_loot = [loot for ppe in ppes for loot in ppe.loot]
     item_to_dungeon = _load_item_to_dungeon()
-    season_items = getattr(player_data, "unique_items", set())
+    season_variants = iter_season_variants(player_data)
+    season_items = {(item_name, shiny) for item_name, shiny, _rarity, _timestamps in season_variants}
 
     total_points = sum(float(getattr(ppe, "points", 0.0) or 0.0) for ppe in ppes)
     total_drops = _total_logged_drops(all_loot)
     unique_count = len(season_items)
+    season_pickups = sum(len(timestamps) for _item_name, _shiny, _rarity, timestamps in season_variants)
     shiny_uniques = sum(
         1
         for item in season_items
         if isinstance(item, (tuple, list)) and len(item) >= 2 and bool(item[1])
     )
     season_only_mode = (len(ppes) == 0 and unique_count > 0)
-    tracked_drop_count = total_drops if total_drops > 0 else unique_count
+    tracked_drop_count = total_drops if total_drops > 0 else season_pickups
 
     top_ppe = max(ppes, key=lambda p: float(getattr(p, "points", 0.0) or 0.0), default=None)
     low_ppe = min(ppes, key=lambda p: float(getattr(p, "points", 0.0) or 0.0), default=None)
@@ -393,6 +396,7 @@ def build_season_wrapped_embed(
         value=(
             f"Tracked drops: **{tracked_drop_count}**\n"
             f"Shiny uniques: **{shiny_uniques}**\n"
+            f"Season pickups: **{season_pickups}**\n"
             f"Duplicate energy: **{max(0, tracked_drop_count - unique_count)}**"
         ),
         inline=True,

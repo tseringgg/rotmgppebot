@@ -24,6 +24,7 @@ from menus.myinfo.submenus.character.modals import ManagePPEPenaltiesModal, laun
 from utils.guild_config import get_max_ppes, load_guild_config
 from utils.helpers.shareloot_image import variant_image_label
 from utils.player_statistics import build_character_wrapped_embed
+from utils.time_graphs import build_character_point_graph
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 
 
@@ -216,6 +217,29 @@ class CharacterLootVariantView(OwnerBoundView):
         )
         await close_myinfo_menu(interaction)
         await interaction.followup.send(embed=embed, ephemeral=False)
+
+    @discord.ui.button(label="Point Graph", style=discord.ButtonStyle.success, row=2)
+    async def point_graph(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        refreshed = await refresh_player_data(interaction, interaction.user.id)
+        selected = find_ppe_or_raise(refreshed, self.ppe_id)
+        guild_config = await load_guild_config(interaction)
+        graph_image = build_character_point_graph(
+            selected,
+            display_name=interaction.user.display_name,
+            guild_config=guild_config,
+        )
+        if graph_image is None:
+            await interaction.response.send_message(
+                "No loot timestamps found for this character yet. Add loot first to generate a point graph.",
+                ephemeral=True,
+            )
+            return
+
+        await close_myinfo_menu(interaction)
+        await interaction.followup.send(
+            file=discord.File(graph_image, filename=f"ppe_{selected.id}_point_graph.png"),
+            ephemeral=False,
+        )
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=3)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

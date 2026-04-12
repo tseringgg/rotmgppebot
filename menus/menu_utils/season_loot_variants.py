@@ -36,6 +36,9 @@ class SeasonLootVariantActionsView(OwnerBoundView):
     async def _show_statistics(self, interaction: discord.Interaction) -> None:
         raise NotImplementedError
 
+    async def _show_item_graph(self, interaction: discord.Interaction) -> None:
+        raise NotImplementedError
+
     @discord.ui.button(label="Show Image: Normal Only", style=discord.ButtonStyle.primary, row=0)
     async def normal_only(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._close_and_share(interaction, include_skins=False, include_limited=False)
@@ -59,3 +62,7 @@ class SeasonLootVariantActionsView(OwnerBoundView):
     @discord.ui.button(label="Show Statistics", style=discord.ButtonStyle.success, row=2)
     async def show_statistics(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._show_statistics(interaction)
+
+    @discord.ui.button(label="Item Graph", style=discord.ButtonStyle.success, row=2)
+    async def item_graph(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await self._show_item_graph(interaction)

@@ -488,27 +488,29 @@ async def addseasonlootfor(
     await addseasonlootfor_cmd.command(interaction, user, item_name, shiny, rarity)
 
 @bot.tree.command(name="removeseasonloot", description="Remove a unique item from your season loot collection.", guilds=guilds)
-@app_commands.describe(item_name="Name of the item to remove", shiny="Is the item shiny?")
-@app_commands.autocomplete(item_name=item_name_autocomplete)
+@app_commands.describe(item_name="Name of the item to remove", shiny="Is the item shiny?", rarity="Item rarity (defaults to common)")
+@app_commands.autocomplete(item_name=item_name_autocomplete, rarity=rarity_autocomplete)
 @require_ppe_roles(player_required=True)
 async def removeseasonloot(
         interaction: discord.Interaction,
         item_name: str,
-        shiny: bool = False
+        shiny: bool = False,
+        rarity: str = "common"
     ):
-    await removeseasonloot_cmd.command(interaction, item_name, shiny)
+    await removeseasonloot_cmd.command(interaction, item_name, shiny, rarity)
 
 @bot.tree.command(name="removeseasonlootfrom", description="Remove a unique item from another player's season loot. Admin only.", guilds=guilds)
-@app_commands.describe(user="The player to remove loot from", item_name="Name of the item to remove", shiny="Is the item shiny?")
-@app_commands.autocomplete(item_name=item_name_autocomplete)
+@app_commands.describe(user="The player to remove loot from", item_name="Name of the item to remove", shiny="Is the item shiny?", rarity="Item rarity (defaults to common)")
+@app_commands.autocomplete(item_name=item_name_autocomplete, rarity=rarity_autocomplete)
 @require_ppe_roles(admin_required=True)
 async def removeseasonlootfrom(
         interaction: discord.Interaction,
         user: discord.Member,
         item_name: str,
-        shiny: bool = False
+        shiny: bool = False,
+        rarity: str = "common"
     ):
-    await removeseasonlootfrom_cmd.command(interaction, user, item_name, shiny)
+    await removeseasonlootfrom_cmd.command(interaction, user, item_name, shiny, rarity)
 
 @bot.tree.command(name="myloot", description="Show all loot for your active PPE.", guilds=guilds)
 @require_ppe_roles(player_required=True)

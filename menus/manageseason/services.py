@@ -30,6 +30,7 @@ from utils.realmshark_pending_store import clear_all_pending_for_guild
 from utils.contest_leaderboards import normalize_contest_leaderboard_id
 from utils.realmshark_cleanup import clear_ppe_character_links
 from utils.item_log_timestamps import seasonal_item_key
+from utils.season_loot_history import sync_legacy_season_fields
 from utils.settings.channel_settings import (
     clear_item_suggestions_enabled_channels,
     set_item_suggestions_mode_enabled,
@@ -346,6 +347,7 @@ def _rebuild_unique_items(player_data: Any) -> None:
         for key, value in raw_timestamps.items()
         if isinstance(key, str) and key in valid_keys
     }
+    sync_legacy_season_fields(player_data)
 
 
 async def update_max_characters_limit(
@@ -813,6 +815,10 @@ async def reset_all_seasonal_information(interaction: discord.Interaction) -> Re
             unique_items_cleared += len(unique_items)
             unique_items.clear()
             player_changed = True
+        season_item_history = getattr(player_data, "season_item_history", {})
+        if isinstance(season_item_history, dict) and season_item_history:
+            season_item_history.clear()
+            player_changed = True
         item_log_timestamps = getattr(player_data, "item_log_timestamps", {})
         if isinstance(item_log_timestamps, dict) and item_log_timestamps:
             item_log_timestamps.clear()
@@ -832,6 +838,7 @@ async def reset_all_seasonal_information(interaction: discord.Interaction) -> Re
             player_changed = True
 
         if player_changed:
+            sync_legacy_season_fields(player_data)
             players_updated += 1
 
     await save_player_records(interaction, records)
@@ -1231,9 +1238,13 @@ def _reset_player_records(records: dict[str, Any], default_reset_limit: int) -> 
         unique_items = getattr(player_data, "unique_items", set())
         items_cleared += len(unique_items)
         unique_items.clear()
+        season_item_history = getattr(player_data, "season_item_history", {})
+        if isinstance(season_item_history, dict):
+            season_item_history.clear()
         item_log_timestamps = getattr(player_data, "item_log_timestamps", {})
         if isinstance(item_log_timestamps, dict):
             item_log_timestamps.clear()
+        sync_legacy_season_fields(player_data)
 
         quests = getattr(player_data, "quests", None)
         if quests is not None:

@@ -42,6 +42,7 @@ class Loot:
     rarity: str = "common"
     first_logged_at: int | None = None
     last_logged_at: int | None = None
+    logged_times: List[int] = field(default_factory=list)
 
 @dataclass
 class Bonus:
@@ -84,11 +85,24 @@ class PlayerData:
     unique_items: Set[tuple] = field(default_factory=set)  # (item_name, shiny)
     season_item_rarities: Dict[str, str] = field(default_factory=dict)  # seasonal item key -> highest rarity seen
     item_log_timestamps: Dict[str, int] = field(default_factory=dict)  # seasonal item key -> unix timestamp
+    season_item_history: Dict[str, List[int]] = field(default_factory=dict)  # seasonal item variant key -> sorted unix timestamps
     team_name: Optional[str] = None  # Name of the team this player is on (None if not on a team)
     quests: QuestData = field(default_factory=QuestData)
     quest_resets_remaining: Optional[int] = None
     
     def get_unique_item_count(self) -> int:
         """Get the count of unique items across all PPEs."""
+        if isinstance(self.season_item_history, dict) and self.season_item_history:
+            unique_base_items: Set[tuple[str, bool]] = set()
+            for key in self.season_item_history.keys():
+                parts = str(key).split("|")
+                if len(parts) < 2:
+                    continue
+                item_name = parts[0]
+                shiny = parts[1] == "1"
+                if item_name:
+                    unique_base_items.add((item_name, shiny))
+            if unique_base_items:
+                return len(unique_base_items)
         return len(self.unique_items)
 
