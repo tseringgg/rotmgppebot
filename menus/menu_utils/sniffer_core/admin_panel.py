@@ -19,7 +19,7 @@ from menus.menu_utils.sniffer_core.panel_common import (
 from menus.menu_utils.sniffer_core.panel_views import RealmSharkConfigurePanelView, render_panel_embed
 from utils.guild_config import get_realmshark_settings, set_realmshark_settings
 from utils.player_records import load_player_records
-from utils.realmshark_pending_store import load_pending
+from utils.sniffer_helpers.realmshark_pending_store import load_pending
 async def _admin_clear_all_mappings_for_member(
     interaction: discord.Interaction,
     member_id: int,

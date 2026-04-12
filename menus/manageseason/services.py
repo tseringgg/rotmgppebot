@@ -26,9 +26,9 @@ from utils.guild_config import (
 )
 from utils.player_records import load_player_records, load_teams, save_player_records, save_teams
 from utils.points_service import recompute_ppe_points
-from utils.realmshark_pending_store import clear_all_pending_for_guild
+from utils.sniffer_helpers.realmshark_pending_store import clear_all_pending_for_guild
 from utils.contest_leaderboards import normalize_contest_leaderboard_id
-from utils.realmshark_cleanup import clear_ppe_character_links
+from utils.sniffer_helpers.realmshark_cleanup import clear_ppe_character_links
 from utils.settings.channel_settings import (
     clear_item_suggestions_enabled_channels,
     set_item_suggestions_mode_enabled,

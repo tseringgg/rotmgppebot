@@ -1,3 +1,5 @@
+"""Utilities for find items."""
+
 import cv2
 import numpy as np
 import os

@@ -9,7 +9,7 @@ import discord
 
 from menus.menu_utils.sniffer_core.common import token_preview, utc_iso_now
 from utils.guild_config import get_realmshark_settings, set_realmshark_settings
-from utils.realmshark_pending_store import clear_all_pending_for_guild
+from utils.sniffer_helpers.realmshark_pending_store import clear_all_pending_for_guild
 
 _REALMSHARK_DEFAULTS: dict[str, Any] = {
     "enabled": False,

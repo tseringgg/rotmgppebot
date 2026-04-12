@@ -1,3 +1,5 @@
+"""Utilities for shareloot image."""
+
 import csv
 import glob
 import os

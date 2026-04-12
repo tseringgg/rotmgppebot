@@ -1,8 +1,10 @@
+"""Utilities for ppe list md builder."""
+
 from __future__ import annotations
 
 from dataclass import PlayerData
 from utils.ppe_types import normalize_ppe_type, ppe_type_short_label
-from utils.markdown_message_builder import MarkdownMessageBuilder
+from utils.message_utils.markdown_message_builder import MarkdownMessageBuilder
 from utils.points_service import non_default_points_adjustment_lines
 
 

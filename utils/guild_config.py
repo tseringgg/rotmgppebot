@@ -1,3 +1,5 @@
+"""Utilities for guild config."""
+
 import asyncio
 import json
 import os

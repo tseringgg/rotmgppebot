@@ -1,3 +1,5 @@
+"""Utilities for penalty embed."""
+
 import discord
 
 from utils.points_service import format_starting_penalty_line, starting_penalty_breakdown_from_inputs

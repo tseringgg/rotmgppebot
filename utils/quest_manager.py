@@ -1,3 +1,5 @@
+"""Utilities for quest manager."""
+
 import csv
 import random
 from typing import Dict, List, Tuple

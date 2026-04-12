@@ -1,3 +1,5 @@
+"""Utilities for realmshark cleanup."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -6,7 +8,7 @@ from typing import Any, Dict, Set
 import discord
 
 from utils.guild_config import get_realmshark_settings, set_realmshark_settings
-from utils.realmshark_pending_store import clear_pending_character, clear_pending_for_user
+from utils.sniffer_helpers.realmshark_pending_store import clear_pending_character, clear_pending_for_user
 
 
 def _as_positive_int(value: Any) -> int | None:

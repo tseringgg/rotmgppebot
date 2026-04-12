@@ -17,8 +17,8 @@ from menus.myinfo.common import (
     ppe_type_text,
 )
 from utils.guild_config import load_guild_config
-from utils.loot_table_md_builder import create_season_loot_markdown_file
-from utils.ppe_list_md_builder import create_ppe_list_markdown_file
+from utils.message_utils.loot_table_md_builder import create_season_loot_markdown_file
+from utils.message_utils.ppe_list_md_builder import create_ppe_list_markdown_file
 from utils.season_loot_history import iter_season_variants, unique_season_item_count
 
 
@@ -147,7 +147,7 @@ async def send_target_season_loot_markdown_followup(
 
 
 async def send_target_loot_markdown_followup(interaction: discord.Interaction, *, ppe: PPEData) -> None:
-    from utils.loot_table_md_builder import create_loot_markdown_file
+    from utils.message_utils.loot_table_md_builder import create_loot_markdown_file
 
     guild_config = await load_guild_config(interaction)
     temp_file_path = create_loot_markdown_file(ppe, guild_config=guild_config)

@@ -163,11 +163,11 @@ def _effective_drop_points_for_ppe(
     *,
     item_name: str,
     shiny: bool,
-    divine: bool,
+    rarity: str,
     guild_config: dict | None,
 ) -> float:
     # Drop-level value with item-only class/season and PPE multipliers.
-    base_points = calculate_item_points(item_name=item_name, divine=divine, shiny=shiny, quantity=1)
+    base_points = calculate_item_points(item_name=item_name, shiny=shiny, quantity=1, rarity=rarity)
     modifier_bucket = get_effective_modifier_bucket_for_ppe(ppe, guild_config)
     adjustments = loot_adjustments_for_ppe(ppe, guild_config)
     adjusted = apply_percent_modifier(base_points, _safe_float(modifier_bucket.get("loot_percent")))
@@ -188,12 +188,13 @@ def _season_top_valued_finds(
         for entry in ppe.loot:
             item_name = str(entry.item_name)
             shiny = bool(entry.shiny)
-            divine = bool(entry.divine)
+            rarity = normalize_rarity(getattr(entry, "rarity", "common"))
+            divine = rarity == "divine"
             score = _effective_drop_points_for_ppe(
                 ppe,
                 item_name=item_name,
                 shiny=shiny,
-                divine=divine,
+                rarity=rarity,
                 guild_config=guild_config,
             )
             key = (normalize_item_name(item_name), shiny, divine)
@@ -214,14 +215,16 @@ def _character_top_valued_drops(
 ) -> list[tuple[str, float, bool, bool]]:
     scored: list[tuple[str, float, bool, bool]] = []
     for entry in ppe.loot:
+        rarity = normalize_rarity(getattr(entry, "rarity", "common"))
+        divine = rarity == "divine"
         points = _effective_drop_points_for_ppe(
             ppe,
             item_name=str(entry.item_name),
             shiny=bool(entry.shiny),
-            divine=bool(entry.divine),
+            rarity=rarity,
             guild_config=guild_config,
         )
-        scored.append((str(entry.item_name), float(points), bool(entry.shiny), bool(entry.divine)))
+        scored.append((str(entry.item_name), float(points), bool(entry.shiny), divine))
 
     scored.sort(key=lambda row: (row[1], row[0].lower()), reverse=True)
     return scored[:3]
@@ -520,7 +523,11 @@ def build_character_wrapped_embed(
     total_drops = _total_logged_drops(loot_entries)
     unique_count = len({normalize_item_name(str(entry.item_name)) for entry in loot_entries if str(entry.item_name).strip()})
     shiny_count = sum(max(1, int(entry.quantity)) for entry in loot_entries if bool(entry.shiny)) if loot_entries else 0
-    divine_count = sum(max(1, int(entry.quantity)) for entry in loot_entries if bool(entry.divine)) if loot_entries else 0
+    divine_count = (
+        sum(max(1, int(entry.quantity)) for entry in loot_entries if normalize_rarity(getattr(entry, "rarity", "common")) == "divine")
+        if loot_entries
+        else 0
+    )
 
     most_logged = _most_logged_item(loot_entries)
     top_dungeon = _top_dungeon_from_loot(loot_entries, item_to_dungeon)

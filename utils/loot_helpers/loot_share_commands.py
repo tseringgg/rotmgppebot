@@ -1,9 +1,11 @@
+"""Utilities for loot share commands."""
+
 import discord
 
 from utils.ppe_types import normalize_ppe_type, ppe_type_short_label
 from utils.player_records import ensure_player_exists, get_active_ppe_of_user, load_player_records
 from utils.player_records import highest_rarity
-from utils.helpers.shareloot_image import generate_loot_share_image
+from utils.loot_helpers.shareloot_image import generate_loot_share_image
 from utils.item_log_timestamps import seasonal_item_key
 from utils.season_loot_history import iter_season_variants
 

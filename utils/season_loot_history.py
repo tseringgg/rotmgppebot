@@ -1,3 +1,5 @@
+"""Utilities for season loot history."""
+
 from __future__ import annotations
 
 from typing import Any, Dict

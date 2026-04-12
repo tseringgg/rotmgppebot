@@ -37,7 +37,6 @@ class ROTMGClass(str, Enum):
 class Loot:
     item_name: str
     quantity: int
-    divine: bool = False
     shiny: bool = False
     rarity: str = "common"
     logged_times: List[int] = field(default_factory=list)

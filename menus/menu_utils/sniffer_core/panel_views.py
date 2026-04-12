@@ -18,7 +18,7 @@ from menus.menu_utils.sniffer_core.panel_common import (
 from menus.menu_utils.sniffer_core.mapping_actions import configure
 from utils.guild_config import get_realmshark_settings
 from utils.player_records import ensure_player_exists, load_player_records
-from utils.realmshark_pending_store import get_pending_character_entry, load_pending
+from utils.sniffer_helpers.realmshark_pending_store import get_pending_character_entry, load_pending
 async def _resolve_character_id_for_panel(
     interaction: discord.Interaction,
     mode: str,

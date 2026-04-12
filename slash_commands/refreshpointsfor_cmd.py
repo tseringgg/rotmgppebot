@@ -6,6 +6,7 @@ from utils.calc_points import load_loot_points, normalize_item_name
 from utils.pagination import chunk_lines_to_pages
 from utils.points_service import recompute_ppe_points
 from utils.season_loot_history import delete_season_item_all_rarities, season_unique_items
+from utils.loot_constants import normalize_rarity
 
 async def command(interaction: discord.Interaction, user: discord.Member, id: int):
     if not interaction.guild:
@@ -56,7 +57,11 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
         
         if lookup_name not in loot_points:
             # Item is invalid, flag it for removal
-            item_label = f"{loot_item.item_name}{' (shiny)' if loot_item.shiny else ''}{' (divine)' if loot_item.divine else ''}"
+            item_label = (
+                f"{loot_item.item_name}"
+                f"{' (shiny)' if loot_item.shiny else ''}"
+                f"{' (divine)' if normalize_rarity(getattr(loot_item, 'rarity', 'common')) == 'divine' else ''}"
+            )
             item_summary = removed_items_by_item.setdefault(
                 item_label,
                 {"total_quantity": 0, "characters": []}

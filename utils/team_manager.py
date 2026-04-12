@@ -1,3 +1,5 @@
+"""Utilities for team manager."""
+
 import asyncio
 from typing import Dict, Optional
 

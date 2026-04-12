@@ -14,8 +14,9 @@ from urllib import response
 
 import discord
 
-from utils.helpers.loot_table_message import LootTableMessage
+from utils.loot_helpers.loot_table_message import LootTableMessage
 from utils.loot_ops import add_ppe_loot
+from utils.loot_constants import normalize_rarity
 
 
 class RaritySelect(discord.ui.Select):
@@ -36,13 +37,7 @@ class RaritySelect(discord.ui.Select):
         if not await view._check_authorized(interaction):
             return
 
-        view.rarity = self.values[0]
-        view.is_divine = view.rarity == "divine"
-        for child in view.children:
-            if isinstance(child, discord.ui.Button) and child.label.startswith("Divine:"):
-                child.label = "Divine: Yes" if view.is_divine else "Divine: No"
-                child.style = discord.ButtonStyle.success if view.is_divine else discord.ButtonStyle.secondary
-                break
+        view.rarity = normalize_rarity(self.values[0])
         self.placeholder = f"Rarity: {view.rarity.title()}"
         await interaction.response.edit_message(view=view)
 
@@ -106,7 +101,6 @@ class ItemSuggestionView(discord.ui.View):
         self.target_user_id = target_user_id
         self.suggested_item = suggested_item
         self.is_shiny = False
-        self.is_divine = False
         self.rarity = "common"
         self.add_item(RaritySelect())
 
@@ -144,16 +138,6 @@ class ItemSuggestionView(discord.ui.View):
         self.is_shiny = not self.is_shiny
         button.label = "Shiny: Yes" if self.is_shiny else "Shiny: No"
         button.style = discord.ButtonStyle.success if self.is_shiny else discord.ButtonStyle.secondary
-        await interaction.response.edit_message(view=self)
-
-    @discord.ui.button(label="Divine: No", style=discord.ButtonStyle.secondary, row=0)
-    async def divine_toggle(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not await self._check_authorized(interaction):
-            return
-        self.is_divine = not self.is_divine
-        self.rarity = "divine" if self.is_divine else "common"
-        button.label = "Divine: Yes" if self.is_divine else "Divine: No"
-        button.style = discord.ButtonStyle.success if self.is_divine else discord.ButtonStyle.secondary
         await interaction.response.edit_message(view=self)
 
     @discord.ui.button(label="Add", style=discord.ButtonStyle.success, row=0)
@@ -197,9 +181,7 @@ class ItemSuggestionView(discord.ui.View):
             tags = ""
             if self.is_shiny:
                 tags += " (shiny)"
-            if self.is_divine:
-                tags += " (divine)"
-            if self.rarity and self.rarity != "common" and not (self.is_divine and self.rarity == "divine"):
+            if self.rarity and self.rarity != "common":
                 tags += f" ({self.rarity})"
             await self._finish(
                 interaction,

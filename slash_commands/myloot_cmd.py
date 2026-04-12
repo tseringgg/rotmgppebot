@@ -3,7 +3,7 @@
 import discord
 
 from utils.player_records import get_active_ppe_of_user
-from utils.helpers.loot_table_message import LootTableMessage
+from utils.loot_helpers.loot_table_message import LootTableMessage
 
 
 async def command(interaction: discord.Interaction):

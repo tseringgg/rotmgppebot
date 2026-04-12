@@ -1,3 +1,5 @@
+"""Utilities for autocomplete."""
+
 import csv
 import discord
 from dataclass import ROTMGClass

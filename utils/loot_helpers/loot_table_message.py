@@ -1,10 +1,12 @@
+"""Utilities for loot table message."""
+
 import os
 
 import discord
 
 from utils.embed_builders import build_loot_embed
 from utils.guild_config import load_guild_config
-from utils.loot_table_md_builder import create_loot_markdown_file
+from utils.message_utils.loot_table_md_builder import create_loot_markdown_file
 
 
 class LootTableMessage:

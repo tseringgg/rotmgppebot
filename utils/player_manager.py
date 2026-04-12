@@ -1,3 +1,5 @@
+"""Utilities for player manager."""
+
 import asyncio
 from typing import Dict, Optional
 import discord
@@ -42,12 +44,9 @@ class PlayerManager:
             return result
     
     async def add_loot_and_points(self, interaction: discord.Interaction, user: discord.Member, ppe_id:int, item_name: str,
-                                divine: bool = False, shiny: bool = False, rarity: str = "common", points: float = 0) -> tuple:
+                                shiny: bool = False, rarity: str = "common", points: float = 0) -> tuple:
         """Add loot and points atomically."""
-        effective_rarity = rarity.lower().strip() if isinstance(rarity, str) else "common"
-        if divine and effective_rarity == "common":
-            effective_rarity = "divine"
-        effective_rarity = normalize_rarity(effective_rarity, "divine" if divine else "common")
+        effective_rarity = normalize_rarity(rarity, "common")
         
         async def operation(records, interaction):
             user_id = user.id
@@ -73,7 +72,7 @@ class PlayerManager:
             old_total = active_ppe.points
 
             # Add loot
-            match = get_item_from_ppe(active_ppe, item_name, divine, shiny, rarity=effective_rarity)
+            match = get_item_from_ppe(active_ppe, item_name, shiny, rarity=effective_rarity)
             logged_at = now_unix_utc()
             if match:
                 match.quantity += 1
@@ -86,7 +85,6 @@ class PlayerManager:
                     Loot(
                         item_name=item_name,
                         quantity=1,
-                        divine=divine,
                         shiny=shiny,
                         rarity=effective_rarity,
                         logged_times=[logged_at],
@@ -126,12 +124,9 @@ class PlayerManager:
         return await self.execute_transaction(interaction, operation)
     
     async def remove_loot_and_points(self, interaction: discord.Interaction, user: discord.Member, ppe_id: int, item_name: str, 
-                                   divine: bool = False, shiny: bool = False, rarity: str = "common", points: float = 0) -> tuple:
+                                   shiny: bool = False, rarity: str = "common", points: float = 0) -> tuple:
         """Remove loot and points atomically."""
-        effective_rarity = rarity.lower().strip() if isinstance(rarity, str) else "common"
-        if divine and effective_rarity == "common":
-            effective_rarity = "divine"
-        effective_rarity = normalize_rarity(effective_rarity, "divine" if divine else "common")
+        effective_rarity = normalize_rarity(rarity, "common")
         
         async def operation(records, interaction):
             user_id = user.id
@@ -147,7 +142,7 @@ class PlayerManager:
             if not active_ppe:
                 raise LookupError("❌ Could not find your active PPE record.")
             
-            item = get_item_from_ppe(active_ppe, item_name, divine, shiny, rarity=effective_rarity)
+            item = get_item_from_ppe(active_ppe, item_name, shiny, rarity=effective_rarity)
             if not item:
                 raise ValueError(f"❌ You don't have any **{item_name}** in your active PPE's loot.")
             

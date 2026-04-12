@@ -10,9 +10,9 @@ from dataclass import PPEData, PlayerData
 from menus.menu_utils import SafeResponse
 from utils.ppe_types import normalize_ppe_type, ppe_type_label, ppe_type_short_label
 from utils.guild_config import get_realmshark_settings, load_guild_config
-from utils.helpers.loot_share_commands import share_active_ppe_loot_image
-from utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
-from utils.ppe_list_md_builder import create_ppe_list_markdown_file
+from utils.loot_helpers.loot_share_commands import share_active_ppe_loot_image
+from utils.message_utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
+from utils.message_utils.ppe_list_md_builder import create_ppe_list_markdown_file
 from utils.points_service import format_starting_penalty_line, penalty_inputs_from_bonuses, starting_penalty_breakdown_from_inputs
 from utils.points_service import loot_adjustments_for_ppe, recompute_ppe_points
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records

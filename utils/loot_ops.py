@@ -1,3 +1,5 @@
+"""Utilities for loot ops."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -9,7 +11,7 @@ import discord
 from dataclass import PPEData, PlayerData
 from utils.guild_config import get_quest_targets, load_guild_config
 from utils.item_log_timestamps import seasonal_item_variant_key
-from utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
+from utils.message_utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
 from utils.player_manager import player_manager
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.points_service import has_item_variant
@@ -130,14 +132,12 @@ async def add_ppe_loot(
     rarity: str,
 ) -> PPELootOperationResult:
     rarity_normalized = normalize_rarity(rarity)
-    divine = rarity_normalized == "divine"
 
     final_key, points_added, ppe, quest_update = await player_manager.add_loot_and_points(
         interaction,
         user=user,
         ppe_id=ppe_id,
         item_name=item_name,
-        divine=divine,
         shiny=shiny,
         rarity=rarity_normalized,
         points=0,
@@ -168,14 +168,12 @@ async def remove_ppe_loot(
     rarity: str,
 ) -> PPELootOperationResult:
     rarity_normalized = normalize_rarity(rarity)
-    divine = rarity_normalized == "divine"
 
     final_key, points_removed, ppe = await player_manager.remove_loot_and_points(
         interaction,
         user=user,
         ppe_id=ppe_id,
         item_name=item_name,
-        divine=divine,
         shiny=shiny,
         rarity=rarity_normalized,
         points=0,

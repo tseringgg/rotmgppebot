@@ -10,7 +10,7 @@ from utils.guild_config import get_quest_targets, load_guild_config
 from utils.pagination import LootPaginationView, chunk_lines_to_pages
 from utils.player_manager import player_manager
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
-from utils.realmshark_cleanup import clear_member_character_links, clear_ppe_character_links
+from utils.sniffer_helpers.realmshark_cleanup import clear_member_character_links, clear_ppe_character_links
 from utils.quest_manager import refresh_player_quests
 from utils.team_manager import team_manager
 

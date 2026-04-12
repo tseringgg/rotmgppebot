@@ -1,3 +1,5 @@
+"""Utilities for realmshark ingest server."""
+
 from __future__ import annotations
 
 import os
@@ -5,7 +7,7 @@ from typing import Any, Awaitable, Callable, Dict
 
 from aiohttp import web
 
-from utils.realmshark_ingest import IngestValidationError, ingest_loot_event
+from utils.sniffer_helpers.realmshark_ingest import IngestValidationError, ingest_loot_event
 
 
 _DEBUG = os.getenv("REALMSHARK_DEBUG", "false").strip().lower() in {"1", "true", "yes", "on"}

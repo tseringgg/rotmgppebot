@@ -1,8 +1,10 @@
+"""Utilities for loot table md builder."""
+
 import csv
 
 from dataclass import PPEData
 from utils.ppe_types import normalize_ppe_type, ppe_type_short_label
-from utils.markdown_message_builder import MarkdownMessageBuilder
+from utils.message_utils.markdown_message_builder import MarkdownMessageBuilder
 from utils.item_log_timestamps import format_unix_utc
 from utils.loot_constants import rarity_rank
 from utils.season_loot_history import iter_season_variants, normalize_rarity
@@ -89,14 +91,13 @@ def _group_entries_by_dungeon(entries: list, key_name_fn):
 
 def calculate_item_points(
     item_name: str,
-    divine: bool,
     shiny: bool,
     quantity: int,
     rarity: str = "common",
     *,
     guild_config: dict | None = None,
 ) -> float:
-    return calculate_item_points_service(item_name, divine, shiny, quantity, rarity=rarity, guild_config=guild_config)
+    return calculate_item_points_service(item_name, shiny, quantity, rarity=rarity, guild_config=guild_config)
 
 
 def _scaled_bonus_entry_points(
@@ -173,7 +174,6 @@ def create_loot_markdown_file(
                 rarity = str(getattr(loot, "rarity", "common")).strip().lower()
                 raw_item_points = calculate_item_points(
                     loot.item_name,
-                    loot.divine,
                     loot.shiny,
                     int(loot.quantity),
                     rarity=rarity,
@@ -208,7 +208,6 @@ def create_loot_markdown_file(
                 rarity = str(getattr(loot, "rarity", "common")).strip().lower()
                 raw_item_points = calculate_item_points(
                     loot.item_name,
-                    loot.divine,
                     loot.shiny,
                     int(loot.quantity),
                     rarity=rarity,

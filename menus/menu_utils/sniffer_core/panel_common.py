@@ -8,7 +8,7 @@ import discord
 
 from menus.menu_utils.sniffer_core import common as realmshark_common
 from utils.guild_config import get_realmshark_settings
-from utils.realmshark_pending_store import (
+from utils.sniffer_helpers.realmshark_pending_store import (
     get_pending_character_entry,
     load_pending,
     migrate_legacy_pending_map,

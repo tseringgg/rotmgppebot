@@ -1,3 +1,5 @@
+"""Utilities for player records."""
+
 import os
 import json
 import asyncio
@@ -116,7 +118,6 @@ def normalize_ppe(ppe: dict) -> PPEData:
         normalized_loot = {
             "item_name": loot_dict.get("item_name", "Unknown Item"),
             "quantity": loot_dict.get("quantity", 0),
-            "divine": legacy_divine,
             "shiny": loot_dict.get("shiny", False),
             "rarity": rarity,
             "logged_times": logged_times,
@@ -288,7 +289,6 @@ def _serialize_player_data(data: PlayerData) -> Dict[str, Any]:
                     {
                         "item_name": l.item_name,
                         "quantity": l.quantity,
-                        "divine": l.divine,
                         "shiny": l.shiny,
                         "rarity": l.rarity,
                         "logged_times": list(getattr(l, "logged_times", [])),
@@ -372,14 +372,14 @@ async def get_active_ppe_of_user(interaction: discord.Interaction) -> PPEData:
     await save_player_records(interaction, records)
     return get_active_ppe(player_data)
 
-def get_item_from_ppe(active_ppe: PPEData, item_name: str, divine: bool, shiny: bool, rarity: str | None = None) -> Loot | None:
+def get_item_from_ppe(active_ppe: PPEData, item_name: str, shiny: bool, rarity: str | None = None) -> Loot | None:
     """Return the Loot object from active PPE by item name, or None."""
-    requested_rarity = _normalize_rarity(rarity, "divine" if divine else "common")
+    requested_rarity = _normalize_rarity(rarity, "common")
     for item in active_ppe.loot:
         if (
             item.item_name.lower() == _normalize_item_name(item_name).lower()
             and item.shiny == shiny
-            and _normalize_rarity(getattr(item, "rarity", None), "divine" if item.divine else "common") == requested_rarity
+            and _normalize_rarity(getattr(item, "rarity", None), "common") == requested_rarity
             and item.quantity > 0
         ):
             return item

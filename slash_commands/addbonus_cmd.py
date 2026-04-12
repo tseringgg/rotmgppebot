@@ -5,7 +5,7 @@ from utils.bonus_data import load_bonuses
 from utils.embed_builders import build_loot_embed
 from utils.guild_config import load_guild_config
 from utils.points_service import recompute_ppe_points
-from utils.helpers.loot_table_message import LootTableMessage
+from utils.loot_helpers.loot_table_message import LootTableMessage
 
 async def command(interaction: discord.Interaction, bonus_name: str):
     if not interaction.guild:

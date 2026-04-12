@@ -51,8 +51,8 @@ from utils.contest_join_embed import handle_join_contest_reaction, handle_leave_
 from create_loot_table import create_loot_background_and_mapping
 from utils.ppe_types import DEFAULT_PPE_TYPE, normalize_allowed_ppe_types, ppe_type_label
 from utils.guild_config import load_guild_config
-from utils.realmshark_ingest_server import start_realmshark_ingest_server
-from utils.realmshark_notifier import build_realmshark_notifier
+from utils.sniffer_helpers.realmshark_ingest_server import start_realmshark_ingest_server
+from utils.sniffer_helpers.realmshark_notifier import build_realmshark_notifier
 
 from utils.autocomplete import class_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, team_name_autocomplete, rarity_autocomplete
 

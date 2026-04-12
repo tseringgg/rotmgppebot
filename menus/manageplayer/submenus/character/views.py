@@ -21,7 +21,7 @@ from menus.manageplayer.services import delete_single_ppe_for_target, find_ppe_o
 from menus.manageplayer.targets import ManagedPlayerTarget
 from menus.menu_utils import OwnerBoundView
 from utils.guild_config import load_guild_config
-from utils.helpers.shareloot_image import generate_loot_share_image, variant_image_label
+from utils.loot_helpers.shareloot_image import generate_loot_share_image, variant_image_label
 from utils.player_statistics import build_character_wrapped_embed
 from utils.penalty_embed import build_penalty_infographic_embed
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records

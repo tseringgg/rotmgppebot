@@ -1,3 +1,5 @@
+"""Utilities for realmshark pending store."""
+
 from __future__ import annotations
 
 import asyncio

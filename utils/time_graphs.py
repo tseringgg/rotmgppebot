@@ -1,3 +1,5 @@
+"""Utilities for time graphs."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -13,6 +15,7 @@ from utils.points_service import (
     get_effective_modifier_bucket_for_ppe,
     loot_adjustments_for_ppe,
 )
+from utils.loot_constants import normalize_rarity
 from utils.season_loot_history import iter_season_variants
 
 
@@ -164,12 +167,12 @@ def _loot_drop_event_timestamps(loot: Loot) -> list[int]:
 
 
 def _drop_points_for_single_event(loot: Loot, ppe: PPEData, guild_config: dict | None) -> float:
+    rarity = normalize_rarity(getattr(loot, "rarity", "common"))
     base = calculate_item_points(
         item_name=str(loot.item_name),
-        divine=bool(loot.divine),
         shiny=bool(loot.shiny),
         quantity=1,
-        rarity=str(getattr(loot, "rarity", "common")),
+        rarity=rarity,
         guild_config=guild_config,
     )
     modifier_bucket = get_effective_modifier_bucket_for_ppe(ppe, guild_config)

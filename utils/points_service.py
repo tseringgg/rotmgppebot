@@ -1,3 +1,5 @@
+"""Utilities for points service."""
+
 import math
 from typing import Any, Dict, Iterable
 
@@ -61,15 +63,8 @@ def _apply_percent(value: float, percent: float) -> float:
     return value * (1.0 + (percent / 100.0))
 
 
-def _normalize_rarity(value: Any, divine: bool = False) -> str:
-    rarity = normalize_rarity(value)
-    if divine and rarity == "common":
-        return "divine"
-    return "divine" if divine else "common"
-
-
 def _rarity_multiplier_for(value: Any, guild_config: Dict[str, Any] | None = None) -> float:
-    rarity = _normalize_rarity(value)
+    rarity = normalize_rarity(value)
     multipliers = get_rarity_multipliers(guild_config or {})
     return float(multipliers.get(rarity, 1.0))
 
@@ -450,7 +445,6 @@ def has_item_variant(item_name: str, shiny: bool, loot_points: Dict[str, float] 
 
 def calculate_drop_points(
     item_name: str,
-    divine: bool,
     shiny: bool,
     rarity: str = "common",
     loot_points: Dict[str, float] | None = None,
@@ -460,14 +454,13 @@ def calculate_drop_points(
     if base_points <= 0:
         return 0.0
 
-    effective_rarity = _normalize_rarity(rarity, divine=divine)
+    effective_rarity = normalize_rarity(rarity)
     value = base_points * _rarity_multiplier_for(effective_rarity, guild_config)
     return math.floor(value * 2) / 2
 
 
 def calculate_item_points(
     item_name: str,
-    divine: bool,
     shiny: bool,
     quantity: int,
     rarity: str = "common",
@@ -482,7 +475,7 @@ def calculate_item_points(
     if quantity <= 0:
         return 0.0
 
-    effective_rarity = _normalize_rarity(rarity, divine=divine)
+    effective_rarity = normalize_rarity(rarity)
     final_points = base_points * _rarity_multiplier_for(effective_rarity, guild_config)
     if quantity == 1:
         return final_points
@@ -517,7 +510,6 @@ def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = Non
     for loot in ppe.loot:
         loot_total += calculate_item_points(
             item_name=loot.item_name,
-            divine=loot.divine,
             shiny=loot.shiny,
             quantity=loot.quantity,
             rarity=getattr(loot, "rarity", "common"),

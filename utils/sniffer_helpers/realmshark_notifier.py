@@ -1,3 +1,5 @@
+"""Utilities for realmshark notifier."""
+
 from __future__ import annotations
 
 import os

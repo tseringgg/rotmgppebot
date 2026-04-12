@@ -1,15 +1,17 @@
+"""Utilities for embed builders."""
 
 
 import discord
 from typing import List
 from dataclass import Loot, PPEData
 from utils.points_service import calculate_item_points as calculate_item_points_service
+from utils.loot_constants import normalize_rarity
 from utils.pagination import chunk_lines_to_pages, LootPaginationView
 from utils.player_records import get_active_ppe_of_user
 
 
-def calculate_item_points(item_name: str, divine: bool, shiny: bool, quantity: int) -> float:
-    return calculate_item_points_service(item_name, divine, shiny, quantity)
+def calculate_item_points(item_name: str, shiny: bool, quantity: int, rarity: str = "common") -> float:
+    return calculate_item_points_service(item_name, shiny, quantity, rarity=rarity)
 
 
 # async def build_loot_embed(active_ppe: PPEData, recently_added: str = "") -> discord.Embed:
@@ -96,13 +98,14 @@ def build_loot_embeds(active_ppe: PPEData, recently_added: str = "") -> List[dis
         sorted_loot = sorted(loot_dict, key=lambda loot: loot.item_name.lower())
         for loot in sorted_loot:
             name_with_tags = loot.item_name
-            if loot.divine:
+            rarity = normalize_rarity(getattr(loot, "rarity", "common"))
+            if rarity == "divine":
                 name_with_tags += " (divine)"
             if loot.shiny:
                 name_with_tags += " (shiny)"
             
             # Calculate points for this item
-            item_points = calculate_item_points(loot.item_name, loot.divine, loot.shiny, loot.quantity)
+            item_points = calculate_item_points(loot.item_name, loot.shiny, loot.quantity, rarity=rarity)
             
             # Format points display
             if item_points == int(item_points):

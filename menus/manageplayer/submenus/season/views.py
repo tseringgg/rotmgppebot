@@ -13,7 +13,7 @@ from menus.manageplayer.targets import ManagedPlayerTarget
 from menus.menu_utils.season_loot_variants import SeasonLootVariantActionsView
 from utils.guild_config import load_guild_config
 from utils.player_statistics import build_season_wrapped_embed
-from utils.helpers.loot_share_commands import share_season_loot_image
+from utils.loot_helpers.loot_share_commands import share_season_loot_image
 
 
 class ManagePlayerSeasonLootView(SeasonLootVariantActionsView):

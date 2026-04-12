@@ -1,3 +1,5 @@
+"""Utilities for role checks."""
+
 import discord
 from discord import Member, User, app_commands
 

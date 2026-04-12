@@ -13,7 +13,7 @@ from menus.myinfo.common import (
 from utils.guild_config import load_guild_config
 from utils.player_statistics import build_season_wrapped_embed
 from utils.time_graphs import build_item_graph
-from utils.helpers.loot_share_commands import share_season_loot_image
+from utils.loot_helpers.loot_share_commands import share_season_loot_image
 from utils.player_records import ensure_player_exists, load_player_records
 from utils.season_loot_history import iter_season_variants
 

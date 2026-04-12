@@ -22,7 +22,7 @@ from menus.myinfo.common import (
 from menus.myinfo.entry import open_myinfo_home
 from menus.myinfo.submenus.character.modals import ManagePPEPenaltiesModal, launch_new_ppe_modal_flow
 from utils.guild_config import get_max_ppes, load_guild_config
-from utils.helpers.shareloot_image import variant_image_label
+from utils.loot_helpers.shareloot_image import variant_image_label
 from utils.player_statistics import build_character_wrapped_embed
 from utils.time_graphs import build_character_point_graph
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records

@@ -1,3 +1,4 @@
+"""Utilities for calc points."""
 
 LOOT_POINTS_CSV = "./rotmg_loot_drops_updated.csv"
 import csv
@@ -58,14 +59,7 @@ def load_loot_points():
 
 
 
-def _normalize_rarity(value: str | None, divine: bool = False) -> str:
-    rarity = normalize_rarity(value)
-    if divine and rarity == "common":
-        return "divine"
-    return "divine" if divine else "common"
-
-
-def calc_points(item: str, divine: bool, shiny: bool, rarity: str = "common", guild_config: dict | None = None) -> float:
+def calc_points(item: str, shiny: bool, rarity: str = "common", guild_config: dict | None = None) -> float:
     loot_points = load_loot_points()
     normalized_item = normalize_item_name(item)
 
@@ -78,7 +72,7 @@ def calc_points(item: str, divine: bool, shiny: bool, rarity: str = "common", gu
     if base_points <= 0:
         return 0.0
     
-    effective_rarity = _normalize_rarity(rarity, divine=divine)
+    effective_rarity = normalize_rarity(rarity)
     rarity_multipliers = get_rarity_multipliers(guild_config or {})
     final_points = base_points * rarity_multipliers.get(effective_rarity, 1.0)
 
