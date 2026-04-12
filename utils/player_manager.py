@@ -93,6 +93,9 @@ class PlayerManager:
             
             # Update unique_items cache
             player_data.unique_items.add((item_name, shiny))
+            season_key = seasonal_item_key(item_name, shiny)
+            current_rarity = player_data.season_item_rarities.get(season_key, "common")
+            player_data.season_item_rarities[season_key] = highest_rarity(current_rarity, effective_rarity)
             player_data.item_log_timestamps[seasonal_item_key(item_name, shiny)] = logged_at
             
             guild_config = await load_guild_config(interaction)

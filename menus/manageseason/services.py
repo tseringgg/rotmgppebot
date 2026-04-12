@@ -595,6 +595,44 @@ async def update_duplicate_item_point_reduction(
     return dict(settings), refresh_summary
 
 
+async def update_rarity_multipliers(
+    interaction: discord.Interaction,
+    *,
+    common: float | None = None,
+    uncommon: float | None = None,
+    rare: float | None = None,
+    legendary: float | None = None,
+    divine: float | None = None,
+) -> tuple[dict[str, Any], PointsRefreshSummary]:
+    """Update rarity multipliers and refresh all PPE totals."""
+    settings = await get_points_settings(interaction)
+    rarity_multipliers = (
+        dict(settings.get("rarity_multipliers", {}))
+        if isinstance(settings.get("rarity_multipliers"), dict)
+        else {}
+    )
+
+    updates = {
+        "common": common,
+        "uncommon": uncommon,
+        "rare": rare,
+        "legendary": legendary,
+        "divine": divine,
+    }
+    for rarity, value in updates.items():
+        if value is None:
+            continue
+        rarity_multipliers[rarity] = max(0.0, float(value))
+
+    settings["rarity_multipliers"] = rarity_multipliers
+    settings = await set_points_settings(interaction, settings)
+    refresh_summary = await refresh_all_character_points(
+        interaction,
+        guild_config={"points_settings": settings},
+    )
+    return dict(settings), refresh_summary
+
+
 async def update_class_point_override(
     interaction: discord.Interaction,
     *,

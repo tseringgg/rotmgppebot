@@ -60,6 +60,18 @@ def _build_starting_penalty_modifier_lines(modifiers: dict) -> list[str]:
     ]
 
 
+def _build_rarity_multiplier_lines(rarity_multipliers: dict) -> list[str]:
+    lines: list[str] = []
+    for rarity in ("common", "uncommon", "rare", "legendary", "divine"):
+        value = 1.0
+        try:
+            value = float(rarity_multipliers.get(rarity, 1.0))
+        except (TypeError, ValueError):
+            value = 1.0
+        lines.append(f"• {rarity.title()}: **{value:.2f}x**")
+    return lines
+
+
 def _safe_positive_float(value: object, fallback: float) -> float:
     try:
         parsed = float(value)
@@ -299,6 +311,11 @@ def build_point_settings_embed(settings: dict) -> discord.Embed:
         if isinstance(settings.get("starting_penalty_modifiers"), dict)
         else {}
     )
+    rarity_multipliers = (
+        settings.get("rarity_multipliers", {})
+        if isinstance(settings.get("rarity_multipliers"), dict)
+        else {}
+    )
     try:
         duplicate_reduction = float(settings.get("duplicate_point_reduction", 0.5))
     except (TypeError, ValueError):
@@ -348,6 +365,11 @@ def build_point_settings_embed(settings: dict) -> discord.Embed:
             "• Applies to every duplicate copy after the first.\n"
             "• Set `0` to disable duplicate points"
         ),
+        inline=False,
+    )
+    embed.add_field(
+        name="Rarity Modifiers",
+        value="\n".join(_build_rarity_multiplier_lines(rarity_multipliers)),
         inline=False,
     )
     embed.add_field(

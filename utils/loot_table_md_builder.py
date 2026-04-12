@@ -16,6 +16,7 @@ from utils.points_service import (
     penalty_inputs_from_bonuses,
     starting_penalty_breakdown_from_inputs,
 )
+from utils.player_records import highest_rarity
 
 
 def load_dungeon_data():
@@ -334,6 +335,7 @@ def create_season_loot_markdown_file(
     unique_items: set[tuple[str, bool]],
     *,
     display_name: str,
+    season_item_rarities: dict[str, str] | None = None,
     item_log_timestamps: dict[str, int] | None = None,
 ) -> str:
     """Create a markdown file for season loot, grouped by dungeon when possible."""
@@ -351,10 +353,20 @@ def create_season_loot_markdown_file(
         key_name_fn=lambda item_entry: item_entry[0],
     )
 
+    rarity_lookup = season_item_rarities if isinstance(season_item_rarities, dict) else {}
+
+    def _season_rarity(item_name: str, shiny: bool) -> str:
+        normalized_key = seasonal_item_key(item_name, shiny)
+        legacy_key = f"{item_name}|{1 if shiny else 0}"
+        normalized_rarity = str(rarity_lookup.get(normalized_key, "common")).strip().lower()
+        legacy_rarity = str(rarity_lookup.get(legacy_key, "common")).strip().lower()
+        return highest_rarity(normalized_rarity, legacy_rarity)
+
     for dungeon_name in sorted_dungeons:
         lines = []
         for item_name, shiny in sorted(dungeon_groups[dungeon_name], key=lambda entry: (entry[0].lower(), entry[1])):
-            line = f"{item_name}{' [shiny]' if shiny else ''}"
+            rarity = _season_rarity(item_name, shiny)
+            line = f"{item_name}{' [shiny]' if shiny else ''} [{rarity}]"
             if item_log_timestamps:
                 ts = item_log_timestamps.get(seasonal_item_key(item_name, shiny))
                 ts_text = format_unix_utc(ts)
@@ -366,7 +378,8 @@ def create_season_loot_markdown_file(
     if unassigned_items:
         lines = []
         for item_name, shiny in sorted(unassigned_items, key=lambda entry: (entry[0].lower(), entry[1])):
-            line = f"{item_name}{' [shiny]' if shiny else ''}"
+            rarity = _season_rarity(item_name, shiny)
+            line = f"{item_name}{' [shiny]' if shiny else ''} [{rarity}]"
             if item_log_timestamps:
                 ts = item_log_timestamps.get(seasonal_item_key(item_name, shiny))
                 ts_text = format_unix_utc(ts)

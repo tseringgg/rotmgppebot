@@ -18,6 +18,7 @@ from menus.manageseason.modals import (
     EditGlobalPointSettingsModal,
     EditPetModifierModal,
     EditPpeTypeMultiplierModal,
+    EditRarityModifiersModal,
 )
 from menus.manageseason.services import load_character_settings_for_menu, load_points_settings_for_menu
 from utils.ppe_types import all_ppe_types, ppe_type_label
@@ -80,6 +81,17 @@ class ManagePointSettingsView(OwnerBoundView):
         self.settings = await load_points_settings_for_menu(interaction)
         await interaction.response.send_modal(
             EditDuplicateItemPointsModal(
+                owner_id=self.owner_id,
+                settings=self.settings,
+                source_message=interaction.message,
+            )
+        )
+
+    @discord.ui.button(label="Edit Rarity Modifiers", style=discord.ButtonStyle.success, row=1)
+    async def edit_rarity_modifiers(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.settings = await load_points_settings_for_menu(interaction)
+        await interaction.response.send_modal(
+            EditRarityModifiersModal(
                 owner_id=self.owner_id,
                 settings=self.settings,
                 source_message=interaction.message,

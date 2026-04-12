@@ -254,6 +254,7 @@ async def send_season_loot_markdown_followup(interaction: discord.Interaction) -
     temp_file_path = create_season_loot_markdown_file(
         player_data.unique_items,
         display_name=interaction.user.display_name,
+        season_item_rarities=player_data.season_item_rarities,
         item_log_timestamps=player_data.item_log_timestamps,
     )
 
