@@ -622,6 +622,13 @@ async def run_bot_with_backoff(token: str, max_retries: int = 3):
             if "429" in str(e) or "You are being blocked from accessing our API" in str(e):
                 # Global rate limit hit
                 if attempt < max_retries:
+                    # Clean up the bot's aiohttp session before retrying
+                    try:
+                        if bot.http.connector:
+                            await bot.http.connector.close()
+                    except Exception:
+                        pass
+                    
                     # Exponential backoff: 5s, 10s, 20s, 40s, 80s (with ±20% jitter)
                     delay = base_delay * (2 ** (attempt - 1))
                     jitter = delay * 0.2 * (2 * random.random() - 1)  # ±20% jitter
