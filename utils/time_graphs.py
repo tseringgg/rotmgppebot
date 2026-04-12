@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from io import BytesIO
+import math
 from typing import Iterable
 
 from PIL import Image, ImageDraw, ImageFont
@@ -54,6 +55,82 @@ def _format_date(ts: int) -> str:
     return datetime.fromtimestamp(int(ts), tz=timezone.utc).strftime("%m-%d")
 
 
+def _format_time_tick(ts: int, span_seconds: int) -> str:
+    dt = datetime.fromtimestamp(int(ts), tz=timezone.utc)
+    if span_seconds <= 6 * 3600:
+        return dt.strftime("%H:%M")
+    if span_seconds <= 2 * 24 * 3600:
+        return dt.strftime("%m-%d %H:%M")
+    if span_seconds <= 180 * 24 * 3600:
+        return dt.strftime("%m-%d")
+    if span_seconds <= 2 * 365 * 24 * 3600:
+        return dt.strftime("%Y-%m")
+    return dt.strftime("%Y")
+
+
+def _build_time_ticks(x_min: int, x_max: int, *, max_labels: int) -> list[int]:
+    if x_max <= x_min:
+        return [x_min]
+
+    span = x_max - x_min
+    target_step = span / max(1, max_labels - 1)
+    candidate_steps = [
+        60,
+        5 * 60,
+        10 * 60,
+        15 * 60,
+        30 * 60,
+        60 * 60,
+        2 * 60 * 60,
+        3 * 60 * 60,
+        6 * 60 * 60,
+        12 * 60 * 60,
+        24 * 60 * 60,
+        2 * 24 * 60 * 60,
+        3 * 24 * 60 * 60,
+        7 * 24 * 60 * 60,
+        14 * 24 * 60 * 60,
+        30 * 24 * 60 * 60,
+        90 * 24 * 60 * 60,
+        180 * 24 * 60 * 60,
+        365 * 24 * 60 * 60,
+    ]
+    step = next((s for s in candidate_steps if s >= target_step), candidate_steps[-1])
+
+    ticks = [x_min]
+    first_aligned = ((x_min // step) + 1) * step
+    current = first_aligned
+    while current < x_max:
+        ticks.append(current)
+        current += step
+    if ticks[-1] != x_max:
+        ticks.append(x_max)
+
+    deduped: list[int] = []
+    for tick in ticks:
+        if not deduped or deduped[-1] != tick:
+            deduped.append(tick)
+    return deduped
+
+
+def _build_integer_ticks(y_min_raw: float, y_max_raw: float) -> list[int]:
+    y_min_int = int(math.floor(y_min_raw))
+    y_max_int = int(math.ceil(y_max_raw))
+    if y_min_int > 0:
+        y_min_int = 0
+    if y_max_int <= y_min_int:
+        y_max_int = y_min_int + 1
+
+    span = y_max_int - y_min_int
+    target_count = 6
+    step = max(1, int(math.ceil(span / max(1, target_count - 1))))
+
+    ticks = list(range(y_min_int, y_max_int + 1, step))
+    if ticks[-1] != y_max_int:
+        ticks.append(y_max_int)
+    return ticks
+
+
 def _draw_line_chart(
     *,
     title: str,
@@ -62,6 +139,7 @@ def _draw_line_chart(
     y_values: list[float],
     x_axis_label: str,
     y_axis_label: str,
+    y_axis_integers: bool = False,
 ) -> BytesIO:
     width, height = 1240, 760
     img = Image.new("RGB", (width, height), (18, 32, 52))
@@ -91,39 +169,64 @@ def _draw_line_chart(
 
     y_min_raw = min(y_values)
     y_max_raw = max(y_values)
-    if y_max_raw == y_min_raw:
-        y_padding = max(1.0, abs(y_max_raw) * 0.2)
-        y_min = y_min_raw - y_padding
-        y_max = y_max_raw + y_padding
+    y_ticks: list[float]
+    if y_axis_integers:
+        int_ticks = _build_integer_ticks(y_min_raw, y_max_raw)
+        y_ticks = [float(tick) for tick in int_ticks]
+        y_min = y_ticks[0]
+        y_max = y_ticks[-1]
     else:
-        y_padding = (y_max_raw - y_min_raw) * 0.12
-        y_min = y_min_raw - y_padding
-        y_max = y_max_raw + y_padding
+        if y_max_raw == y_min_raw:
+            y_padding = max(1.0, abs(y_max_raw) * 0.2)
+            y_min = y_min_raw - y_padding
+            y_max = y_max_raw + y_padding
+        else:
+            y_padding = (y_max_raw - y_min_raw) * 0.12
+            y_min = y_min_raw - y_padding
+            y_max = y_max_raw + y_padding
 
-    if y_min > 0:
-        y_min = 0.0
+        if y_min > 0:
+            y_min = 0.0
+        y_ticks = [y_min + (y_max - y_min) * (i / 5) for i in range(6)]
 
     x_min = min(x_values)
     x_max = max(x_values)
 
-    for i in range(6):
-        t = i / 5
-        y = chart_bottom - int((chart_bottom - chart_top) * t)
-        value = y_min + (y_max - y_min) * t
+    for value in y_ticks:
+        if y_max == y_min:
+            y = (chart_top + chart_bottom) // 2
+        else:
+            y = chart_bottom - int((value - y_min) / (y_max - y_min) * (chart_bottom - chart_top))
         draw.line([(chart_left, y), (chart_right, y)], fill=(52, 88, 122), width=1)
-        draw.text((26, y - 10), _format_tick(value), fill=(188, 217, 240), font=tick_font)
+        tick_label = str(int(value)) if y_axis_integers else _format_tick(value)
+        tick_box = draw.textbbox((0, 0), tick_label, font=tick_font)
+        tick_w = tick_box[2] - tick_box[0]
+        tick_h = tick_box[3] - tick_box[1]
+        draw.text((chart_left - 12 - tick_w, y - tick_h // 2), tick_label, fill=(188, 217, 240), font=tick_font)
 
-    for i in range(6):
-        t = i / 5
-        x = chart_left + int((chart_right - chart_left) * t)
+    span_seconds = max(0, x_max - x_min)
+    max_x_labels = max(3, min(8, (chart_right - chart_left) // 140))
+    x_ticks = _build_time_ticks(x_min, x_max, max_labels=max_x_labels)
+    last_label_right = -10_000
+    for idx, ts_value in enumerate(x_ticks):
+        if x_max == x_min:
+            x = (chart_left + chart_right) // 2
+        else:
+            x = chart_left + int((ts_value - x_min) / (x_max - x_min) * (chart_right - chart_left))
         draw.line([(x, chart_top), (x, chart_bottom)], fill=(40, 70, 100), width=1)
-        ts_value = int(x_min + (x_max - x_min) * t)
-        draw.text((x - 24, chart_bottom + 12), _format_date(ts_value), fill=(188, 217, 240), font=tick_font)
+
+        x_label = _format_time_tick(ts_value, span_seconds)
+        x_box = draw.textbbox((0, 0), x_label, font=tick_font)
+        x_w = x_box[2] - x_box[0]
+        label_x = max(chart_left, min(chart_right - x_w, x - x_w // 2))
+        if label_x > last_label_right + 10 or idx == len(x_ticks) - 1:
+            draw.text((label_x, chart_bottom + 12), x_label, fill=(188, 217, 240), font=tick_font)
+            last_label_right = label_x + x_w
 
     draw.line([(chart_left, chart_bottom), (chart_right, chart_bottom)], fill=(214, 236, 255), width=2)
     draw.line([(chart_left, chart_top), (chart_left, chart_bottom)], fill=(214, 236, 255), width=2)
     draw.text((chart_right - 110, chart_bottom + 46), x_axis_label, fill=(214, 236, 255), font=label_font)
-    draw.text((24, chart_top - 36), y_axis_label, fill=(214, 236, 255), font=label_font)
+    draw.text((70, chart_bottom + 46), y_axis_label, fill=(214, 236, 255), font=label_font)
 
     def map_x(raw_ts: int) -> int:
         if x_max == x_min:
@@ -217,6 +320,7 @@ def build_item_graph(player_data: PlayerData, *, display_name: str) -> BytesIO |
         y_values=y_values,
         x_axis_label="Date (UTC)",
         y_axis_label="Total Items",
+        y_axis_integers=True,
     )
 
 
