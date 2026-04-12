@@ -49,9 +49,13 @@ def resolve_member_from_input(guild: discord.Guild, raw_value: str) -> discord.M
             return member
 
     lowered = text.casefold()
+    matches: list[discord.Member] = []
     for member in guild.members:
         if member.display_name.casefold() == lowered or member.name.casefold() == lowered:
-            return member
+            matches.append(member)
+
+    if len(matches) == 1:
+        return matches[0]
 
     return None
 

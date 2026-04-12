@@ -30,10 +30,14 @@ class ManageSnifferPlayerModal(discord.ui.Modal, title="Manage Player's Sniffer"
             await interaction.response.send_message("❌ This action can only be used in a server.", ephemeral=True)
             return
 
-        target_member = resolve_member_from_input(interaction.guild, str(self.player_id.value))
+        raw_player_input = str(self.player_id.value).strip()
+        if raw_player_input.casefold() in {"me", "self", "myself"}:
+            target_member = interaction.user if isinstance(interaction.user, discord.Member) else None
+        else:
+            target_member = resolve_member_from_input(interaction.guild, raw_player_input)
         if target_member is None:
             await interaction.response.send_message(
-                "❌ Player not found. Use exact display name/username, mention, or user ID.",
+                "❌ Player not found or name is ambiguous. Use a mention or user ID.",
                 ephemeral=True,
             )
             return
