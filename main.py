@@ -603,6 +603,42 @@ async def list_roles(interaction: discord.Interaction):
 async def list_admins_cmd_handler(interaction: discord.Interaction):
     await listadmins_cmd.list_admins(interaction)
 
+def _is_global_rate_limit_error(exc: discord.errors.HTTPException) -> bool:
+    if getattr(exc, "status", None) == 429:
+        return True
+    message = str(exc)
+    return "You are being blocked from accessing our API" in message or "global rate limit" in message.lower()
+
+
+def _extract_retry_after_seconds(exc: discord.errors.HTTPException) -> float | None:
+    response = getattr(exc, "response", None)
+    headers = getattr(response, "headers", None)
+    if not headers:
+        return None
+
+    retry_after_value = headers.get("Retry-After")
+    if retry_after_value is None:
+        return None
+
+    try:
+        return max(0.0, float(retry_after_value))
+    except (TypeError, ValueError):
+        return None
+
+
+async def _cleanup_bot_after_failed_login() -> None:
+    # Ensure every partially opened Discord/aiohttp resource gets closed before retrying.
+    try:
+        await bot.close()
+    except Exception:
+        pass
+
+    try:
+        bot.clear()
+    except Exception:
+        pass
+
+
 async def run_bot_with_backoff(token: str, max_retries: int = 3):
     """
     Run the bot with exponential backoff on 429 global rate limit errors.
@@ -619,20 +655,17 @@ async def run_bot_with_backoff(token: str, max_retries: int = 3):
             await bot.start(token)
             return  # Successful connection; run indefinitely
         except discord.errors.HTTPException as e:
-            if "429" in str(e) or "You are being blocked from accessing our API" in str(e):
+            if _is_global_rate_limit_error(e):
                 # Global rate limit hit
+                await _cleanup_bot_after_failed_login()
+
+                retry_after = _extract_retry_after_seconds(e)
+                delay = base_delay * (2 ** (attempt - 1))
+                jitter = delay * 0.2 * (2 * random.random() - 1)  # ±20% jitter
+                fallback_wait_time = max(1.0, delay + jitter)
+                wait_time = retry_after if retry_after is not None else fallback_wait_time
+
                 if attempt < max_retries:
-                    # Clean up the bot's aiohttp session before retrying
-                    try:
-                        if bot.http.connector:
-                            await bot.http.connector.close()
-                    except Exception:
-                        pass
-                    
-                    # Exponential backoff: 5s, 10s, 20s, 40s, 80s (with ±20% jitter)
-                    delay = base_delay * (2 ** (attempt - 1))
-                    jitter = delay * 0.2 * (2 * random.random() - 1)  # ±20% jitter
-                    wait_time = delay + jitter
                     print(f"[ERROR] Global rate limit (429) hit. Waiting {wait_time:.1f}s before retry...")
                     await asyncio.sleep(wait_time)
                 else:
@@ -643,6 +676,7 @@ async def run_bot_with_backoff(token: str, max_retries: int = 3):
                 raise
         except Exception as e:
             # Non-HTTP errors; don't retry
+            await _cleanup_bot_after_failed_login()
             print(f"[FATAL] Unexpected error: {e}")
             raise
 
