@@ -7,7 +7,6 @@ from functools import lru_cache
 
 import discord
 PLAYER_RECORD_FILE = "./guild_loot_records.json"
-from utils.player_records import get_item_from_ppe, load_player_records, save_player_records
 from utils.guild_config import get_rarity_multipliers
 from utils.loot_constants import normalize_rarity
 
