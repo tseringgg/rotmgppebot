@@ -43,6 +43,9 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 import os
+import asyncio
+import time
+import random
 from utils.role_checks import require_ppe_roles, require_server_owner
 from utils.loot_data import init_loot_data
 from utils.settings.channel_settings import get_item_suggestions_enabled
@@ -600,7 +603,46 @@ async def list_roles(interaction: discord.Interaction):
 async def list_admins_cmd_handler(interaction: discord.Interaction):
     await listadmins_cmd.list_admins(interaction)
 
+async def run_bot_with_backoff(token: str, max_retries: int = 3):
+    """
+    Run the bot with exponential backoff on 429 global rate limit errors.
+    
+    Args:
+        token: Discord bot token
+        max_retries: Maximum number of login attempts before giving up
+    """
+    base_delay = 5  # Start with 5 second delay
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"\n[Attempt {attempt}/{max_retries}] Logging in to Discord...")
+            await bot.start(token)
+            return  # Successful connection; run indefinitely
+        except discord.errors.HTTPException as e:
+            if "429" in str(e) or "You are being blocked from accessing our API" in str(e):
+                # Global rate limit hit
+                if attempt < max_retries:
+                    # Exponential backoff: 5s, 10s, 20s, 40s, 80s (with ±20% jitter)
+                    delay = base_delay * (2 ** (attempt - 1))
+                    jitter = delay * 0.2 * (2 * random.random() - 1)  # ±20% jitter
+                    wait_time = delay + jitter
+                    print(f"[ERROR] Global rate limit (429) hit. Waiting {wait_time:.1f}s before retry...")
+                    await asyncio.sleep(wait_time)
+                else:
+                    print(f"[FATAL] Global rate limit persists after {max_retries} attempts. Giving up.")
+                    raise
+            else:
+                # Some other HTTP error; re-raise immediately
+                raise
+        except Exception as e:
+            # Non-HTTP errors; don't retry
+            print(f"[FATAL] Unexpected error: {e}")
+            raise
+
+
 if not DISCORD_TOKEN:
     print("Error: DISCORD_TOKEN environment variable not set.")
     exit(1)
-bot.run(DISCORD_TOKEN)
+
+# Run the bot with rate-limit-aware retry logic
+asyncio.run(run_bot_with_backoff(DISCORD_TOKEN))
