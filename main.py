@@ -54,7 +54,7 @@ from utils.guild_config import load_guild_config
 from utils.realmshark_ingest_server import start_realmshark_ingest_server
 from utils.realmshark_notifier import build_realmshark_notifier
 
-from utils.autocomplete import class_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, team_name_autocomplete
+from utils.autocomplete import class_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, team_name_autocomplete, rarity_autocomplete
 
 SERVER1_ID = 879497062117412924 # Last Oasis
 SERVER2_ID = 1435436110829326459 # Test Server
@@ -295,32 +295,30 @@ async def setactiveppe(interaction: discord.Interaction, ppe_id: int):
 #     await submitloot_cmd.command(interaction, dungeon, screenshot)
     
 @bot.tree.command(name="addloot", description="Add an item to your active PPE's loot.", guilds=guilds)
-@app_commands.describe(item_name="Name of the item to add", divine="Is the item divine?", shiny="Is the item shiny?", rarity="Item rarity (defaults to common)")
-@app_commands.autocomplete(item_name=item_name_autocomplete)
+@app_commands.describe(item_name="Name of the item to add", shiny="Is the item shiny?", rarity="Item rarity (defaults to common)")
+@app_commands.autocomplete(item_name=item_name_autocomplete, rarity=rarity_autocomplete)
 @require_ppe_roles(player_required=True)
 async def addloot(
         interaction: discord.Interaction,
         item_name: str,
-        divine: bool = False,
         shiny: bool = False,
         rarity: str = "common"
     ):
-    await addloot_cmd.command(interaction, item_name, divine, shiny, rarity)
+    await addloot_cmd.command(interaction, item_name, shiny, rarity)
 
 @bot.tree.command(name="addlootfor", description="Add an item to another player's specific PPE. Admin only.", guilds=guilds)
-@app_commands.describe(user="The player to add loot to", id="The PPE ID to target", item_name="Name of the item to add", divine="Is the item divine?", shiny="Is the item shiny?", rarity="Item rarity (defaults to common)")
-@app_commands.autocomplete(item_name=item_name_autocomplete)
+@app_commands.describe(user="The player to add loot to", id="The PPE ID to target", item_name="Name of the item to add", shiny="Is the item shiny?", rarity="Item rarity (defaults to common)")
+@app_commands.autocomplete(item_name=item_name_autocomplete, rarity=rarity_autocomplete)
 @require_ppe_roles(admin_required=True)
 async def addlootfor(
         interaction: discord.Interaction,
         user: discord.Member,
         id: int,
         item_name: str,
-        divine: bool = False,
         shiny: bool = False,
         rarity: str = "common"
     ):
-    await addlootfor_cmd.command(interaction, user, id, item_name, divine, shiny, rarity)
+    await addlootfor_cmd.command(interaction, user, id, item_name, shiny, rarity)
 
 @bot.tree.command(name="addbonus", description="Add a bonus to your active PPE.", guilds=guilds)
 @app_commands.describe(bonus_name="Name of the bonus to add")
@@ -363,32 +361,30 @@ async def removebonusfrom(
 
 
 @bot.tree.command(name="removeloot", description="Remove an item from your active PPE's loot.", guilds=guilds)
-@app_commands.describe(item_name="Name of the item to remove", divine="Is the item divine?", shiny="Is the item shiny?", rarity="Item rarity (defaults to common)")
-@app_commands.autocomplete(item_name=item_name_autocomplete)
+@app_commands.describe(item_name="Name of the item to remove", shiny="Is the item shiny?", rarity="Item rarity (defaults to common)")
+@app_commands.autocomplete(item_name=item_name_autocomplete, rarity=rarity_autocomplete)
 @require_ppe_roles(player_required=True)
 async def removeloot(
         interaction: discord.Interaction,
         item_name: str,
-        divine: bool = False,
         shiny: bool = False,
         rarity: str = "common"
     ):
-    await removeloot_cmd.command(interaction, item_name, divine, shiny, rarity)
+    await removeloot_cmd.command(interaction, item_name, shiny, rarity)
 
 @bot.tree.command(name="removelootfrom", description="Remove an item from another player's specific PPE. Admin only.", guilds=guilds)
-@app_commands.describe(user="The player to remove loot from", id="The PPE ID to target", item_name="Name of the item to remove", divine="Is the item divine?", shiny="Is the item shiny?", rarity="Item rarity (defaults to common)")
-@app_commands.autocomplete(item_name=item_name_autocomplete)
+@app_commands.describe(user="The player to remove loot from", id="The PPE ID to target", item_name="Name of the item to remove", shiny="Is the item shiny?", rarity="Item rarity (defaults to common)")
+@app_commands.autocomplete(item_name=item_name_autocomplete, rarity=rarity_autocomplete)
 @require_ppe_roles(admin_required=True)
 async def removelootfrom(
         interaction: discord.Interaction,
         user: discord.Member,
         id: int,
         item_name: str,
-        divine: bool = False,
         shiny: bool = False,
         rarity: str = "common"
     ):
-    await removelootfrom_cmd.command(interaction, user, id, item_name, divine, shiny, rarity)
+    await removelootfrom_cmd.command(interaction, user, id, item_name, shiny, rarity)
 
 @bot.tree.command(name="addpointsfor", description="Add points to another player's active PPE.", guilds=guilds)
 # @commands.has_role("PPE Admin")  # both can use
@@ -466,7 +462,7 @@ async def ppehelp(interaction: discord.Interaction):
 
 @bot.tree.command(name="addseasonloot", description="Add a unique item to your season loot collection.", guilds=guilds)
 @app_commands.describe(item_name="Name of the item to add", shiny="Is the item shiny?", rarity="Item rarity (defaults to common)")
-@app_commands.autocomplete(item_name=item_name_autocomplete)
+@app_commands.autocomplete(item_name=item_name_autocomplete, rarity=rarity_autocomplete)
 @require_ppe_roles(player_required=True)
 async def addseasonloot(
         interaction: discord.Interaction,
@@ -478,7 +474,7 @@ async def addseasonloot(
 
 @bot.tree.command(name="addseasonlootfor", description="Add a unique item to another player's season loot. Admin only.", guilds=guilds)
 @app_commands.describe(user="The player to add loot to", item_name="Name of the item to add", shiny="Is the item shiny?", rarity="Item rarity (defaults to common)")
-@app_commands.autocomplete(item_name=item_name_autocomplete)
+@app_commands.autocomplete(item_name=item_name_autocomplete, rarity=rarity_autocomplete)
 @require_ppe_roles(admin_required=True)
 async def addseasonlootfor(
         interaction: discord.Interaction,

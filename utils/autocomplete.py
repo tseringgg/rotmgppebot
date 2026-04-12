@@ -10,6 +10,7 @@ from .player_records import load_teams
 _LOOT_CSV = "rotmg_loot_drops_updated.csv"
 _DUNGEON_CACHE: list[str] = []
 _DUNGEON_CACHE_READY = False
+RARITY_CHOICES = ["common", "uncommon", "rare", "legendary", "divine"]
 
 
 def _load_dungeons_from_csv() -> list[str]:
@@ -83,6 +84,18 @@ async def item_name_autocomplete(interaction: discord.Interaction, current: str)
     ]
 
     return matches[:25]
+
+
+async def rarity_autocomplete(interaction: discord.Interaction, current: str):
+    current_lower = current.lower().strip()
+    matches = [
+        rarity for rarity in RARITY_CHOICES
+        if not current_lower or current_lower in rarity
+    ]
+    return [
+        app_commands.Choice(name=rarity.title(), value=rarity)
+        for rarity in matches[:25]
+    ]
 
 async def bonus_autocomplete(interaction: discord.Interaction, current: str):
     current_lower = current.lower()

@@ -5,7 +5,7 @@ from utils.player_manager import player_manager
 from utils.embed_builders import build_loot_embed
 from utils.loot_data import LOOT
 
-async def command(interaction: discord.Interaction, user: discord.Member, id: int, item_name: str, divine: bool = False, shiny: bool = False, rarity: str = "common"):
+async def command(interaction: discord.Interaction, user: discord.Member, id: int, item_name: str, shiny: bool = False, rarity: str = "common"):
     if not interaction.guild:
         return await interaction.response.send_message("❌ This command can only be used in a server.")
     
@@ -42,13 +42,15 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
         )
     
     try:
+        rarity_normalized = rarity.lower().strip()
+        divine = rarity_normalized == "divine"
         # Calculate points for the item
-        points = calculate_drop_points(item_name, divine, shiny, rarity=rarity)
+        points = calculate_drop_points(item_name, divine, shiny, rarity=rarity_normalized)
         
         
         # Remove loot and points using player_manager
         final_key, points_removed, updated_ppe = await player_manager.remove_loot_and_points(
-            interaction, user=user, ppe_id=id, item_name=item_name, divine=divine, shiny=shiny, rarity=rarity, points=points
+            interaction, user=user, ppe_id=id, item_name=item_name, divine=divine, shiny=shiny, rarity=rarity_normalized, points=points
         )
         
         # Build embed

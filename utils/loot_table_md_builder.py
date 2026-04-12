@@ -78,10 +78,22 @@ def calculate_item_points(
     divine: bool,
     shiny: bool,
     quantity: int,
+    rarity: str = "common",
     *,
     guild_config: dict | None = None,
 ) -> float:
-    return calculate_item_points_service(item_name, divine, shiny, quantity, guild_config=guild_config)
+    return calculate_item_points_service(item_name, divine, shiny, quantity, rarity=rarity, guild_config=guild_config)
+
+
+def _rarity_rank(value: str) -> int:
+    rarity = str(value).strip().lower()
+    return {
+        "common": 0,
+        "uncommon": 1,
+        "rare": 2,
+        "legendary": 3,
+        "divine": 4,
+    }.get(rarity, 0)
 
 
 def _scaled_bonus_entry_points(
@@ -147,18 +159,26 @@ def create_loot_markdown_file(
 
         for dungeon_name in sorted_dungeons:
             lines: list[str] = []
-            for loot in sorted(dungeon_groups[dungeon_name], key=lambda entry: entry.item_name.lower()):
+            for loot in sorted(
+                dungeon_groups[dungeon_name],
+                key=lambda entry: (
+                    entry.item_name.lower(),
+                    bool(getattr(entry, "shiny", False)),
+                    _rarity_rank(str(getattr(entry, "rarity", "common"))),
+                ),
+            ):
+                rarity = str(getattr(loot, "rarity", "common")).strip().lower()
                 raw_item_points = calculate_item_points(
                     loot.item_name,
                     loot.divine,
                     loot.shiny,
                     int(loot.quantity),
+                    rarity=rarity,
                     guild_config=guild_config,
                 )
 
                 tags: list[str] = []
-                if loot.divine:
-                    tags.append("divine")
+                tags.append(rarity)
                 if loot.shiny:
                     tags.append("shiny")
 
@@ -174,18 +194,26 @@ def create_loot_markdown_file(
 
         if unassigned_items:
             lines: list[str] = []
-            for loot in sorted(unassigned_items, key=lambda entry: entry.item_name.lower()):
+            for loot in sorted(
+                unassigned_items,
+                key=lambda entry: (
+                    entry.item_name.lower(),
+                    bool(getattr(entry, "shiny", False)),
+                    _rarity_rank(str(getattr(entry, "rarity", "common"))),
+                ),
+            ):
+                rarity = str(getattr(loot, "rarity", "common")).strip().lower()
                 raw_item_points = calculate_item_points(
                     loot.item_name,
                     loot.divine,
                     loot.shiny,
                     int(loot.quantity),
+                    rarity=rarity,
                     guild_config=guild_config,
                 )
 
                 tags: list[str] = []
-                if loot.divine:
-                    tags.append("divine")
+                tags.append(rarity)
                 if loot.shiny:
                     tags.append("shiny")
 

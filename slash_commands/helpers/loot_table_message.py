@@ -41,6 +41,7 @@ class LootTableMessage:
             if self.response and not self.already_responded:
                 await self.interaction.response.send_message(
                     self.response, 
+                    file=self.config.get('response_file'),
                     ephemeral=self.config.get('response_ephemeral', False)
                 )
             

@@ -1,6 +1,6 @@
 import discord
+import os
 
-from utils.embed_builders import build_loot_embed
 from utils.loot_data import LOOT
 from utils.helpers.loot_table_message import LootTableMessage
 from utils.image_utils import overlay_rarity_badge, resolve_item_image_path
@@ -13,7 +13,6 @@ from utils.player_records import get_active_ppe_of_user
 async def command(
         interaction: discord.Interaction,
         item_name: str,
-        divine: bool = False,
     shiny: bool = False,
     rarity: str = "common",
     ):
@@ -33,22 +32,32 @@ async def command(
             )
     
     try:
+        rarity_normalized = rarity.lower().strip()
+        divine = rarity_normalized == "divine"
+
         guild_config = await load_guild_config(interaction)
-        points = calculate_drop_points(item_name, divine, shiny, rarity=rarity, guild_config=guild_config)
+        points = calculate_drop_points(item_name, divine, shiny, rarity=rarity_normalized, guild_config=guild_config)
         ppe_id = (await get_active_ppe_of_user(interaction)).id
         user = interaction.user
         if not isinstance(user, discord.Member):
             raise ValueError("❌ Could not retrieve your member information.")
         final_key, points_added, active_ppe, quest_update = await player_manager.add_loot_and_points(
-            interaction, user=user, ppe_id=ppe_id, item_name=item_name, divine=divine, shiny=shiny, rarity=rarity, points=points
+            interaction,
+            user=user,
+            ppe_id=ppe_id,
+            item_name=item_name,
+            divine=divine,
+            shiny=shiny,
+            rarity=rarity_normalized,
+            points=points,
         )
         display_item_name = final_key
         if shiny:
             display_item_name = f"Shiny {display_item_name}"
         if divine:
             display_item_name = f"Divine {display_item_name}"
-        if rarity.lower() != "common" and not (divine and rarity.lower() == "divine"):
-            display_item_name = f"{rarity.title()} {display_item_name}"
+        if rarity_normalized != "common" and not (divine and rarity_normalized == "divine"):
+            display_item_name = f"{rarity_normalized.title()} {display_item_name}"
 
         quest_lines = []
         for completed_item in quest_update.get("completed_items", []):
@@ -61,33 +70,33 @@ async def command(
         if quest_lines:
             quest_lines.append("Use `/myquests` to view your updated quest list.")
         
-        # Use LootTableMessage to handle response + embed followup
+        image_file: discord.File | None = None
+        overlay_path: str | None = None
+        image_path = resolve_item_image_path(item_name, shiny=shiny)
+        if image_path:
+            overlay_path = overlay_rarity_badge(image_path, rarity_normalized)
+            file_path = overlay_path or image_path
+            image_file = discord.File(file_path)
+
         loot_message = LootTableMessage(
             interaction=interaction,
             message_type="markdown",
             response=f"> ✅ Added **{display_item_name}** to your active PPE for {points_added} points.",
             response_ephemeral=False,
+            response_file=image_file,
             ephemeral=True,
             embed_content=f"Your active PPE now has **{active_ppe.points} total points**."
         )
-        
-        await loot_message.send_player_loot(
-            active_ppe, 
-            user_id=user.id, 
-            recently_added=final_key
-        )
 
-        image_path = resolve_item_image_path(item_name, shiny=shiny)
-        if image_path:
-            overlay_path = overlay_rarity_badge(image_path, rarity)
-            file_path = overlay_path or image_path
-            try:
-                await interaction.followup.send(file=discord.File(file_path), ephemeral=False)
-            finally:
-                if overlay_path and overlay_path != image_path:
-                    import os
-                    if os.path.exists(overlay_path):
-                        os.remove(overlay_path)
+        try:
+            await loot_message.send_player_loot(
+                active_ppe,
+                user_id=user.id,
+                recently_added=final_key,
+            )
+        finally:
+            if overlay_path and image_path and overlay_path != image_path and os.path.exists(overlay_path):
+                os.remove(overlay_path)
 
         if quest_lines:
             await interaction.followup.send("\n".join(quest_lines), ephemeral=True)

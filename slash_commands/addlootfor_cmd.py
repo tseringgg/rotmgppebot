@@ -7,7 +7,7 @@ from utils.loot_data import LOOT
 from utils.image_utils import overlay_rarity_badge, resolve_item_image_path
 from utils.guild_config import load_guild_config
 
-async def command(interaction: discord.Interaction, user: discord.Member, id: int, item_name: str, divine: bool = False, shiny: bool = False, rarity: str = "common"):
+async def command(interaction: discord.Interaction, user: discord.Member, id: int, item_name: str, shiny: bool = False, rarity: str = "common"):
     if not interaction.guild:
         return await interaction.response.send_message("❌ This command can only be used in a server.")
     
@@ -52,13 +52,23 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
         )
     
     try:
+        rarity_normalized = rarity.lower().strip()
+        divine = rarity_normalized == "divine"
+
         # Calculate points for the item
         guild_config = await load_guild_config(interaction)
-        points = calculate_drop_points(item_name, divine, shiny, rarity=rarity, guild_config=guild_config)
+        points = calculate_drop_points(item_name, divine, shiny, rarity=rarity_normalized, guild_config=guild_config)
         
         # Add loot and points using player_manager
         final_key, points_added, updated_ppe, _quest_update = await player_manager.add_loot_and_points(
-            interaction, user=user, ppe_id=id, item_name=item_name, divine=divine, shiny=shiny, rarity=rarity, points=points
+            interaction,
+            user=user,
+            ppe_id=id,
+            item_name=item_name,
+            divine=divine,
+            shiny=shiny,
+            rarity=rarity_normalized,
+            points=points,
         )
         
         # Build embed
@@ -68,12 +78,20 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
             display_item_name = f"Shiny {display_item_name}"
         if divine:
             display_item_name = f"Divine {display_item_name}"
-        if rarity.lower() != "common" and not (divine and rarity.lower() == "divine"):
-            display_item_name = f"{rarity.title()} {display_item_name}"
+        if rarity_normalized != "common" and not (divine and rarity_normalized == "divine"):
+            display_item_name = f"{rarity_normalized.title()} {display_item_name}"
         
+        response_file: discord.File | None = None
+        overlay_path: str | None = None
+        image_path = resolve_item_image_path(item_name, shiny=shiny)
+        if image_path:
+            overlay_path = overlay_rarity_badge(image_path, rarity_normalized)
+            response_file = discord.File(overlay_path or image_path)
+
         await interaction.response.send_message(
             f"> ✅ Added **1x {display_item_name}** to {user.mention}'s PPE #{updated_ppe.id} ({updated_ppe.name})!\n"
-            f"**+{points_added} points**\n"
+            f"**+{points_added} points**\n",
+            file=response_file,
         )
         await interaction.followup.send(
             content=f"{user.display_name}'s PPE #{updated_ppe.id} now has **{updated_ppe.points} total points**.",
@@ -82,17 +100,10 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
             ephemeral=True
         )
 
-        image_path = resolve_item_image_path(item_name, shiny=shiny)
-        if image_path:
-            overlay_path = overlay_rarity_badge(image_path, rarity)
-            file_path = overlay_path or image_path
-            try:
-                await interaction.followup.send(file=discord.File(file_path), ephemeral=False)
-            finally:
-                if overlay_path and overlay_path != image_path:
-                    import os
-                    if os.path.exists(overlay_path):
-                        os.remove(overlay_path)
+        if overlay_path and image_path and overlay_path != image_path:
+            import os
+            if os.path.exists(overlay_path):
+                os.remove(overlay_path)
         
     except (ValueError, KeyError, LookupError) as e:
         return await interaction.response.send_message(str(e), ephemeral=True)
