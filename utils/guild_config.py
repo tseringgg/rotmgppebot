@@ -53,6 +53,13 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
             "penalty_percent": 0.0,
             "total_percent": 0.0,
         },
+        "rarity_multipliers": {
+            "common": 1.0,
+            "uncommon": 1.0,
+            "rare": 1.0,
+            "legendary": 1.0,
+            "divine": 2.0,
+        },
         "starting_penalty_modifiers": {
             "pet_level_percent_reduction": 0.0,
             "exalts_percent_reduction": 0.0,
@@ -315,6 +322,15 @@ def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
         "total_percent": _as_float(raw_global.get("total_percent"), _DEFAULT_CONFIG["points_settings"]["global"]["total_percent"]),
     }
 
+    raw_rarity_multipliers = raw.get("rarity_multipliers", {}) if isinstance(raw.get("rarity_multipliers", {}), dict) else {}
+    normalized_rarity_multipliers = {
+        "common": max(0.0, _as_float(raw_rarity_multipliers.get("common"), _DEFAULT_CONFIG["points_settings"]["rarity_multipliers"]["common"])),
+        "uncommon": max(0.0, _as_float(raw_rarity_multipliers.get("uncommon"), _DEFAULT_CONFIG["points_settings"]["rarity_multipliers"]["uncommon"])),
+        "rare": max(0.0, _as_float(raw_rarity_multipliers.get("rare"), _DEFAULT_CONFIG["points_settings"]["rarity_multipliers"]["rare"])),
+        "legendary": max(0.0, _as_float(raw_rarity_multipliers.get("legendary"), _DEFAULT_CONFIG["points_settings"]["rarity_multipliers"]["legendary"])),
+        "divine": max(0.0, _as_float(raw_rarity_multipliers.get("divine"), _DEFAULT_CONFIG["points_settings"]["rarity_multipliers"]["divine"])),
+    }
+
     normalized_starting_penalty_modifiers = {
         "pet_level_percent_reduction": max(0.0, _as_float(raw_starting_penalty_modifiers.get("pet_level_percent_reduction"), 0.0)),
         "exalts_percent_reduction": max(0.0, _as_float(raw_starting_penalty_modifiers.get("exalts_percent_reduction"), 0.0)),
@@ -375,11 +391,26 @@ def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
 
     return {
         "global": normalized_global,
+        "rarity_multipliers": normalized_rarity_multipliers,
         "starting_penalty_modifiers": normalized_starting_penalty_modifiers,
         "duplicate_point_reduction": duplicate_point_reduction,
         "penalty_weights": normalized_penalty_weights,
         "class_overrides": normalized_overrides,
     }
+
+
+def get_rarity_multipliers(guild_config: Dict[str, Any] | None) -> Dict[str, float]:
+    points_settings = guild_config.get("points_settings", {}) if isinstance(guild_config, dict) else {}
+    raw_multipliers = points_settings.get("rarity_multipliers", {}) if isinstance(points_settings.get("rarity_multipliers", {}), dict) else {}
+    defaults = _DEFAULT_CONFIG["points_settings"]["rarity_multipliers"]
+    result: Dict[str, float] = {}
+    for rarity, fallback in defaults.items():
+        try:
+            parsed = float(raw_multipliers.get(rarity, fallback))
+        except (TypeError, ValueError):
+            parsed = float(fallback)
+        result[rarity] = parsed if parsed >= 0 else float(fallback)
+    return result
 
 
 async def load_guild_config_by_id(guild_id: int) -> Dict[str, Any]:

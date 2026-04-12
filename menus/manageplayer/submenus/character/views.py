@@ -301,7 +301,10 @@ class ManagePlayerCharacterLootView(OwnerBoundView):
 
         refreshed = await load_target_player_data(interaction, self.target.user_id)
         selected = find_ppe_or_raise(refreshed, self.ppe_id)
-        source_items = [(loot_item.item_name, bool(loot_item.shiny)) for loot_item in selected.loot]
+        source_items = [
+            (loot_item.item_name, bool(loot_item.shiny), str(getattr(loot_item, "rarity", "common")))
+            for loot_item in selected.loot
+        ]
 
         await generate_loot_share_image(
             interaction,

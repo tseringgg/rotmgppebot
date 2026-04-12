@@ -18,6 +18,35 @@ from utils.player_manager import player_manager
 from utils.calc_points import calc_points
 from slash_commands.helpers.loot_table_message import LootTableMessage
 
+
+class RaritySelect(discord.ui.Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(label="Common", value="common", default=True),
+            discord.SelectOption(label="Uncommon", value="uncommon"),
+            discord.SelectOption(label="Rare", value="rare"),
+            discord.SelectOption(label="Legendary", value="legendary"),
+            discord.SelectOption(label="Divine", value="divine"),
+        ]
+        super().__init__(placeholder="Rarity: Common", min_values=1, max_values=1, options=options, row=1)
+
+    async def callback(self, interaction: discord.Interaction):
+        view = self.view
+        if not isinstance(view, ItemSuggestionView):
+            return
+        if not await view._check_authorized(interaction):
+            return
+
+        view.rarity = self.values[0]
+        view.is_divine = view.rarity == "divine"
+        for child in view.children:
+            if isinstance(child, discord.ui.Button) and child.label.startswith("Divine:"):
+                child.label = "Divine: Yes" if view.is_divine else "Divine: No"
+                child.style = discord.ButtonStyle.success if view.is_divine else discord.ButtonStyle.secondary
+                break
+        self.placeholder = f"Rarity: {view.rarity.title()}"
+        await interaction.response.edit_message(view=view)
+
 # ---------------------------------------------------------------------------
 # Paths resolved once, relative to this file's location
 # ---------------------------------------------------------------------------
@@ -79,6 +108,8 @@ class ItemSuggestionView(discord.ui.View):
         self.suggested_item = suggested_item
         self.is_shiny = False
         self.is_divine = False
+        self.rarity = "common"
+        self.add_item(RaritySelect())
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -121,6 +152,7 @@ class ItemSuggestionView(discord.ui.View):
         if not await self._check_authorized(interaction):
             return
         self.is_divine = not self.is_divine
+        self.rarity = "divine" if self.is_divine else "common"
         button.label = "Divine: Yes" if self.is_divine else "Divine: No"
         button.style = discord.ButtonStyle.success if self.is_divine else discord.ButtonStyle.secondary
         await interaction.response.edit_message(view=self)
@@ -142,7 +174,7 @@ class ItemSuggestionView(discord.ui.View):
             return
 
         try:
-            points = calc_points(self.suggested_item, divine=self.is_divine, shiny=self.is_shiny)
+            points = calc_points(self.suggested_item, divine=self.is_divine, shiny=self.is_shiny, rarity=self.rarity)
             # Resolve the active PPE id first (raises if none)
             from utils.player_records import load_player_records, ensure_player_exists, get_active_ppe
             records = await load_player_records(interaction)
@@ -159,6 +191,7 @@ class ItemSuggestionView(discord.ui.View):
                 item_name=self.suggested_item,
                 divine=self.is_divine,
                 shiny=self.is_shiny,
+                rarity=self.rarity,
                 points=points,
             )
             print(
@@ -170,6 +203,8 @@ class ItemSuggestionView(discord.ui.View):
                 tags += " (shiny)"
             if self.is_divine:
                 tags += " (divine)"
+            if self.rarity and self.rarity != "common" and not (self.is_divine and self.rarity == "divine"):
+                tags += f" ({self.rarity})"
             await self._finish(
                 interaction,
                 f"> ✅ Added **{final_key}**{tags} to your active PPE for {points_added} points.",

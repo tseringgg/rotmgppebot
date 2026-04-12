@@ -24,7 +24,10 @@ async def share_active_ppe_loot_image(
         await _send_interaction_text(interaction, str(e), ephemeral=True)
         return
 
-    source_items = [(loot_item.item_name, bool(loot_item.shiny)) for loot_item in active_ppe.loot]
+    source_items = [
+        (loot_item.item_name, bool(loot_item.shiny), str(getattr(loot_item, "rarity", "common")))
+        for loot_item in active_ppe.loot
+    ]
     ppe_type = ppe_type_short_label(normalize_ppe_type(getattr(active_ppe, "ppe_type", None)))
 
     await generate_loot_share_image(
@@ -82,7 +85,10 @@ async def share_season_loot_image(
 
     await generate_loot_share_image(
         interaction,
-        source_items=player_data.unique_items,
+        source_items=[
+            (item_name, shiny, player_data.season_item_rarities.get(f"{item_name}|{1 if shiny else 0}", "common"))
+            for item_name, shiny in player_data.unique_items
+        ],
         include_skins=include_skins,
         include_limited=include_limited,
         filename_suffix="season_loot",

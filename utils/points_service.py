@@ -4,6 +4,7 @@ from typing import Any, Dict, Iterable
 from dataclass import Bonus, Loot, PPEData
 from utils.ppe_types import DEFAULT_PPE_TYPE_MULTIPLIERS, normalize_ppe_type, normalize_ppe_type_multipliers
 from utils.calc_points import load_loot_points, normalize_item_name
+from utils.guild_config import get_rarity_multipliers
 
 PENALTY_NAMES = {
     "Pet Level Penalty",
@@ -57,6 +58,19 @@ def _class_name_for_ppe(ppe: PPEData) -> str:
 
 def _apply_percent(value: float, percent: float) -> float:
     return value * (1.0 + (percent / 100.0))
+
+
+def _normalize_rarity(value: Any, divine: bool = False) -> str:
+    rarity = str(value).strip().lower() if value is not None else ""
+    if rarity in {"common", "uncommon", "rare", "legendary", "divine"}:
+        return "divine" if divine and rarity == "common" else rarity
+    return "divine" if divine else "common"
+
+
+def _rarity_multiplier_for(value: Any, guild_config: Dict[str, Any] | None = None) -> float:
+    rarity = _normalize_rarity(value)
+    multipliers = get_rarity_multipliers(guild_config or {})
+    return float(multipliers.get(rarity, 1.0))
 
 
 def _get_points_settings(guild_config: Dict[str, Any] | None) -> Dict[str, Any]:
@@ -433,12 +447,20 @@ def has_item_variant(item_name: str, shiny: bool, loot_points: Dict[str, float] 
     return lookup in points_map
 
 
-def calculate_drop_points(item_name: str, divine: bool, shiny: bool, loot_points: Dict[str, float] | None = None) -> float:
+def calculate_drop_points(
+    item_name: str,
+    divine: bool,
+    shiny: bool,
+    rarity: str = "common",
+    loot_points: Dict[str, float] | None = None,
+    guild_config: Dict[str, Any] | None = None,
+) -> float:
     base_points = get_item_base_points(item_name, shiny, loot_points=loot_points)
     if base_points <= 0:
         return 0.0
 
-    value = base_points * (2 if divine else 1)
+    effective_rarity = _normalize_rarity(rarity, divine=divine)
+    value = base_points * _rarity_multiplier_for(effective_rarity, guild_config)
     return math.floor(value * 2) / 2
 
 
@@ -447,6 +469,7 @@ def calculate_item_points(
     divine: bool,
     shiny: bool,
     quantity: int,
+    rarity: str = "common",
     loot_points: Dict[str, float] | None = None,
     guild_config: Dict[str, Any] | None = None,
 ) -> float:
@@ -458,7 +481,8 @@ def calculate_item_points(
     if quantity <= 0:
         return 0.0
 
-    final_points = base_points * (2 if divine else 1)
+    effective_rarity = _normalize_rarity(rarity, divine=divine)
+    final_points = base_points * _rarity_multiplier_for(effective_rarity, guild_config)
     if quantity == 1:
         return final_points
 
@@ -495,6 +519,7 @@ def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = Non
             divine=loot.divine,
             shiny=loot.shiny,
             quantity=loot.quantity,
+            rarity=getattr(loot, "rarity", "common"),
             loot_points=loot_points,
             guild_config=guild_config,
         )

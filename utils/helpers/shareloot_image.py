@@ -7,9 +7,10 @@ import discord
 from PIL import Image
 
 from utils.calc_points import normalize_item_name
+from utils.image_utils import overlay_rarity_badge_on_image
 
 
-LootSourceItems = Sequence[tuple[str, bool]]
+LootSourceItems = Sequence[tuple[str, bool] | tuple[str, bool, str]]
 
 _LOOTSUMMARY_DIR = os.path.join("helper_pics", "lootsummary_pics")
 _DUNGEONS_PATH = os.path.join("helper_pics", "dungeon_pics")
@@ -171,11 +172,14 @@ async def generate_loot_share_image(
     items_excluded_from_variant: list[str] = []
 
     normalized_items: list[tuple[str, str, bool, str]] = []
-    for raw_name, shiny in source_items:
+    for entry in source_items:
+        raw_name = entry[0]
+        shiny = bool(entry[1])
+        rarity = str(entry[2]).strip().lower() if len(entry) > 2 else "common"
         normalized_name = _lookup_key(raw_name)
         display_name = f"{raw_name} (shiny)" if shiny else raw_name
         item_type = item_type_lookup.get(normalized_name, "")
-        normalized_items.append((raw_name, normalized_name, shiny, item_type))
+        normalized_items.append((raw_name, normalized_name, shiny, item_type, rarity))
 
         if _is_in_variant(item_type, variant):
             total_variant_items += 1
@@ -196,7 +200,7 @@ async def generate_loot_share_image(
         items_placed = 0
         items_not_found: list[str] = []
 
-        for raw_name, normalized_name, shiny, item_type in normalized_items:
+        for raw_name, normalized_name, shiny, item_type, rarity in normalized_items:
             if not _is_in_variant(item_type, variant):
                 continue
 
@@ -207,6 +211,7 @@ async def generate_loot_share_image(
                 if shiny_name in sprite_positions and shiny_name in sprite_images:
                     pos = sprite_positions[shiny_name]
                     sprite = sprite_images[shiny_name]
+                    sprite = overlay_rarity_badge_on_image(sprite, rarity) or sprite
                     background.paste(sprite, (pos["pixel_x"], pos["pixel_y"]), sprite)
                     items_placed += 1
                 else:
@@ -215,6 +220,7 @@ async def generate_loot_share_image(
                 if normalized_name in sprite_positions and normalized_name in sprite_images:
                     pos = sprite_positions[normalized_name]
                     sprite = sprite_images[normalized_name]
+                    sprite = overlay_rarity_badge_on_image(sprite, rarity) or sprite
                     background.paste(sprite, (pos["pixel_x"], pos["pixel_y"]), sprite)
                     items_placed += 1
                 else:

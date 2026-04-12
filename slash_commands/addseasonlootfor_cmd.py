@@ -4,6 +4,7 @@ from utils.loot_data import LOOT
 from utils.points_service import has_item_variant
 from utils.quest_manager import update_quests_for_item
 from utils.guild_config import get_quest_targets
+from utils.player_records import highest_rarity
 from utils.item_log_timestamps import now_unix_utc, seasonal_item_key
 
 
@@ -11,7 +12,8 @@ async def command(
         interaction: discord.Interaction,
         user: discord.Member,
         item_name: str,
-        shiny: bool = False
+    shiny: bool = False,
+    rarity: str = "common"
     ):
     if not interaction.guild:
         return await interaction.response.send_message("❌ This command can only be used in a server.", ephemeral=True)
@@ -46,15 +48,18 @@ async def command(
         
         # Add to unique_items
         item_key = (item_name, shiny)
-        
-        # Check if already exists
-        if item_key in player_data.unique_items:
+
+        rarity_key = f"{item_name}|{1 if shiny else 0}"
+        current_rarity = player_data.season_item_rarities.get(rarity_key, "common")
+        updated_rarity = highest_rarity(current_rarity, rarity)
+        if item_key in player_data.unique_items and current_rarity == updated_rarity:
             return await interaction.response.send_message(
                 f"⚠️ **{item_name}{' (shiny)' if shiny else ''}** is already in {user.display_name}'s season loot collection!",
                 ephemeral=True
             )
-        
+
         player_data.unique_items.add(item_key)
+        player_data.season_item_rarities[rarity_key] = updated_rarity
         player_data.item_log_timestamps[seasonal_item_key(item_name, shiny)] = now_unix_utc()
         regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
         update_quests_for_item(

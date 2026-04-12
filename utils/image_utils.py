@@ -2,11 +2,87 @@
 
 import os
 import tempfile
+from functools import lru_cache
 
 from PIL import Image
 
+from utils.calc_points import normalize_item_name
+
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _RARITY_PICS_DIR = os.path.join(_PROJECT_ROOT, "helper_pics", "rarity_pics")
+_DUNGEONS_PATH = os.path.join(_PROJECT_ROOT, "helper_pics", "dungeon_pics")
+
+
+@lru_cache(maxsize=1)
+def _item_image_index() -> dict[str, str]:
+    index: dict[str, str] = {}
+    for root, _dirs, files in os.walk(_DUNGEONS_PATH):
+        for file_name in files:
+            if not file_name.lower().endswith(".png"):
+                continue
+            path = os.path.join(root, file_name)
+            base_name = os.path.splitext(file_name)[0]
+            normalized = normalize_item_name(base_name).lower()
+            if normalized and normalized not in index:
+                index[normalized] = path
+    return index
+
+
+def resolve_item_image_path(item_name: str, shiny: bool = False) -> str | None:
+    base = item_name.strip()
+    if not base:
+        return None
+
+    candidates = [base]
+    if shiny and not base.lower().endswith("(shiny)"):
+        candidates.insert(0, f"{base} (shiny)")
+
+    index = _item_image_index()
+    for candidate in candidates:
+        key = normalize_item_name(candidate).lower()
+        path = index.get(key)
+        if path:
+            return path
+    return None
+
+
+def overlay_rarity_badge_on_image(
+    item_img: Image.Image,
+    rarity: str,
+    output_size: tuple[int, int] | None = None,
+) -> Image.Image | None:
+    rarity_normalized = str(rarity).strip().lower()
+    if rarity_normalized == "common":
+        return item_img.copy()
+
+    rarity_file = f"{rarity_normalized}.png"
+    rarity_image_path = os.path.join(_RARITY_PICS_DIR, rarity_file)
+    if not os.path.exists(rarity_image_path):
+        return None
+
+    rarity_img = Image.open(rarity_image_path).convert("RGBA")
+    item_rgba = item_img.convert("RGBA")
+
+    if output_size:
+        target_width, target_height = output_size
+        if rarity_normalized == "uncommon":
+            target_width = max(1, target_width // 2)
+            target_height = max(1, target_height // 2)
+        rarity_img = rarity_img.resize((target_width, target_height), Image.Resampling.LANCZOS)
+    else:
+        scale_factor = 0.15 if rarity_normalized == "uncommon" else 0.30
+        new_width = max(10, int(item_rgba.width * scale_factor))
+        aspect_ratio = rarity_img.height / rarity_img.width
+        new_height = int(new_width * aspect_ratio)
+        rarity_img = rarity_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+    margin = 3
+    x_pos = item_rgba.width - rarity_img.width - margin
+    y_pos = item_rgba.height - rarity_img.height - margin
+    item_rgba.paste(rarity_img, (x_pos, y_pos), rarity_img)
+    if item_img.mode == "RGB":
+        return item_rgba.convert("RGB")
+    return item_rgba
 
 def overlay_rarity_badge(
     item_image_path: str,
@@ -34,54 +110,9 @@ def overlay_rarity_badge(
             return None
         
         item_img = Image.open(item_image_path)
-        
-        # Construct path to rarity image
-        rarity_file = f"{rarity.lower()}.png"
-        rarity_image_path = os.path.join(_RARITY_PICS_DIR, rarity_file)
-        
-        if not os.path.exists(rarity_image_path):
+        result_img = overlay_rarity_badge_on_image(item_img, rarity, output_size=output_size)
+        if result_img is None:
             return None
-        
-        # Load the rarity image
-        rarity_img = Image.open(rarity_image_path).convert("RGBA")
-        
-        # Scale the rarity badge while preserving aspect ratio
-        if output_size:
-            print(f"[IMAGE_UTILS] Scaling rarity badge to {output_size}")
-            target_width, target_height = output_size
-            
-            # Halve the size for uncommon so the single diamond matches the scale of others
-            if rarity.lower() == "uncommon":
-                target_width = max(1, target_width // 2)
-                target_height = max(1, target_height // 2)
-                
-            rarity_img = rarity_img.resize((target_width, target_height), Image.Resampling.LANCZOS)
-        else:
-            # Default: make badge width roughly 30% of item image width
-            # Halve the scale factor for uncommon items (15% instead of 30%)
-            scale_factor = 0.15 if rarity.lower() == "uncommon" else 0.30
-            new_width = max(10, int(item_img.width * scale_factor))
-            
-            # Calculate the new height based on the original aspect ratio
-            aspect_ratio = rarity_img.height / rarity_img.width
-            new_height = int(new_width * aspect_ratio)
-            
-            rarity_img = rarity_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-        
-        # Create a copy of the item image to preserve the original
-        result_img = item_img.convert("RGBA")
-        
-        # Calculate position: bottom right with small margin
-        margin = 3
-        x_pos = result_img.width - rarity_img.width - margin
-        y_pos = result_img.height - rarity_img.height - margin
-        
-        # Paste the rarity badge onto the item image
-        result_img.paste(rarity_img, (x_pos, y_pos), rarity_img)
-        
-        # Convert back to RGB if original was RGB
-        if item_img.mode == "RGB":
-            result_img = result_img.convert("RGB")
         
         # Save to temporary file
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_file:

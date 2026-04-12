@@ -7,6 +7,7 @@ from functools import lru_cache
 import discord
 PLAYER_RECORD_FILE = "./guild_loot_records.json"
 from utils.player_records import get_item_from_ppe, load_player_records, save_player_records
+from utils.guild_config import get_rarity_multipliers
 
 _APOSTROPHE_VARIANTS = "\u2018\u2019\u02bc\u2032\u00b4`"
 _DASH_VARIANTS = "\u2010\u2011\u2012\u2013\u2014\u2015\u2212"
@@ -56,7 +57,14 @@ def load_loot_points():
 
 
 
-def calc_points(item: str, divine: bool, shiny: bool) -> float:
+def _normalize_rarity(value: str | None, divine: bool = False) -> str:
+    rarity = str(value).strip().lower() if value is not None else ""
+    if rarity in {"common", "uncommon", "rare", "legendary", "divine"}:
+        return "divine" if divine and rarity == "common" else rarity
+    return "divine" if divine else "common"
+
+
+def calc_points(item: str, divine: bool, shiny: bool, rarity: str = "common", guild_config: dict | None = None) -> float:
     loot_points = load_loot_points()
     normalized_item = normalize_item_name(item)
 
@@ -69,10 +77,9 @@ def calc_points(item: str, divine: bool, shiny: bool) -> float:
     if base_points <= 0:
         return 0.0
     
-    # Apply divine multiplier
-    final_points = base_points
-    if divine:
-        final_points = final_points * 2
+    effective_rarity = _normalize_rarity(rarity, divine=divine)
+    rarity_multipliers = get_rarity_multipliers(guild_config or {})
+    final_points = base_points * rarity_multipliers.get(effective_rarity, 1.0)
 
     # Round down to nearest 0.5
     import math

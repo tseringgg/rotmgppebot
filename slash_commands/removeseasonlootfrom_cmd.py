@@ -47,6 +47,7 @@ async def command(
         
         player_data.unique_items.discard(item_key)
         player_data.item_log_timestamps.pop(seasonal_item_key(item_name, shiny), None)
+        player_data.season_item_rarities.pop(f"{item_name}|{1 if shiny else 0}", None)
         removed_quest_entries = remove_item_from_completed_quests(player_data, item_name, shiny)
 
         regular_target, shiny_target, skin_target = await get_quest_targets(interaction)

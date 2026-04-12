@@ -13,7 +13,8 @@ async def command(
         interaction: discord.Interaction,
         item_name: str,
         divine: bool = False,
-        shiny: bool = False
+        shiny: bool = False,
+        rarity: str = "common"
     ):
     # if item_name not in LOOT:
     #     return await interaction.response.send_message(
@@ -23,13 +24,13 @@ async def command(
     #     )
     
     try:
-        points = calculate_drop_points(item_name, divine, shiny)
+        points = calculate_drop_points(item_name, divine, shiny, rarity=rarity)
         ppe_id = (await get_active_ppe_of_user(interaction)).id
         user = interaction.user
         if not isinstance(user, discord.Member):
             raise ValueError("❌ Could not retrieve your member information.")
         final_key, points_removed, active_ppe = await player_manager.remove_loot_and_points(
-            interaction, user=user, ppe_id=ppe_id, item_name=item_name, divine=divine, shiny=shiny, points=points
+            interaction, user=user, ppe_id=ppe_id, item_name=item_name, divine=divine, shiny=shiny, rarity=rarity, points=points
         )
         embed = await build_loot_embed(active_ppe, user_id=user.id, recently_added=item_name)
         

@@ -109,7 +109,12 @@ async def command(
             else:
                 item_name = detected_loot["item"].strip()
             try:
-                points = calc_points(item_name, divine=detected_loot["divine"], shiny=detected_loot["shiny"])
+                points = calc_points(
+                    item_name,
+                    divine=detected_loot["divine"],
+                    shiny=detected_loot["shiny"],
+                    rarity=detected_loot.get("rarity", "common"),
+                )
                 if points == 0:
                     continue
                 ppe_id = (await get_active_ppe_of_user(interaction)).id
@@ -117,7 +122,14 @@ async def command(
                 if not isinstance(user, discord.Member):
                     raise ValueError("❌ Could not retrieve your member information.")
                 final_key, points_added, _active_ppe, _quest_update = await player_manager.add_loot_and_points(
-                    interaction, user=user, ppe_id=ppe_id, item_name=item_name, divine=detected_loot["divine"], shiny=detected_loot["shiny"], points=points
+                    interaction,
+                    user=user,
+                    ppe_id=ppe_id,
+                    item_name=item_name,
+                    divine=detected_loot["divine"],
+                    shiny=detected_loot["shiny"],
+                    rarity=detected_loot.get("rarity", "common"),
+                    points=points,
                 )
                 message += f"• **{final_key}** (+{points_added} points)\n"
             except (ValueError, KeyError, LookupError) as e:

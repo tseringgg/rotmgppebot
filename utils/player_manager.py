@@ -3,6 +3,7 @@ from typing import Dict, Optional
 import discord
 from dataclass import Loot, PPEData, PlayerData
 from utils.player_records import load_player_records, save_player_records, ensure_player_exists, get_active_ppe
+from utils.player_records import get_item_from_ppe, highest_rarity
 from utils.quest_manager import update_quests_for_item
 from utils.guild_config import get_max_ppes, get_quest_targets
 from utils.guild_config import load_guild_config
@@ -40,8 +41,11 @@ class PlayerManager:
             return result
     
     async def add_loot_and_points(self, interaction: discord.Interaction, user: discord.Member, ppe_id:int, item_name: str,
-                                divine: bool = False, shiny: bool = False, points: float = 0) -> tuple:
+                                divine: bool = False, shiny: bool = False, rarity: str = "common", points: float = 0) -> tuple:
         """Add loot and points atomically."""
+        effective_rarity = rarity.lower().strip() if isinstance(rarity, str) else "common"
+        if divine and effective_rarity == "common":
+            effective_rarity = "divine"
         
         async def operation(records, interaction):
             user_id = user.id
@@ -67,8 +71,7 @@ class PlayerManager:
             old_total = active_ppe.points
 
             # Add loot
-            from utils.player_records import get_item_from_ppe
-            match = get_item_from_ppe(active_ppe, item_name, divine, shiny)
+            match = get_item_from_ppe(active_ppe, item_name, divine, shiny, rarity=effective_rarity)
             logged_at = now_unix_utc()
             if match:
                 match.quantity += 1
@@ -82,6 +85,7 @@ class PlayerManager:
                         quantity=1,
                         divine=divine,
                         shiny=shiny,
+                        rarity=effective_rarity,
                         first_logged_at=logged_at,
                         last_logged_at=logged_at,
                     )
@@ -116,8 +120,11 @@ class PlayerManager:
         return await self.execute_transaction(interaction, operation)
     
     async def remove_loot_and_points(self, interaction: discord.Interaction, user: discord.Member, ppe_id: int, item_name: str, 
-                                   divine: bool = False, shiny: bool = False, points: float = 0) -> tuple:
+                                   divine: bool = False, shiny: bool = False, rarity: str = "common", points: float = 0) -> tuple:
         """Remove loot and points atomically."""
+        effective_rarity = rarity.lower().strip() if isinstance(rarity, str) else "common"
+        if divine and effective_rarity == "common":
+            effective_rarity = "divine"
         
         async def operation(records, interaction):
             user_id = user.id
@@ -133,8 +140,7 @@ class PlayerManager:
             if not active_ppe:
                 raise LookupError("❌ Could not find your active PPE record.")
             
-            from utils.player_records import get_item_from_ppe
-            item = get_item_from_ppe(active_ppe, item_name, divine, shiny)
+            item = get_item_from_ppe(active_ppe, item_name, divine, shiny, rarity=effective_rarity)
             if not item:
                 raise ValueError(f"❌ You don't have any **{item_name}** in your active PPE's loot.")
             
@@ -167,6 +173,27 @@ class PlayerManager:
             return item_name, points_rounded, active_ppe
         
         return await self.execute_transaction(interaction, operation)
+
+    async def set_season_item_rarity(self, interaction: discord.Interaction, user_id: int, item_name: str, shiny: bool, rarity: str) -> None:
+        async def operation(records, interaction):
+            key = ensure_player_exists(records, user_id)
+            player_data = records[key]
+            if not player_data.is_member:
+                raise KeyError("❌ You're not part of the PPE contest.")
+
+            item_key = seasonal_item_key(item_name, shiny)
+            current_rarity = player_data.season_item_rarities.get(item_key, "common")
+            player_data.season_item_rarities[item_key] = highest_rarity(current_rarity, rarity)
+
+        await self.execute_transaction(interaction, operation)
+
+    async def remove_season_item_rarity(self, interaction: discord.Interaction, user_id: int, item_name: str, shiny: bool) -> None:
+        async def operation(records, interaction):
+            key = ensure_player_exists(records, user_id)
+            player_data = records[key]
+            player_data.season_item_rarities.pop(seasonal_item_key(item_name, shiny), None)
+
+        await self.execute_transaction(interaction, operation)
     
     async def add_points_only(self, interaction: discord.Interaction, amount: float) -> float:
         """Add points only (for admin commands)."""

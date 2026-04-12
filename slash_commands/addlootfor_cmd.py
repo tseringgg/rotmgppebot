@@ -4,8 +4,10 @@ from utils.points_service import calculate_drop_points, has_item_variant
 from utils.player_manager import player_manager
 from utils.embed_builders import build_loot_embed
 from utils.loot_data import LOOT
+from utils.image_utils import overlay_rarity_badge, resolve_item_image_path
+from utils.guild_config import load_guild_config
 
-async def command(interaction: discord.Interaction, user: discord.Member, id: int, item_name: str, divine: bool = False, shiny: bool = False):
+async def command(interaction: discord.Interaction, user: discord.Member, id: int, item_name: str, divine: bool = False, shiny: bool = False, rarity: str = "common"):
     if not interaction.guild:
         return await interaction.response.send_message("❌ This command can only be used in a server.")
     
@@ -51,18 +53,26 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     
     try:
         # Calculate points for the item
-        points = calculate_drop_points(item_name, divine, shiny)
+        guild_config = await load_guild_config(interaction)
+        points = calculate_drop_points(item_name, divine, shiny, rarity=rarity, guild_config=guild_config)
         
         # Add loot and points using player_manager
         final_key, points_added, updated_ppe, _quest_update = await player_manager.add_loot_and_points(
-            interaction, user=user, ppe_id=id, item_name=item_name, divine=divine, shiny=shiny, points=points
+            interaction, user=user, ppe_id=id, item_name=item_name, divine=divine, shiny=shiny, rarity=rarity, points=points
         )
         
         # Build embed
         embed = await build_loot_embed(updated_ppe, user_id=user.id, recently_added=item_name)
+        display_item_name = final_key
+        if shiny:
+            display_item_name = f"Shiny {display_item_name}"
+        if divine:
+            display_item_name = f"Divine {display_item_name}"
+        if rarity.lower() != "common" and not (divine and rarity.lower() == "divine"):
+            display_item_name = f"{rarity.title()} {display_item_name}"
         
         await interaction.response.send_message(
-            f"> ✅ Added **1x {final_key}** to {user.mention}'s PPE #{updated_ppe.id} ({updated_ppe.name})!\n"
+            f"> ✅ Added **1x {display_item_name}** to {user.mention}'s PPE #{updated_ppe.id} ({updated_ppe.name})!\n"
             f"**+{points_added} points**\n"
         )
         await interaction.followup.send(
@@ -71,6 +81,18 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
             embed=embed.embeds[0],
             ephemeral=True
         )
+
+        image_path = resolve_item_image_path(item_name, shiny=shiny)
+        if image_path:
+            overlay_path = overlay_rarity_badge(image_path, rarity)
+            file_path = overlay_path or image_path
+            try:
+                await interaction.followup.send(file=discord.File(file_path), ephemeral=False)
+            finally:
+                if overlay_path and overlay_path != image_path:
+                    import os
+                    if os.path.exists(overlay_path):
+                        os.remove(overlay_path)
         
     except (ValueError, KeyError, LookupError) as e:
         return await interaction.response.send_message(str(e), ephemeral=True)
