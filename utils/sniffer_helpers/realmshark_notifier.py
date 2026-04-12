@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
+import time
 from datetime import datetime, timezone
 from typing import Awaitable, Callable
 
@@ -10,6 +12,26 @@ import discord
 
 from utils.player_records import ensure_player_exists, load_player_records
 from utils.image_utils import overlay_rarity_badge
+
+
+def _env_float(name: str, default: float, minimum: float = 0.0) -> float:
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return max(minimum, default)
+
+    try:
+        parsed = float(raw_value)
+    except ValueError:
+        return max(minimum, default)
+
+    return max(minimum, parsed)
+
+
+_CHANNEL_CACHE_TTL_SECONDS = _env_float("REALMSHARK_CHANNEL_CACHE_TTL_SECONDS", default=300.0, minimum=5.0)
+_MIN_SEND_INTERVAL_SECONDS = _env_float("REALMSHARK_MIN_SEND_INTERVAL_SECONDS", default=0.35, minimum=0.0)
+_CHANNEL_CACHE: dict[int, tuple[int, float]] = {}
+_SEND_LOCK = asyncio.Lock()
+_NEXT_ALLOWED_SEND_MONOTONIC = 0.0
 
 
 def _discord_absolute_now() -> str:
@@ -24,6 +46,60 @@ def _with_optional_timestamp(message: str) -> str:
         return f"{message} | {_discord_absolute_now()}"
 
     return message
+
+
+def _is_writable_text_channel(channel: discord.abc.GuildChannel | None, me: discord.Member | None) -> bool:
+    if not isinstance(channel, discord.TextChannel):
+        return False
+    if me is None:
+        return False
+    return channel.permissions_for(me).send_messages
+
+
+def _get_cached_announce_channel(guild: discord.Guild, me: discord.Member | None) -> discord.TextChannel | None:
+    cached = _CHANNEL_CACHE.get(guild.id)
+    if cached is None:
+        return None
+
+    channel_id, cached_at = cached
+    if (time.monotonic() - cached_at) > _CHANNEL_CACHE_TTL_SECONDS:
+        _CHANNEL_CACHE.pop(guild.id, None)
+        return None
+
+    channel = guild.get_channel(channel_id)
+    if not _is_writable_text_channel(channel, me):
+        _CHANNEL_CACHE.pop(guild.id, None)
+        return None
+
+    return channel
+
+
+def _cache_announce_channel(guild_id: int, channel_id: int) -> None:
+    _CHANNEL_CACHE[guild_id] = (channel_id, time.monotonic())
+
+
+async def _throttled_send(
+    channel: discord.TextChannel,
+    *,
+    content: str,
+    file: discord.File | None = None,
+    allowed_mentions: discord.AllowedMentions | None = None,
+) -> None:
+    global _NEXT_ALLOWED_SEND_MONOTONIC
+
+    async with _SEND_LOCK:
+        if _MIN_SEND_INTERVAL_SECONDS > 0:
+            wait_for = _NEXT_ALLOWED_SEND_MONOTONIC - time.monotonic()
+            if wait_for > 0:
+                await asyncio.sleep(wait_for)
+
+        if file is None:
+            await channel.send(content=content, allowed_mentions=allowed_mentions)
+        else:
+            await channel.send(content=content, file=file, allowed_mentions=allowed_mentions)
+
+        if _MIN_SEND_INTERVAL_SECONDS > 0:
+            _NEXT_ALLOWED_SEND_MONOTONIC = time.monotonic() + _MIN_SEND_INTERVAL_SECONDS
 
 
 async def _get_target_ppe(
@@ -49,6 +125,43 @@ async def _get_target_ppe(
     return next((ppe for ppe in player_data.ppes if int(ppe.id) == int(ppe_id)), None)
 
 
+def _resolve_announce_channel(
+    guild: discord.Guild,
+    me: discord.Member | None,
+    channel_id: int | None,
+) -> discord.TextChannel | None:
+    cached_channel = _get_cached_announce_channel(guild, me)
+    if cached_channel is not None:
+        return cached_channel
+
+    if channel_id is not None and channel_id > 0:
+        configured_channel = guild.get_channel(channel_id)
+        if _is_writable_text_channel(configured_channel, me):
+            _cache_announce_channel(guild.id, configured_channel.id)
+            return configured_channel
+
+        if configured_channel is not None:
+            print(
+                f"[REALMSHARK] Configured announce channel {channel_id} is not writable for guild {guild.id}, falling back."
+            )
+        else:
+            print(
+                f"[REALMSHARK] Configured announce channel {channel_id} not found in guild {guild.id}, falling back."
+            )
+
+    if _is_writable_text_channel(guild.system_channel, me):
+        _cache_announce_channel(guild.id, guild.system_channel.id)
+        return guild.system_channel
+
+    channel = next(
+        (c for c in guild.text_channels if _is_writable_text_channel(c, me)),
+        None,
+    )
+    if channel is not None:
+        _cache_announce_channel(guild.id, channel.id)
+    return channel
+
+
 def build_realmshark_notifier(
     bot: discord.Client,
 ) -> Callable[[int, str, int | None, int | None, str | None, bool, int | None, bool, str | None], Awaitable[None]]:
@@ -72,28 +185,7 @@ def build_realmshark_notifier(
         if me is None and bot.user is not None:
             me = guild.get_member(bot.user.id)
 
-        channel = None
-        if channel_id is not None and channel_id > 0:
-            configured_channel = guild.get_channel(channel_id)
-            if isinstance(configured_channel, discord.TextChannel):
-                if me is not None and configured_channel.permissions_for(me).send_messages:
-                    channel = configured_channel
-                else:
-                    print(
-                        f"[REALMSHARK] Configured announce channel {channel_id} is not writable for guild {guild_id}, falling back."
-                    )
-            else:
-                print(
-                    f"[REALMSHARK] Configured announce channel {channel_id} not found in guild {guild_id}, falling back."
-                )
-
-        if channel is None:
-            channel = guild.system_channel
-            if channel is None or me is None or not channel.permissions_for(me).send_messages:
-                channel = next(
-                    (c for c in guild.text_channels if me is not None and c.permissions_for(me).send_messages),
-                    None,
-                )
+        channel = _resolve_announce_channel(guild, me, channel_id)
 
         if channel is None:
             print(f"[REALMSHARK] Could not announce test event: no writable text channel in guild {guild_id}.")
@@ -137,7 +229,8 @@ def build_realmshark_notifier(
             image_to_send = overlay_image_path if overlay_image_path else image_path
             
             try:
-                await channel.send(
+                await _throttled_send(
+                    channel,
                     content=f"[RealmShark] {final_message}",
                     file=discord.File(image_to_send),
                     allowed_mentions=allowed_mentions,
@@ -156,6 +249,10 @@ def build_realmshark_notifier(
                         print(f"[REALMSHARK] Failed to clean up overlay image: {e}")
 
         if not sent_public_message:
-            await channel.send(f"[RealmShark] {final_message}", allowed_mentions=allowed_mentions)
+            await _throttled_send(
+                channel,
+                content=f"[RealmShark] {final_message}",
+                allowed_mentions=allowed_mentions,
+            )
 
     return notifier

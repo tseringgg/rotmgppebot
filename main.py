@@ -44,8 +44,9 @@ from discord.ext import commands
 from dotenv import load_dotenv
 import os
 import asyncio
-import time
 import random
+import json
+import time
 from utils.role_checks import require_ppe_roles, require_server_owner
 from utils.loot_data import init_loot_data
 from utils.settings.channel_settings import get_item_suggestions_enabled
@@ -68,7 +69,136 @@ guilds = [discord.Object(id=SERVER1_ID), discord.Object(id=SERVER2_ID), discord.
 load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
+
+def _env_flag(name: str, default: bool) -> bool:
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+    return raw_value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_int(name: str, default: int, minimum: int = 1) -> int:
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return max(minimum, default)
+
+    try:
+        parsed = int(raw_value)
+    except ValueError:
+        return max(minimum, default)
+
+    return max(minimum, parsed)
+
+
+SYNC_COMMANDS_ON_STARTUP = _env_flag("PPE_SYNC_COMMANDS_ON_STARTUP", default=True)
+SYNC_MAX_RETRIES = _env_int("PPE_SYNC_MAX_RETRIES", default=2, minimum=1)
+SYNC_COOLDOWN_SECONDS = _env_int("PPE_SYNC_COOLDOWN_SECONDS", default=21600, minimum=0)
+SYNC_STATE_PATH = os.getenv("PPE_SYNC_STATE_PATH", "/data/ppe_command_sync_state.json")
+
 class PPEBot(commands.Bot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._startup_sync_attempted = False
+        self.realmshark_ingest_runner = None
+
+    async def _sync_app_commands_to_guilds(self) -> None:
+        if self._startup_sync_attempted:
+            print("Skipping startup slash-command sync (already attempted in this process).")
+            return
+
+        self._startup_sync_attempted = True
+
+        if not SYNC_COMMANDS_ON_STARTUP:
+            print("Skipping startup slash-command sync (PPE_SYNC_COMMANDS_ON_STARTUP=false).")
+            return
+
+        if SYNC_COOLDOWN_SECONDS > 0:
+            last_sync_epoch = self._load_last_sync_epoch()
+            if last_sync_epoch is not None:
+                elapsed = time.time() - last_sync_epoch
+                if elapsed < SYNC_COOLDOWN_SECONDS:
+                    remaining = max(0.0, SYNC_COOLDOWN_SECONDS - elapsed)
+                    print(
+                        "Skipping startup slash-command sync "
+                        f"(cooldown active, {remaining:.0f}s remaining)."
+                    )
+                    return
+
+        print("Loaded commands:", [cmd.name for cmd in self.tree.get_commands()])
+
+        any_sync_succeeded = False
+
+        for guild in guilds:
+            for sync_attempt in range(1, SYNC_MAX_RETRIES + 1):
+                print(
+                    f"Syncing commands to guild {guild.id} "
+                    f"(attempt {sync_attempt}/{SYNC_MAX_RETRIES})..."
+                )
+                try:
+                    await self.tree.sync(guild=guild)
+                    any_sync_succeeded = True
+                    break
+                except discord.errors.HTTPException as e:
+                    if not _is_global_rate_limit_error(e):
+                        print(f"[ERROR] Failed to sync commands to guild {guild.id}: {e}")
+                        break
+
+                    retry_after = _extract_retry_after_seconds(e)
+                    wait_time = retry_after if retry_after is not None else max(2.0, 2.0 * sync_attempt)
+
+                    if sync_attempt >= SYNC_MAX_RETRIES:
+                        print(
+                            f"[ERROR] Global rate limit while syncing guild {guild.id}; "
+                            "skipping further sync attempts for this guild."
+                        )
+                        break
+
+                    print(
+                        f"[WARN] Global rate limit while syncing guild {guild.id}. "
+                        f"Waiting {wait_time:.1f}s before retry."
+                    )
+                    await asyncio.sleep(wait_time)
+                except Exception as e:
+                    print(f"[ERROR] Failed to sync commands to guild {guild.id}: {e}")
+                    break
+
+        if any_sync_succeeded:
+            self._save_last_sync_epoch(time.time())
+
+        print("Startup slash-command sync completed.")
+
+    def _load_last_sync_epoch(self) -> float | None:
+        try:
+            with open(SYNC_STATE_PATH, "r", encoding="utf-8") as f:
+                payload = json.load(f)
+        except Exception:
+            return None
+
+        if not isinstance(payload, dict):
+            return None
+
+        raw_value = payload.get("last_sync_epoch")
+        try:
+            parsed = float(raw_value)
+        except (TypeError, ValueError):
+            return None
+
+        return parsed if parsed > 0 else None
+
+    def _save_last_sync_epoch(self, epoch: float) -> None:
+        payload = {"last_sync_epoch": float(epoch)}
+        sync_dir = os.path.dirname(SYNC_STATE_PATH)
+        temp_path = f"{SYNC_STATE_PATH}.tmp"
+
+        try:
+            if sync_dir:
+                os.makedirs(sync_dir, exist_ok=True)
+            with open(temp_path, "w", encoding="utf-8") as f:
+                json.dump(payload, f)
+            os.replace(temp_path, SYNC_STATE_PATH)
+        except Exception as e:
+            print(f"[WARN] Failed to persist command sync timestamp: {e}")
+
     async def setup_hook(self):
 
         # Initialize global loot data for autocomplete
@@ -81,27 +211,19 @@ class PPEBot(commands.Bot):
             print("✅ All loot backgrounds and mappings generated successfully!")
         except Exception as e:
             print(f"[ERROR] Failed to generate loot backgrounds: {e}")
-        
-        # Print to confirm commands are loaded BEFORE syncing
-        print("Loaded commands:", [cmd.name for cmd in self.tree.get_commands()])
 
-        # Sync to guilds (FAST commands)
-        for guild in guilds:
-            print(f"Syncing commands to guild {guild.id}...")
-            try:
-                await self.tree.sync(guild=guild)
-            except Exception as e:
-                print(f"[ERROR] Failed to sync commands to guild {guild.id}: {e}")
+        await self._sync_app_commands_to_guilds()
 
-        print("Guild commands synced!")
-        self.realmshark_ingest_runner = await start_realmshark_ingest_server(
-            notifier=build_realmshark_notifier(self)
-        )
+        if self.realmshark_ingest_runner is None:
+            self.realmshark_ingest_runner = await start_realmshark_ingest_server(
+                notifier=build_realmshark_notifier(self)
+            )
 
     async def close(self):
         runner = getattr(self, "realmshark_ingest_runner", None)
         if runner is not None:
             await runner.cleanup()
+            self.realmshark_ingest_runner = None
         await super().close()
 
 
@@ -203,24 +325,24 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
 async def on_raw_reaction_remove(payload: discord.RawReactionActionEvent):
     await handle_leave_contest_reaction(bot, payload)
 
+
+@bot.tree.error
+async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    # Role/permission checks already provide user-facing feedback in the predicate.
+    if isinstance(error, app_commands.CheckFailure):
+        if not interaction.response.is_done():
+            await interaction.response.send_message(
+                "🚫 You do not have permission to use this command.",
+                ephemeral=True,
+            )
+
 @bot.event
 async def on_message(message: discord.Message):
     if message.guild is None:
         return # Ignore DMs
     guild_id = message.guild.id
-    if message.author == bot.user:
+    if message.author.bot:
         return
-
-    await bot.process_commands(message)
-    @bot.tree.error
-    async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
-        # Role/permission checks already provide user-facing feedback in the predicate.
-        if isinstance(error, app_commands.CheckFailure):
-            if not interaction.response.is_done():
-                await interaction.response.send_message(
-                    "🚫 You do not have permission to use this command.",
-                    ephemeral=True,
-                )
     # print("Message received")
     # --- Image attachment listener ---
     # Collect all image attachments (png, jpg, jpeg, webp)
@@ -610,20 +732,110 @@ def _is_global_rate_limit_error(exc: discord.errors.HTTPException) -> bool:
     return "You are being blocked from accessing our API" in message or "global rate limit" in message.lower()
 
 
-def _extract_retry_after_seconds(exc: discord.errors.HTTPException) -> float | None:
-    response = getattr(exc, "response", None)
-    headers = getattr(response, "headers", None)
-    if not headers:
-        return None
-
-    retry_after_value = headers.get("Retry-After")
-    if retry_after_value is None:
+def _decode_http_exception_payload(exc: discord.errors.HTTPException) -> dict | None:
+    raw_text = getattr(exc, "text", None)
+    if not isinstance(raw_text, str) or not raw_text:
         return None
 
     try:
-        return max(0.0, float(retry_after_value))
-    except (TypeError, ValueError):
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError:
         return None
+
+    return payload if isinstance(payload, dict) else None
+
+
+def _extract_retry_after_seconds(exc: discord.errors.HTTPException) -> float | None:
+    response = getattr(exc, "response", None)
+    headers = getattr(response, "headers", None)
+    if headers:
+        retry_after_value = headers.get("Retry-After") or headers.get("X-RateLimit-Reset-After")
+        if retry_after_value is not None:
+            try:
+                return max(0.0, float(retry_after_value))
+            except (TypeError, ValueError):
+                pass
+
+    # Some Discord errors include retry metadata in the response JSON body.
+    payload = _decode_http_exception_payload(exc)
+    if isinstance(payload, dict):
+        body_retry_after = payload.get("retry_after")
+        try:
+            if body_retry_after is not None:
+                return max(0.0, float(body_retry_after))
+        except (TypeError, ValueError):
+            pass
+
+    return None
+
+
+def _format_discord_rate_limit_details(
+    exc: discord.errors.HTTPException,
+    *,
+    attempt: int,
+    computed_wait_time: float,
+    retry_after_seconds: float | None,
+) -> list[str]:
+    response = getattr(exc, "response", None)
+    headers = getattr(response, "headers", None)
+    payload = _decode_http_exception_payload(exc) or {}
+
+    def _header(name: str) -> str | None:
+        if not headers:
+            return None
+        return headers.get(name)
+
+    lines = [
+        "[WARN] Discord global rate limit encountered.",
+        f"[WARN] attempt={attempt} status={getattr(exc, 'status', 'unknown')} code={getattr(exc, 'code', 'unknown')}",
+        f"[WARN] wait_seconds={computed_wait_time:.3f} retry_after_seconds={retry_after_seconds if retry_after_seconds is not None else 'unknown'}",
+        f"[WARN] exception_message={str(exc)}",
+    ]
+
+    if response is not None:
+        response_method = getattr(response, "method", None)
+        response_url = getattr(response, "url", None)
+        response_reason = getattr(response, "reason", None)
+        lines.append(
+            "[WARN] response="
+            f"method={response_method or 'unknown'} url={response_url or 'unknown'} reason={response_reason or 'unknown'}"
+        )
+
+    rate_limit_header_keys = [
+        "Retry-After",
+        "X-RateLimit-Reset-After",
+        "X-RateLimit-Reset",
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+        "X-RateLimit-Bucket",
+        "X-RateLimit-Scope",
+        "Via",
+        "CF-Ray",
+    ]
+
+    for key in rate_limit_header_keys:
+        value = _header(key)
+        if value is not None:
+            lines.append(f"[WARN] header[{key}]={value}")
+
+    # Discord typically returns retry_after/global/message in the body for 429 responses.
+    body_keys = [
+        "message",
+        "global",
+        "retry_after",
+        "code",
+        "method",
+        "path",
+        "route",
+    ]
+    for key in body_keys:
+        if key in payload:
+            lines.append(f"[WARN] body[{key}]={payload.get(key)}")
+
+    if payload:
+        lines.append(f"[WARN] raw_body={json.dumps(payload, ensure_ascii=True, separators=(',', ':'))}")
+
+    return lines
 
 
 async def _cleanup_bot_after_failed_login() -> None:
@@ -645,39 +857,54 @@ async def run_bot_with_backoff(token: str, max_retries: int = 3):
     
     Args:
         token: Discord bot token
-        max_retries: Maximum number of login attempts before giving up
+        max_retries: Retained for backward compatibility and ignored.
     """
-    base_delay = 5  # Start with 5 second delay
-    
-    for attempt in range(1, max_retries + 1):
+    del max_retries
+    base_delay = 5.0  # Start with 5 second delay
+    max_backoff_seconds = 300.0
+    attempt = 0
+
+    while True:
+        attempt += 1
         try:
-            print(f"\n[Attempt {attempt}/{max_retries}] Logging in to Discord...")
+            print(f"\n[Attempt {attempt}] Logging in to Discord...")
             await bot.start(token)
             return  # Successful connection; run indefinitely
+        except discord.errors.LoginFailure:
+            await _cleanup_bot_after_failed_login()
+            print("[FATAL] Invalid Discord token. Check DISCORD_TOKEN and restart.")
+            raise
         except discord.errors.HTTPException as e:
             if _is_global_rate_limit_error(e):
                 # Global rate limit hit
                 await _cleanup_bot_after_failed_login()
 
                 retry_after = _extract_retry_after_seconds(e)
-                delay = base_delay * (2 ** (attempt - 1))
+                delay = min(max_backoff_seconds, base_delay * (2 ** min(8, attempt - 1)))
                 jitter = delay * 0.2 * (2 * random.random() - 1)  # ±20% jitter
                 fallback_wait_time = max(1.0, delay + jitter)
-                wait_time = retry_after if retry_after is not None else fallback_wait_time
+                wait_time = max(retry_after or 0.0, fallback_wait_time)
 
-                if attempt < max_retries:
-                    print(f"[ERROR] Global rate limit (429) hit. Waiting {wait_time:.1f}s before retry...")
-                    await asyncio.sleep(wait_time)
-                else:
-                    print(f"[FATAL] Global rate limit persists after {max_retries} attempts. Giving up.")
-                    raise
+                diagnostic_lines = _format_discord_rate_limit_details(
+                    e,
+                    attempt=attempt,
+                    computed_wait_time=wait_time,
+                    retry_after_seconds=retry_after,
+                )
+                for line in diagnostic_lines:
+                    print(line)
+
+                print(f"[WARN] Backing off for {wait_time:.1f}s before retry...")
+                await asyncio.sleep(wait_time)
             else:
                 # Some other HTTP error; re-raise immediately
+                await _cleanup_bot_after_failed_login()
+                print(f"[FATAL] Discord HTTP error during startup: {e}")
                 raise
         except Exception as e:
             # Non-HTTP errors; don't retry
             await _cleanup_bot_after_failed_login()
-            print(f"[FATAL] Unexpected error: {e}")
+            print(f"[FATAL] Unexpected startup error: {e}")
             raise
 
 
