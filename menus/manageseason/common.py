@@ -139,6 +139,13 @@ def build_manageseason_home_embed() -> discord.Embed:
         ),
         inline=False,
     )
+    embed.add_field(
+        name="Factory Reset Settings",
+        value=(
+            "Quick reset for admin-tunable settings only. Preserves sniffer endpoint and join embed references."
+        ),
+        inline=False,
+    )
     embed.set_footer(text="This menu is owner-bound: only the admin who opened it can use the controls.")
     return embed
 

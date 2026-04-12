@@ -43,7 +43,7 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 import os
-from utils.role_checks import require_ppe_roles
+from utils.role_checks import require_ppe_roles, require_server_owner
 from utils.loot_data import init_loot_data
 from utils.settings.channel_settings import get_item_suggestions_enabled
 from utils.item_suggestion import handle_item_suggestion
@@ -433,12 +433,14 @@ async def addplayer(interaction: discord.Interaction, member: discord.Member):
     await addplayer_cmd.command(interaction, member)
 
 
-@bot.tree.command(name="addadmin", description="Add PPE Admin role to a member (server owner only).", guilds=guilds)
+@bot.tree.command(name="addadmin", description="Add PPE Admin role to a member.", guilds=guilds)
+@require_ppe_roles(admin_required=True)
 async def addadmin(interaction: discord.Interaction, member: discord.Member):
     await addadmin_cmd.command(interaction, member)
 
 
 @bot.tree.command(name="forcereset", description="Force wipe all stored bot data for this guild (server owner only).", guilds=guilds)
+@require_server_owner()
 async def forcereset(interaction: discord.Interaction):
     await forcereset_cmd.command(interaction)
 

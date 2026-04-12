@@ -223,12 +223,15 @@ async def configure(
                     continue
                 item_shiny = bool(event.get("shiny", False))
                 item_divine = bool(event.get("divine", False))
+                item_rarity_raw = str(event.get("item_rarity", "common")).strip().lower()
+                item_rarity = item_rarity_raw if item_rarity_raw in {"common", "uncommon", "rare", "legendary", "divine"} else "common"
                 await _addloot_for_user_with_ppe(
                     interaction.guild.id,
                     managed_user_id,
                     item_name,
                     item_divine,
                     item_shiny,
+                    item_rarity,
                     ppe_id,
                 )
                 applied_events_total += 1

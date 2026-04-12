@@ -9,8 +9,9 @@ from menus.manageseason.services import (
     load_character_settings_for_menu,
     load_contest_settings_for_menu,
     load_points_settings_for_menu,
+    reset_admin_tunable_settings_to_defaults,
 )
-from menus.menu_utils import OwnerBoundView
+from menus.menu_utils import ConfirmCancelView, OwnerBoundView
 from utils.ppe_types import normalize_allowed_ppe_types
 from utils.guild_config import get_max_ppes
 
@@ -79,6 +80,52 @@ class ManageSeasonHomeView(OwnerBoundView):
             allowed_ppe_types=normalize_allowed_ppe_types(settings.get("allowed_ppe_types")),
         )
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+    @discord.ui.button(label="Factory Reset Settings", style=discord.ButtonStyle.danger, row=1)
+    async def factory_reset_settings(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        if not _has_discord_administrator_permission(interaction):
+            await interaction.response.send_message(
+                "ERROR: `Factory Reset Settings` requires Discord Administrator permission.",
+                ephemeral=True,
+            )
+            return
+
+        confirm_view = ConfirmCancelView(
+            owner_id=self.owner_id,
+            timeout=60,
+            confirm_label="Factory Reset",
+            cancel_label="Cancel",
+            confirm_style=discord.ButtonStyle.danger,
+            cancel_style=discord.ButtonStyle.secondary,
+            owner_error="This confirmation belongs to another user.",
+        )
+
+        await interaction.response.send_message(
+            (
+                "WARNING: This will reset admin-tunable settings to defaults.\n"
+                "This preserves sniffer endpoint and join embed message references.\n"
+                "Proceed with factory reset?"
+            ),
+            ephemeral=True,
+            view=confirm_view,
+        )
+
+        await confirm_view.wait()
+        if confirm_view.confirmed is not True:
+            status = "Factory reset cancelled." if confirm_view.confirmed is False else "Factory reset timed out."
+            await interaction.edit_original_response(content=status, view=None)
+            return
+
+        summary = await reset_admin_tunable_settings_to_defaults(interaction)
+        await interaction.edit_original_response(
+            content=(
+                "Factory settings reset complete.\n"
+                f"endpoint_preserved: `{summary.endpoint_preserved}`\n"
+                f"join_embed_preserved: `{summary.join_embed_preserved}`\n"
+                f"picture_suggestion_channels_cleared: `{summary.picture_suggestion_channels_cleared}`"
+            ),
+            view=None,
+        )
 
 
 __all__ = ["ManageSeasonHomeView"]
