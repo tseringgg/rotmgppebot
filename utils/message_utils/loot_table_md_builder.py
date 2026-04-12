@@ -2,7 +2,7 @@
 
 import csv
 
-from dataclass import PPEData
+from dataclass import Loot, PPEData
 from utils.ppe_types import normalize_ppe_type, ppe_type_short_label
 from utils.message_utils.markdown_message_builder import MarkdownMessageBuilder
 from utils.item_log_timestamps import format_unix_utc
