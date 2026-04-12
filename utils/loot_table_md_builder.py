@@ -254,26 +254,40 @@ def create_loot_markdown_file(
 
         builder.add_section(heading="Bonuses", lines=bonus_lines)
 
+    # REFRAMED SUMMARY SECTION
     total_loot_items = len(ppe_data.loot) if ppe_data.loot else 0
     total_bonus_items = len(ppe_data.bonuses) if ppe_data.bonuses else 0
+    
     summary_lines = [
         f"Loot entries: {total_loot_items}",
         f"Bonus entries: {total_bonus_items}",
         "",
+        "",
+        "Loot Adjustments:",
+        "",
+        f"- Pet reduction: -{float(loot_adjustments['pet_reduction_percent']):.2f}%",
+        f"- Exalts reduction: -{float(loot_adjustments['exalts_reduction_percent']):.2f}%",
+        f"- Loot boost reduction: -{float(loot_adjustments['loot_reduction_percent']):.2f}%",
+        f"- In-combat reduction: -{float(loot_adjustments['incombat_reduction_percent']):.2f}%",
+        "",
     ]
+
+    # Add minimum floor if applicable
     if minimum_total is not None:
-        summary_lines.append(f"Minimum total floor: {_format_points(minimum_total)}")
+        summary_lines.insert(2, f"Minimum total floor: {_format_points(minimum_total)}")
+
+    # Red lines
+    stat_red_text = f"Stat reduction total: -{float(loot_adjustments['total_reduction_percent']):.2f}% ({item_reduction_multiplier:.2f}x)"
+    summary_lines.append(f'<span style="color:red">{stat_red_text}</span>')
+    
+    type_mult_text = f"Type multiplier: {type_multiplier:.2f}x"
+    summary_lines.append(f'<span style="color:red">{type_mult_text}</span>')
+    
     summary_lines.append("")
-    summary_lines.append("Loot Adjustments:")
-    summary_lines.append(f"- Pet reduction: -{float(loot_adjustments['pet_reduction_percent']):.2f}%")
-    summary_lines.append(f"- Exalts reduction: -{float(loot_adjustments['exalts_reduction_percent']):.2f}%")
-    summary_lines.append(f"- Loot boost reduction: -{float(loot_adjustments['loot_reduction_percent']):.2f}%")
-    summary_lines.append(f"- In-combat reduction: -{float(loot_adjustments['incombat_reduction_percent']):.2f}%")
-    summary_lines.append(
-        f"- Stat reduction total: -{float(loot_adjustments['total_reduction_percent']):.2f}% ({item_reduction_multiplier:.2f}x)"
-    )
-    summary_lines.append(f"- Type multiplier: {type_multiplier:.2f}x")
-    summary_lines.append(f"- Combined item multiplier: {total_item_multiplier:.2f}x")
+
+    # Green line
+    comb_mult_text = f"Combined item multiplier: {total_item_multiplier:.2f}x"
+    summary_lines.append(f'<span style="color:green">{comb_mult_text}</span>')
     summary_lines.append(f"All items are worth {total_item_multiplier:.2f}x for this character.")
 
     builder.add_section(
