@@ -6,8 +6,7 @@ import discord
 import cv2
 import numpy as np
 from utils.autocomplete import get_dungeons
-from utils.player_manager import player_manager
-from utils.calc_points import calc_points
+from utils.loot_ops import add_ppe_loot
 from utils.find_items import find_items_in_image
 from utils.player_records import get_active_ppe_of_user, load_player_records
 
@@ -109,29 +108,19 @@ async def command(
             else:
                 item_name = detected_loot["item"].strip()
             try:
-                points = calc_points(
-                    item_name,
-                    divine=detected_loot["divine"],
-                    shiny=detected_loot["shiny"],
-                    rarity=detected_loot.get("rarity", "common"),
-                )
-                if points == 0:
-                    continue
                 ppe_id = (await get_active_ppe_of_user(interaction)).id
                 user = interaction.user
                 if not isinstance(user, discord.Member):
                     raise ValueError("❌ Could not retrieve your member information.")
-                final_key, points_added, _active_ppe, _quest_update = await player_manager.add_loot_and_points(
+                result = await add_ppe_loot(
                     interaction,
                     user=user,
                     ppe_id=ppe_id,
                     item_name=item_name,
-                    divine=detected_loot["divine"],
                     shiny=detected_loot["shiny"],
                     rarity=detected_loot.get("rarity", "common"),
-                    points=points,
                 )
-                message += f"• **{final_key}** (+{points_added} points)\n"
+                message += f"• **{result.item_name}** (+{result.points_delta} points)\n"
             except (ValueError, KeyError, LookupError) as e:
                 return await interaction.followup.send(str(e), ephemeral=True)
 

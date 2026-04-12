@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 
 from dataclass import PlayerData
 from utils.calc_points import load_loot_points, normalize_item_name
+from utils.season_loot_history import season_unique_items
 
 _LOOT_CSV = "rotmg_loot_drops_updated.csv"
 _REGULAR_BY_NORM: Dict[str, str] = {}
@@ -134,14 +135,14 @@ def _quest_target_norm(item_name: str, shiny: bool = False) -> str:
 
 def _owned_regular_norms(player_data: PlayerData) -> set[str]:
     owned = set()
-    for item_name, _shiny in player_data.unique_items:
+    for item_name, _shiny in season_unique_items(player_data):
         owned.add(normalize_item_name(item_name).lower())
     return owned
 
 
 def _owned_shiny_target_norms(player_data: PlayerData) -> set[str]:
     owned = set()
-    for item_name, shiny in player_data.unique_items:
+    for item_name, shiny in season_unique_items(player_data):
         if shiny:
             owned.add(_quest_target_norm(item_name, shiny=True))
     return owned

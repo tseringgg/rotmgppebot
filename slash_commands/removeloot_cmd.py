@@ -4,8 +4,12 @@ import discord
 
 from utils.embed_builders import build_loot_embed
 from utils.loot_data import LOOT
-from utils.player_manager import player_manager
-from utils.points_service import calculate_drop_points
+from utils.loot_ops import (
+    format_ppe_remove_message,
+    remove_ppe_loot,
+    send_ppe_markdown_followup,
+    validate_loot_input,
+)
 from utils.player_records import get_active_ppe_of_user
 
 
@@ -15,32 +19,34 @@ async def command(
         shiny: bool = False,
         rarity: str = "common"
     ):
-    # if item_name not in LOOT:
-    #     return await interaction.response.send_message(
-    #         f"❌ `{item_name}` is not a recognized item name.\n"
-    #         f"Use the autocomplete suggestions to select a valid item.",
-    #         ephemeral=True
-    #     )
+    try:
+        validate_loot_input(item_name, shiny=shiny, known_items=LOOT)
+    except ValueError as e:
+        return await interaction.response.send_message(str(e), ephemeral=True)
     
     try:
         rarity_normalized = rarity.lower().strip()
-        divine = rarity_normalized == "divine"
-        points = calculate_drop_points(item_name, divine, shiny, rarity=rarity_normalized)
         ppe_id = (await get_active_ppe_of_user(interaction)).id
         user = interaction.user
         if not isinstance(user, discord.Member):
             raise ValueError("❌ Could not retrieve your member information.")
-        final_key, points_removed, active_ppe = await player_manager.remove_loot_and_points(
-            interaction, user=user, ppe_id=ppe_id, item_name=item_name, divine=divine, shiny=shiny, rarity=rarity_normalized, points=points
+        result = await remove_ppe_loot(
+            interaction,
+            user=user,
+            ppe_id=ppe_id,
+            item_name=item_name,
+            shiny=shiny,
+            rarity=rarity_normalized,
         )
-        embed = await build_loot_embed(active_ppe, user_id=user.id, recently_added=item_name)
+        embed = await build_loot_embed(result.ppe, user_id=user.id, recently_added=item_name)
         
         await interaction.response.send_message(
-            content=f"> 🗑️ Removed **1x {final_key}** from your active PPE and took away {points_removed} points.",
+            content=format_ppe_remove_message(result),
             ephemeral=False
         )
+        await send_ppe_markdown_followup(interaction, ppe=result.ppe, ephemeral=True)
         await interaction.followup.send(
-            content=f"Your active PPE now has **{active_ppe.points} total points**.",
+            content=f"Your active PPE now has **{result.ppe.points} total points**.",
             view=embed,
             embed=embed.embeds[0],
             ephemeral=True

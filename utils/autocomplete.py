@@ -5,14 +5,12 @@ from discord import app_commands
 from .loot_data import get_loot_data
 from .bonus_data import get_bonus_names
 from .player_records import load_teams
+from .loot_constants import RARITY_CHOICES
 
 
 _LOOT_CSV = "rotmg_loot_drops_updated.csv"
 _DUNGEON_CACHE: list[str] = []
 _DUNGEON_CACHE_READY = False
-RARITY_CHOICES = ["common", "uncommon", "rare", "legendary", "divine"]
-
-
 def _load_dungeons_from_csv() -> list[str]:
     global _DUNGEON_CACHE_READY
     if _DUNGEON_CACHE_READY:

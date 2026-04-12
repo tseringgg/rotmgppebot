@@ -8,8 +8,8 @@ from utils.quest_manager import update_quests_for_item
 from utils.guild_config import get_max_ppes, get_quest_targets
 from utils.guild_config import load_guild_config
 from utils.points_service import recompute_ppe_points
-from utils.item_log_timestamps import now_unix_utc, seasonal_item_key
-from utils.season_loot_history import add_season_item_log, normalize_rarity, remove_season_item_log, sync_legacy_season_fields
+from utils.item_log_timestamps import now_unix_utc
+from utils.season_loot_history import add_season_item_log, normalize_rarity, remove_season_item_log
 
 class PlayerManager:
     """Centralized manager for player data operations to prevent race conditions."""
@@ -77,9 +77,6 @@ class PlayerManager:
             logged_at = now_unix_utc()
             if match:
                 match.quantity += 1
-                if getattr(match, "first_logged_at", None) is None:
-                    match.first_logged_at = logged_at
-                match.last_logged_at = logged_at
                 times = list(getattr(match, "logged_times", []))
                 times.append(logged_at)
                 times.sort()
@@ -92,8 +89,6 @@ class PlayerManager:
                         divine=divine,
                         shiny=shiny,
                         rarity=effective_rarity,
-                        first_logged_at=logged_at,
-                        last_logged_at=logged_at,
                         logged_times=[logged_at],
                     )
                 )
@@ -163,8 +158,6 @@ class PlayerManager:
             if times:
                 times.pop()
                 setattr(item, "logged_times", times)
-            if times:
-                item.last_logged_at = max(times)
             if item.quantity <= 0:
                 active_ppe.loot.remove(item)
                 
@@ -178,11 +171,6 @@ class PlayerManager:
                             break
                     if item_exists_elsewhere:
                         break
-                
-                # Only remove from unique_items if not found in any PPE
-                if not item_exists_elsewhere:
-                    player_data.unique_items.discard(item_key)
-                    player_data.item_log_timestamps.pop(seasonal_item_key(item_name, shiny), None)
 
             remove_season_item_log(
                 player_data,
@@ -200,34 +188,6 @@ class PlayerManager:
         
         return await self.execute_transaction(interaction, operation)
 
-    async def set_season_item_rarity(self, interaction: discord.Interaction, user_id: int, item_name: str, shiny: bool, rarity: str) -> None:
-        async def operation(records, interaction):
-            key = ensure_player_exists(records, user_id)
-            player_data = records[key]
-            if not player_data.is_member:
-                raise KeyError("❌ You're not part of the PPE contest.")
-            normalized = normalize_rarity(rarity)
-            if remove_season_item_log(
-                player_data,
-                item_name=item_name,
-                shiny=shiny,
-                rarity=normalized,
-                remove_all=False,
-            ) == 0:
-                add_season_item_log(player_data, item_name=item_name, shiny=shiny, rarity=normalized)
-            sync_legacy_season_fields(player_data)
-
-        await self.execute_transaction(interaction, operation)
-
-    async def remove_season_item_rarity(self, interaction: discord.Interaction, user_id: int, item_name: str, shiny: bool) -> None:
-        async def operation(records, interaction):
-            key = ensure_player_exists(records, user_id)
-            player_data = records[key]
-            player_data.season_item_rarities.pop(seasonal_item_key(item_name, shiny), None)
-            sync_legacy_season_fields(player_data)
-
-        await self.execute_transaction(interaction, operation)
-    
     async def add_points_only(self, interaction: discord.Interaction, amount: float) -> float:
         """Add points only (for admin commands)."""
         

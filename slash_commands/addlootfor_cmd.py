@@ -1,30 +1,25 @@
 import discord
-from utils.player_records import ensure_player_exists, load_player_records, save_player_records
-from utils.points_service import calculate_drop_points, has_item_variant
-from utils.player_manager import player_manager
+import os
+
+from utils.player_records import ensure_player_exists, load_player_records
 from utils.embed_builders import build_loot_embed
 from utils.loot_data import LOOT
 from utils.image_utils import overlay_rarity_badge, resolve_item_image_path
-from utils.guild_config import load_guild_config
+from utils.loot_ops import (
+    add_ppe_loot,
+    format_ppe_add_message,
+    send_ppe_markdown_followup,
+    validate_loot_input,
+)
 
 async def command(interaction: discord.Interaction, user: discord.Member, id: int, item_name: str, shiny: bool = False, rarity: str = "common"):
     if not interaction.guild:
         return await interaction.response.send_message("❌ This command can only be used in a server.")
     
-    if item_name not in LOOT:
-        return await interaction.response.send_message(
-            f"❌ `{item_name}` is not a recognized item name.\n"
-            f"Use the autocomplete suggestions to select a valid item.",
-            ephemeral=True
-        )
-    
-    # Validate that shiny variant exists in database
-    if shiny:
-        if not has_item_variant(item_name, shiny=True):
-            return await interaction.response.send_message(
-                f"❌ Shiny variant of `{item_name}` is not currently in bot.",
-                ephemeral=True
-            )
+    try:
+        validate_loot_input(item_name, shiny=shiny, known_items=LOOT)
+    except ValueError as e:
+        return await interaction.response.send_message(str(e), ephemeral=True)
     
     # Load player records
     records = await load_player_records(interaction)
@@ -53,33 +48,17 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     
     try:
         rarity_normalized = rarity.lower().strip()
-        divine = rarity_normalized == "divine"
-
-        # Calculate points for the item
-        guild_config = await load_guild_config(interaction)
-        points = calculate_drop_points(item_name, divine, shiny, rarity=rarity_normalized, guild_config=guild_config)
-        
-        # Add loot and points using player_manager
-        final_key, points_added, updated_ppe, _quest_update = await player_manager.add_loot_and_points(
+        result = await add_ppe_loot(
             interaction,
             user=user,
             ppe_id=id,
             item_name=item_name,
-            divine=divine,
             shiny=shiny,
             rarity=rarity_normalized,
-            points=points,
         )
         
         # Build embed
-        embed = await build_loot_embed(updated_ppe, user_id=user.id, recently_added=item_name)
-        display_item_name = final_key
-        if shiny:
-            display_item_name = f"Shiny {display_item_name}"
-        if divine:
-            display_item_name = f"Divine {display_item_name}"
-        if rarity_normalized != "common" and not (divine and rarity_normalized == "divine"):
-            display_item_name = f"{rarity_normalized.title()} {display_item_name}"
+        embed = await build_loot_embed(result.ppe, user_id=user.id, recently_added=item_name)
         
         response_file: discord.File | None = None
         overlay_path: str | None = None
@@ -88,20 +67,16 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
             overlay_path = overlay_rarity_badge(image_path, rarity_normalized)
             response_file = discord.File(overlay_path or image_path)
 
-        await interaction.response.send_message(
-            f"> ✅ Added **1x {display_item_name}** to {user.mention}'s PPE #{updated_ppe.id} ({updated_ppe.name})!\n"
-            f"**+{points_added} points**\n",
-            file=response_file,
-        )
+        await interaction.response.send_message(format_ppe_add_message(result), file=response_file)
+        await send_ppe_markdown_followup(interaction, ppe=result.ppe, ephemeral=True)
         await interaction.followup.send(
-            content=f"{user.display_name}'s PPE #{updated_ppe.id} now has **{updated_ppe.points} total points**.",
+            content=f"{user.display_name}'s PPE #{result.ppe.id} now has **{result.ppe.points} total points**.",
             view=embed,
             embed=embed.embeds[0],
             ephemeral=True
         )
 
         if overlay_path and image_path and overlay_path != image_path:
-            import os
             if os.path.exists(overlay_path):
                 os.remove(overlay_path)
         

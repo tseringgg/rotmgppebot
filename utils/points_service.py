@@ -5,6 +5,7 @@ from dataclass import Bonus, Loot, PPEData
 from utils.ppe_types import DEFAULT_PPE_TYPE_MULTIPLIERS, normalize_ppe_type, normalize_ppe_type_multipliers
 from utils.calc_points import load_loot_points, normalize_item_name
 from utils.guild_config import get_rarity_multipliers
+from utils.loot_constants import normalize_rarity
 
 PENALTY_NAMES = {
     "Pet Level Penalty",
@@ -61,9 +62,9 @@ def _apply_percent(value: float, percent: float) -> float:
 
 
 def _normalize_rarity(value: Any, divine: bool = False) -> str:
-    rarity = str(value).strip().lower() if value is not None else ""
-    if rarity in {"common", "uncommon", "rare", "legendary", "divine"}:
-        return "divine" if divine and rarity == "common" else rarity
+    rarity = normalize_rarity(value)
+    if divine and rarity == "common":
+        return "divine"
     return "divine" if divine else "common"
 
 

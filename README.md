@@ -299,7 +299,7 @@ PlayerData
 ├── is_member: bool
 ├── active_ppe: int
 ├── team_name: str (optional)  # Name of team player is on
-├── unique_items: Set[tuple]  # (item_name, shiny) - Seasonal
+├── season_item_history: Dict[str, List[int]]  # season item variant key -> sorted timestamps
 ├── quests: QuestData
 │   ├── current_items: List[str]
 │   ├── current_shinies: List[str]
@@ -321,6 +321,9 @@ PlayerData
         ├── points: float
         ├── repeatable: bool
         └── quantity: int
+
+Seasonal ownership, rarity spread, and time-based summaries are derived from `season_item_history` at read time.
+When loot rarity is missing or `None`, it is treated as `common`.
 
 TeamData
 ├── name: str          # Team name
@@ -405,8 +408,6 @@ rotmgppebot/
 ├── menus/                    # Shared menu/view architecture
 │   ├── myinfo/               # My Info menu package (home/season/character/common)
 │   ├── myquests/             # My Quests menu package (view/common)
-│   ├── myinfo_menu.py        # Compatibility wrapper for older imports
-│   ├── myquests_menu.py      # Compatibility wrapper for older imports
 │   └── menu_utils/           # Reusable owner/confirm menu components
 ├── slash_commands/           # Command implementations
 ├── utils/                   # Utility modules

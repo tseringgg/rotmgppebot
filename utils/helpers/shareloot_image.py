@@ -8,6 +8,7 @@ from PIL import Image
 
 from utils.calc_points import normalize_item_name
 from utils.image_utils import overlay_rarity_badge_on_image
+from utils.loot_constants import rarity_rank
 
 
 LootSourceItems = Sequence[tuple[str, bool] | tuple[str, bool, str]]
@@ -136,17 +137,6 @@ def _safe_username(display_name: str) -> str:
     return "".join(c for c in username if c.isalnum() or c in "_-")
 
 
-def _rarity_rank(value: str) -> int:
-    rarity = str(value).strip().lower()
-    return {
-        "common": 0,
-        "uncommon": 1,
-        "rare": 2,
-        "legendary": 3,
-        "divine": 4,
-    }.get(rarity, 0)
-
-
 def _collapse_to_highest_rarity(source_items: LootSourceItems) -> list[tuple[str, str, bool, str]]:
     # Key by normalized item name + shiny and keep the highest rarity only.
     collapsed: dict[tuple[str, bool], tuple[str, str, bool, str]] = {}
@@ -165,7 +155,7 @@ def _collapse_to_highest_rarity(source_items: LootSourceItems) -> list[tuple[str
             collapsed[key] = (raw_name, normalized_name, shiny, rarity)
             continue
 
-        if _rarity_rank(rarity) > _rarity_rank(existing[3]):
+        if rarity_rank(rarity) > rarity_rank(existing[3]):
             # Keep first seen display name if possible, replace only rarity.
             collapsed[key] = (existing[0], normalized_name, shiny, rarity)
 
@@ -240,7 +230,7 @@ async def generate_loot_share_image(
 
             sprite_key = f"{normalized_name} (shiny)" if shiny else normalized_name
             existing = render_candidates.get(sprite_key)
-            if existing is None or _rarity_rank(rarity) > _rarity_rank(existing[3]):
+            if existing is None or rarity_rank(rarity) > rarity_rank(existing[3]):
                 render_candidates[sprite_key] = (raw_name, normalized_name, shiny, rarity)
 
         for sprite_key, (raw_name, normalized_name, shiny, rarity) in render_candidates.items():

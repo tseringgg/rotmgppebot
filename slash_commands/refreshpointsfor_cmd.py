@@ -5,8 +5,7 @@ from utils.guild_config import load_guild_config
 from utils.calc_points import load_loot_points, normalize_item_name
 from utils.pagination import chunk_lines_to_pages
 from utils.points_service import recompute_ppe_points
-from utils.item_log_timestamps import seasonal_item_key
-from utils.season_loot_history import delete_season_item_all_rarities, sync_legacy_season_fields
+from utils.season_loot_history import delete_season_item_all_rarities, season_unique_items
 
 async def command(interaction: discord.Interaction, user: discord.Member, id: int):
     if not interaction.guild:
@@ -78,7 +77,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
 
     # Clean invalid season cache entries for this player.
     removed_unique_items = []
-    for item_name, shiny in list(player_data.unique_items):
+    for item_name, shiny in list(season_unique_items(player_data)):
         lookup_name = f"{normalize_item_name(item_name)} (shiny)" if shiny else normalize_item_name(item_name)
         if lookup_name not in loot_points:
             removed_unique_items.append((item_name, shiny))
@@ -86,8 +85,6 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     for item_name, shiny in removed_unique_items:
         delete_season_item_all_rarities(player_data, item_name=item_name, shiny=shiny)
 
-    sync_legacy_season_fields(player_data)
-    
     corrected_total = points_summary["total"]
     
     # Save records

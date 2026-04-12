@@ -29,8 +29,6 @@ from utils.points_service import recompute_ppe_points
 from utils.realmshark_pending_store import clear_all_pending_for_guild
 from utils.contest_leaderboards import normalize_contest_leaderboard_id
 from utils.realmshark_cleanup import clear_ppe_character_links
-from utils.item_log_timestamps import seasonal_item_key
-from utils.season_loot_history import sync_legacy_season_fields
 from utils.settings.channel_settings import (
     clear_item_suggestions_enabled_channels,
     set_item_suggestions_mode_enabled,
@@ -136,6 +134,16 @@ class ResetSnifferSummary:
     endpoint_cleared: bool
     output_channel_cleared: bool
     sniffer_disabled: bool
+
+
+def _count_unique_items_from_history(season_item_history: Any) -> int:
+    if not isinstance(season_item_history, dict) or not season_item_history:
+        return 0
+    return len({
+        key.split("|")[0]
+        for key in season_item_history.keys()
+        if isinstance(key, str) and key and "|" in key and key.split("|")[0]
+    })
 
 
 @dataclass(slots=True)
@@ -327,29 +335,6 @@ def _ppe_sort_key_lowest_points(ppe: Any) -> tuple[float, int]:
     return (points_value, ppe_id)
 
 
-def _rebuild_unique_items(player_data: Any) -> None:
-    unique_items: set[tuple[str, bool]] = set()
-    for ppe in getattr(player_data, "ppes", []):
-        for loot_item in getattr(ppe, "loot", []):
-            name = str(getattr(loot_item, "item_name", "")).strip()
-            if not name:
-                continue
-            unique_items.add((name, bool(getattr(loot_item, "shiny", False))))
-    player_data.unique_items = unique_items
-    raw_timestamps = getattr(player_data, "item_log_timestamps", {})
-    if not isinstance(raw_timestamps, dict):
-        player_data.item_log_timestamps = {}
-        return
-
-    valid_keys = {seasonal_item_key(item_name, shiny) for item_name, shiny in unique_items}
-    player_data.item_log_timestamps = {
-        key: value
-        for key, value in raw_timestamps.items()
-        if isinstance(key, str) and key in valid_keys
-    }
-    sync_legacy_season_fields(player_data)
-
-
 async def update_max_characters_limit(
     interaction: discord.Interaction,
     *,
@@ -401,8 +386,6 @@ async def update_max_characters_limit(
                     player_data.active_ppe = int(getattr(replacement, "id", 0))
                 else:
                     player_data.active_ppe = None
-
-            _rebuild_unique_items(player_data)
 
             for removed_ppe_id in sorted(remove_ids):
                 await clear_ppe_character_links(interaction, int(user_id), int(removed_ppe_id))
@@ -810,18 +793,10 @@ async def reset_all_seasonal_information(interaction: discord.Interaction) -> Re
     for player_data in records.values():
         player_changed = False
 
-        unique_items = getattr(player_data, "unique_items", set())
-        if unique_items:
-            unique_items_cleared += len(unique_items)
-            unique_items.clear()
-            player_changed = True
         season_item_history = getattr(player_data, "season_item_history", {})
         if isinstance(season_item_history, dict) and season_item_history:
+            unique_items_cleared += _count_unique_items_from_history(season_item_history)
             season_item_history.clear()
-            player_changed = True
-        item_log_timestamps = getattr(player_data, "item_log_timestamps", {})
-        if isinstance(item_log_timestamps, dict) and item_log_timestamps:
-            item_log_timestamps.clear()
             player_changed = True
 
         quests = getattr(player_data, "quests", None)
@@ -838,7 +813,6 @@ async def reset_all_seasonal_information(interaction: discord.Interaction) -> Re
             player_changed = True
 
         if player_changed:
-            sync_legacy_season_fields(player_data)
             players_updated += 1
 
     await save_player_records(interaction, records)
@@ -1235,16 +1209,10 @@ def _reset_player_records(records: dict[str, Any], default_reset_limit: int) -> 
         ppes.clear()
         player_data.active_ppe = None
 
-        unique_items = getattr(player_data, "unique_items", set())
-        items_cleared += len(unique_items)
-        unique_items.clear()
         season_item_history = getattr(player_data, "season_item_history", {})
         if isinstance(season_item_history, dict):
+            items_cleared += _count_unique_items_from_history(season_item_history)
             season_item_history.clear()
-        item_log_timestamps = getattr(player_data, "item_log_timestamps", {})
-        if isinstance(item_log_timestamps, dict):
-            item_log_timestamps.clear()
-        sync_legacy_season_fields(player_data)
 
         quests = getattr(player_data, "quests", None)
         if quests is not None:

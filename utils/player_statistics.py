@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 from collections import Counter
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
@@ -11,13 +12,14 @@ import discord
 
 from dataclass import Loot, PPEData, PlayerData
 from utils.calc_points import normalize_item_name
+from utils.loot_constants import RARITY_CHOICES
 from utils.points_service import (
     apply_percent_modifier,
     calculate_item_points,
     get_effective_modifier_bucket_for_ppe,
     loot_adjustments_for_ppe,
 )
-from utils.season_loot_history import iter_season_variants
+from utils.season_loot_history import iter_season_variants, normalize_rarity
 
 _LOOT_CSV_PATH = Path("rotmg_loot_drops_updated.csv")
 
@@ -123,6 +125,37 @@ def _safe_float(value: object) -> float:
         return float(value)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _format_timestamp(ts: int | None) -> str:
+    if ts is None:
+        return "n/a"
+    try:
+        return datetime.fromtimestamp(int(ts), tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    except (TypeError, ValueError, OSError):
+        return "n/a"
+
+
+def _season_time_span(variants: Iterable[tuple[str, bool, str, list[int]]]) -> tuple[int | None, int | None]:
+    timestamps: list[int] = []
+    for _item_name, _shiny, _rarity, item_timestamps in variants:
+        for raw_ts in item_timestamps:
+            try:
+                parsed_ts = int(raw_ts)
+            except (TypeError, ValueError):
+                continue
+            if parsed_ts > 0:
+                timestamps.append(parsed_ts)
+    if not timestamps:
+        return None, None
+    return min(timestamps), max(timestamps)
+
+
+def _rarity_breakdown(variants: Iterable[tuple[str, bool, str, list[int]]]) -> Counter[str]:
+    counts: Counter[str] = Counter()
+    for _item_name, _shiny, rarity, timestamps in variants:
+        counts[normalize_rarity(rarity)] += sum(1 for ts in timestamps if int(ts) > 0)
+    return counts
 
 
 def _effective_drop_points_for_ppe(
@@ -338,6 +371,8 @@ def build_season_wrapped_embed(
     item_to_dungeon = _load_item_to_dungeon()
     season_variants = iter_season_variants(player_data)
     season_items = {(item_name, shiny) for item_name, shiny, _rarity, _timestamps in season_variants}
+    season_start, season_end = _season_time_span(season_variants)
+    rarity_breakdown = _rarity_breakdown(season_variants)
 
     total_points = sum(float(getattr(ppe, "points", 0.0) or 0.0) for ppe in ppes)
     total_drops = _total_logged_drops(all_loot)
@@ -382,6 +417,19 @@ def build_season_wrapped_embed(
             f" ({_format_points(float(getattr(low_ppe, 'points', 0.0) or 0.0))} pts)"
         )
     embed.add_field(name="Roster Snapshot", value=roster_line, inline=False)
+
+    embed.add_field(
+        name="Season Timeline",
+        value=f"First log: **{_format_timestamp(season_start)}**\nLast log: **{_format_timestamp(season_end)}**",
+        inline=False,
+    )
+
+    if rarity_breakdown:
+        rarity_line = "\n".join(
+            f"{rarity.title()}: **{rarity_breakdown.get(rarity, 0)}**"
+            for rarity in RARITY_CHOICES
+        )
+        embed.add_field(name="Rarity Spread", value=rarity_line, inline=True)
 
     if most_logged:
         item_name, item_count = most_logged
@@ -449,6 +497,25 @@ def build_character_wrapped_embed(
     """Build a Wrapped-style single-character summary embed."""
     loot_entries = list(ppe.loot)
     item_to_dungeon = _load_item_to_dungeon()
+    loot_times: list[int] = []
+    rarity_counts: Counter[str] = Counter()
+
+    for entry in loot_entries:
+        try:
+            quantity = max(1, int(getattr(entry, "quantity", 1)))
+        except (TypeError, ValueError):
+            quantity = 1
+        rarity_counts[normalize_rarity(getattr(entry, "rarity", None))] += quantity
+
+        for raw_ts in getattr(entry, "logged_times", []):
+            try:
+                parsed_ts = int(raw_ts)
+            except (TypeError, ValueError):
+                continue
+            if parsed_ts > 0:
+                loot_times.append(parsed_ts)
+
+    loot_start, loot_end = (min(loot_times), max(loot_times)) if loot_times else (None, None)
 
     total_drops = _total_logged_drops(loot_entries)
     unique_count = len({normalize_item_name(str(entry.item_name)) for entry in loot_entries if str(entry.item_name).strip()})
@@ -479,6 +546,21 @@ def build_character_wrapped_embed(
         name="Sparkle Check",
         value=f"Shiny drops: **{shiny_count}**\nDivine drops: **{divine_count}**",
         inline=True,
+    )
+
+    embed.add_field(
+        name="Loot Timeline",
+        value=f"First log: **{_format_timestamp(loot_start)}**\nLast log: **{_format_timestamp(loot_end)}**",
+        inline=True,
+    )
+
+    embed.add_field(
+        name="Rarity Spread",
+        value="\n".join(
+            f"{rarity.title()}: **{rarity_counts.get(rarity, 0)}**"
+            for rarity in RARITY_CHOICES
+        ),
+        inline=False,
     )
 
     if most_logged:

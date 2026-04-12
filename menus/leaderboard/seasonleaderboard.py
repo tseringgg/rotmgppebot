@@ -3,6 +3,7 @@ import discord
 from menus.leaderboard.common import build_ranked_entry_lines, send_error_response, send_leaderboard
 from menus.leaderboard.services import member_display_name, require_guild
 from utils.player_records import load_player_records
+from utils.season_loot_history import unique_season_item_count
 
 
 async def command(interaction: discord.Interaction):
@@ -18,11 +19,7 @@ async def command(interaction: discord.Interaction):
             if not data.is_member:
                 continue
 
-            if hasattr(data, "get_unique_item_count"):
-                unique_count = int(data.get_unique_item_count())
-            else:
-                unique_items = getattr(data, "unique_items", set())
-                unique_count = len(unique_items) if isinstance(unique_items, (set, list, tuple)) else 0
+            unique_count = int(unique_season_item_count(data))
             if unique_count == 0:
                 continue
 

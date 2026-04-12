@@ -14,9 +14,8 @@ from urllib import response
 
 import discord
 
-from utils.player_manager import player_manager
-from utils.calc_points import calc_points
-from slash_commands.helpers.loot_table_message import LootTableMessage
+from utils.helpers.loot_table_message import LootTableMessage
+from utils.loot_ops import add_ppe_loot
 
 
 class RaritySelect(discord.ui.Select):
@@ -174,9 +173,8 @@ class ItemSuggestionView(discord.ui.View):
             return
 
         try:
-            points = calc_points(self.suggested_item, divine=self.is_divine, shiny=self.is_shiny, rarity=self.rarity)
             # Resolve the active PPE id first (raises if none)
-            from utils.player_records import load_player_records, ensure_player_exists, get_active_ppe
+            from utils.player_records import load_player_records, ensure_player_exists
             records = await load_player_records(interaction)
             key = ensure_player_exists(records, member.id)
             player_data = records[key]
@@ -184,15 +182,13 @@ class ItemSuggestionView(discord.ui.View):
                 raise LookupError("no active PPE")
             ppe_id = player_data.active_ppe
 
-            final_key, points_added, active_ppe, quest_update = await player_manager.add_loot_and_points(
+            result = await add_ppe_loot(
                 interaction,
                 user=member,
                 ppe_id=ppe_id,
                 item_name=self.suggested_item,
-                divine=self.is_divine,
                 shiny=self.is_shiny,
                 rarity=self.rarity,
-                points=points,
             )
             print(
                 f"[item_suggestion] add succeeded "
@@ -207,7 +203,7 @@ class ItemSuggestionView(discord.ui.View):
                 tags += f" ({self.rarity})"
             await self._finish(
                 interaction,
-                f"> ✅ Added **{final_key}**{tags} to your active PPE for {points_added} points.",
+                f"> ✅ Added **{result.item_name}**{tags} to your active PPE for {result.points_delta} points.",
             )
 
             loot_message = LootTableMessage(
@@ -215,9 +211,9 @@ class ItemSuggestionView(discord.ui.View):
                 message_type="markdown",
                 already_responded=True,
                 ephemeral=True,
-                embed_content=f"Your active PPE now has **{active_ppe.points} total points**.",
+                embed_content=f"Your active PPE now has **{result.ppe.points} total points**.",
             )
-            await loot_message.send_player_loot(active_ppe, user_id=member.id, recently_added=final_key)
+            await loot_message.send_player_loot(result.ppe, user_id=member.id, recently_added=result.item_name)
 
         except LookupError:
             print(

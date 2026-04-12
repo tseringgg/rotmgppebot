@@ -3,7 +3,9 @@ import csv
 from dataclass import PPEData
 from utils.ppe_types import normalize_ppe_type, ppe_type_short_label
 from utils.markdown_message_builder import MarkdownMessageBuilder
-from utils.item_log_timestamps import format_unix_utc, seasonal_item_variant_key
+from utils.item_log_timestamps import format_unix_utc
+from utils.loot_constants import rarity_rank
+from utils.season_loot_history import iter_season_variants, normalize_rarity
 from utils.points_service import (
     PENALTY_NAMES,
     calculate_bonus_points,
@@ -41,6 +43,17 @@ def _format_points(value: float) -> str:
     if rounded.is_integer():
         return str(int(rounded))
     return f"{rounded:.2f}".rstrip("0").rstrip(".")
+
+
+def _loot_last_logged_text(loot: Loot) -> str:
+    raw_times = getattr(loot, "logged_times", [])
+    if isinstance(raw_times, list) and raw_times:
+        try:
+            latest = max(int(ts) for ts in raw_times if int(ts) > 0)
+        except (TypeError, ValueError):
+            return ""
+        return format_unix_utc(latest)
+    return ""
 
 
 def _format_signed_points(value: float) -> str:
@@ -84,17 +97,6 @@ def calculate_item_points(
     guild_config: dict | None = None,
 ) -> float:
     return calculate_item_points_service(item_name, divine, shiny, quantity, rarity=rarity, guild_config=guild_config)
-
-
-def _rarity_rank(value: str) -> int:
-    rarity = str(value).strip().lower()
-    return {
-        "common": 0,
-        "uncommon": 1,
-        "rare": 2,
-        "legendary": 3,
-        "divine": 4,
-    }.get(rarity, 0)
 
 
 def _scaled_bonus_entry_points(
@@ -165,7 +167,7 @@ def create_loot_markdown_file(
                 key=lambda entry: (
                     entry.item_name.lower(),
                     bool(getattr(entry, "shiny", False)),
-                    _rarity_rank(str(getattr(entry, "rarity", "common"))),
+                    rarity_rank(str(getattr(entry, "rarity", "common"))),
                 ),
             ):
                 rarity = str(getattr(loot, "rarity", "common")).strip().lower()
@@ -186,7 +188,7 @@ def create_loot_markdown_file(
                 line = f"- {loot.item_name} × {loot.quantity} ({_format_points(raw_item_points)} pts)"
                 if tags:
                     line += f" [{', '.join(tags)}]"
-                logged_text = format_unix_utc(getattr(loot, "last_logged_at", None))
+                logged_text = _loot_last_logged_text(loot)
                 if logged_text:
                     line += f" [logged: {logged_text}]"
                 lines.append(line)
@@ -200,7 +202,7 @@ def create_loot_markdown_file(
                 key=lambda entry: (
                     entry.item_name.lower(),
                     bool(getattr(entry, "shiny", False)),
-                    _rarity_rank(str(getattr(entry, "rarity", "common"))),
+                    rarity_rank(str(getattr(entry, "rarity", "common"))),
                 ),
             ):
                 rarity = str(getattr(loot, "rarity", "common")).strip().lower()
@@ -221,7 +223,7 @@ def create_loot_markdown_file(
                 line = f"- {loot.item_name} × {loot.quantity} ({_format_points(raw_item_points)} pts)"
                 if tags:
                     line += f" [{', '.join(tags)}]"
-                logged_text = format_unix_utc(getattr(loot, "last_logged_at", None))
+                logged_text = _loot_last_logged_text(loot)
                 if logged_text:
                     line += f" [logged: {logged_text}]"
                 lines.append(line)
@@ -337,31 +339,11 @@ def create_season_loot_markdown_file(
     display_name: str,
 ) -> str:
     """Create a markdown file for season loot variants, grouped by dungeon when possible."""
+    class _SeasonHistoryProxy:
+        def __init__(self, history: dict[str, list[int]] | None):
+            self.season_item_history = history if isinstance(history, dict) else {}
 
-    raw_history = season_item_history if isinstance(season_item_history, dict) else {}
-    variant_rows: list[tuple[str, bool, str, list[int]]] = []
-    for raw_key, raw_timestamps in raw_history.items():
-        parts = str(raw_key).split("|")
-        if len(parts) != 3:
-            continue
-        item_name = parts[0].strip()
-        if not item_name:
-            continue
-        shiny = parts[1].strip() == "1"
-        rarity = parts[2].strip().lower() or "common"
-        timestamps = []
-        if isinstance(raw_timestamps, list):
-            for raw_ts in raw_timestamps:
-                try:
-                    parsed_ts = int(raw_ts)
-                except (TypeError, ValueError):
-                    continue
-                if parsed_ts > 0:
-                    timestamps.append(parsed_ts)
-        timestamps.sort()
-        variant_rows.append((item_name, shiny, rarity, timestamps))
-
-    variant_rows.sort(key=lambda row: (row[0].lower(), row[1], row[2]))
+    variant_rows = iter_season_variants(_SeasonHistoryProxy(season_item_history))
     builder = MarkdownMessageBuilder(f"Season Loot for {display_name}")
     unique_items = {(item_name, shiny) for item_name, shiny, _rarity, _timestamps in variant_rows}
     total_logs = sum(len(timestamps) for _item_name, _shiny, _rarity, timestamps in variant_rows)

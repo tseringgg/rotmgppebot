@@ -8,6 +8,7 @@ import discord
 PLAYER_RECORD_FILE = "./guild_loot_records.json"
 from utils.player_records import get_item_from_ppe, load_player_records, save_player_records
 from utils.guild_config import get_rarity_multipliers
+from utils.loot_constants import normalize_rarity
 
 _APOSTROPHE_VARIANTS = "\u2018\u2019\u02bc\u2032\u00b4`"
 _DASH_VARIANTS = "\u2010\u2011\u2012\u2013\u2014\u2015\u2212"
@@ -58,9 +59,9 @@ def load_loot_points():
 
 
 def _normalize_rarity(value: str | None, divine: bool = False) -> str:
-    rarity = str(value).strip().lower() if value is not None else ""
-    if rarity in {"common", "uncommon", "rare", "legendary", "divine"}:
-        return "divine" if divine and rarity == "common" else rarity
+    rarity = normalize_rarity(value)
+    if divine and rarity == "common":
+        return "divine"
     return "divine" if divine else "common"
 
 

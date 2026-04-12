@@ -1,0 +1,368 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+import os
+from typing import Any
+
+import discord
+
+from dataclass import PPEData, PlayerData
+from utils.guild_config import get_quest_targets, load_guild_config
+from utils.item_log_timestamps import seasonal_item_variant_key
+from utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
+from utils.player_manager import player_manager
+from utils.player_records import ensure_player_exists, load_player_records, save_player_records
+from utils.points_service import has_item_variant
+from utils.quest_manager import refresh_player_quests, remove_item_from_completed_quests, update_quests_for_item
+from utils.season_loot_history import add_season_item_log, normalize_rarity, remove_season_item_log, unique_season_item_count
+
+
+@dataclass(frozen=True)
+class PPELootOperationResult:
+    item_name: str
+    shiny: bool
+    rarity: str
+    username: str
+    char_info: str
+    old_points: float
+    new_points: float
+    points_delta: float
+    ppe: PPEData
+    quest_update: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class SeasonLootOperationResult:
+    item_name: str
+    shiny: bool
+    rarity: str
+    username: str
+    old_unique_total: int
+    new_unique_total: int
+    already_present: bool
+    removed_count: int
+    quest_update: dict[str, Any]
+    player_data: PlayerData
+
+
+def validate_item_variant(item_name: str, shiny: bool) -> None:
+    if shiny and not has_item_variant(item_name, shiny=True):
+        raise ValueError(f"❌ Shiny variant of `{item_name}` is not currently in bot.")
+
+
+def validate_loot_input(item_name: str, *, shiny: bool, known_items: set[str] | list[str] | tuple[str, ...]) -> None:
+    if item_name not in known_items:
+        raise ValueError(
+            f"❌ `{item_name}` is not a recognized item name.\n"
+            "Use the autocomplete suggestions to select a valid item."
+        )
+    validate_item_variant(item_name, shiny)
+
+
+def build_item_display_name(item_name: str, *, shiny: bool, rarity: str) -> str:
+    prefix: list[str] = []
+    rarity_value = normalize_rarity(rarity)
+    if rarity_value != "common":
+        prefix.append(rarity_value.title())
+    if shiny:
+        prefix.append("Shiny")
+    prefix.append(item_name)
+    return " ".join(prefix)
+
+
+def build_char_info(ppe: PPEData) -> str:
+    return f"PPE #{ppe.id} ({ppe.name})"
+
+
+def _possessive(name: str) -> str:
+    trimmed = str(name).strip()
+    if not trimmed:
+        return "User's"
+    if trimmed.endswith("s"):
+        return f"{trimmed}'"
+    return f"{trimmed}'s"
+
+
+def format_ppe_add_message(result: PPELootOperationResult) -> str:
+    display_name = build_item_display_name(result.item_name, shiny=result.shiny, rarity=result.rarity)
+    return (
+        f"✅ {display_name} Successfully Added to {_possessive(result.username)} {result.char_info}. "
+        f"Points: {result.old_points} -> {result.new_points}."
+    )
+
+
+def format_ppe_remove_message(result: PPELootOperationResult) -> str:
+    display_name = build_item_display_name(result.item_name, shiny=result.shiny, rarity=result.rarity)
+    return (
+        f"✅ {display_name} Successfully Removed from {_possessive(result.username)} {result.char_info}. "
+        f"Points: {result.old_points} -> {result.new_points}."
+    )
+
+
+def format_season_add_message(result: SeasonLootOperationResult) -> str:
+    display_name = build_item_display_name(result.item_name, shiny=result.shiny, rarity=result.rarity)
+    if result.already_present:
+        return (
+            f"✅ {display_name} already existed in {result.username}'s seasonal loot; timestamp logged. "
+            f"Unique items: {result.old_unique_total} -> {result.new_unique_total}."
+        )
+    return (
+        f"✅ {display_name} is a new seasonal item for {result.username}. "
+        f"Unique items: {result.old_unique_total} -> {result.new_unique_total}."
+    )
+
+
+def format_season_remove_message(result: SeasonLootOperationResult) -> str:
+    display_name = build_item_display_name(result.item_name, shiny=result.shiny, rarity=result.rarity)
+    return (
+        f"✅ {display_name} removed from {result.username}'s seasonal loot. "
+        f"Unique items: {result.old_unique_total} -> {result.new_unique_total}."
+    )
+
+
+async def add_ppe_loot(
+    interaction: discord.Interaction,
+    *,
+    user: Any,
+    ppe_id: int,
+    item_name: str,
+    shiny: bool,
+    rarity: str,
+) -> PPELootOperationResult:
+    rarity_normalized = normalize_rarity(rarity)
+    divine = rarity_normalized == "divine"
+
+    final_key, points_added, ppe, quest_update = await player_manager.add_loot_and_points(
+        interaction,
+        user=user,
+        ppe_id=ppe_id,
+        item_name=item_name,
+        divine=divine,
+        shiny=shiny,
+        rarity=rarity_normalized,
+        points=0,
+    )
+    old_points = round(float(ppe.points) - float(points_added), 2)
+
+    return PPELootOperationResult(
+        item_name=final_key,
+        shiny=shiny,
+        rarity=rarity_normalized,
+        username=getattr(user, "display_name", f"User {user.id}"),
+        char_info=build_char_info(ppe),
+        old_points=old_points,
+        new_points=round(float(ppe.points), 2),
+        points_delta=round(float(points_added), 2),
+        ppe=ppe,
+        quest_update=quest_update,
+    )
+
+
+async def remove_ppe_loot(
+    interaction: discord.Interaction,
+    *,
+    user: Any,
+    ppe_id: int,
+    item_name: str,
+    shiny: bool,
+    rarity: str,
+) -> PPELootOperationResult:
+    rarity_normalized = normalize_rarity(rarity)
+    divine = rarity_normalized == "divine"
+
+    final_key, points_removed, ppe = await player_manager.remove_loot_and_points(
+        interaction,
+        user=user,
+        ppe_id=ppe_id,
+        item_name=item_name,
+        divine=divine,
+        shiny=shiny,
+        rarity=rarity_normalized,
+        points=0,
+    )
+    old_points = round(float(ppe.points) + float(points_removed), 2)
+
+    return PPELootOperationResult(
+        item_name=final_key,
+        shiny=shiny,
+        rarity=rarity_normalized,
+        username=getattr(user, "display_name", f"User {user.id}"),
+        char_info=build_char_info(ppe),
+        old_points=old_points,
+        new_points=round(float(ppe.points), 2),
+        points_delta=round(float(points_removed), 2),
+        ppe=ppe,
+        quest_update={},
+    )
+
+
+async def add_season_loot(
+    interaction: discord.Interaction,
+    *,
+    user_id: int,
+    username: str,
+    item_name: str,
+    shiny: bool,
+    rarity: str,
+    update_quests: bool = True,
+) -> SeasonLootOperationResult:
+    rarity_normalized = normalize_rarity(rarity)
+    records = await load_player_records(interaction)
+    key = ensure_player_exists(records, user_id)
+
+    if key not in records or not records[key].is_member:
+        raise KeyError("❌ You're not part of the PPE contest.")
+
+    player_data = records[key]
+    old_unique = unique_season_item_count(player_data)
+    variant_key = seasonal_item_variant_key(item_name, shiny, rarity_normalized)
+    current_variant_logs = player_data.season_item_history.get(variant_key, [])
+    already_present = bool(current_variant_logs)
+
+    add_season_item_log(
+        player_data,
+        item_name=item_name,
+        shiny=shiny,
+        rarity=rarity_normalized,
+    )
+
+    quest_update: dict[str, Any] = {}
+    if update_quests:
+        regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
+        config = await load_guild_config(interaction)
+        quest_update = update_quests_for_item(
+            player_data,
+            item_name,
+            shiny,
+            target_item_quests=regular_target,
+            target_shiny_quests=shiny_target,
+            target_skin_quests=skin_target,
+            global_quests={
+                "enabled": bool(config["quest_settings"].get("use_global_quests", False)),
+                "regular": list(config["quest_settings"].get("global_regular_quests", [])),
+                "shiny": list(config["quest_settings"].get("global_shiny_quests", [])),
+                "skin": list(config["quest_settings"].get("global_skin_quests", [])),
+            },
+        )
+
+    new_unique = unique_season_item_count(player_data)
+    await save_player_records(interaction, records)
+
+    return SeasonLootOperationResult(
+        item_name=item_name,
+        shiny=shiny,
+        rarity=rarity_normalized,
+        username=username,
+        old_unique_total=old_unique,
+        new_unique_total=new_unique,
+        already_present=already_present,
+        removed_count=0,
+        quest_update=quest_update,
+        player_data=player_data,
+    )
+
+
+async def remove_season_loot(
+    interaction: discord.Interaction,
+    *,
+    user_id: int,
+    username: str,
+    item_name: str,
+    shiny: bool,
+    rarity: str,
+    update_quests: bool = True,
+) -> SeasonLootOperationResult:
+    rarity_normalized = normalize_rarity(rarity)
+    records = await load_player_records(interaction)
+    key = ensure_player_exists(records, user_id)
+
+    if key not in records or not records[key].is_member:
+        raise KeyError("❌ You're not part of the PPE contest.")
+
+    player_data = records[key]
+    old_unique = unique_season_item_count(player_data)
+
+    removed = remove_season_item_log(
+        player_data,
+        item_name=item_name,
+        shiny=shiny,
+        rarity=rarity_normalized,
+        remove_all=False,
+    )
+    if removed <= 0:
+        raise ValueError(
+            f"❌ **{item_name}{' (shiny)' if shiny else ''} [{rarity_normalized}]** is not in {username}'s season loot collection!"
+        )
+
+    quest_update: dict[str, Any] = {}
+    if update_quests:
+        removed_quest_entries = remove_item_from_completed_quests(player_data, item_name, shiny)
+        regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
+        config = await load_guild_config(interaction)
+        refresh_player_quests(
+            player_data,
+            target_item_quests=regular_target,
+            target_shiny_quests=shiny_target,
+            target_skin_quests=skin_target,
+            global_quests={
+                "enabled": bool(config["quest_settings"].get("use_global_quests", False)),
+                "regular": list(config["quest_settings"].get("global_regular_quests", [])),
+                "shiny": list(config["quest_settings"].get("global_shiny_quests", [])),
+                "skin": list(config["quest_settings"].get("global_skin_quests", [])),
+            },
+        )
+        quest_update = removed_quest_entries
+
+    new_unique = unique_season_item_count(player_data)
+    await save_player_records(interaction, records)
+
+    return SeasonLootOperationResult(
+        item_name=item_name,
+        shiny=shiny,
+        rarity=rarity_normalized,
+        username=username,
+        old_unique_total=old_unique,
+        new_unique_total=new_unique,
+        already_present=False,
+        removed_count=removed,
+        quest_update=quest_update,
+        player_data=player_data,
+    )
+
+
+def create_ppe_markdown_file(ppe: PPEData, guild_config: dict[str, Any] | None = None) -> str:
+    return create_loot_markdown_file(ppe, guild_config=guild_config)
+
+
+def create_season_markdown_file(player_data: PlayerData, *, display_name: str) -> str:
+    return create_season_loot_markdown_file(player_data.season_item_history, display_name=display_name)
+
+
+async def send_ppe_markdown_followup(
+    interaction: discord.Interaction,
+    *,
+    ppe: PPEData,
+    ephemeral: bool = True,
+) -> None:
+    guild_config = await load_guild_config(interaction)
+    markdown_path = create_ppe_markdown_file(ppe, guild_config=guild_config)
+    try:
+        await interaction.followup.send(file=discord.File(markdown_path), ephemeral=ephemeral)
+    finally:
+        if os.path.exists(markdown_path):
+            os.remove(markdown_path)
+
+
+async def send_season_markdown_followup(
+    interaction: discord.Interaction,
+    *,
+    player_data: PlayerData,
+    display_name: str,
+    ephemeral: bool = True,
+) -> None:
+    markdown_path = create_season_markdown_file(player_data, display_name=display_name)
+    try:
+        await interaction.followup.send(file=discord.File(markdown_path), ephemeral=ephemeral)
+    finally:
+        if os.path.exists(markdown_path):
+            os.remove(markdown_path)

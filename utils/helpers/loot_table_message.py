@@ -13,17 +13,26 @@ class LootTableMessage:
     Supports markdown-file and embed responses.
     """
 
-    def __init__(self, interaction: discord.Interaction, message_type: str = "markdown", response: str = None, **config):
+    def __init__(
+        self,
+        interaction: discord.Interaction,
+        message_type: str = "markdown",
+        response: str = None,
+        already_responded: bool = False,
+        **config,
+    ):
         self.interaction = interaction
         self.message_type = message_type
         self.response = response
+        self.already_responded = already_responded
         self.config = config
 
     async def send_player_loot(self, active_ppe, **kwargs):
         try:
-            if self.response:
+            if self.response and not self.already_responded:
                 await self.interaction.response.send_message(
                     self.response,
+                    file=self.config.get("response_file"),
                     ephemeral=self.config.get("response_ephemeral", False),
                 )
 
@@ -37,7 +46,7 @@ class LootTableMessage:
                 raise ValueError(f"Unsupported message type: {self.message_type}")
         except (ValueError, KeyError) as e:
             error_msg = str(e)
-            if self.response:
+            if self.response or self.already_responded:
                 await self.interaction.followup.send(error_msg, ephemeral=True)
             else:
                 await self.interaction.response.send_message(error_msg, ephemeral=True)
@@ -50,7 +59,7 @@ class LootTableMessage:
         temp_file_path = create_loot_markdown_file(active_ppe, guild_config=guild_config)
 
         try:
-            if self.response:
+            if self.response or self.already_responded:
                 await self.interaction.followup.send(
                     file=discord.File(temp_file_path),
                     ephemeral=self.config.get("ephemeral", True),
@@ -74,7 +83,7 @@ class LootTableMessage:
             f"Your active PPE now has **{active_ppe.points} total points**.",
         )
 
-        if self.response:
+        if self.response or self.already_responded:
             await self.interaction.followup.send(
                 content=content,
                 view=embed,

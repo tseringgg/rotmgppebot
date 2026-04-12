@@ -160,17 +160,7 @@ def _loot_drop_event_timestamps(loot: Loot) -> list[int]:
         parsed.sort()
         if parsed:
             return parsed
-
-    quantity = max(1, int(getattr(loot, "quantity", 1)))
-    seed = getattr(loot, "last_logged_at", None) or getattr(loot, "first_logged_at", None)
-    try:
-        seed_ts = int(seed) if seed is not None else None
-    except (TypeError, ValueError):
-        seed_ts = None
-
-    if seed_ts is None or seed_ts <= 0:
-        return []
-    return [seed_ts for _ in range(quantity)]
+    return []
 
 
 def _drop_points_for_single_event(loot: Loot, ppe: PPEData, guild_config: dict | None) -> float:
@@ -213,7 +203,10 @@ def build_item_graph(player_data: PlayerData, *, display_name: str) -> BytesIO |
         x_values.append(ts)
         y_values.append(float(total))
 
-    subtitle = f"{len(variant_rows)} variants tracked, {total} total pickups"
+    subtitle = (
+        f"{len(variant_rows)} variants tracked, {total} total pickups, "
+        f"{_format_date(events[0])} → {_format_date(events[-1])}"
+    )
     return _draw_line_chart(
         title=f"{display_name} - Season Item Graph",
         subtitle=subtitle,
@@ -257,7 +250,7 @@ def build_character_point_graph(
         x_values.append(int(ts))
         y_values.append(float(cumulative))
 
-    subtitle = f"PPE #{ppe.id} point progression from logged drops"
+    subtitle = f"PPE #{ppe.id} point progression from logged drops ({_format_date(x_values[0])} → {_format_date(x_values[-1])})"
     return _draw_line_chart(
         title=f"{display_name} - PPE #{ppe.id} Point Graph",
         subtitle=subtitle,
