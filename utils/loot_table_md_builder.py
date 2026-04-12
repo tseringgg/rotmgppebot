@@ -278,16 +278,16 @@ def create_loot_markdown_file(
 
     # Red lines
     stat_red_text = f"Stat reduction total: -{float(loot_adjustments['total_reduction_percent']):.2f}% ({item_reduction_multiplier:.2f}x)"
-    summary_lines.append(f'<span style="color:red">{stat_red_text}</span>')
+    summary_lines.append(stat_red_text)
     
     type_mult_text = f"Type multiplier: {type_multiplier:.2f}x"
-    summary_lines.append(f'<span style="color:red">{type_mult_text}</span>')
+    summary_lines.append(type_mult_text)
     
     summary_lines.append("")
 
     # Green line
     comb_mult_text = f"Combined item multiplier: {total_item_multiplier:.2f}x"
-    summary_lines.append(f'<span style="color:green">{comb_mult_text}</span>')
+    summary_lines.append(comb_mult_text)
     summary_lines.append(f"All items are worth {total_item_multiplier:.2f}x for this character.")
 
     builder.add_section(
