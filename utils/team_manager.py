@@ -197,13 +197,14 @@ class TeamManager:
                 ppe_points = 0.0
                 quest_points = 0.0
 
-                # Sum each member's best PPE plus optional quest contribution.
+                # Sum each member's PPE contribution plus optional quest contribution.
                 for member_id in team.members:
                     if member_id in records:
                         player_data = records[member_id]
                         member_ppe_points, member_quest_points, _member_total = compute_team_member_points(
                             player_data,
                             scoring=scoring,
+                            aggregate=scoring.team_aggregate_points,
                         )
                         ppe_points += member_ppe_points
                         quest_points += member_quest_points

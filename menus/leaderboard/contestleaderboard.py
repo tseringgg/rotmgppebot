@@ -7,6 +7,7 @@ from typing import Awaitable, Callable
 import discord
 
 from menus.leaderboard.common import send_error_response
+from menus.leaderboard.submenus.character.views import CharacterLeaderboardClassView
 from utils.contest_leaderboards import normalize_contest_leaderboard_id
 from utils.guild_config import get_contest_settings
 
@@ -21,6 +22,17 @@ _CONTEST_HANDLERS: dict[str, _ContestHandler] = {
     "season": seasonleaderboard.command,
     "team": teamleaderboard.command,
 }
+
+
+async def _open_character_leaderboard_selector(interaction: discord.Interaction) -> None:
+    contest_settings = await get_contest_settings(interaction)
+    view = CharacterLeaderboardClassView(owner_id=interaction.user.id, contest_settings=contest_settings)
+    if interaction.response.is_done():
+        await interaction.followup.send(embed=view.current_embed(), view=view, ephemeral=True)
+        return
+    await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+_CONTEST_HANDLERS["character"] = _open_character_leaderboard_selector
 
 
 async def run_contest_leaderboard(interaction: discord.Interaction, leaderboard_id: str) -> None:

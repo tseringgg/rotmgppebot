@@ -2,6 +2,7 @@ import discord
 
 from menus.leaderboard.common import build_ranked_entry_lines, send_error_response, send_leaderboard
 from menus.leaderboard.services import member_display_name, require_guild
+from utils.team_contest_scoring import compute_ppe_points, get_best_ppe, load_team_contest_scoring
 from utils.player_records import load_player_records
 
 
@@ -11,6 +12,7 @@ async def command(interaction: discord.Interaction):
         return
     try:
         records = await load_player_records(interaction)
+        scoring = await load_team_contest_scoring(interaction)
 
         leaderboard_data = []
         for pid, data in records.items():
@@ -20,17 +22,26 @@ async def command(interaction: discord.Interaction):
             if not isinstance(ppes, list) or not ppes:
                 continue
 
-            best_ppe = max(ppes, key=lambda p: p.points)
             player = member_display_name(guild, pid)
-            is_inactive = data.active_ppe != best_ppe.id
-            leaderboard_data.append((player, best_ppe.name, best_ppe.points, is_inactive))
+            points = compute_ppe_points(data, aggregate=scoring.ppe_aggregate_points)
+            best_ppe = get_best_ppe(data)
+            leaderboard_data.append((player, best_ppe, points, len(ppes), data.active_ppe))
 
         leaderboard_data.sort(key=lambda x: x[2], reverse=True)
 
         rows = []
-        for player, ppe_name, points, is_inactive in leaderboard_data:
+        for player, best_ppe, points, ppe_count, active_ppe_id in leaderboard_data:
+            if scoring.ppe_aggregate_points:
+                count_label = "character" if ppe_count == 1 else "characters"
+                rows.append(f"**{player.title()}** — All PPEs ({ppe_count} {count_label}): **{points:.1f}** pts")
+                continue
+
+            if best_ppe is None:
+                continue
+
+            is_inactive = active_ppe_id != best_ppe.id
             marker = " • (inactive)" if is_inactive else ""
-            rows.append(f"**{player.title()}** — {ppe_name}: **{points:.1f}** pts{marker}")
+            rows.append(f"**{player.title()}** — {best_ppe.name}: **{points:.1f}** pts{marker}")
 
         await send_leaderboard(
             interaction,

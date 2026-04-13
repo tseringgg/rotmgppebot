@@ -10,6 +10,7 @@ CONTEST_LEADERBOARD_OPTIONS: Final[tuple[tuple[str, str], ...]] = (
     ("quest", "Quest Leaderboard"),
     ("season", "Season Loot Leaderboard"),
     ("team", "Team Leaderboard"),
+    ("character", "Character Leaderboard"),
 )
 
 CONTEST_LEADERBOARD_LABELS: Final[dict[str, str]] = dict(CONTEST_LEADERBOARD_OPTIONS)

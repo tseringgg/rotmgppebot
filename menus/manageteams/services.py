@@ -126,6 +126,7 @@ async def build_team_summary_pages(interaction: discord.Interaction) -> list[dis
             member_ppe_points, member_quest_points, _member_total = compute_team_member_points(
                 player_data,
                 scoring=scoring,
+                aggregate=scoring.team_aggregate_points,
             )
             ppe_points += member_ppe_points
             quest_points += member_quest_points

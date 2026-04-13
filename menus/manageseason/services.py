@@ -203,6 +203,18 @@ async def load_contest_settings_for_menu(interaction: discord.Interaction) -> di
     return dict(settings)
 
 
+async def _update_contest_bool_setting(
+    interaction: discord.Interaction,
+    *,
+    setting_key: str,
+    enabled: bool,
+) -> dict[str, Any]:
+    settings = await get_contest_settings(interaction)
+    settings[setting_key] = bool(enabled)
+    saved = await set_contest_settings(interaction, settings)
+    return dict(saved)
+
+
 async def update_default_contest_leaderboard(
     interaction: discord.Interaction,
     *,
@@ -222,10 +234,37 @@ async def update_team_contest_quest_points_setting(
     enabled: bool,
 ) -> dict[str, Any]:
     """Toggle whether team contests should include quest points."""
-    settings = await get_contest_settings(interaction)
-    settings["team_contest_include_quest_points"] = bool(enabled)
-    saved = await set_contest_settings(interaction, settings)
-    return dict(saved)
+    return await _update_contest_bool_setting(
+        interaction,
+        setting_key="team_contest_include_quest_points",
+        enabled=enabled,
+    )
+
+
+async def update_ppe_aggregate_points_setting(
+    interaction: discord.Interaction,
+    *,
+    enabled: bool,
+) -> dict[str, Any]:
+    """Toggle whether PPE leaderboard scores should aggregate all characters."""
+    return await _update_contest_bool_setting(
+        interaction,
+        setting_key="ppe_aggregate_points_enabled",
+        enabled=enabled,
+    )
+
+
+async def update_team_aggregate_points_setting(
+    interaction: discord.Interaction,
+    *,
+    enabled: bool,
+) -> dict[str, Any]:
+    """Toggle whether team contest scores should aggregate all team characters."""
+    return await _update_contest_bool_setting(
+        interaction,
+        setting_key="team_aggregate_points_enabled",
+        enabled=enabled,
+    )
 
 
 def _build_join_contest_embed(*, role: discord.Role, emoji: str) -> discord.Embed:

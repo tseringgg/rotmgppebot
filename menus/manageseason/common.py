@@ -154,6 +154,8 @@ def build_manage_contests_embed(settings: dict) -> discord.Embed:
     """Build the Manage Contests home embed."""
     default_choice = settings.get("default_contest_leaderboard")
     default_label = contest_leaderboard_label(default_choice)
+    ppe_aggregate_enabled = bool(settings.get("ppe_aggregate_points_enabled", False))
+    team_aggregate_enabled = bool(settings.get("team_aggregate_points_enabled", False))
     team_quest_enabled = bool(settings.get("team_contest_include_quest_points", False))
     join_channel_id = int(settings.get("join_contest_channel_id", 0) or 0)
     join_message_id = int(settings.get("join_contest_message_id", 0) or 0)
@@ -182,6 +184,8 @@ def build_manage_contests_embed(settings: dict) -> discord.Embed:
         name="Manage Leaderboards",
         value=(
             "Open contest leaderboard scoring controls.\n"
+            f"PPE aggregate points: **{'Enabled' if ppe_aggregate_enabled else 'Disabled'}**\n"
+            f"Team aggregate points: **{'Enabled' if team_aggregate_enabled else 'Disabled'}**\n"
             f"Team contest quest scoring: **{'Enabled' if team_quest_enabled else 'Disabled'}**"
         ),
         inline=False,
@@ -259,18 +263,37 @@ def build_set_contest_type_embed(settings: dict) -> discord.Embed:
 
 def build_leaderboard_manager_embed(settings: dict) -> discord.Embed:
     """Build the leaderboard manager embed."""
+    ppe_aggregate_enabled = bool(settings.get("ppe_aggregate_points_enabled", False))
+    team_aggregate_enabled = bool(settings.get("team_aggregate_points_enabled", False))
     team_quest_enabled = bool(settings.get("team_contest_include_quest_points", False))
-    status_text = "Enabled" if team_quest_enabled else "Disabled"
 
     embed = discord.Embed(
         title="Leaderboard Manager",
-        description="Configure how points are calculated for team contests.",
+        description="Configure how points are calculated for contest leaderboards.",
         color=discord.Color.dark_magenta(),
+    )
+    embed.add_field(
+        name="PPE Aggregate Points",
+        value=(
+            f"Current status: **{'Enabled' if ppe_aggregate_enabled else 'Disabled'}**\n"
+            "When enabled, each player's PPE leaderboard score adds all of their PPE characters together.\n"
+            "When disabled, PPE leaderboard score uses only that player's best PPE."
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="Team Aggregate Points",
+        value=(
+            f"Current status: **{'Enabled' if team_aggregate_enabled else 'Disabled'}**\n"
+            "When enabled, team leaderboard score adds every character on every member.\n"
+            "When disabled, team leaderboard score uses each member's best PPE."
+        ),
+        inline=False,
     )
     embed.add_field(
         name="Team Contest Quest Scoring",
         value=(
-            f"Current status: **{status_text}**\n"
+            f"Current status: **{'Enabled' if team_quest_enabled else 'Disabled'}**\n"
             "When enabled, completed quests add points to team totals.\n"
             "When disabled, team totals use PPE points only."
         ),

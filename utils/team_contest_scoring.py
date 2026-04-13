@@ -15,6 +15,8 @@ class TeamContestScoring:
     """Resolved scoring inputs for team contest point calculations."""
 
     include_quest_points: bool
+    ppe_aggregate_points: bool = False
+    team_aggregate_points: bool = False
     regular_quest_points: int = 0
     shiny_quest_points: int = 0
     skin_quest_points: int = 0
@@ -24,27 +26,72 @@ async def load_team_contest_scoring(interaction: discord.Interaction) -> TeamCon
     """Load team contest scoring configuration for the current guild."""
     contest_settings = await get_contest_settings(interaction)
     include_quest_points = bool(contest_settings.get("team_contest_include_quest_points", False))
+    ppe_aggregate_points = bool(contest_settings.get("ppe_aggregate_points_enabled", False))
+    team_aggregate_points = bool(contest_settings.get("team_aggregate_points_enabled", False))
     if not include_quest_points:
-        return TeamContestScoring(include_quest_points=False)
+        return TeamContestScoring(
+            include_quest_points=False,
+            ppe_aggregate_points=ppe_aggregate_points,
+            team_aggregate_points=team_aggregate_points,
+        )
 
     regular_qp, shiny_qp, skin_qp = await get_quest_points(interaction)
     return TeamContestScoring(
         include_quest_points=True,
+        ppe_aggregate_points=ppe_aggregate_points,
+        team_aggregate_points=team_aggregate_points,
         regular_quest_points=int(regular_qp),
         shiny_quest_points=int(shiny_qp),
         skin_quest_points=int(skin_qp),
     )
 
 
+def _player_ppes(player_data: Any) -> list[Any]:
+    ppes = getattr(player_data, "ppes", None)
+    return ppes if isinstance(ppes, list) else []
+
+
+def _ppe_points_value(ppe: Any) -> float:
+    try:
+        return float(getattr(ppe, "points", 0.0) or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def get_best_ppe(player_data: Any) -> Any | None:
+    """Return the highest-scoring PPE for a player, if any."""
+    ppes = _player_ppes(player_data)
+    if not ppes:
+        return None
+    return max(ppes, key=_ppe_points_value)
+
+
+def compute_ppe_points(player_data: Any, *, aggregate: bool = False) -> float:
+    """Compute a player's PPE points, optionally aggregating every character."""
+    ppes = _player_ppes(player_data)
+    if not ppes:
+        return 0.0
+
+    if aggregate:
+        total_points = 0.0
+        for ppe in ppes:
+            total_points += _ppe_points_value(ppe)
+        return total_points
+
+    best_ppe = get_best_ppe(player_data)
+    if best_ppe is None:
+        return 0.0
+    return _ppe_points_value(best_ppe)
+
+
 def compute_team_member_points(
     player_data: Any,
     *,
     scoring: TeamContestScoring,
+    aggregate: bool = False,
 ) -> tuple[float, float, float]:
     """Compute PPE points, quest points, and total contribution for one player."""
-    ppe_points = 0.0
-    if player_data and getattr(player_data, "ppes", None):
-        ppe_points = float(max(ppe.points for ppe in player_data.ppes))
+    ppe_points = compute_ppe_points(player_data, aggregate=aggregate)
 
     quest_points = 0.0
     if player_data and scoring.include_quest_points:

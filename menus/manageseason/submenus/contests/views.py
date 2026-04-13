@@ -14,6 +14,8 @@ from menus.manageseason.services import (
     delete_join_contest_embed,
     load_contest_settings_for_menu,
     update_default_contest_leaderboard,
+    update_ppe_aggregate_points_setting,
+    update_team_aggregate_points_setting,
     update_team_contest_quest_points_setting,
 )
 from menus.menu_utils import OwnerBoundView
@@ -146,11 +148,11 @@ class SetContestTypeView(OwnerBoundView):
             "quest": self.set_quest,
             "season": self.set_season,
             "team": self.set_team,
+            "character": self.set_character,
         }
 
         for option_id, button in option_map.items():
-            is_selected = current_default == option_id
-            button.style = discord.ButtonStyle.success if is_selected else discord.ButtonStyle.success
+            button.style = discord.ButtonStyle.success
 
         self.clear_default.style = (
             discord.ButtonStyle.secondary if current_default is None else discord.ButtonStyle.danger
@@ -183,6 +185,10 @@ class SetContestTypeView(OwnerBoundView):
     async def set_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._set_default(interaction, default_leaderboard="team")
 
+    @discord.ui.button(label="Character Leaderboard", style=discord.ButtonStyle.success, row=1)
+    async def set_character(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await self._set_default(interaction, default_leaderboard="character")
+
     @discord.ui.button(label="Clear Default", style=discord.ButtonStyle.danger, row=1)
     async def clear_default(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._set_default(interaction, default_leaderboard=None)
@@ -201,16 +207,35 @@ class LeaderboardManagerView(OwnerBoundView):
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.owner_id = owner_id
         self.settings = settings
-        self._sync_toggle_button()
+        self._sync_toggle_buttons()
 
-    def _sync_toggle_button(self) -> None:
-        enabled = bool(self.settings.get("team_contest_include_quest_points", False))
+    def _sync_toggle_button(self, button: discord.ui.Button, *, enabled: bool, enable_label: str, disable_label: str) -> None:
         if enabled:
-            self.toggle_team_quest_points.label = "Disable Team Quest Points"
-            self.toggle_team_quest_points.style = discord.ButtonStyle.danger
+            button.label = disable_label
+            button.style = discord.ButtonStyle.danger
         else:
-            self.toggle_team_quest_points.label = "Enable Team Quest Points"
-            self.toggle_team_quest_points.style = discord.ButtonStyle.success
+            button.label = enable_label
+            button.style = discord.ButtonStyle.success
+
+    def _sync_toggle_buttons(self) -> None:
+        self._sync_toggle_button(
+            self.toggle_team_quest_points,
+            enabled=bool(self.settings.get("team_contest_include_quest_points", False)),
+            enable_label="Enable Team Quest Points",
+            disable_label="Disable Team Quest Points",
+        )
+        self._sync_toggle_button(
+            self.toggle_ppe_aggregate_points,
+            enabled=bool(self.settings.get("ppe_aggregate_points_enabled", False)),
+            enable_label="Enable PPE Aggregate Points",
+            disable_label="Disable PPE Aggregate Points",
+        )
+        self._sync_toggle_button(
+            self.toggle_team_aggregate_points,
+            enabled=bool(self.settings.get("team_aggregate_points_enabled", False)),
+            enable_label="Enable Team Aggregate Points",
+            disable_label="Disable Team Aggregate Points",
+        )
 
     def current_embed(self) -> discord.Embed:
         return build_leaderboard_manager_embed(self.settings)
@@ -222,7 +247,27 @@ class LeaderboardManagerView(OwnerBoundView):
             interaction,
             enabled=not currently_enabled,
         )
-        self._sync_toggle_button()
+        self._sync_toggle_buttons()
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+    @discord.ui.button(label="Enable PPE Aggregate Points", style=discord.ButtonStyle.success, row=0)
+    async def toggle_ppe_aggregate_points(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        currently_enabled = bool(self.settings.get("ppe_aggregate_points_enabled", False))
+        self.settings = await update_ppe_aggregate_points_setting(
+            interaction,
+            enabled=not currently_enabled,
+        )
+        self._sync_toggle_buttons()
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+    @discord.ui.button(label="Enable Team Aggregate Points", style=discord.ButtonStyle.success, row=1)
+    async def toggle_team_aggregate_points(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        currently_enabled = bool(self.settings.get("team_aggregate_points_enabled", False))
+        self.settings = await update_team_aggregate_points_setting(
+            interaction,
+            enabled=not currently_enabled,
+        )
+        self._sync_toggle_buttons()
         await interaction.response.edit_message(embed=self.current_embed(), view=self)
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)

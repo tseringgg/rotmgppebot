@@ -43,6 +43,8 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
     },
     "contest_settings": {
         "default_contest_leaderboard": None,
+        "ppe_aggregate_points_enabled": False,
+        "team_aggregate_points_enabled": False,
         "team_contest_include_quest_points": False,
         "join_contest_channel_id": 0,
         "join_contest_message_id": 0,
@@ -292,6 +294,18 @@ def _normalized_contest_settings(config: Dict[str, Any]) -> Dict[str, Any]:
     default_choice = normalize_contest_leaderboard_id(settings.get("default_contest_leaderboard"))
     return {
         "default_contest_leaderboard": default_choice,
+        "ppe_aggregate_points_enabled": bool(
+            settings.get(
+                "ppe_aggregate_points_enabled",
+                _DEFAULT_CONFIG["contest_settings"]["ppe_aggregate_points_enabled"],
+            )
+        ),
+        "team_aggregate_points_enabled": bool(
+            settings.get(
+                "team_aggregate_points_enabled",
+                _DEFAULT_CONFIG["contest_settings"]["team_aggregate_points_enabled"],
+            )
+        ),
         "team_contest_include_quest_points": bool(
             settings.get(
                 "team_contest_include_quest_points",
