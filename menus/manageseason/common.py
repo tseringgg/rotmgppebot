@@ -186,6 +186,7 @@ def build_manage_contests_embed(settings: dict) -> discord.Embed:
             "Open contest leaderboard scoring controls.\n"
             f"PPE aggregate points: **{'Enabled' if ppe_aggregate_enabled else 'Disabled'}**\n"
             f"Team aggregate points: **{'Enabled' if team_aggregate_enabled else 'Disabled'}**\n"
+            f"PPE contest quest scoring: **{'Enabled' if ppe_quest_enabled else 'Disabled'}**\n"
             f"Team contest quest scoring: **{'Enabled' if team_quest_enabled else 'Disabled'}**"
         ),
         inline=False,
