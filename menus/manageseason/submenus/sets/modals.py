@@ -29,6 +29,13 @@ class ManageDefaultSetPointsModal(discord.ui.Modal, title="Manage Default Set Po
         max_length=10,
     )
 
+    @staticmethod
+    def _as_float(value: object, fallback: float = 0.0) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return fallback
+
     def __init__(
         self,
         *,
@@ -39,6 +46,12 @@ class ManageDefaultSetPointsModal(discord.ui.Modal, title="Manage Default Set Po
         super().__init__(timeout=300)
         self.owner_id = owner_id
         self.source_message = source_message
+
+        # `settings` is already the points_settings payload.
+        current_ut = float(settings.get("default_ut_points", 0.0))
+        current_st = float(settings.get("default_st_points", 0.0))
+        self.ut_default.default = f"{current_ut:g}"
+        self.st_default.default = f"{current_st:g}"
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         if interaction.user.id != self.owner_id:
@@ -107,31 +120,17 @@ class ManageDefaultSetPointsModal(discord.ui.Modal, title="Manage Default Set Po
             await interaction.followup.send("Default set points update cancelled.", ephemeral=True)
             return
 
-        # Save changes - apply defaults to all sets that don't have overrides
+        # Save changes - apply defaults to all sets except manually overridden sets.
         guild_config = await load_guild_config(interaction)
-        all_sets = load_item_sets()
-        
-        # Get current overrides
-        set_bonuses = guild_config["points_settings"].get("set_bonuses", {"UT": {}, "ST": {}})
-        ut_overrides = {}
-        st_overrides = {}
-        
-        # Preserve existing overrides, apply defaults to all others
-        for set_name, data in all_sets.items():
-            set_type = data["type"]
-            if set_type == "UT":
-                # Keep overrides, apply default to others
-                if set_name in set_bonuses.get("UT", {}):
-                    ut_overrides[set_name] = set_bonuses["UT"][set_name]
-                else:
-                    ut_overrides[set_name] = ut_default_points
-            else:  # ST
-                if set_name in set_bonuses.get("ST", {}):
-                    st_overrides[set_name] = set_bonuses["ST"][set_name]
-                else:
-                    st_overrides[set_name] = st_default_points
-        
-        guild_config["points_settings"]["set_bonuses"] = {"UT": ut_overrides, "ST": st_overrides}
+        points_settings = guild_config.setdefault("points_settings", {})
+        if "set_overrides" not in points_settings:
+            points_settings["set_overrides"] = {
+                "UT": {},
+                "ST": {},
+            }
+
+        guild_config["points_settings"]["default_ut_points"] = ut_default_points
+        guild_config["points_settings"]["default_st_points"] = st_default_points
         await save_guild_config(interaction, guild_config)
 
         await interaction.followup.send(
@@ -244,10 +243,14 @@ class AddSetOverrideModal(discord.ui.Modal, title="Add Set Override"):
 
         # Save changes
         guild_config = await load_guild_config(interaction)
-        if "set_bonuses" not in guild_config["points_settings"]:
-            guild_config["points_settings"]["set_bonuses"] = {"UT": {}, "ST": {}}
+        points_settings = guild_config.setdefault("points_settings", {})
+        if "set_overrides" not in points_settings:
+            points_settings["set_overrides"] = {
+                "UT": {},
+                "ST": {},
+            }
         
-        guild_config["points_settings"]["set_bonuses"][set_type][set_name_input] = points_value
+        guild_config["points_settings"]["set_overrides"].setdefault(set_type, {})[set_name_input] = points_value
         await save_guild_config(interaction, guild_config)
 
         await interaction.followup.send(
@@ -266,4 +269,104 @@ class AddSetOverrideModal(discord.ui.Modal, title="Add Set Override"):
                 pass
 
 
-__all__ = ["ManageDefaultSetPointsModal", "AddSetOverrideModal"]
+class RemoveSetOverrideModal(discord.ui.Modal, title="Remove Set Override"):
+    """Modal for removing a specific set override so it falls back to default points."""
+
+    set_name = discord.ui.TextInput(
+        label="Set Name",
+        placeholder="Example: Golden Archer Set",
+        required=True,
+        max_length=100,
+    )
+
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        settings: dict,
+        source_message: discord.Message | None,
+    ) -> None:
+        super().__init__(timeout=300)
+        self.owner_id = owner_id
+        self.source_message = source_message
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        set_name_input = self.set_name.value.strip()
+        all_sets = load_item_sets()
+        if set_name_input not in all_sets:
+            await interaction.response.send_message(
+                f"ERROR: `{set_name_input}` is not a valid set name.",
+                ephemeral=True,
+            )
+            return
+
+        set_type = all_sets[set_name_input]["type"]
+        guild_config = await load_guild_config(interaction)
+        points_settings = guild_config.setdefault("points_settings", {})
+        set_overrides = points_settings.get("set_overrides", {}) if isinstance(points_settings.get("set_overrides", {}), dict) else {}
+
+        type_overrides = set_overrides.get(set_type, {}) if isinstance(set_overrides.get(set_type, {}), dict) else {}
+        if set_name_input not in type_overrides:
+            await interaction.response.send_message(
+                f"ERROR: `{set_name_input}` does not have a manual override to remove.",
+                ephemeral=True,
+            )
+            return
+
+        confirm_text = (
+            f"⚠️ **Remove set override?**\n\n"
+            f"Set: **{set_name_input}** ({set_type})\n"
+            "It will use the current default set points."
+        )
+        confirm_view = ConfirmCancelView(
+            owner_id=self.owner_id,
+            timeout=60,
+            confirm_label="Remove Override",
+            cancel_label="Cancel",
+            confirm_style=discord.ButtonStyle.danger,
+            cancel_style=discord.ButtonStyle.secondary,
+            owner_error="This confirmation belongs to another user.",
+        )
+
+        await interaction.response.send_message(confirm_text, view=confirm_view, ephemeral=True)
+        await confirm_view.wait()
+
+        try:
+            await interaction.delete_original_response()
+        except discord.HTTPException:
+            pass
+
+        if not confirm_view.confirmed:
+            await interaction.followup.send("Remove set override cancelled.", ephemeral=True)
+            return
+
+        if "set_overrides" not in points_settings:
+            points_settings["set_overrides"] = {
+                "UT": {},
+                "ST": {},
+            }
+
+        if set_name_input in points_settings["set_overrides"].get(set_type, {}):
+            del points_settings["set_overrides"][set_type][set_name_input]
+
+        await save_guild_config(interaction, guild_config)
+        await interaction.followup.send(
+            f"✅ Removed set override for **{set_name_input}** ({set_type}).",
+            ephemeral=True,
+        )
+
+        if self.source_message:
+            try:
+                from menus.manageseason.submenus.sets.views import ManageSetPointsView
+                settings = await load_points_settings_for_menu(interaction)
+                view = ManageSetPointsView(owner_id=self.owner_id, settings=settings)
+                await self.source_message.edit(embed=view.current_embed(), view=view)
+            except Exception:
+                pass
+
+
+__all__ = ["ManageDefaultSetPointsModal", "AddSetOverrideModal", "RemoveSetOverrideModal"]

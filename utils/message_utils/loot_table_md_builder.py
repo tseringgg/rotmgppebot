@@ -21,6 +21,7 @@ from utils.points_service import (
     starting_penalty_breakdown_from_inputs,
 )
 from utils.player_records import highest_rarity
+from utils.guild_config import get_set_bonuses
 
 
 def load_dungeon_data():
@@ -241,10 +242,8 @@ def create_loot_markdown_file(
         for set_name in sorted(ppe_data.completed_sets):
             if set_name in all_sets:
                 set_type = all_sets[set_name]["type"]
-                # Get points for this set from guild config
-                set_bonuses = {}
-                if isinstance(guild_config, dict) and isinstance(guild_config.get("points_settings"), dict):
-                    set_bonuses = guild_config["points_settings"].get("set_bonuses", {})
+                # Resolve points using defaults + explicit overrides.
+                set_bonuses = get_set_bonuses(guild_config)
                 
                 points = 0.0
                 if set_type in set_bonuses and set_name in set_bonuses[set_type]:

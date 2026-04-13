@@ -81,10 +81,12 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
             "incombat_seconds_per_point": 0.1,
         },
         "class_overrides": {},
-        "set_bonuses": {
+        "set_overrides": {
             "ST": {},
             "UT": {},
         },
+        "default_ut_points": 0.0,
+        "default_st_points": 0.0,
     },
 }
 
@@ -441,6 +443,31 @@ def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
                 "minimum_total": minimum_total,
             }
 
+    default_ut_points = max(
+        0.0,
+        _as_float(raw.get("default_ut_points"), _DEFAULT_CONFIG["points_settings"]["default_ut_points"]),
+    )
+    default_st_points = max(
+        0.0,
+        _as_float(raw.get("default_st_points"), _DEFAULT_CONFIG["points_settings"]["default_st_points"]),
+    )
+
+    raw_set_overrides = raw.get("set_overrides", {}) if isinstance(raw.get("set_overrides", {}), dict) else {}
+
+    normalized_set_overrides: Dict[str, Dict[str, float]] = {"UT": {}, "ST": {}}
+    for set_type in ("UT", "ST"):
+        type_bucket = raw_set_overrides.get(set_type, {}) if isinstance(raw_set_overrides.get(set_type, {}), dict) else {}
+        for set_name, points in type_bucket.items():
+            if not isinstance(set_name, str) or not set_name:
+                continue
+            parsed_points = _as_float(points, 0.0)
+            if parsed_points < 0:
+                continue
+            baseline = default_ut_points if set_type == "UT" else default_st_points
+            if parsed_points == baseline:
+                continue
+            normalized_set_overrides[set_type][set_name] = parsed_points
+
     return {
         "global": normalized_global,
         "rarity_multipliers": normalized_rarity_multipliers,
@@ -448,6 +475,9 @@ def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
         "duplicate_point_reduction": duplicate_point_reduction,
         "penalty_weights": normalized_penalty_weights,
         "class_overrides": normalized_overrides,
+        "set_overrides": normalized_set_overrides,
+        "default_ut_points": default_ut_points,
+        "default_st_points": default_st_points,
     }
 
 
@@ -466,22 +496,41 @@ def get_rarity_multipliers(guild_config: Dict[str, Any] | None) -> Dict[str, flo
 
 
 def get_set_bonuses(guild_config: Dict[str, Any] | None) -> Dict[str, Dict[str, float]]:
-    """Get set bonus points configuration. Returns dict: set_type -> {set_name -> points}."""
+    """Return effective set points map using defaults + explicit overrides."""
     points_settings = guild_config.get("points_settings", {}) if isinstance(guild_config, dict) else {}
-    raw_bonuses = points_settings.get("set_bonuses", {}) if isinstance(points_settings.get("set_bonuses", {}), dict) else {}
-    
-    result: Dict[str, Dict[str, float]] = {}
-    for set_type in ["ST", "UT"]:
-        result[set_type] = {}
-        type_bonuses = raw_bonuses.get(set_type, {})
-        if isinstance(type_bonuses, dict):
-            for set_name, points in type_bonuses.items():
-                try:
-                    parsed = float(points)
-                    if parsed >= 0:
-                        result[set_type][set_name] = parsed
-                except (TypeError, ValueError):
-                    pass
+    raw_overrides = points_settings.get("set_overrides", {}) if isinstance(points_settings.get("set_overrides", {}), dict) else {}
+
+    try:
+        default_ut = max(0.0, float(points_settings.get("default_ut_points", 0.0)))
+    except (TypeError, ValueError):
+        default_ut = 0.0
+    try:
+        default_st = max(0.0, float(points_settings.get("default_st_points", 0.0)))
+    except (TypeError, ValueError):
+        default_st = 0.0
+
+    from utils.set_operations import load_item_sets
+
+    all_sets = load_item_sets()
+    result: Dict[str, Dict[str, float]] = {"UT": {}, "ST": {}}
+    for set_name, set_data in all_sets.items():
+        set_type = str(set_data.get("type", "")).upper()
+        if set_type not in {"UT", "ST"}:
+            continue
+
+        base_points = default_ut if set_type == "UT" else default_st
+        points = base_points
+
+        type_overrides = raw_overrides.get(set_type, {}) if isinstance(raw_overrides.get(set_type, {}), dict) else {}
+        if set_name in type_overrides:
+            try:
+                parsed = float(type_overrides[set_name])
+                if parsed >= 0:
+                    points = parsed
+            except (TypeError, ValueError):
+                pass
+
+        result[set_type][set_name] = points
     return result
 
 

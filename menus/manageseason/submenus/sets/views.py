@@ -17,42 +17,39 @@ def _build_manage_set_points_embed(settings: dict) -> discord.Embed:
         color=discord.Color.gold(),
     )
 
-    set_bonuses = settings.get("points_settings", {}).get("set_bonuses", {})
+    # `settings` is already the points_settings payload.
+    set_overrides = settings.get("set_overrides", {}) if isinstance(settings.get("set_overrides", {}), dict) else {}
+    default_ut_points = float(settings.get("default_ut_points", 0.0))
+    default_st_points = float(settings.get("default_st_points", 0.0))
+
     
     # Get default points for UT and ST
     all_sets = load_item_sets()
     ut_sets = {name: data for name, data in all_sets.items() if data["type"] == "UT"}
     st_sets = {name: data for name, data in all_sets.items() if data["type"] == "ST"}
     
-    ut_bonuses = set_bonuses.get("UT", {})
-    st_bonuses = set_bonuses.get("ST", {})
+    ut_overrides_map = set_overrides.get("UT", {}) if isinstance(set_overrides.get("UT", {}), dict) else {}
+    st_overrides_map = set_overrides.get("ST", {}) if isinstance(set_overrides.get("ST", {}), dict) else {}
     
-    # Calculate default points (sets that have the same points are considered "default")
-    ut_default_point_counts = {}
-    st_default_point_counts = {}
     ut_overrides = []
     st_overrides = []
     
     for set_name in ut_sets.keys():
-        points = ut_bonuses.get(set_name, 0.0)
-        if points == 0.0:
-            ut_default_point_counts[0.0] = ut_default_point_counts.get(0.0, 0) + 1
-        else:
+        if set_name in ut_overrides_map:
+            points = float(ut_overrides_map.get(set_name, default_ut_points))
             ut_overrides.append((set_name, points))
     
     for set_name in st_sets.keys():
-        points = st_bonuses.get(set_name, 0.0)
-        if points == 0.0:
-            st_default_point_counts[0.0] = st_default_point_counts.get(0.0, 0) + 1
-        else:
+        if set_name in st_overrides_map:
+            points = float(st_overrides_map.get(set_name, default_st_points))
             st_overrides.append((set_name, points))
     
     # Add default points section
     embed.add_field(
         name="Default Set Points",
         value=(
-            f"UT Default: **0 pts** (applies to {len(ut_sets)} sets)\n"
-            f"ST Default: **0 pts** (applies to {len(st_sets)} sets)"
+            f"UT Default: **{default_ut_points:.1f} pts** (applies to {len(ut_sets)} sets)\n"
+            f"ST Default: **{default_st_points:.1f} pts** (applies to {len(st_sets)} sets)"
         ),
         inline=False,
     )
@@ -61,9 +58,9 @@ def _build_manage_set_points_embed(settings: dict) -> discord.Embed:
     if ut_overrides or st_overrides:
         override_lines = []
         for set_name, points in sorted(ut_overrides):
-            override_lines.append(f"- {set_name}: **{points}** pts")
+            override_lines.append(f"- {set_name}: **{points:g}** pts (Manually Overriden)")
         for set_name, points in sorted(st_overrides):
-            override_lines.append(f"- {set_name}: **{points}** pts")
+            override_lines.append(f"- {set_name}: **{points:g}** pts (Manually Overriden)")
         
         if override_lines:
             embed.add_field(
@@ -107,6 +104,19 @@ class ManageSetPointsView(OwnerBoundView):
         self.settings = await load_points_settings_for_menu(interaction)
         await interaction.response.send_modal(
             AddSetOverrideModal(
+                owner_id=self.owner_id,
+                settings=self.settings,
+                source_message=interaction.message,
+            )
+        )
+
+    @discord.ui.button(label="Remove Set Override", style=discord.ButtonStyle.danger, row=0)
+    async def remove_set_override(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        from menus.manageseason.submenus.sets.modals import RemoveSetOverrideModal
+
+        self.settings = await load_points_settings_for_menu(interaction)
+        await interaction.response.send_modal(
+            RemoveSetOverrideModal(
                 owner_id=self.owner_id,
                 settings=self.settings,
                 source_message=interaction.message,
