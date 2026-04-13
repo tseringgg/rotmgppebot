@@ -7,10 +7,11 @@ import re
 import discord
 
 from menus.managequests.common import load_managequests_settings
-from menus.managequests.reset_actions import open_reset_for_member
+from menus.managequests.reset_actions import open_reset_for_member, open_reset_for_team
 from menus.menu_utils import OwnerBoundView
 from menus.myquests.common import build_myquests_state_for_player
 from menus.myquests.views import MyQuestsView
+from utils.player_records import load_teams
 
 
 class ManagePlayerQuestsPromptModal(discord.ui.Modal, title="Manage Player's Quests"):
@@ -132,4 +133,76 @@ class ManagePlayerQuestsView(OwnerBoundView):
         await interaction.response.edit_message(content="Closed `/managequests` menu.", embed=None, view=None)
 
 
-__all__ = ["ManagePlayerQuestsPromptModal", "ManagePlayerQuestsView"]
+class TeamSelect(discord.ui.Select):
+    def __init__(self, *, owner_id: int, team_names: list[str]) -> None:
+        options = [discord.SelectOption(label=name, value=name) for name in team_names[:25]]
+        super().__init__(
+            placeholder="Choose a team...",
+            min_values=1,
+            max_values=1,
+            options=options,
+            row=0,
+        )
+        self.owner_id = owner_id
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        await open_reset_for_team(interaction, team_name=self.values[0], actor_id=self.owner_id)
+
+
+class ManageTeamQuestsSelectView(OwnerBoundView):
+    """Team picker view to launch team-wide reset actions."""
+
+    def __init__(self, *, owner_id: int, team_names: list[str]) -> None:
+        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
+        self.owner_id = owner_id
+        self.team_names = sorted(team_names, key=str.casefold)
+        self._build_controls()
+
+    def _build_controls(self) -> None:
+        self.clear_items()
+        if self.team_names:
+            self.add_item(TeamSelect(owner_id=self.owner_id, team_names=self.team_names))
+
+    def current_embed(self) -> discord.Embed:
+        if not self.team_names:
+            return discord.Embed(
+                title="Reset Team's Quests",
+                description="No teams were found for this server.",
+                color=discord.Color.orange(),
+            )
+
+        preview = "\n".join(f"• {name}" for name in self.team_names[:20])
+        return discord.Embed(
+            title="Reset Team's Quests",
+            description=(
+                "Choose a team to open the team quest reset menu.\n"
+                "All reset actions here apply to the selected team's shared quest state.\n\n"
+                f"Teams:\n{preview}"
+            ),
+            color=discord.Color.dark_teal(),
+        )
+
+    @discord.ui.button(label="Refresh Teams", style=discord.ButtonStyle.secondary, row=1)
+    async def refresh(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        teams = await load_teams(interaction)
+        self.team_names = sorted(list(teams.keys()), key=str.casefold)
+        self._build_controls()
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
+    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        from menus.managequests.submenus.home.views import ManageQuestsHomeView
+
+        settings = await load_managequests_settings(interaction)
+        view = ManageQuestsHomeView(owner_id=self.owner_id, settings=settings)
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+    @discord.ui.button(label="Close", style=discord.ButtonStyle.secondary, row=1)
+    async def close(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await interaction.response.edit_message(content="Closed `/managequests` menu.", embed=None, view=None)
+
+
+__all__ = ["ManagePlayerQuestsPromptModal", "ManagePlayerQuestsView", "ManageTeamQuestsSelectView"]

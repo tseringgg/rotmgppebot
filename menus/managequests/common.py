@@ -140,7 +140,11 @@ def build_quest_mode_embed(settings: dict) -> discord.Embed:
 
     embed = discord.Embed(
         title="Manage Quest Mode",
-        description="Configure how quests are assigned and shared across players.",
+        description=(
+            "Configure how quests are assigned and shared across players.\n"
+            "Global Quests: one shared server-wide list.\n"
+            "Team Quests: one shared list per team."
+        ),
         color=discord.Color.dark_blue(),
     )
     embed.add_field(

@@ -7,10 +7,10 @@ from discord import ui
 
 from menus.menu_utils import ConfirmCancelView, OwnerBoundView
 from menus.managequests.common import build_global_payload, build_reset_active_lines, build_reset_completion_lines
-from menus.managequests.services import apply_selected_reset_actions
+from menus.managequests.services import apply_selected_reset_actions, apply_selected_team_reset_actions
 from utils.guild_config import get_quest_targets, load_guild_config, save_guild_config
 from utils.player_records import ensure_player_exists, load_player_records, load_teams, save_player_records
-from utils.quest_modes import build_team_quests_context
+from utils.quest_modes import build_team_quests_context, normalize_team_key
 from utils.quest_manager import refresh_player_quests
 
 ACTION_RESET_COMPLETED_ITEMS = "action_reset_completed_items"
@@ -171,6 +171,159 @@ class ResetQuestSelectionView(OwnerBoundView):
             view=None,
             embed=None,
         )
+
+    @ui.button(label="Back", style=discord.ButtonStyle.secondary)
+    async def back_button(self, interaction: discord.Interaction, button: ui.Button):
+        self.stop()
+        await interaction.response.edit_message(
+            content="Returned without making any quest reset changes.",
+            view=None,
+            embed=None,
+        )
+
+
+class TeamResetQuestSelectionView(OwnerBoundView):
+    def __init__(
+        self,
+        *,
+        actor_id: int,
+        team_name: str,
+        active_item_quests: list[str],
+        active_shiny_quests: list[str],
+        active_skin_quests: list[str],
+    ):
+        super().__init__(
+            owner_id=actor_id,
+            timeout=120,
+            owner_error="❌ Only the user who started this action can use these controls.",
+        )
+        self.team_name = team_name
+        self.active_item_quests = list(active_item_quests)
+        self.active_shiny_quests = list(active_shiny_quests)
+        self.active_skin_quests = list(active_skin_quests)
+        self.selected_values: set[str] = set()
+        self.omitted_active_options_count = 0
+
+        active_options: list[discord.SelectOption] = []
+        for idx, item_name in enumerate(self.active_item_quests):
+            label = f"Item: {item_name}"
+            if len(label) > 100:
+                label = label[:97] + "..."
+            active_options.append(discord.SelectOption(label=label, value=f"item_idx::{idx}"))
+
+        for idx, shiny_name in enumerate(self.active_shiny_quests):
+            label = f"Shiny: {shiny_name}"
+            if len(label) > 100:
+                label = label[:97] + "..."
+            active_options.append(discord.SelectOption(label=label, value=f"shiny_idx::{idx}"))
+
+        for idx, skin_name in enumerate(self.active_skin_quests):
+            label = f"Skin: {skin_name}"
+            if len(label) > 100:
+                label = label[:97] + "..."
+            active_options.append(discord.SelectOption(label=label, value=f"skin_idx::{idx}"))
+
+        bulk_options = [
+            discord.SelectOption(label="Reset all completed items", value=ACTION_RESET_COMPLETED_ITEMS),
+            discord.SelectOption(label="Reset all completed shinies", value=ACTION_RESET_COMPLETED_SHINIES),
+            discord.SelectOption(label="Reset all completed skins", value=ACTION_RESET_COMPLETED_SKINS),
+            discord.SelectOption(label="Clear all quest information", value=ACTION_CLEAR_ALL_INFO),
+        ]
+
+        max_total_options = 25
+        max_active_options = max_total_options - len(bulk_options)
+        self.omitted_active_options_count = max(0, len(active_options) - max_active_options)
+        self.section_select.options = active_options[:max_active_options] + bulk_options
+        self.section_select.max_values = len(self.section_select.options)
+
+    async def on_timeout(self):
+        self.confirm_button.disabled = True
+        self.back_button.disabled = True
+        self.section_select.disabled = True
+
+    @ui.select(
+        placeholder="Choose team quest/actions to reset...",
+        min_values=0,
+        max_values=1,
+        options=[discord.SelectOption(label="Loading...", value="loading")],
+    )
+    async def section_select(self, interaction: discord.Interaction, select: ui.Select):
+        self.selected_values = set(select.values)
+        if self.selected_values:
+            pretty = ", ".join(sorted(self.selected_values))
+            await interaction.response.send_message(f"Selected: {pretty}", ephemeral=True)
+        else:
+            await interaction.response.send_message("No sections selected yet.", ephemeral=True)
+
+    @ui.button(label="Confirm Reset", style=discord.ButtonStyle.danger)
+    async def confirm_button(self, interaction: discord.Interaction, button: ui.Button):
+        if not self.selected_values:
+            return await interaction.response.send_message(
+                "⚠️ Select at least one quest/action, or press Back.",
+                ephemeral=True,
+            )
+
+        summary = await apply_selected_team_reset_actions(
+            interaction,
+            team_name=self.team_name,
+            selected_values=self.selected_values,
+            active_item_quests=self.active_item_quests,
+            active_shiny_quests=self.active_shiny_quests,
+            active_skin_quests=self.active_skin_quests,
+            action_reset_completed_items=ACTION_RESET_COMPLETED_ITEMS,
+            action_reset_completed_shinies=ACTION_RESET_COMPLETED_SHINIES,
+            action_reset_completed_skins=ACTION_RESET_COMPLETED_SKINS,
+            action_clear_all_info=ACTION_CLEAR_ALL_INFO,
+        )
+
+        if summary.get("error") == "global_mode":
+            self.stop()
+            return await interaction.response.edit_message(
+                content="❌ Global quest mode is active. Disable it before resetting team quests.",
+                view=None,
+                embed=None,
+            )
+        if summary.get("error") == "team_mode_disabled":
+            self.stop()
+            return await interaction.response.edit_message(
+                content="❌ Team quest mode is disabled.",
+                view=None,
+                embed=None,
+            )
+        if summary.get("error") == "team_not_found":
+            self.stop()
+            return await interaction.response.edit_message(
+                content="❌ Team not found.",
+                view=None,
+                embed=None,
+            )
+        if summary.get("error") == "no_team_members":
+            self.stop()
+            return await interaction.response.edit_message(
+                content="❌ Team has no eligible PPE members.",
+                view=None,
+                embed=None,
+            )
+
+        lines = [f"✅ Updated team quest reset for **{summary['team_name']}**."]
+        if summary["removed_current_items"]:
+            lines.append(f"- Active item quests reset: {', '.join(summary['removed_current_items'])}")
+        if summary["removed_current_shinies"]:
+            lines.append(f"- Active shiny quests reset: {', '.join(summary['removed_current_shinies'])}")
+        if summary["removed_current_skins"]:
+            lines.append(f"- Active skin quests reset: {', '.join(summary['removed_current_skins'])}")
+        if summary["reset_completed_items"]:
+            lines.append("- Reset all completed item quests")
+        if summary["reset_completed_shinies"]:
+            lines.append("- Reset all completed shiny quests")
+        if summary["reset_completed_skins"]:
+            lines.append("- Reset all completed skin quests")
+        if summary["cleared_all_info"]:
+            lines.append("- Cleared all quest information")
+        lines.append("- Team quests were rerolled and synced to all team members")
+
+        self.stop()
+        await interaction.response.edit_message(content="\n".join(lines), view=None, embed=None)
 
     @ui.button(label="Back", style=discord.ButtonStyle.secondary)
     async def back_button(self, interaction: discord.Interaction, button: ui.Button):
@@ -349,7 +502,106 @@ async def open_reset_for_self(interaction: discord.Interaction) -> None:
         (
             "Choose quest sections to reset.\n"
             f"Quest resets remaining: **{resets_remaining}**\n"
-            "Active quests:\n"
+            + (
+                "⚠️ Team quest mode is enabled. Resetting quests here updates your team's shared quest list.\n"
+                if bool(config["quest_settings"].get("enable_team_quests", False))
+                and not bool(config["quest_settings"].get("use_global_quests", False))
+                else ""
+            )
+            + "Active quests:\n"
+            + "\n".join(build_reset_active_lines(active_item_quests, active_shiny_quests, active_skin_quests))
+            + "\n\nAdditional options:\n"
+            "- Reset all completed items\n"
+            "- Reset all completed shinies\n"
+            "- Reset all completed skins\n"
+            "- Clear all quest information\n\n"
+            "Select options below, then confirm or cancel."
+            + menu_note
+        ),
+        view=view,
+        ephemeral=True,
+    )
+
+
+async def open_reset_for_team(
+    interaction: discord.Interaction,
+    *,
+    team_name: str,
+    actor_id: int | None = None,
+) -> None:
+    if not interaction.guild:
+        return await interaction.response.send_message("❌ This command can only be used in a server.", ephemeral=True)
+
+    config = await load_guild_config(interaction)
+    settings = config["quest_settings"]
+    if bool(settings.get("use_global_quests", False)):
+        return await interaction.response.send_message(
+            "❌ Global quest mode is active. Disable it before resetting team quests.",
+            ephemeral=True,
+        )
+    if not bool(settings.get("enable_team_quests", False)):
+        return await interaction.response.send_message("❌ Team quest mode is disabled.", ephemeral=True)
+
+    teams = await load_teams(interaction)
+    records = await load_player_records(interaction)
+
+    actual_team_name = None
+    for candidate in teams:
+        if str(candidate).lower() == str(team_name).lower():
+            actual_team_name = candidate
+            break
+    if actual_team_name is None:
+        return await interaction.response.send_message("❌ Team not found.", ephemeral=True)
+
+    team_data = teams[actual_team_name]
+    member_records = [records.get(int(member_id)) for member_id in getattr(team_data, "members", [])]
+    member_records = [player_data for player_data in member_records if player_data is not None and player_data.is_member]
+    if not member_records:
+        return await interaction.response.send_message("❌ Team has no eligible PPE members.", ephemeral=True)
+
+    # Refresh once to ensure team state exists and is projected before opening reset selection.
+    anchor_member = member_records[0]
+    refresh_player_quests(
+        anchor_member,
+        target_item_quests=int(settings["regular_target"]),
+        target_shiny_quests=int(settings["shiny_target"]),
+        target_skin_quests=int(settings["skin_target"]),
+        global_quests=build_global_payload(settings),
+        team_quests=build_team_quests_context(
+            settings=settings,
+            player_data=anchor_member,
+            records=records,
+            teams=teams,
+        ),
+    )
+    await save_player_records(interaction, records)
+    await save_guild_config(interaction, config)
+
+    state_map = settings.get("team_quests_state", {}) if isinstance(settings.get("team_quests_state", {}), dict) else {}
+    team_state = state_map.get(normalize_team_key(actual_team_name), {})
+    active_item_quests = list(team_state.get("current_items", []))
+    active_shiny_quests = list(team_state.get("current_shinies", []))
+    active_skin_quests = list(team_state.get("current_skins", []))
+
+    view = TeamResetQuestSelectionView(
+        actor_id=actor_id or interaction.user.id,
+        team_name=actual_team_name,
+        active_item_quests=active_item_quests,
+        active_shiny_quests=active_shiny_quests,
+        active_skin_quests=active_skin_quests,
+    )
+
+    menu_note = ""
+    if view.omitted_active_options_count > 0:
+        menu_note = (
+            "\nNote: "
+            f"{view.omitted_active_options_count} active quest option(s) are hidden due to Discord's 25-option menu limit."
+        )
+
+    await interaction.response.send_message(
+        (
+            f"Choose quest sections to reset for team **{actual_team_name}**.\n"
+            "Active team quests:\n"
             + "\n".join(build_reset_active_lines(active_item_quests, active_shiny_quests, active_skin_quests))
             + "\n\nAdditional options:\n"
             "- Reset all completed items\n"

@@ -63,7 +63,6 @@ class GlobalQuestsView(OwnerBoundView):
         self._add_button(label="Remove Skin Quest", style=discord.ButtonStyle.danger, row=1, handler=self._remove_skin)
 
         self._add_button(label="Remove All Quests", style=discord.ButtonStyle.danger, row=2, handler=self._remove_all)
-        self._add_button(label="Disable Global Quests", style=discord.ButtonStyle.danger, row=2, handler=self._disable_global)
         self._add_button(label="Back", style=discord.ButtonStyle.secondary, row=2, handler=self._back)
 
     async def _enable_global_quests(self, interaction: discord.Interaction) -> None:
@@ -172,45 +171,6 @@ class GlobalQuestsView(OwnerBoundView):
                 f"Quest entries cleared: **{entries_cleared}**"
             ),
             ephemeral=True,
-        )
-
-    async def _disable_global(self, interaction: discord.Interaction) -> None:
-        confirmed = await self._confirm_action(
-            interaction,
-            message=(
-                "⚠️ **Disable global quests?**\n"
-                "This will clear all global quest pools and switch players back to random quests.\n"
-                "Completed quests will be preserved."
-            ),
-            confirm_label="Confirm Disable",
-        )
-        if not confirmed:
-            return
-
-        settings = await load_managequests_settings(interaction)
-        settings["global_regular_quests"] = []
-        settings["global_shiny_quests"] = []
-        settings["global_skin_quests"] = []
-        settings["use_global_quests"] = False
-        await save_settings(interaction, settings)
-        players_updated, active_removed, _ = await apply_settings_to_players(interaction, settings=settings)
-        self.settings = settings
-        self._rebuild_controls()
-
-        if interaction.message is not None:
-            try:
-                await interaction.message.edit(embed=self.current_embed(), view=self)
-            except discord.HTTPException:
-                pass
-
-        await interaction.followup.send(
-            (
-                f"✅ Global quests disabled by **{interaction.user.display_name}**.\n"
-                "Cleared all global quest pools and switched players to random quests.\n"
-                f"Players updated: **{players_updated}**\n"
-                f"Active entries removed: **{active_removed}**"
-            ),
-            ephemeral=False,
         )
 
     async def _back(self, interaction: discord.Interaction) -> None:
