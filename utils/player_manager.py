@@ -13,7 +13,7 @@ from utils.quest_modes import build_global_quests_payload, build_team_quests_con
 from utils.points_service import recompute_ppe_points
 from utils.item_log_timestamps import now_unix_utc
 from utils.season_loot_history import add_season_item_log, normalize_rarity, remove_season_item_log
-from utils.set_operations import get_newly_completed_sets
+from utils.set_operations import get_newly_completed_sets, get_no_longer_completed_sets
 
 
 def _remove_most_recent_timestamp(times: list[int]) -> list[int]:
@@ -174,7 +174,7 @@ class PlayerManager:
     
     async def remove_loot_and_points(self, interaction: discord.Interaction, user: discord.Member, ppe_id: int, item_name: str, 
                                    shiny: bool = False, rarity: str = "common", points: float = 0) -> tuple:
-        """Remove loot and points atomically."""
+        """Remove loot and points atomically. Returns (item_name, points_rounded, active_ppe, removed_sets)."""
         effective_rarity = normalize_rarity(rarity, "common")
         
         async def operation(records, interaction):
@@ -196,6 +196,9 @@ class PlayerManager:
                 raise ValueError(f"❌ You don't have any **{item_name}** in your active PPE's loot.")
             
             old_total = active_ppe.points
+            
+            # Store previously completed sets before removing loot
+            previously_completed_sets = list(active_ppe.completed_sets) if active_ppe.completed_sets else []
             
             item.quantity -= 1
             times = list(getattr(item, "logged_times", []))
@@ -223,11 +226,58 @@ class PlayerManager:
                 remove_all=False,
             )
             
+            # Check for sets that are no longer completed and remove their bonuses
+            no_longer_completed_sets = get_no_longer_completed_sets(active_ppe, previously_completed_sets)
+            if no_longer_completed_sets:
+                # Remove set bonuses that are no longer applicable
+                from dataclass import Bonus
+                
+                # We need to track which sets caused bonuses so we can remove them correctly
+                # Set bonuses are added with name "Set Completion Bonus"
+                # Since multiple sets can have bonuses, we should remove the bonuses that correspond to the removed sets
+                # For now, we'll identify set bonuses by their name pattern
+                for removed_set_name, _ in no_longer_completed_sets:
+                    # Remove from completed_sets tracking
+                    if removed_set_name in active_ppe.completed_sets:
+                        active_ppe.completed_sets.remove(removed_set_name)
+                
+                # We need to recalculate the entire bonus as sets may have different point values
+                # Get guild config for set bonuses
+                guild_config = await load_guild_config(interaction)
+                set_bonuses = {}
+                if isinstance(guild_config.get("points_settings"), dict):
+                    set_bonuses = guild_config["points_settings"].get("set_bonuses", {})
+                
+                # Recalculate total set bonus based on remaining completed sets
+                remaining_set_bonus = 0.0
+                for set_name in active_ppe.completed_sets:
+                    # Find the set type
+                    from utils.set_operations import load_item_sets
+                    all_sets = load_item_sets()
+                    if set_name in all_sets:
+                        set_type = all_sets[set_name]["type"]
+                        if set_type in set_bonuses and set_name in set_bonuses[set_type]:
+                            remaining_set_bonus += set_bonuses[set_type][set_name]
+                
+                # Remove all "Set Completion Bonus" entries
+                active_ppe.bonuses = [b for b in active_ppe.bonuses if b.name != "Set Completion Bonus"]
+                
+                # Re-add the new set bonus amount if there are any remaining sets
+                if remaining_set_bonus > 0:
+                    from dataclass import Bonus
+                    bonus = Bonus(
+                        name="Set Completion Bonus",
+                        points=remaining_set_bonus,
+                        repeatable=False,
+                        quantity=1
+                    )
+                    active_ppe.bonuses.append(bonus)
+            
             guild_config = await load_guild_config(interaction)
             recompute_ppe_points(active_ppe, guild_config)
             points_rounded = round(old_total - active_ppe.points, 2)
             
-            return item_name, points_rounded, active_ppe
+            return item_name, points_rounded, active_ppe, no_longer_completed_sets
         
         return await self.execute_transaction(interaction, operation)
 

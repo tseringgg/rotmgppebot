@@ -159,3 +159,26 @@ def get_newly_completed_sets(ppe: PPEData, previously_completed: List[str]) -> L
             newly_completed.append((set_name, set_type))
 
     return newly_completed
+
+
+def get_no_longer_completed_sets(ppe: PPEData, previously_completed: List[str]) -> List[tuple[str, str]]:
+    """
+    Get sets that are no longer completed by the PPE.
+    
+    Args:
+        ppe: PPEData object to check
+        previously_completed: List of set names that were previously completed
+    
+    Returns:
+        List of tuples: (set_name, set_type) for sets that are no longer completed
+    """
+    currently_completed = find_completed_sets(ppe)
+    all_sets = load_item_sets()
+    no_longer_completed = []
+
+    for set_name in previously_completed:
+        if set_name not in currently_completed:
+            set_type = all_sets.get(set_name, {}).get("type", "Unknown")
+            no_longer_completed.append((set_name, set_type))
+
+    return no_longer_completed

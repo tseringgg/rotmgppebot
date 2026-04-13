@@ -649,6 +649,12 @@ async def get_points_settings(interaction: discord.Interaction) -> Dict[str, Any
     return dict(config["points_settings"])
 
 
+async def get_set_bonuses(interaction: discord.Interaction) -> Dict[str, Dict[str, float]]:
+    """Get set bonuses (set_name -> points mapping) for both ST and UT types."""
+    settings = await get_points_settings(interaction)
+    return dict(settings.get("set_bonuses", {"ST": {}, "UT": {}}))
+
+
 async def set_points_settings(interaction: discord.Interaction, settings: Dict[str, Any]) -> Dict[str, Any]:
     config = await load_guild_config(interaction)
     config["points_settings"] = settings

@@ -9,29 +9,70 @@ from menus.manageseason.services import load_points_settings_for_menu
 from utils.set_operations import load_item_sets
 
 
-def _build_set_points_embed(set_type: str, settings: dict) -> discord.Embed:
-    """Build an embed showing current set point settings for a given type."""
+def _build_manage_set_points_embed(settings: dict) -> discord.Embed:
+    """Build the main set completion points management embed."""
     embed = discord.Embed(
-        title=f"Set Completion Points - {set_type} Sets",
-        description=f"Configure points awarded for completing {set_type} item sets.",
+        title="Manage Set Completion Points",
+        description="Configure default points for all sets and manage individual set overrides.",
         color=discord.Color.gold(),
     )
 
-    set_bonuses = settings.get("points_settings", {}).get("set_bonuses", {}).get(set_type, {})
+    set_bonuses = settings.get("points_settings", {}).get("set_bonuses", {})
+    
+    # Get default points for UT and ST
     all_sets = load_item_sets()
-
-    # Filter sets by type
-    sets_of_type = {name: data for name, data in all_sets.items() if data["type"] == set_type}
-
-    if not sets_of_type:
-        embed.add_field(name="No sets found", value=f"No {set_type} sets found in the item sets database.", inline=False)
-        return embed
-
-    # Show all sets with their current point values
-    for set_name in sorted(sets_of_type.keys()):
-        points = set_bonuses.get(set_name, 0.0)
-        embed.add_field(name=set_name, value=f"**{points}** points", inline=False)
-
+    ut_sets = {name: data for name, data in all_sets.items() if data["type"] == "UT"}
+    st_sets = {name: data for name, data in all_sets.items() if data["type"] == "ST"}
+    
+    ut_bonuses = set_bonuses.get("UT", {})
+    st_bonuses = set_bonuses.get("ST", {})
+    
+    # Calculate default points (sets that have the same points are considered "default")
+    ut_default_point_counts = {}
+    st_default_point_counts = {}
+    ut_overrides = []
+    st_overrides = []
+    
+    for set_name in ut_sets.keys():
+        points = ut_bonuses.get(set_name, 0.0)
+        if points == 0.0:
+            ut_default_point_counts[0.0] = ut_default_point_counts.get(0.0, 0) + 1
+        else:
+            ut_overrides.append((set_name, points))
+    
+    for set_name in st_sets.keys():
+        points = st_bonuses.get(set_name, 0.0)
+        if points == 0.0:
+            st_default_point_counts[0.0] = st_default_point_counts.get(0.0, 0) + 1
+        else:
+            st_overrides.append((set_name, points))
+    
+    # Add default points section
+    embed.add_field(
+        name="Default Set Points",
+        value=(
+            f"UT Default: **0 pts** (applies to {len(ut_sets)} sets)\n"
+            f"ST Default: **0 pts** (applies to {len(st_sets)} sets)"
+        ),
+        inline=False,
+    )
+    
+    # Add overrides section if any exist
+    if ut_overrides or st_overrides:
+        override_lines = []
+        for set_name, points in sorted(ut_overrides):
+            override_lines.append(f"- {set_name}: **{points}** pts")
+        for set_name, points in sorted(st_overrides):
+            override_lines.append(f"- {set_name}: **{points}** pts")
+        
+        if override_lines:
+            embed.add_field(
+                name=f"Set Overrides ({len(override_lines)})",
+                value="\n".join(override_lines) if override_lines else "None",
+                inline=False,
+            )
+    
+    embed.set_footer(text="Use buttons below to manage default points or add/edit set overrides.")
     return embed
 
 
@@ -44,23 +85,33 @@ class ManageSetPointsView(OwnerBoundView):
         self.settings = settings
 
     def current_embed(self) -> discord.Embed:
-        return discord.Embed(
-            title="Manage Set Completion Points",
-            description="Choose a set type to manage point values for completed sets.",
-            color=discord.Color.gold(),
+        return _build_manage_set_points_embed(self.settings)
+
+    @discord.ui.button(label="Manage Set Points", style=discord.ButtonStyle.success, row=0)
+    async def manage_set_points(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        from menus.manageseason.submenus.sets.modals import ManageDefaultSetPointsModal
+
+        self.settings = await load_points_settings_for_menu(interaction)
+        await interaction.response.send_modal(
+            ManageDefaultSetPointsModal(
+                owner_id=self.owner_id,
+                settings=self.settings,
+                source_message=interaction.message,
+            )
         )
 
-    @discord.ui.button(label="Manage ST Set Points", style=discord.ButtonStyle.success, row=0)
-    async def manage_st_sets(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        self.settings = await load_points_settings_for_menu(interaction)
-        view = ManageSetTypePointsView(owner_id=self.owner_id, settings=self.settings, set_type="ST")
-        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+    @discord.ui.button(label="Add Set Override", style=discord.ButtonStyle.success, row=0)
+    async def add_set_override(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        from menus.manageseason.submenus.sets.modals import AddSetOverrideModal
 
-    @discord.ui.button(label="Manage UT Set Points", style=discord.ButtonStyle.success, row=0)
-    async def manage_ut_sets(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.settings = await load_points_settings_for_menu(interaction)
-        view = ManageSetTypePointsView(owner_id=self.owner_id, settings=self.settings, set_type="UT")
-        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+        await interaction.response.send_modal(
+            AddSetOverrideModal(
+                owner_id=self.owner_id,
+                settings=self.settings,
+                source_message=interaction.message,
+            )
+        )
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -71,56 +122,4 @@ class ManageSetPointsView(OwnerBoundView):
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
 
-class ManageSetTypePointsView(OwnerBoundView):
-    """View for managing points for a specific set type (ST or UT)."""
-
-    def __init__(self, *, owner_id: int, settings: dict, set_type: str) -> None:
-        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
-        self.owner_id = owner_id
-        self.settings = settings
-        self.set_type = set_type.upper()
-
-    def current_embed(self) -> discord.Embed:
-        return _build_set_points_embed(self.set_type, self.settings)
-
-    @discord.ui.button(label="Edit Set Points", style=discord.ButtonStyle.success, row=0)
-    async def edit_set_points(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        from menus.manageseason.submenus.sets.modals import EditSetPointsModal
-
-        self.settings = await load_points_settings_for_menu(interaction)
-        await interaction.response.send_modal(
-            EditSetPointsModal(
-                owner_id=self.owner_id,
-                settings=self.settings,
-                set_type=self.set_type,
-                source_message=interaction.message,
-            )
-        )
-
-    @discord.ui.button(label="Reset to Zero", style=discord.ButtonStyle.danger, row=0)
-    async def reset_to_zero(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        from utils.guild_config import load_guild_config, save_guild_config
-
-        if not interaction.guild:
-            await interaction.response.send_message("ERROR: Could not access guild settings.", ephemeral=True)
-            return
-
-        guild_config = await load_guild_config(interaction)
-        guild_config["points_settings"]["set_bonuses"][self.set_type] = {}
-        await save_guild_config(interaction, guild_config)
-
-        self.settings = await load_points_settings_for_menu(interaction)
-        await interaction.response.edit_message(embed=self.current_embed(), view=self)
-        await interaction.followup.send(
-            f"✅ All {self.set_type} set bonuses have been reset to 0 points.",
-            ephemeral=True,
-        )
-
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
-    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        self.settings = await load_points_settings_for_menu(interaction)
-        view = ManageSetPointsView(owner_id=self.owner_id, settings=self.settings)
-        await interaction.response.edit_message(embed=view.current_embed(), view=view)
-
-
-__all__ = ["ManageSetPointsView", "ManageSetTypePointsView"]
+__all__ = ["ManageSetPointsView"]

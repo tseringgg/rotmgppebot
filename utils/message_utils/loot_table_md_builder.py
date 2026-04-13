@@ -231,6 +231,31 @@ def create_loot_markdown_file(
     else:
         builder.add_section(heading="Loot Items", lines=["No loot recorded yet."])
 
+    # Add Sets section if there are completed sets
+    if ppe_data.completed_sets:
+        from utils.set_operations import load_item_sets
+        all_sets = load_item_sets()
+        set_lines: list[str] = []
+        
+        total_set_points = 0.0
+        for set_name in sorted(ppe_data.completed_sets):
+            if set_name in all_sets:
+                set_type = all_sets[set_name]["type"]
+                # Get points for this set from guild config
+                set_bonuses = {}
+                if isinstance(guild_config, dict) and isinstance(guild_config.get("points_settings"), dict):
+                    set_bonuses = guild_config["points_settings"].get("set_bonuses", {})
+                
+                points = 0.0
+                if set_type in set_bonuses and set_name in set_bonuses[set_type]:
+                    points = float(set_bonuses[set_type][set_name])
+                    total_set_points += points
+                
+                set_lines.append(f"- {set_name} ({set_type}) - **{_format_points(points)}** pts")
+        
+        if set_lines:
+            builder.add_section(heading="Sets", lines=set_lines)
+
     if ppe_data.bonuses:
         bonus_lines: list[str] = []
         for bonus in sorted(ppe_data.bonuses, key=lambda entry: entry.name.lower()):

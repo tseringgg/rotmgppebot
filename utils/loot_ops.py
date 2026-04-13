@@ -33,6 +33,7 @@ class PPELootOperationResult:
     ppe: PPEData
     quest_update: dict[str, Any]
     newly_completed_sets: list[tuple[str, str]] = None  # List of (set_name, set_type) tuples
+    removed_sets: list[tuple[str, str]] = None  # List of (set_name, set_type) tuples for removed sets
 
 
 @dataclass(frozen=True)
@@ -97,10 +98,19 @@ def format_ppe_add_message(result: PPELootOperationResult) -> str:
 
 def format_ppe_remove_message(result: PPELootOperationResult) -> str:
     display_name = build_item_display_name(result.item_name, shiny=result.shiny, rarity=result.rarity)
-    return (
+    base_message = (
         f"✅ {display_name} Successfully Removed from {_possessive(result.username)} {result.char_info}. "
         f"Points: {result.old_points} -> {result.new_points}."
     )
+    
+    # Add set removal messages if applicable
+    if result.removed_sets:
+        set_messages = []
+        for set_name, set_type in result.removed_sets:
+            set_messages.append(f"- **{set_name}** ({set_type}) is no longer logged")
+        base_message += "\n\n🔔 Sets No Longer Completed:\n" + "\n".join(set_messages)
+    
+    return base_message
 
 
 def format_season_add_message(result: SeasonLootOperationResult) -> str:
@@ -172,7 +182,7 @@ async def remove_ppe_loot(
 ) -> PPELootOperationResult:
     rarity_normalized = normalize_rarity(rarity)
 
-    final_key, points_removed, ppe = await player_manager.remove_loot_and_points(
+    final_key, points_removed, ppe, removed_sets = await player_manager.remove_loot_and_points(
         interaction,
         user=user,
         ppe_id=ppe_id,
@@ -194,6 +204,7 @@ async def remove_ppe_loot(
         points_delta=round(float(points_removed), 2),
         ppe=ppe,
         quest_update={},
+        removed_sets=removed_sets if removed_sets else None,
     )
 
 
