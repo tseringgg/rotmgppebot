@@ -1,7 +1,6 @@
 import discord
 
 from utils.player_records import ensure_player_exists, load_player_records
-from utils.embed_builders import build_loot_embed
 from utils.loot_data import LOOT
 from utils.loot_ops import (
     format_ppe_remove_message,
@@ -10,7 +9,7 @@ from utils.loot_ops import (
     validate_loot_input,
 )
 
-async def command(interaction: discord.Interaction, user: discord.Member, id: int, item_name: str, shiny: bool = False, rarity: str = "common"):
+async def command(interaction: discord.Interaction, user: discord.Member, id: int, item_name: str, rarity: str, shiny: bool = False):
     if not interaction.guild:
         return await interaction.response.send_message("❌ This command can only be used in a server.")
     
@@ -56,19 +55,9 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
             rarity=rarity_normalized,
         )
         
-        # Build embed
-        embed = await build_loot_embed(result.ppe, user_id=user.id, recently_added=item_name)
-        
         await interaction.response.send_message(format_ppe_remove_message(result))
 
         await send_ppe_markdown_followup(interaction, ppe=result.ppe, ephemeral=True)
-
-        await interaction.followup.send(
-            content=f"{user.display_name}'s PPE #{result.ppe.id} now has **{result.ppe.points} total points**.",
-            view=embed,
-            embed=embed.embeds[0],
-            ephemeral=True
-        )
         
     except (ValueError, KeyError, LookupError) as e:
         return await interaction.response.send_message(str(e), ephemeral=True)

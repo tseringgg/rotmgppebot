@@ -486,19 +486,19 @@ async def removebonusfrom(
 
 
 @bot.tree.command(name="removeloot", description="Remove an item from your active PPE's loot.", guilds=guilds)
-@app_commands.describe(item_name="Name of the item to remove", shiny="Is the item shiny?", rarity="Item rarity (defaults to common)")
+@app_commands.describe(item_name="Name of the item to remove", rarity="Item rarity", shiny="Is the item shiny?")
 @app_commands.autocomplete(item_name=item_name_autocomplete, rarity=rarity_autocomplete)
 @require_ppe_roles(player_required=True)
 async def removeloot(
         interaction: discord.Interaction,
         item_name: str,
-        shiny: bool = False,
-        rarity: str = "common"
+        rarity: str,
+        shiny: bool = False
     ):
-    await removeloot_cmd.command(interaction, item_name, shiny, rarity)
+    await removeloot_cmd.command(interaction, item_name, rarity, shiny)
 
 @bot.tree.command(name="removelootfrom", description="Remove an item from another player's specific PPE. Admin only.", guilds=guilds)
-@app_commands.describe(user="The player to remove loot from", id="The PPE ID to target", item_name="Name of the item to remove", shiny="Is the item shiny?", rarity="Item rarity (defaults to common)")
+@app_commands.describe(user="The player to remove loot from", id="The PPE ID to target", item_name="Name of the item to remove", rarity="Item rarity", shiny="Is the item shiny?")
 @app_commands.autocomplete(item_name=item_name_autocomplete, rarity=rarity_autocomplete)
 @require_ppe_roles(admin_required=True)
 async def removelootfrom(
@@ -506,10 +506,10 @@ async def removelootfrom(
         user: discord.Member,
         id: int,
         item_name: str,
-        shiny: bool = False,
-        rarity: str = "common"
+        rarity: str,
+        shiny: bool = False
     ):
-    await removelootfrom_cmd.command(interaction, user, id, item_name, shiny, rarity)
+    await removelootfrom_cmd.command(interaction, user, id, item_name, rarity, shiny)
 
 @bot.tree.command(name="addpointsfor", description="Add points to another player's active PPE.", guilds=guilds)
 # @commands.has_role("PPE Admin")  # both can use

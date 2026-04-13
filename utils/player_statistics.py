@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import random
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,6 +21,7 @@ from utils.points_service import (
     loot_adjustments_for_ppe,
 )
 from utils.season_loot_history import iter_season_variants, normalize_rarity
+from utils.set_operations import load_item_sets
 
 _LOOT_CSV_PATH = Path("rotmg_loot_drops_updated.csv")
 
@@ -78,6 +80,51 @@ def _total_logged_drops(loot_entries: Iterable[Loot]) -> int:
         except (TypeError, ValueError):
             total += 1
     return total
+
+
+def _get_set_completion_field(ppe: PPEData) -> tuple[str, str, bool] | None:
+    """Build a set completion field for a single PPE. Returns (name, value, inline) or None."""
+    if not ppe.completed_sets:
+        return None
+    
+    all_sets = load_item_sets()
+    st_sets = [s for s in ppe.completed_sets if all_sets.get(s, {}).get("type") == "ST"]
+    ut_sets = [s for s in ppe.completed_sets if all_sets.get(s, {}).get("type") == "UT"]
+    
+    lines = []
+    if st_sets:
+        lines.append(f"**ST Sets ({len(st_sets)}):** {', '.join(st_sets)}")
+    if ut_sets:
+        lines.append(f"**UT Sets ({len(ut_sets)}):** {', '.join(ut_sets)}")
+    
+    if lines:
+        return ("Set Completions", "\n".join(lines), False)
+    return None
+
+
+def _get_quest_progress_field(player_data: PlayerData, guild_config: dict | None = None) -> tuple[str, str, bool] | None:
+    """Build a quest progress field for a player. Returns (name, value, inline) or None."""
+    quests = player_data.quests
+    if not quests:
+        return None
+    
+    config_dict = guild_config if guild_config else {}
+    quest_settings = config_dict.get("quest_settings", {}) if isinstance(config_dict.get("quest_settings"), dict) else {}
+    
+    current = len(quests.current_items) + len(quests.current_shinies) + len(quests.current_skins)
+    completed = len(quests.completed_items) + len(quests.completed_shinies) + len(quests.completed_skins)
+    
+    if current == 0 and completed == 0:
+        return None
+    
+    quest_mode = "Regular"
+    if bool(quest_settings.get("use_global_quests", False)):
+        quest_mode = "Global"
+    elif bool(quest_settings.get("enable_team_quests", False)):
+        quest_mode = "Team"
+    
+    value = f"Mode: **{quest_mode}**\nActive: **{current}**\nCompleted: **{completed}**"
+    return ("Quest Progress", value, True)
 
 
 def _most_logged_item(loot_entries: Iterable[Loot]) -> tuple[str, int] | None:
@@ -728,6 +775,19 @@ def build_season_wrapped_embed(
             )
         candidate_fields.append(("Most Valuable Finds", "\n".join(lines), False))
 
+    # Add set completion information if any sets are completed
+    if ppes:
+        for ppe in ppes:
+            set_field = _get_set_completion_field(ppe)
+            if set_field:
+                candidate_fields.append(set_field)
+                break  # Only show one character's sets per page
+
+    # Add quest progress information
+    quest_field = _get_quest_progress_field(player_data, guild_config)
+    if quest_field:
+        candidate_fields.append(quest_field)
+
     selected = _stable_pick_optional_fields(
         candidate_fields,
         min_fields=4,
@@ -857,6 +917,16 @@ def build_character_wrapped_embed(
             tag_text = f" [{' + '.join(tags)}]" if tags else ""
             lines.append(f"- {item_name}{tag_text} ({_format_points(points)} pts/drop)")
         char_candidates.append(("Most Valuable Drops", "\n".join(lines), False))
+
+    # Add set completion information
+    set_field = _get_set_completion_field(ppe)
+    if set_field:
+        char_candidates.append(set_field)
+
+    # Add quest progress information
+    quest_field = _get_quest_progress_field(player_data, guild_config)
+    if quest_field:
+        char_candidates.append(quest_field)
 
     selected_character_fields = _stable_pick_optional_fields(
         char_candidates,
