@@ -92,7 +92,7 @@ def _env_int(name: str, default: int, minimum: int = 1) -> int:
 
 SYNC_COMMANDS_ON_STARTUP = _env_flag("PPE_SYNC_COMMANDS_ON_STARTUP", default=True)
 SYNC_MAX_RETRIES = _env_int("PPE_SYNC_MAX_RETRIES", default=2, minimum=1)
-SYNC_COOLDOWN_SECONDS = _env_int("PPE_SYNC_COOLDOWN_SECONDS", default=21600, minimum=0)
+SYNC_COOLDOWN_SECONDS = _env_int("PPE_SYNC_COOLDOWN_SECONDS", default=300, minimum=0)
 SYNC_STATE_PATH = os.getenv("PPE_SYNC_STATE_PATH", "/data/ppe_command_sync_state.json")
 
 class PPEBot(commands.Bot):
