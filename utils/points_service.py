@@ -520,6 +520,34 @@ def get_set_bonus_points(bonuses: Iterable[Bonus]) -> float:
             set_bonus_points += calculate_bonus_points(bonus)
     return set_bonus_points
 
+def get_set_bonus_points_from_config(ppe: PPEData, guild_config: Dict[str, Any] | None = None) -> float:
+    """Calculate set bonus points based on completed sets and current guild overrides.
+    
+    This recalculates from current guild config rather than using stale stored values.
+    Set points should not be affected by bonus modifiers, so we return them directly.
+    """
+    if not guild_config:
+        guild_config = {}
+    
+    from utils.guild_config import get_set_bonuses
+    from utils.set_operations import load_item_sets
+    
+    completed_sets = getattr(ppe, "completed_sets", []) or []
+    if not completed_sets:
+        return 0.0
+    
+    set_bonuses = get_set_bonuses(guild_config)
+    all_sets = load_item_sets()
+    
+    total_set_bonus = 0.0
+    for set_name in completed_sets:
+        if set_name in all_sets:
+            set_type = all_sets[set_name].get("type", "").upper()
+            if set_type in set_bonuses and set_name in set_bonuses[set_type]:
+                total_set_bonus += set_bonuses[set_type][set_name]
+    
+    return total_set_bonus
+
 
 def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = None) -> Dict[str, float]:
     loot_points = load_loot_points()
@@ -536,7 +564,7 @@ def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = Non
         )
 
     bonus_total, penalty_total = split_bonus_points(ppe.bonuses)
-    set_bonus_points = get_set_bonus_points(ppe.bonuses)
+    set_bonus_points = get_set_bonus_points_from_config(ppe, guild_config)
     modifier_bucket = get_effective_modifier_bucket_for_ppe(ppe, guild_config)
     penalty_breakdown = starting_penalty_breakdown_from_bonuses(ppe.bonuses, guild_config=guild_config)
     loot_adjustments = loot_adjustments_for_ppe(ppe, guild_config)
