@@ -12,6 +12,7 @@ from utils.item_log_timestamps import (
     seasonal_item_variant_key,
 )
 
+
 def normalize_rarity(value: Any, fallback: str = "common") -> str:
     return normalize_loot_rarity(value, fallback)
 
@@ -84,6 +85,7 @@ def remove_season_item_log(
     if remove_all:
         history.pop(key, None)
     else:
+        timestamps.sort()
         timestamps.pop()
         if timestamps:
             history[key] = timestamps

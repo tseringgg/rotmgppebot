@@ -389,7 +389,8 @@ class ResetPlayerRoleJoinEmbedView(OwnerBoundView):
             owner_id=self.owner_id,
             warning_text=(
                 "WARNING: Remove PPE Player role from everyone? "
-                "This also revokes all sniffer tokens and fully clears stored loot records."
+                "This also removes their reaction from the join embed, revokes all sniffer tokens, "
+                "and fully clears stored loot records."
             ),
             confirm_label="Confirm Role Removal",
         )
@@ -437,7 +438,8 @@ class ResetPlayerRoleJoinEmbedView(OwnerBoundView):
             interaction,
             owner_id=self.owner_id,
             warning_text=(
-                "WARNING: Remove PPE Player role from everyone (including token+records cleanup) and clear join embed information?"
+                "WARNING: Remove PPE Player role from everyone (including join reaction, token, and records cleanup) "
+                "and clear join embed information?"
             ),
             confirm_label="Confirm Clear Both",
         )

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from dataclasses import field
 from typing import Any
 
 import discord
@@ -165,6 +166,7 @@ class BulkRoleUpdateSummary:
     members_failed: int
     records_cleared: int = 0
     tokens_revoked: int = 0
+    removed_member_ids: list[int] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -1034,14 +1036,18 @@ async def _remove_role_from_all_members(
             members_failed=0,
             records_cleared=0,
             tokens_revoked=0,
+            removed_member_ids=[],
         )
 
+    target_members = list(role.members)
     members_updated = 0
     members_failed = 0
-    for member in list(role.members):
+    removed_member_ids: list[int] = []
+    for member in target_members:
         try:
             await member.remove_roles(role, reason=reason)
             members_updated += 1
+            removed_member_ids.append(int(member.id))
         except (discord.Forbidden, discord.HTTPException):
             members_failed += 1
 
@@ -1052,7 +1058,51 @@ async def _remove_role_from_all_members(
         members_failed=members_failed,
         records_cleared=0,
         tokens_revoked=0,
+        removed_member_ids=removed_member_ids,
     )
+
+
+async def _clear_join_embed_reactions(
+    interaction: discord.Interaction,
+    *,
+    member_ids: list[int],
+) -> int:
+    if interaction.guild is None or not member_ids:
+        return 0
+
+    settings = await get_contest_settings(interaction)
+    join_channel_id = int(settings.get("join_contest_channel_id", 0) or 0)
+    join_message_id = int(settings.get("join_contest_message_id", 0) or 0)
+    join_emoji = str(settings.get("join_contest_emoji", "✅") or "✅").strip() or "✅"
+
+    if join_channel_id <= 0 or join_message_id <= 0:
+        return 0
+
+    channel = interaction.guild.get_channel(join_channel_id)
+    if not isinstance(channel, discord.TextChannel):
+        return 0
+
+    try:
+        message = await channel.fetch_message(join_message_id)
+    except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+        return 0
+
+    removed_reactions = 0
+    for member_id in member_ids:
+        member = interaction.guild.get_member(member_id)
+        if member is None:
+            try:
+                member = await interaction.guild.fetch_member(member_id)
+            except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                continue
+
+        try:
+            await message.remove_reaction(join_emoji, member)
+            removed_reactions += 1
+        except (discord.Forbidden, discord.HTTPException):
+            continue
+
+    return removed_reactions
 
 
 async def remove_ppe_player_role_from_everyone(interaction: discord.Interaction) -> BulkRoleUpdateSummary:
@@ -1075,6 +1125,8 @@ async def remove_ppe_player_role_from_everyone(interaction: discord.Interaction)
     tokens_revoked = len(links)
     realmshark_settings["links"] = {}
     await set_realmshark_settings(interaction, realmshark_settings)
+
+    await _clear_join_embed_reactions(interaction, member_ids=summary.removed_member_ids)
 
     summary.records_cleared = records_cleared
     summary.tokens_revoked = tokens_revoked

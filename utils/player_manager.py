@@ -13,6 +13,15 @@ from utils.points_service import recompute_ppe_points
 from utils.item_log_timestamps import now_unix_utc
 from utils.season_loot_history import add_season_item_log, normalize_rarity, remove_season_item_log
 
+
+def _remove_most_recent_timestamp(times: list[int]) -> list[int]:
+    if not times:
+        return []
+
+    sorted_times = sorted(int(ts) for ts in times)
+    sorted_times.pop()
+    return sorted_times
+
 class PlayerManager:
     """Centralized manager for player data operations to prevent race conditions."""
     
@@ -151,8 +160,7 @@ class PlayerManager:
             item.quantity -= 1
             times = list(getattr(item, "logged_times", []))
             if times:
-                times.pop()
-                setattr(item, "logged_times", times)
+                setattr(item, "logged_times", _remove_most_recent_timestamp(times))
             if item.quantity <= 0:
                 active_ppe.loot.remove(item)
                 

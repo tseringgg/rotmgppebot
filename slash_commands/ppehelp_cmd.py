@@ -113,19 +113,19 @@ def build_help_embed(section_key: str) -> discord.Embed:
         embed = discord.Embed(
             title="PPE Bot Help - Home",
             description=(
-                "Welcome to the RotMG PPE Discord Bot. This menu is your navigation hub for logging loot, "
-                "tracking progress, managing quests, and handling contest tools."
+                "Welcome to the RotMG PPE Discord Bot. Use this menu to navigate loot logging, quest tracking, "
+                "contest tools, and season management."
             ),
             color=discord.Color.blurple(),
         )
-        
+
         embed.add_field(
             name="General Bot Information",
             value=(
-                "This bot allows you to track season progress, track PPE characters, and setup competitions.\n" 
-                "The bot supports team play, quest tracking, and dynamic point systems.\n"
-                "**Normal Players** will primarily be using `/myinfo` and other `/my...` commands.\n"
-                "**Admins** will have access to additional `/manage...` commands for overseeing the season and assisting players.\n"
+                "This bot tracks PPE characters, season-wide loot, quests, and competition settings.\n"
+                "It also supports teams, reaction-based contest joins, and dynamic point scoring.\n"
+                "**Normal players** will mostly use `/myinfo` and other `/my...` commands.\n"
+                "**Admins** also get `/manage...` commands for season and server controls.\n"
                 f"{_divider()}\n"
             ),
             inline=False,
@@ -134,9 +134,9 @@ def build_help_embed(section_key: str) -> discord.Embed:
         embed.add_field(
             name="Season Loot (Global Account Progress)",
             value=(
-                "Season loot tracks unique loot across your whole account, not just one PPE.\n" 
-                "You can log season loot with /addseasonloot even if you do not have a PPE character yet.\n"
-                "Note that all ppe loot is auto-logged as season loot.\n"
+                "Season loot tracks unique loot across your whole account, not just one PPE.\n"
+                "You can log season loot with `/addseasonloot` even before creating a PPE.\n"
+                "All PPE loot is also logged to season loot automatically.\n"
                 f"{_divider()}\n"
             ),
             inline=False,
@@ -145,7 +145,7 @@ def build_help_embed(section_key: str) -> discord.Embed:
             name="PPE Characters (Per Character Progress)",
             value=(
                 "PPEs track your per-character run, loot, points, and penalties.\n"
-                "Start with /newppe, then use /myinfo to view and manage your account's PPE + season data."
+                "Start with `/newppe`, then use `/addloot` to add items to your PPE."
             ),
             inline=False,
         )
@@ -183,7 +183,7 @@ def build_help_embed(section_key: str) -> discord.Embed:
         embed = discord.Embed(
             title="PPE Bot Help - Loot & Bonuses",
             description=(
-                "Use this section to understand how loot and bonus points are added, adjusted, and recalculated "
+                "Use this section to understand how loot and bonus points are added, removed, and recalculated "
                 "for PPE characters and season collections."
             ),
             color=discord.Color.blurple(),
@@ -191,12 +191,12 @@ def build_help_embed(section_key: str) -> discord.Embed:
         embed.add_field(
             name="Normal Player",
             value=(
-                "- /addloot and /removeloot to update active PPE loot\n"
-                "- /addbonus and /removebonus to manage active PPE bonuses\n"
-                "- /myinfo -> Manage Characters -> Statistics for loot/stats tools on that specific PPE.\n"
-                "- /myinfo -> Manage Characters to manage characters\n"
-                "- /myinfo -> Show Season Stats for a graphic + wrapped recap over the season. Note that season"
-                 " loot is account-wide and not tied to specific PPE characters, so it can be logged separately as well as through a specific PPE."
+                "- `/addloot` and `/removeloot` update active PPE loot, including timestamp history\n"
+                "- `/addbonus` and `/removebonus` manage active PPE bonuses\n"
+                "- `/myinfo -> Manage Characters -> Statistics` shows loot and stats tools for that PPE\n"
+                "- `/myinfo -> Manage Characters` opens character management\n"
+                "- `/myinfo -> Show Season Stats` shows a wrapped recap and graphic for season-wide progress\n"
+                "- Season loot is account-wide, so it can be logged separately or through a specific PPE"
             ),
             inline=False,
         )
@@ -204,14 +204,12 @@ def build_help_embed(section_key: str) -> discord.Embed:
         embed.add_field(
             name="Admin",
             value=(
-                "- /addlootfor and /removelootfrom for targeted PPE loot edits\n"
-                "- /addbonusfor and /removebonusfrom for admin bonus edits\n"
-                "- /addpointsfor for manual point adjustments\n"
-                "- /refreshpointsfor or /refreshallpoints to repair/recompute point totals after adjusting the rotmg_loot_drops_updated.csv\n"
-                "- You can adjust points for items by manually editing and saving the rotmg_loot_drops_updated.csv file in the bot's data folder."
-                 " If you do this, make sure to use /refreshpointsfor or /refreshallpoints to apply the changes to player accounts. "
-                 "Note that changing point values for items will affect all PPEs with those items, so be cautious when making adjustments."
-                 " Additionally, if you are using the sniffer integration, you will need to ensure everyone has the updated CSV locally."
+                "- `/addlootfor` and `/removelootfrom` edit targeted PPE loot\n"
+                "- `/addbonusfor` and `/removebonusfrom` handle admin bonus edits\n"
+                "- `/addpointsfor` applies manual point adjustments\n"
+                "- `/refreshpointsfor` or `/refreshallpoints` recomputes totals after CSV point changes\n"
+                "- If you edit `rotmg_loot_drops_updated.csv`, refresh points so player totals match the new values\n"
+                "- Sniffer users also need the updated CSV locally when item points change"
             ),
             inline=False,
         )
@@ -230,9 +228,8 @@ def build_help_embed(section_key: str) -> discord.Embed:
         embed.add_field(
             name="Normal Player",
             value=(
-                "- /myquests or /myinfo -> Show Quests opens your shared quest menu\n"
-                "- Use quest menu actions to view graphics of your progress and reset"
-                 " a selection of your own quests up to a specified number of times per season\n"
+                "- `/myquests` or `/myinfo -> Show Quests` opens your shared quest menu\n"
+                "- Quest menu actions let you review progress and reset a limited number of your own quests each season\n"
             ),
             inline=False,
         )
@@ -240,11 +237,10 @@ def build_help_embed(section_key: str) -> discord.Embed:
         embed.add_field(
             name="Admin",
             value=(
-                "- /removeseasonlootfrom if targetted to an item which completed a quest will remove"
-                 " the quest from the player's completed list\n"
-                "- /managequests to edit targets, enable global quest pools, and point settings\n"
-                "- /managequests -> Reset All Quests for server-wide resets\n"
-                "- /manageplayer -> Show Quests to view/reset a specific player's quests"
+                "- `/removeseasonlootfrom` removes matching completed quest entries when it targets a quest item\n"
+                "- `/managequests` edits targets, global quest pools, and point settings\n"
+                "- `/managequests -> Reset All Quests` performs a server-wide quest reset\n"
+                "- `/manageplayer -> Show Quests` lets you view or reset a specific player's quests"
             ),
             inline=False,
         )
@@ -263,8 +259,8 @@ def build_help_embed(section_key: str) -> discord.Embed:
         embed.add_field(
             name="Normal Player",
             value=(
-                "- /myteam to view your team's members and rankings\n"
-                "- /leaderboard includes team rankings\n"
+                "- `/myteam` shows your team's members and rankings\n"
+                "- `/leaderboard` includes team rankings\n"
             ),
             inline=False,
         )
@@ -272,11 +268,10 @@ def build_help_embed(section_key: str) -> discord.Embed:
         embed.add_field(
             name="Admin",
             value=(
-                "- /manageteams to create, rename, delete, and set leaders\n"
-                "- /manageteams to open team leaderboard and team member controls\n"
-                "- /manageplayer -> Team actions to add/remove players from teams"
-                "- /manageseason -> Manage Contests -> Manage Leaderboard to allow"
-                 " quests to count for team scores."
+                "- `/manageteams` creates, renames, deletes, and sets team leaders\n"
+                "- `/manageteams` also opens team leaderboard and member controls\n"
+                "- `/manageplayer -> Team actions` adds or removes players from teams\n"
+                "- `/manageseason -> Manage Contests -> Manage Leaderboard` controls whether quests count for team scores"
             ),
             inline=False,
         )
@@ -287,18 +282,17 @@ def build_help_embed(section_key: str) -> discord.Embed:
         embed = discord.Embed(
             title="PPE Bot Help - Sniffer",
             description=(
-                "Sniffer integration lets your in-game drops auto-log to PPE or season loot with character-aware "
-                 "routing and pending review tools for unmapped characters. Note that you must download the specific"
-                 " sniffer client built for this bot. You also must have a CSV of the loot drops in the same folder"
-                 " so that the sniffer knows which items to send to the bot."
+                "Sniffer integration auto-logs in-game drops to PPE or season loot with character-aware routing and "
+                "pending-review tools for unmapped characters. You must use the sniffer client built for this bot, "
+                "and it needs the loot CSV in the same folder."
             ),
             color=discord.Color.blurple(),
         )
         embed.add_field(
             name="Normal Player",
             value=(
-                "- /mysniffer opens your sniffer dashboard\n"
-                "- Generate/unlink token and open Configure Characters panel\n"
+                "- `/mysniffer` opens your sniffer dashboard\n"
+                "- Generate or unlink a token, then open Configure Characters\n"
                 "- Map character IDs to PPEs or seasonal routing and resolve pending loot"
             ),
             inline=False,
@@ -307,10 +301,10 @@ def build_help_embed(section_key: str) -> discord.Embed:
         embed.add_field(
             name="Admin",
             value=(
-                "- /managesniffer to enable/disable sniffer support\n"
+                "- `/managesniffer` enables or disables sniffer support\n"
                 "- Manage tokens, output channel, and player sniffer state\n"
-                "- Use reset/revoke actions from admin sniffer panel when needed\n"
-                "- Refer to the README.md in the repository for sniffer setup instructions."
+                "- Use reset and revoke actions from the admin sniffer panel when needed\n"
+                "- Refer to the repository README for setup instructions"
             ),
             inline=False,
         )
@@ -320,7 +314,7 @@ def build_help_embed(section_key: str) -> discord.Embed:
     embed = discord.Embed(
         title="PPE Bot Help - Season Setup",
         description=(
-            "Season setup controls global contest configuration including the step-by-step season reset flow, "
+            "Season setup controls global contest configuration, including the step-by-step season reset flow, "
             "point settings, and optional screenshot suggestion channels."
         ),
         color=discord.Color.blurple(),
@@ -328,9 +322,9 @@ def build_help_embed(section_key: str) -> discord.Embed:
     embed.add_field(
         name="Normal Player",
         value=(
-            "- /addseasonloot and /removeseasonloot for your global account season collection\n"
-            "- /myinfo -> Show Season Stats for list/image/wrapped views\n"
-            "- You can use season tracking without creating a PPE"
+            "- `/addseasonloot` and `/removeseasonloot` manage your global season collection\n"
+            "- `/myinfo -> Show Season Stats` shows list, image, and wrapped views\n"
+            "- Season tracking works even if you never create a PPE"
         ),
         inline=False,
     )
@@ -338,14 +332,15 @@ def build_help_embed(section_key: str) -> discord.Embed:
     embed.add_field(
         name="Admin",
         value=(
-            "- /addseasonlootfor and /removeseasonlootfrom for admin season adjustments\n"
-            "- /manageseason can adjust the core functionalities and values of the season.\n"
-            "- /manageseason -> Reset Season opens a step-by-step reset workflow with confirmations for each action.\n"
-            "- /manageseason -> Reset Season -> Reset Sniffer Information lets you choose exactly which sniffer data to clear.\n"
-            "- /manageseason -> Manage Point Settings -> Edit Duplicate Item Points controls duplicate scoring (set Point Reduction to 0 to disable duplicate points).\n"
-            "- /manageseason -> Picture Suggestions configures automatic image detection of loot in specified channels.\n"
-            "- /manageseason -> Manage Contests sets up contest defaults and leaderboard behavior.\n"
-            "- /forcereset is an emergency full-data wipe for this guild (server owner only). Use it only when you need a complete restart."
+            "- `/addseasonlootfor` and `/removeseasonlootfrom` handle admin season adjustments\n"
+            "- `/manageseason` adjusts the season's core behavior and values\n"
+            "- `/manageseason -> Reset Season` is a guided reset flow with confirmations for each step\n"
+            "- The PPE Player / Join Embed reset step also removes contest reactions from the join embed when players are removed\n"
+            "- `/manageseason -> Reset Season -> Reset Sniffer Information` lets you choose exactly what sniffer data to clear\n"
+            "- `/manageseason -> Manage Point Settings -> Edit Duplicate Item Points` controls duplicate scoring; set Point Reduction to 0 to disable it\n"
+            "- `/manageseason -> Picture Suggestions` configures automatic image detection of loot in selected channels\n"
+            "- `/manageseason -> Manage Contests` sets contest defaults and leaderboard behavior\n"
+            "- `/forcereset` is a server-owner-only full data wipe and should only be used for a complete restart"
         ),
         inline=False,
     )
