@@ -149,7 +149,42 @@ class TeamSelect(discord.ui.Select):
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
             return
-        await open_reset_for_team(interaction, team_name=self.values[0], actor_id=self.owner_id)
+        selected_team = self.values[0]
+        view = ConfirmTeamResetSelectionView(owner_id=self.owner_id, team_name=selected_team)
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+
+class ConfirmTeamResetSelectionView(OwnerBoundView):
+    """Confirmation gate before opening team reset options for a selected team."""
+
+    def __init__(self, *, owner_id: int, team_name: str) -> None:
+        super().__init__(owner_id=owner_id, timeout=300, owner_error="This menu belongs to another user.")
+        self.owner_id = owner_id
+        self.team_name = team_name
+
+    def current_embed(self) -> discord.Embed:
+        return discord.Embed(
+            title="Confirm Team Reset Menu",
+            description=(
+                f"Selected team: **{self.team_name}**\n"
+                "Open the reset menu for this team's shared quests?"
+            ),
+            color=discord.Color.orange(),
+        )
+
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.danger, row=0)
+    async def confirm(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await open_reset_for_team(interaction, team_name=self.team_name, actor_id=self.owner_id)
+
+    @discord.ui.button(label="Choose Another Team", style=discord.ButtonStyle.secondary, row=0)
+    async def choose_another(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        teams = await load_teams(interaction)
+        view = ManageTeamQuestsSelectView(owner_id=self.owner_id, team_names=list(teams.keys()))
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, row=0)
+    async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await interaction.response.edit_message(content="Cancelled team quest reset selection.", embed=None, view=None)
 
 
 class ManageTeamQuestsSelectView(OwnerBoundView):

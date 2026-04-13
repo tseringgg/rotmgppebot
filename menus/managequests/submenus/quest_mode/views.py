@@ -17,8 +17,8 @@ from menus.managequests.services import (
     migrate_team_completed_to_members_on_disable,
     save_settings,
 )
-from menus.menu_utils import OwnerBoundView
-from utils.player_records import load_player_records, save_player_records
+from menus.menu_utils import ConfirmCancelView, OwnerBoundView
+from utils.player_records import load_player_records, load_teams, save_player_records
 
 
 class QuestModeView(OwnerBoundView):
@@ -76,17 +76,61 @@ class QuestModeView(OwnerBoundView):
             handler=self._toggle_team_quests,
             disabled=global_enabled,
         )
+        if team_enabled and not global_enabled:
+            self._add_button(
+                label="Reset Team's Quests",
+                style=discord.ButtonStyle.danger,
+                row=1,
+                handler=self._reset_team_quests,
+            )
         self._add_button(label="Back", style=discord.ButtonStyle.secondary, row=2, handler=self._back)
+
+    async def _confirm_disable_action(self, interaction: discord.Interaction, *, message: str) -> bool:
+        view = ConfirmCancelView(
+            owner_id=self.owner_id,
+            timeout=60,
+            confirm_label="Confirm Disable",
+            cancel_label="Cancel",
+            confirm_style=discord.ButtonStyle.danger,
+            cancel_style=discord.ButtonStyle.secondary,
+            owner_error="This confirmation belongs to another user.",
+        )
+        await interaction.response.send_message(message, view=view, ephemeral=True)
+        await view.wait()
+        if not view.confirmed:
+            await interaction.followup.send("❌ Action cancelled.", ephemeral=True)
+            return False
+        return True
 
     async def _toggle_global_quests(self, interaction: discord.Interaction) -> None:
         settings = await load_managequests_settings(interaction)
         current = bool(settings.get("use_global_quests", False))
+
+        if current:
+            confirmed = await self._confirm_disable_action(
+                interaction,
+                message=(
+                    "⚠️ Disabling Global Quests will reset shared quest mode data.\n"
+                    "- Global quest pools will be cleared\n"
+                    "- Team shared quest state will be cleared\n"
+                    "- Player active quests will be rerolled\n"
+                    "Continue?"
+                ),
+            )
+            if not confirmed:
+                return
+
         settings["use_global_quests"] = not current
         if settings["use_global_quests"]:
             # Global mode takes precedence; team mode must be off.
             settings["enable_team_quests"] = False
             settings["team_quests_state"] = {}
         else:
+            settings["global_regular_quests"] = []
+            settings["global_shiny_quests"] = []
+            settings["global_skin_quests"] = []
+            settings["team_quests_state"] = {}
+
             # Leaving global mode should force rerolls by clearing active personal quests.
             records = await load_player_records(interaction)
             cleared_players, _ = clear_active_quests_for_all_members(records)
@@ -127,6 +171,20 @@ class QuestModeView(OwnerBoundView):
             return
 
         current = bool(settings.get("enable_team_quests", False))
+
+        if current:
+            confirmed = await self._confirm_disable_action(
+                interaction,
+                message=(
+                    "⚠️ Disabling Team Quests will reset shared quest mode data.\n"
+                    "- Team shared quest state will be cleared\n"
+                    "- Team active quests will be rerolled for players\n"
+                    "Continue?"
+                ),
+            )
+            if not confirmed:
+                return
+
         settings["enable_team_quests"] = not current
 
         migrated_players = 0
@@ -170,6 +228,13 @@ class QuestModeView(OwnerBoundView):
             ),
             ephemeral=False,
         )
+
+    async def _reset_team_quests(self, interaction: discord.Interaction) -> None:
+        from menus.managequests.submenus.player_reset.views import ManageTeamQuestsSelectView
+
+        teams = await load_teams(interaction)
+        view = ManageTeamQuestsSelectView(owner_id=self.owner_id, team_names=list(teams.keys()))
+        await interaction.response.send_message(embed=view.current_embed(), view=view, ephemeral=True)
 
     async def _back(self, interaction: discord.Interaction) -> None:
         from menus.managequests.submenus.home.views import ManageQuestsHomeView
