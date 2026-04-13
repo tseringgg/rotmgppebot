@@ -251,7 +251,7 @@ def create_loot_markdown_file(
                     points = float(set_bonuses[set_type][set_name])
                     total_set_points += points
                 
-                set_lines.append(f"- {set_name} ({set_type}) - **{_format_points(points)}** pts")
+                set_lines.append(f"- {set_name} ({set_type}) - {_format_points(points)} pts")
         
         if set_lines:
             builder.add_section(heading="Sets", lines=set_lines)
