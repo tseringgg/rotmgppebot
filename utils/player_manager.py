@@ -115,28 +115,38 @@ class PlayerManager:
             
             guild_config = await load_guild_config(interaction)
             
-            # Check for newly completed sets and award bonus points
+            # Check for newly completed sets
             newly_completed = get_newly_completed_sets(active_ppe, previously_completed_sets)
-            set_bonus_points = 0.0
+            
             if newly_completed:
                 from utils.guild_config import get_set_bonuses
+                from utils.set_operations import load_item_sets
                 set_bonuses = get_set_bonuses(guild_config)
+                all_sets = load_item_sets()
                 
+                # Add newly completed sets to the tracking list
                 for set_name, set_type in newly_completed:
-                    # Award points if this set has a bonus configured
-                    if set_name in set_bonuses.get(set_type, {}):
-                        set_bonus_points += set_bonuses[set_type][set_name]
-                    
-                    # Track the completed set
                     if set_name not in active_ppe.completed_sets:
                         active_ppe.completed_sets.append(set_name)
                 
-                # Add set bonus as a bonus entry (similar to manual bonuses)
-                if set_bonus_points > 0:
+                # Recalculate TOTAL set bonus based on ALL completed sets (not just newly completed)
+                # This ensures we have one consolidated "Set Completion Bonus" entry
+                total_set_bonus = 0.0
+                for set_name in active_ppe.completed_sets:
+                    if set_name in all_sets:
+                        set_type = all_sets[set_name]["type"]
+                        if set_type in set_bonuses and set_name in set_bonuses[set_type]:
+                            total_set_bonus += set_bonuses[set_type][set_name]
+                
+                # Remove all existing "Set Completion Bonus" entries
+                active_ppe.bonuses = [b for b in active_ppe.bonuses if b.name != "Set Completion Bonus"]
+                
+                # Add new consolidated set bonus if there are any points
+                if total_set_bonus > 0:
                     from dataclass import Bonus
                     bonus = Bonus(
-                        name=f"Set Completion Bonus",
-                        points=set_bonus_points,
+                        name="Set Completion Bonus",
+                        points=total_set_bonus,
                         repeatable=False,
                         quantity=1
                     )
@@ -229,31 +239,21 @@ class PlayerManager:
             # Check for sets that are no longer completed and remove their bonuses
             no_longer_completed_sets = get_no_longer_completed_sets(active_ppe, previously_completed_sets)
             if no_longer_completed_sets:
-                # Remove set bonuses that are no longer applicable
-                from dataclass import Bonus
+                from utils.set_operations import load_item_sets
+                from utils.guild_config import get_set_bonuses
                 
-                # We need to track which sets caused bonuses so we can remove them correctly
-                # Set bonuses are added with name "Set Completion Bonus"
-                # Since multiple sets can have bonuses, we should remove the bonuses that correspond to the removed sets
-                # For now, we'll identify set bonuses by their name pattern
+                guild_config = await load_guild_config(interaction)
+                set_bonuses = get_set_bonuses(guild_config)
+                all_sets = load_item_sets()
+                
+                # Remove sets from tracking
                 for removed_set_name, _ in no_longer_completed_sets:
-                    # Remove from completed_sets tracking
                     if removed_set_name in active_ppe.completed_sets:
                         active_ppe.completed_sets.remove(removed_set_name)
-                
-                # We need to recalculate the entire bonus as sets may have different point values
-                # Get guild config for set bonuses
-                guild_config = await load_guild_config(interaction)
-                set_bonuses = {}
-                if isinstance(guild_config.get("points_settings"), dict):
-                    set_bonuses = guild_config["points_settings"].get("set_bonuses", {})
                 
                 # Recalculate total set bonus based on remaining completed sets
                 remaining_set_bonus = 0.0
                 for set_name in active_ppe.completed_sets:
-                    # Find the set type
-                    from utils.set_operations import load_item_sets
-                    all_sets = load_item_sets()
                     if set_name in all_sets:
                         set_type = all_sets[set_name]["type"]
                         if set_type in set_bonuses and set_name in set_bonuses[set_type]:

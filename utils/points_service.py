@@ -490,6 +490,11 @@ def calculate_bonus_points(bonus: Bonus) -> float:
 
 
 def split_bonus_points(bonuses: Iterable[Bonus]) -> tuple[float, float]:
+    """Split bonuses into (regular_bonus_points, penalty_points).
+    
+    Excludes "Set Completion Bonus" from regular bonuses since set points
+    should not be affected by bonus modifiers.
+    """
     normal_bonus_points = 0.0
     penalty_points = 0.0
 
@@ -497,10 +502,23 @@ def split_bonus_points(bonuses: Iterable[Bonus]) -> tuple[float, float]:
         total = calculate_bonus_points(bonus)
         if bonus.name in PENALTY_NAMES:
             penalty_points += total
-        else:
+        elif bonus.name != "Set Completion Bonus":  # Exclude set bonuses from regular bonus calculation
             normal_bonus_points += total
 
     return normal_bonus_points, penalty_points
+
+
+def get_set_bonus_points(bonuses: Iterable[Bonus]) -> float:
+    """Get total points from Set Completion Bonus entries.
+    
+    Set points should not be affected by bonus modifiers, so we calculate
+    them separately and add them directly to the total.
+    """
+    set_bonus_points = 0.0
+    for bonus in bonuses:
+        if bonus.name == "Set Completion Bonus":
+            set_bonus_points += calculate_bonus_points(bonus)
+    return set_bonus_points
 
 
 def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = None) -> Dict[str, float]:
@@ -518,6 +536,7 @@ def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = Non
         )
 
     bonus_total, penalty_total = split_bonus_points(ppe.bonuses)
+    set_bonus_points = get_set_bonus_points(ppe.bonuses)
     modifier_bucket = get_effective_modifier_bucket_for_ppe(ppe, guild_config)
     penalty_breakdown = starting_penalty_breakdown_from_bonuses(ppe.bonuses, guild_config=guild_config)
     loot_adjustments = loot_adjustments_for_ppe(ppe, guild_config)
@@ -532,7 +551,8 @@ def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = Non
     loot_after_item_multipliers *= float(loot_adjustments["type_multiplier"])
 
     subtotal_before_item_multipliers = adjusted_loot + adjusted_bonus + adjusted_penalty
-    total = loot_after_item_multipliers + adjusted_bonus + adjusted_penalty
+    # Set points are added directly without any modifiers
+    total = loot_after_item_multipliers + adjusted_bonus + adjusted_penalty + set_bonus_points
 
     minimum_total = modifier_bucket.get("minimum_total")
     if minimum_total is not None:
@@ -548,6 +568,7 @@ def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = Non
         "bonus_after_modifiers": round(adjusted_bonus, 2),
         "penalty_raw": round(penalty_total, 2),
         "penalty_after_modifiers": round(adjusted_penalty, 2),
+        "set_bonus_raw": round(set_bonus_points, 2),
         "subtotal_before_item_reduction": round(subtotal_before_item_multipliers, 2),
         "item_reduction_multiplier": round(float(loot_adjustments["reduction_multiplier"]), 4),
         "type_multiplier": round(float(loot_adjustments["type_multiplier"]), 4),

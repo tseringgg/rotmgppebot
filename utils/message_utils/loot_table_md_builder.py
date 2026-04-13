@@ -259,6 +259,10 @@ def create_loot_markdown_file(
     if ppe_data.bonuses:
         bonus_lines: list[str] = []
         for bonus in sorted(ppe_data.bonuses, key=lambda entry: entry.name.lower()):
+            # Skip "Set Completion Bonus" since sets are displayed in their own section
+            if bonus.name == "Set Completion Bonus":
+                continue
+                
             total_bonus_points = calculate_bonus_points(bonus)
             if bonus.name in PENALTY_NAMES:
                 if bonus.name == "Pet Level Penalty":
