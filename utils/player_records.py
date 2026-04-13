@@ -138,6 +138,12 @@ def normalize_ppe(ppe: dict) -> PPEData:
         }
         bonus_objects.append(Bonus(**normalized_bonus))
     
+    # Load completed_sets (defaults to empty list if not present)
+    completed_sets_raw = ppe.get("completed_sets", [])
+    completed_sets = []
+    if isinstance(completed_sets_raw, list):
+        completed_sets = [str(s) for s in completed_sets_raw if s]
+    
     return PPEData(
         id=ppe.get("id", 0),
         name=ppe.get("name", "Unknown"),
@@ -145,6 +151,7 @@ def normalize_ppe(ppe: dict) -> PPEData:
         loot=loot_objects,
         bonuses=bonus_objects,
         ppe_type=normalize_ppe_type(ppe.get("ppe_type")),
+        completed_sets=completed_sets,
     )
 
 
@@ -297,6 +304,7 @@ def _serialize_player_data(data: PlayerData) -> Dict[str, Any]:
                 ],
                 "bonuses": [asdict(b) for b in p.bonuses],
                 "ppe_type": normalize_ppe_type(getattr(p, "ppe_type", None)),
+                "completed_sets": list(getattr(p, "completed_sets", [])),
             }
             for p in data.ppes
         ],
