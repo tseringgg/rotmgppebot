@@ -46,6 +46,12 @@ async def command(
         for completed_skin in result.quest_update.get("completed_skins", []):
             quest_lines.append(f"✅ Skin quest completed: **{completed_skin}**")
 
+        # Add set completion messages
+        set_lines = []
+        if result.newly_completed_sets:
+            for set_name, set_type in result.newly_completed_sets:
+                set_lines.append(f"🎉 **Set Completed!** {set_name} ({set_type})")
+
         if quest_lines:
             quest_lines.append("Use `/myquests` to view your updated quest list.")
         
@@ -65,6 +71,11 @@ async def command(
             if overlay_path and image_path and overlay_path != image_path and os.path.exists(overlay_path):
                 os.remove(overlay_path)
 
+        # Send set completion messages first (higher priority)
+        if set_lines:
+            await interaction.followup.send("\n".join(set_lines), ephemeral=False)
+
+        # Then send quest completion messages
         if quest_lines:
             await interaction.followup.send("\n".join(quest_lines), ephemeral=True)
     except (ValueError, KeyError, LookupError) as e:

@@ -7,6 +7,7 @@ A comprehensive Discord bot for managing competitions and more in Realm of the M
 ### Player Features
 - **Create & Manage PPEs**: Create PPEs with automatic penalty calculations.
 - **Season Management**: Track whole season loot, beyond individual characters. Auto-updated with character loot.
+- **Item Sets**: Complete item sets automatically to earn bonus points and receive congratulations messages. Track completed sets per PPE.
 - **Account Quests**: Get item, shiny, and skin quests with automated completion tracking via `/myquests`, including board views for active and completed quest sets.
 - **Team Functionality**: You can be added to a team and be assigned a team-specific role with points automatically counted together.
 - **Loot Tracking**: Track and graphically view regular, shiny, and divine items and skins automatically or manually.
@@ -18,6 +19,7 @@ A comprehensive Discord bot for managing competitions and more in Realm of the M
 ### Admin Features
 - **Player Management**: One central dashboard for managing any player via `/manageplayer`.
 - **Quest Management**: View and reset quest progress for any contest player, configure quest mode (Global vs Team Shared), and manage global quest pools via `/managequests`.
+- **Set Completion Configuration**: Configure bonus points for completed item sets (separate for ST and UT) via `/manageseason` -> `Manage Point Settings`.
 - **Team Management**: Use `/manageteams` to create, update, and delete teams; assign members through `/manageplayer`
 - **Global Season Management**: Manage the overall season and the nitty gritty details of how the bot works with `/manageseason`. *Note: this board is still a work in-progress.*
 
@@ -312,6 +314,7 @@ PlayerData
     ├── id: int
     ├── name: ROTMGClass
     ├── points: float
+    ├── completed_sets: List[str]  # Names of completed item sets
     ├── loot: List[Loot]
     │   ├── item_name: str
     │   ├── quantity: int
@@ -364,7 +367,13 @@ TeamData
 - **Exalts**: -0.5 points per exalt
 - **Loot Boost**: -2 points per 1% boost
 - **In-Combat Reduction**: -10 points per 0.2 seconds
-
+### Set Completion Bonuses
+- **What Are Sets**: Item sets are collections of 4 special items (Weapon, Ability, Armor, Ring). When you collect all 4 items from a set, you complete the set.
+- **Auto-Detection**: The bot automatically detects when a set is completed as soon as you log the final item via `/addloot`, sniffer, or `/submitloot`.
+- **Congratulations Message**: When a set is completed, a public congratulation message is posted to the channel.
+- **Point Rewards**: Each completed set grants configurable bonus points (default: 0). Admins can set different points for ST (Standard) and UT (Unique) sets via `/manageseason` -> `Manage Point Settings` -> `Manage Set Completion Points`.
+- **One-Time Per PPE**: You only get the bonus once per set per PPE. Completing the same set on a different PPE grants the bonus again.
+- **Configuration**: Admins can manage set bonus points through the interactive menu, with separate sections for ST and UT sets. Use the form to set points per set (e.g., `Golden Archer Set=50`) or reset all to 0.
 ## � Team System
 
 ### Overview

@@ -32,6 +32,7 @@ class PPELootOperationResult:
     points_delta: float
     ppe: PPEData
     quest_update: dict[str, Any]
+    newly_completed_sets: list[tuple[str, str]] = None  # List of (set_name, set_type) tuples
 
 
 @dataclass(frozen=True)
@@ -134,7 +135,7 @@ async def add_ppe_loot(
 ) -> PPELootOperationResult:
     rarity_normalized = normalize_rarity(rarity)
 
-    final_key, points_added, ppe, quest_update = await player_manager.add_loot_and_points(
+    final_key, points_added, ppe, quest_update, newly_completed_sets = await player_manager.add_loot_and_points(
         interaction,
         user=user,
         ppe_id=ppe_id,
@@ -156,6 +157,7 @@ async def add_ppe_loot(
         points_delta=round(float(points_added), 2),
         ppe=ppe,
         quest_update=quest_update,
+        newly_completed_sets=newly_completed_sets if newly_completed_sets else None,
     )
 
 

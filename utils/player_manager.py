@@ -1,7 +1,7 @@
 """Utilities for player manager."""
 
 import asyncio
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Tuple
 import discord
 from dataclass import Loot, PPEData, PlayerData
 from utils.player_records import load_player_records, save_player_records, ensure_player_exists, get_active_ppe
@@ -13,6 +13,7 @@ from utils.quest_modes import build_global_quests_payload, build_team_quests_con
 from utils.points_service import recompute_ppe_points
 from utils.item_log_timestamps import now_unix_utc
 from utils.season_loot_history import add_season_item_log, normalize_rarity, remove_season_item_log
+from utils.set_operations import get_newly_completed_sets
 
 
 def _remove_most_recent_timestamp(times: list[int]) -> list[int]:
@@ -55,7 +56,7 @@ class PlayerManager:
     
     async def add_loot_and_points(self, interaction: discord.Interaction, user: discord.Member, ppe_id:int, item_name: str,
                                 shiny: bool = False, rarity: str = "common", points: float = 0) -> tuple:
-        """Add loot and points atomically."""
+        """Add loot and points atomically. Returns (item_name, points_rounded, active_ppe, quest_update, newly_completed_sets)."""
         effective_rarity = normalize_rarity(rarity, "common")
         
         async def operation(records, interaction):
@@ -80,6 +81,9 @@ class PlayerManager:
                 raise LookupError("❌ Could not find your active PPE record.")
             
             old_total = active_ppe.points
+            
+            # Store previously completed sets before adding loot
+            previously_completed_sets = list(active_ppe.completed_sets) if active_ppe.completed_sets else []
 
             # Add loot
             match = get_item_from_ppe(active_ppe, item_name, shiny, rarity=effective_rarity)
@@ -110,6 +114,34 @@ class PlayerManager:
             )
             
             guild_config = await load_guild_config(interaction)
+            
+            # Check for newly completed sets and award bonus points
+            newly_completed = get_newly_completed_sets(active_ppe, previously_completed_sets)
+            set_bonus_points = 0.0
+            if newly_completed:
+                from utils.guild_config import get_set_bonuses
+                set_bonuses = get_set_bonuses(guild_config)
+                
+                for set_name, set_type in newly_completed:
+                    # Award points if this set has a bonus configured
+                    if set_name in set_bonuses.get(set_type, {}):
+                        set_bonus_points += set_bonuses[set_type][set_name]
+                    
+                    # Track the completed set
+                    if set_name not in active_ppe.completed_sets:
+                        active_ppe.completed_sets.append(set_name)
+                
+                # Add set bonus as a bonus entry (similar to manual bonuses)
+                if set_bonus_points > 0:
+                    from dataclass import Bonus
+                    bonus = Bonus(
+                        name=f"Set Completion Bonus",
+                        points=set_bonus_points,
+                        repeatable=False,
+                        quantity=1
+                    )
+                    active_ppe.bonuses.append(bonus)
+            
             recompute_ppe_points(active_ppe, guild_config)
             points_rounded = round(active_ppe.points - old_total, 2)
 
@@ -136,7 +168,7 @@ class PlayerManager:
             if quest_update.get("team_state_changed"):
                 await save_guild_config(interaction, guild_config)
             
-            return item_name, points_rounded, active_ppe, quest_update
+            return item_name, points_rounded, active_ppe, quest_update, newly_completed
         
         return await self.execute_transaction(interaction, operation)
     

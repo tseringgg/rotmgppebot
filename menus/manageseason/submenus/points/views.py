@@ -98,6 +98,14 @@ class ManagePointSettingsView(OwnerBoundView):
             )
         )
 
+    @discord.ui.button(label="Manage Set Completion Points", style=discord.ButtonStyle.success, row=2)
+    async def manage_set_points(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        from menus.manageseason.submenus.sets.views import ManageSetPointsView
+
+        self.settings = await load_points_settings_for_menu(interaction)
+        view = ManageSetPointsView(owner_id=self.owner_id, settings=self.settings)
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
     @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=3)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         from menus.manageseason.submenus.home.views import ManageSeasonHomeView

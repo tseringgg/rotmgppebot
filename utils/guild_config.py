@@ -81,6 +81,10 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
             "incombat_seconds_per_point": 0.1,
         },
         "class_overrides": {},
+        "set_bonuses": {
+            "ST": {},
+            "UT": {},
+        },
     },
 }
 
@@ -458,6 +462,26 @@ def get_rarity_multipliers(guild_config: Dict[str, Any] | None) -> Dict[str, flo
         except (TypeError, ValueError):
             parsed = float(fallback)
         result[rarity] = parsed if parsed >= 0 else float(fallback)
+    return result
+
+
+def get_set_bonuses(guild_config: Dict[str, Any] | None) -> Dict[str, Dict[str, float]]:
+    """Get set bonus points configuration. Returns dict: set_type -> {set_name -> points}."""
+    points_settings = guild_config.get("points_settings", {}) if isinstance(guild_config, dict) else {}
+    raw_bonuses = points_settings.get("set_bonuses", {}) if isinstance(points_settings.get("set_bonuses", {}), dict) else {}
+    
+    result: Dict[str, Dict[str, float]] = {}
+    for set_type in ["ST", "UT"]:
+        result[set_type] = {}
+        type_bonuses = raw_bonuses.get(set_type, {})
+        if isinstance(type_bonuses, dict):
+            for set_name, points in type_bonuses.items():
+                try:
+                    parsed = float(points)
+                    if parsed >= 0:
+                        result[set_type][set_name] = parsed
+                except (TypeError, ValueError):
+                    pass
     return result
 
 

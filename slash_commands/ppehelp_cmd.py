@@ -20,6 +20,7 @@ SECTIONS: list[str] = [
     "types",
     "loot_bonuses",
     "quests",
+    "sets",
     "teams",
     "sniffer",
     "season_setup",
@@ -30,6 +31,7 @@ BUTTON_LABELS: dict[str, str] = {
     "types": "Types of PPEs",
     "loot_bonuses": "Loot & Bonuses",
     "quests": "Quests",
+    "sets": "Set Completion",
     "teams": "Teams",
     "sniffer": "Sniffer",
     "season_setup": "Season Setup",
@@ -305,6 +307,42 @@ def build_help_embed(section_key: str) -> discord.Embed:
                 "- Manage tokens, output channel, and player sniffer state\n"
                 "- Use reset and revoke actions from the admin sniffer panel when needed\n"
                 "- Refer to the repository README for setup instructions"
+            ),
+            inline=False,
+        )
+        embed.set_footer(text=_common_footer())
+        return embed
+
+    if section_key == "sets":
+        embed = discord.Embed(
+            title="PPE Bot Help - Set Completion",
+            description=(
+                "Item sets are collections of 4 special items that can be completed for bonus points. "
+                "When you log all items in a set, you receive a congratulations message and bonus points."
+            ),
+            color=discord.Color.blurple(),
+        )
+        embed.add_field(
+            name="How Sets Work",
+            value=(
+                "- Item sets consist of 4 pieces: Weapon, Ability, Armor, and Ring\n"
+                "- When you log all 4 items from a set (via `/addloot`, sniffer, or `/submitloot`), the bot automatically detects completion\n"
+                "- You receive a public congratulations message announcing your set completion\n"
+                "- Each set is completed **once per PPE** - completing the same set on different PPEs gives points each time\n"
+                "- Set completion bonus points are configurable by server admins (default: 0 points)\n"
+                "- Standard (ST) and Unique (UT) sets are tracked separately"
+            ),
+            inline=False,
+        )
+        embed.add_field(name=_divider(), value="\u200b", inline=False)
+        embed.add_field(
+            name="Admin",
+            value=(
+                "- `/manageseason -> Manage Point Settings -> Manage Set Completion Points` opens the set points menu\n"
+                "- Choose \"Manage ST Set Points\" or \"Manage UT Set Points\" to configure bonus points for each set\n"
+                "- Use the form to enter one set per line as `SetName=points` (e.g., `Golden Archer Set=50`)\n"
+                "- Set points are added as bonuses when a set is completed and count toward the PPE's total\n"
+                "- Use \"Reset to Zero\" to clear all set bonuses for a type"
             ),
             inline=False,
         )

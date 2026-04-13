@@ -56,6 +56,7 @@ class PPEData:
     loot: List[Loot] = field(default_factory=list)
     bonuses: List[Bonus] = field(default_factory=list)
     ppe_type: str = DEFAULT_PPE_TYPE
+    completed_sets: List[str] = field(default_factory=list)
 
 @dataclass
 class TeamData:
