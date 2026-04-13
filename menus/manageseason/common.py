@@ -156,6 +156,7 @@ def build_manage_contests_embed(settings: dict) -> discord.Embed:
     default_label = contest_leaderboard_label(default_choice)
     ppe_aggregate_enabled = bool(settings.get("ppe_aggregate_points_enabled", False))
     team_aggregate_enabled = bool(settings.get("team_aggregate_points_enabled", False))
+    ppe_quest_enabled = bool(settings.get("ppe_contest_include_quest_points", False))
     team_quest_enabled = bool(settings.get("team_contest_include_quest_points", False))
     join_channel_id = int(settings.get("join_contest_channel_id", 0) or 0)
     join_message_id = int(settings.get("join_contest_message_id", 0) or 0)
