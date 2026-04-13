@@ -6,7 +6,7 @@ from dataclass import TeamData
 from menus.manageteams.common import TEAM_LIST_PAGE_SIZE, display_name, resolve_team_name
 from utils.player_records import ensure_player_exists, load_player_records, load_teams
 from utils.team_manager import team_manager
-from utils.team_contest_scoring import compute_team_member_points, load_team_contest_scoring
+from utils.team_contest_scoring import compute_team_member_points, get_best_ppe, load_team_contest_scoring
 
 
 async def create_empty_team(interaction: discord.Interaction, team_name: str) -> TeamData:
@@ -173,7 +173,7 @@ async def build_team_detail(
     interaction: discord.Interaction,
     *,
     team_name: str,
-) -> tuple[str, TeamData, list[tuple[int, str, float, float, float, str]], bool]:
+) -> tuple[str, TeamData, list[tuple[int, str, float, float, float, str]], bool, bool]:
     teams = await load_teams(interaction)
     records = await load_player_records(interaction)
     scoring = await load_team_contest_scoring(interaction)
@@ -187,19 +187,21 @@ async def build_team_detail(
     for member_id in team.members:
         player = records.get(member_id)
         member_name = display_name(interaction.guild, member_id)
-        ppe_points = 0.0
         best_class = "No PPE"
 
         if player and player.ppes:
-            best_ppe = max(player.ppes, key=lambda p: p.points)
-            ppe_points = best_ppe.points
-            best_class = str(best_ppe.name)
+            if scoring.team_aggregate_points:
+                best_class = "All PPEs"
+            else:
+                best_ppe = get_best_ppe(player)
+                best_class = str(getattr(best_ppe, "name", "No PPE"))
 
-        _best_ppe_points, quest_points, contribution = compute_team_member_points(
+        ppe_points, quest_points, contribution = compute_team_member_points(
             player,
             scoring=scoring,
+            aggregate=scoring.team_aggregate_points,
         )
         members.append((member_id, member_name, ppe_points, quest_points, contribution, best_class))
 
     members.sort(key=lambda entry: entry[4], reverse=True)
-    return actual_name, team, members, scoring.include_quest_points
+    return actual_name, team, members, scoring.include_quest_points, scoring.team_aggregate_points

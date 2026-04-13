@@ -9,6 +9,7 @@ from utils.team_contest_scoring import (
     TeamContestScoring,
     compute_team_member_points,
     format_points_breakdown,
+    get_best_ppe,
     load_team_contest_scoring,
     total_points_label,
 )
@@ -47,22 +48,33 @@ def _build_members_with_scoring(
     scoring: TeamContestScoring,
 ) -> list[tuple[int, str, float, float, float, str]]:
     members_with_scoring: list[tuple[int, str, float, float, float, str]] = []
-    for member_id, member_name, ppe_points, ppe_class in members_info:
+    for member_id, member_name, _legacy_ppe_points, _legacy_ppe_class in members_info:
         player_data = records.get(member_id)
-        computed_ppe_points, quest_points, _computed_total = compute_team_member_points(
+        computed_ppe_points, computed_quest_points, _computed_total = compute_team_member_points(
             player_data,
             scoring=scoring,
+            aggregate=scoring.team_aggregate_points,
         )
-        member_ppe_points = float(ppe_points) if ppe_points else computed_ppe_points
-        contribution = member_ppe_points + quest_points
+
+        if player_data and getattr(player_data, "ppes", None):
+            if scoring.team_aggregate_points:
+                ppe_class = "All PPEs"
+            else:
+                best_ppe = get_best_ppe(player_data)
+                ppe_class = _format_class_name(getattr(best_ppe, "name", None))
+        else:
+            ppe_class = "No Character"
+
+        quest_points = computed_quest_points if include_quest_points else 0.0
+        contribution = computed_ppe_points + quest_points
         members_with_scoring.append(
             (
                 member_id,
                 member_name,
-                member_ppe_points,
-                quest_points if include_quest_points else 0.0,
+                computed_ppe_points,
+                quest_points,
                 contribution,
-                _format_class_name(ppe_class),
+                ppe_class,
             )
         )
 

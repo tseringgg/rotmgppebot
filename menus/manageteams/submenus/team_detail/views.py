@@ -29,6 +29,7 @@ class ManageSingleTeamView(OwnerBoundView):
         team: TeamData,
         member_rows: list[tuple[int, str, float, float, float, str]],
         include_quest_points: bool,
+        team_aggregate_points: bool,
     ) -> None:
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.owner_id = owner_id
@@ -36,11 +37,18 @@ class ManageSingleTeamView(OwnerBoundView):
         self.team = team
         self.member_rows = member_rows
         self.include_quest_points = include_quest_points
+        self.team_aggregate_points = team_aggregate_points
+
+    def _scoring_mode_label(self) -> str:
+        base = "Aggregate PPE" if self.team_aggregate_points else "Best PPE"
+        if self.include_quest_points:
+            return f"{base} + Quest"
+        return base
 
     def current_embed(self) -> discord.Embed:
         total_points = sum(member[4] for member in self.member_rows)
         leader_label = f"<@{self.team.leader_id}>" if self.team.leader_id else "Unassigned"
-        scoring_mode = "PPE + Quest" if self.include_quest_points else "PPE Only"
+        scoring_mode = self._scoring_mode_label()
 
         embed = discord.Embed(
             title=f"Manage Team - {self.team_name}",

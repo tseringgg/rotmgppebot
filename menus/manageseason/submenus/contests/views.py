@@ -15,6 +15,7 @@ from menus.manageseason.services import (
     load_contest_settings_for_menu,
     update_default_contest_leaderboard,
     update_ppe_aggregate_points_setting,
+    update_ppe_contest_quest_points_setting,
     update_team_aggregate_points_setting,
     update_team_contest_quest_points_setting,
 )
@@ -225,6 +226,12 @@ class LeaderboardManagerView(OwnerBoundView):
             disable_label="Disable Team Quest Points",
         )
         self._sync_toggle_button(
+            self.toggle_ppe_quest_points,
+            enabled=bool(self.settings.get("ppe_contest_include_quest_points", False)),
+            enable_label="Enable PPE Quest Points",
+            disable_label="Disable PPE Quest Points",
+        )
+        self._sync_toggle_button(
             self.toggle_ppe_aggregate_points,
             enabled=bool(self.settings.get("ppe_aggregate_points_enabled", False)),
             enable_label="Enable PPE Aggregate Points",
@@ -244,6 +251,16 @@ class LeaderboardManagerView(OwnerBoundView):
     async def toggle_team_quest_points(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         currently_enabled = bool(self.settings.get("team_contest_include_quest_points", False))
         self.settings = await update_team_contest_quest_points_setting(
+            interaction,
+            enabled=not currently_enabled,
+        )
+        self._sync_toggle_buttons()
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+    @discord.ui.button(label="Enable PPE Quest Points", style=discord.ButtonStyle.success, row=0)
+    async def toggle_ppe_quest_points(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        currently_enabled = bool(self.settings.get("ppe_contest_include_quest_points", False))
+        self.settings = await update_ppe_contest_quest_points_setting(
             interaction,
             enabled=not currently_enabled,
         )

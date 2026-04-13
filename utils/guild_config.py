@@ -44,6 +44,7 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
     "contest_settings": {
         "default_contest_leaderboard": None,
         "ppe_aggregate_points_enabled": False,
+        "ppe_contest_include_quest_points": False,
         "team_aggregate_points_enabled": False,
         "team_contest_include_quest_points": False,
         "join_contest_channel_id": 0,
@@ -298,6 +299,12 @@ def _normalized_contest_settings(config: Dict[str, Any]) -> Dict[str, Any]:
             settings.get(
                 "ppe_aggregate_points_enabled",
                 _DEFAULT_CONFIG["contest_settings"]["ppe_aggregate_points_enabled"],
+            )
+        ),
+        "ppe_contest_include_quest_points": bool(
+            settings.get(
+                "ppe_contest_include_quest_points",
+                _DEFAULT_CONFIG["contest_settings"]["ppe_contest_include_quest_points"],
             )
         ),
         "team_aggregate_points_enabled": bool(

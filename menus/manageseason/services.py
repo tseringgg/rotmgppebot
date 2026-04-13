@@ -243,6 +243,19 @@ async def update_team_contest_quest_points_setting(
     )
 
 
+async def update_ppe_contest_quest_points_setting(
+    interaction: discord.Interaction,
+    *,
+    enabled: bool,
+) -> dict[str, Any]:
+    """Toggle whether PPE contest leaderboard should include quest points."""
+    return await _update_contest_bool_setting(
+        interaction,
+        setting_key="ppe_contest_include_quest_points",
+        enabled=enabled,
+    )
+
+
 async def update_ppe_aggregate_points_setting(
     interaction: discord.Interaction,
     *,

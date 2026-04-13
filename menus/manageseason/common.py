@@ -264,6 +264,7 @@ def build_set_contest_type_embed(settings: dict) -> discord.Embed:
 def build_leaderboard_manager_embed(settings: dict) -> discord.Embed:
     """Build the leaderboard manager embed."""
     ppe_aggregate_enabled = bool(settings.get("ppe_aggregate_points_enabled", False))
+    ppe_quest_enabled = bool(settings.get("ppe_contest_include_quest_points", False))
     team_aggregate_enabled = bool(settings.get("team_aggregate_points_enabled", False))
     team_quest_enabled = bool(settings.get("team_contest_include_quest_points", False))
 
@@ -278,6 +279,15 @@ def build_leaderboard_manager_embed(settings: dict) -> discord.Embed:
             f"Current status: **{'Enabled' if ppe_aggregate_enabled else 'Disabled'}**\n"
             "When enabled, each player's PPE leaderboard score adds all of their PPE characters together.\n"
             "When disabled, PPE leaderboard score uses only that player's best PPE."
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="PPE Contest Quest Scoring",
+        value=(
+            f"Current status: **{'Enabled' if ppe_quest_enabled else 'Disabled'}**\n"
+            "When enabled, completed quests add to PPE leaderboard totals.\n"
+            "Works with aggregate mode: all PPE points + quest points are combined."
         ),
         inline=False,
     )
