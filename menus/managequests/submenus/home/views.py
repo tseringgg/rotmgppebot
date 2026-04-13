@@ -32,12 +32,12 @@ class ManageQuestsHomeView(OwnerBoundView):
             EditQuestSettingsModal(owner_id=self.owner_id, settings=self.settings, source_message=interaction.message)
         )
 
-    @discord.ui.button(label="Set Global Quests", style=discord.ButtonStyle.success, row=0)
-    async def set_global_quests(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        from menus.managequests.submenus.global_quests.views import GlobalQuestsView
+    @discord.ui.button(label="Manage Quest Mode", style=discord.ButtonStyle.success, row=0)
+    async def manage_quest_mode(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        from menus.managequests.submenus.quest_mode.views import QuestModeView
 
         settings = await load_managequests_settings(interaction)
-        view = GlobalQuestsView(owner_id=self.owner_id, settings=settings)
+        view = QuestModeView(owner_id=self.owner_id, settings=settings)
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
     @discord.ui.button(label="Manage Player's Quests", style=discord.ButtonStyle.success, row=1)

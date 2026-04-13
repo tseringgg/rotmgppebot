@@ -5,10 +5,11 @@ from typing import Dict, Optional
 import discord
 from dataclass import Loot, PPEData, PlayerData
 from utils.player_records import load_player_records, save_player_records, ensure_player_exists, get_active_ppe
-from utils.player_records import get_item_from_ppe, highest_rarity
+from utils.player_records import get_item_from_ppe, highest_rarity, load_teams
 from utils.quest_manager import update_quests_for_item
 from utils.guild_config import get_max_ppes, get_quest_targets
-from utils.guild_config import load_guild_config
+from utils.guild_config import load_guild_config, save_guild_config
+from utils.quest_modes import build_global_quests_payload, build_team_quests_context
 from utils.points_service import recompute_ppe_points
 from utils.item_log_timestamps import now_unix_utc
 from utils.season_loot_history import add_season_item_log, normalize_rarity, remove_season_item_log
@@ -113,6 +114,14 @@ class PlayerManager:
             points_rounded = round(active_ppe.points - old_total, 2)
 
             regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
+            quest_settings = guild_config["quest_settings"]
+            teams = await load_teams(interaction)
+            team_context = build_team_quests_context(
+                settings=quest_settings,
+                player_data=player_data,
+                records=records,
+                teams=teams,
+            )
             quest_update = update_quests_for_item(
                 player_data,
                 item_name,
@@ -120,13 +129,12 @@ class PlayerManager:
                 target_item_quests=regular_target,
                 target_shiny_quests=shiny_target,
                 target_skin_quests=skin_target,
-                global_quests={
-                    "enabled": bool(guild_config["quest_settings"].get("use_global_quests", False)),
-                    "regular": list(guild_config["quest_settings"].get("global_regular_quests", [])),
-                    "shiny": list(guild_config["quest_settings"].get("global_shiny_quests", [])),
-                    "skin": list(guild_config["quest_settings"].get("global_skin_quests", [])),
-                },
+                global_quests=build_global_quests_payload(quest_settings),
+                team_quests=team_context,
             )
+
+            if quest_update.get("team_state_changed"):
+                await save_guild_config(interaction, guild_config)
             
             return item_name, points_rounded, active_ppe, quest_update
         

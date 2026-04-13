@@ -6,14 +6,93 @@ import discord
 
 from menus.managequests.common import build_global_payload
 from utils.guild_config import load_guild_config, save_guild_config
-from utils.player_records import load_player_records, save_player_records
+from utils.player_records import load_player_records, load_teams, save_player_records
+from utils.quest_modes import build_team_quests_context
+from utils.calc_points import normalize_item_name
 from utils.quest_manager import refresh_player_quests
+from utils.season_loot_history import season_unique_items
 
 
 async def save_settings(interaction: discord.Interaction, settings: dict) -> None:
     config = await load_guild_config(interaction)
     config["quest_settings"] = settings
     await save_guild_config(interaction, config)
+
+
+def _normalized_member_owned_sets(player_data) -> tuple[set[str], set[str]]:
+    owned_regular: set[str] = set()
+    owned_shiny_targets: set[str] = set()
+    for item_name, shiny in season_unique_items(player_data):
+        normalized = normalize_item_name(item_name).lower()
+        owned_regular.add(normalized)
+        if shiny:
+            owned_shiny_targets.add(f"{normalized} (shiny)")
+    return owned_regular, owned_shiny_targets
+
+
+def _intersect_completed_for_member(team_state: dict, player_data) -> tuple[list[str], list[str], list[str]]:
+    owned_regular, owned_shiny_targets = _normalized_member_owned_sets(player_data)
+
+    completed_items = [
+        item
+        for item in list(team_state.get("completed_items", []))
+        if normalize_item_name(item).lower() in owned_regular
+    ]
+    completed_shinies = [
+        item
+        for item in list(team_state.get("completed_shinies", []))
+        if normalize_item_name(item).lower() in owned_shiny_targets
+    ]
+    completed_skins = [
+        item
+        for item in list(team_state.get("completed_skins", []))
+        if normalize_item_name(item).lower() in owned_regular
+    ]
+    return completed_items, completed_shinies, completed_skins
+
+
+async def migrate_team_completed_to_members_on_disable(interaction: discord.Interaction, *, settings: dict) -> tuple[int, int]:
+    """When team mode is disabled, map team completed quests into each member's own completed lists by ownership."""
+    records = await load_player_records(interaction)
+    teams = await load_teams(interaction)
+
+    state_map = settings.get("team_quests_state", {})
+    if not isinstance(state_map, dict):
+        return 0, 0
+
+    players_updated = 0
+    completed_entries_written = 0
+
+    for team_name, team_data in teams.items():
+        team_key = str(team_name).strip().lower()
+        team_state = state_map.get(team_key)
+        if not isinstance(team_state, dict):
+            continue
+
+        for member_id in getattr(team_data, "members", []):
+            player_data = records.get(int(member_id))
+            if player_data is None or not player_data.is_member:
+                continue
+
+            matched_items, matched_shinies, matched_skins = _intersect_completed_for_member(team_state, player_data)
+            quests = player_data.quests
+            before_items = list(quests.completed_items)
+            before_shinies = list(quests.completed_shinies)
+            before_skins = list(quests.completed_skins)
+
+            quests.completed_items = matched_items
+            quests.completed_shinies = matched_shinies
+            quests.completed_skins = matched_skins
+
+            after_total = len(quests.completed_items) + len(quests.completed_shinies) + len(quests.completed_skins)
+            completed_entries_written += after_total
+            if before_items != matched_items or before_shinies != matched_shinies or before_skins != matched_skins:
+                players_updated += 1
+
+    if players_updated > 0:
+        await save_player_records(interaction, records)
+
+    return players_updated, completed_entries_written
 
 
 async def apply_settings_to_players(
@@ -23,6 +102,7 @@ async def apply_settings_to_players(
     reset_limit_changed: bool = False,
 ) -> tuple[int, int, int]:
     records = await load_player_records(interaction)
+    teams = await load_teams(interaction)
 
     players_adjusted = 0
     active_entries_removed = 0
@@ -44,6 +124,12 @@ async def apply_settings_to_players(
             target_shiny_quests=int(settings["shiny_target"]),
             target_skin_quests=int(settings["skin_target"]),
             global_quests=build_global_payload(settings),
+            team_quests=build_team_quests_context(
+                settings=settings,
+                player_data=player_data,
+                records=records,
+                teams=teams,
+            ),
         )
 
         after_count = (
@@ -63,6 +149,9 @@ async def apply_settings_to_players(
 
     if players_adjusted > 0 or reset_counters_updated > 0:
         await save_player_records(interaction, records)
+
+    if bool(settings.get("enable_team_quests", False)) and not bool(settings.get("use_global_quests", False)):
+        await save_settings(interaction, settings)
 
     return players_adjusted, active_entries_removed, reset_counters_updated
 
@@ -105,10 +194,12 @@ async def clear_all_quests_and_global_pools(
     settings["global_regular_quests"] = []
     settings["global_shiny_quests"] = []
     settings["global_skin_quests"] = []
+    settings["team_quests_state"] = {}
     if disable_global_mode:
         settings["use_global_quests"] = False
 
     records = await load_player_records(interaction)
+    teams = await load_teams(interaction)
     players_updated = 0
     entries_cleared = 0
 
@@ -128,6 +219,12 @@ async def clear_all_quests_and_global_pools(
                 target_shiny_quests=int(settings["shiny_target"]),
                 target_skin_quests=int(settings["skin_target"]),
                 global_quests=build_global_payload(settings),
+                team_quests=build_team_quests_context(
+                    settings=settings,
+                    player_data=player_data,
+                    records=records,
+                    teams=teams,
+                ),
             )
             if changed and removed == 0:
                 players_updated += 1
@@ -258,13 +355,22 @@ async def apply_selected_reset_actions(
     regular_target = int(config["quest_settings"]["regular_target"])
     shiny_target = int(config["quest_settings"]["shiny_target"])
     skin_target = int(config["quest_settings"]["skin_target"])
+    teams = await load_teams(interaction)
     refresh_player_quests(
         player_data,
         target_item_quests=regular_target,
         target_shiny_quests=shiny_target,
         target_skin_quests=skin_target,
         global_quests=build_global_payload(config["quest_settings"]),
+        team_quests=build_team_quests_context(
+            settings=config["quest_settings"],
+            player_data=player_data,
+            records=records,
+            teams=teams,
+        ),
     )
+    if bool(config["quest_settings"].get("enable_team_quests", False)) and not bool(config["quest_settings"].get("use_global_quests", False)):
+        await save_guild_config(interaction, config)
 
     if include_reset_counter_option and action_reset_resets_to_default in selected_values:
         player_data.quest_resets_remaining = default_reset_limit

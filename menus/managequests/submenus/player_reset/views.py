@@ -112,6 +112,7 @@ class ManagePlayerQuestsView(OwnerBoundView):
             current_shiny=state["current_shiny"],
             current_skin=state["current_skin"],
             current_all=state["current_all"],
+            completed_all=state["completed_all"],
             completed_embed=state["completed_embed"],
             global_mode_enabled=state["global_mode_enabled"],
             reset_callback=_show_target_reset_for_member,

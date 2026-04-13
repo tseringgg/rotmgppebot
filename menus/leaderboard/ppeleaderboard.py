@@ -2,8 +2,16 @@ import discord
 
 from menus.leaderboard.common import build_ranked_entry_lines, send_error_response, send_leaderboard
 from menus.leaderboard.services import member_display_name, require_guild
-from utils.team_contest_scoring import compute_ppe_points, get_best_ppe, load_team_contest_scoring
+from utils.team_contest_scoring import (
+    TeamContestScoring,
+    compute_ppe_points,
+    compute_quest_points_from_quests,
+    compute_team_shared_quest_points,
+    get_best_ppe,
+    load_team_contest_scoring,
+)
 from utils.guild_config import get_contest_settings, get_quest_points
+from utils.guild_config import load_guild_config
 from utils.player_records import load_player_records
 
 
@@ -15,13 +23,21 @@ async def command(interaction: discord.Interaction):
         records = await load_player_records(interaction)
         scoring = await load_team_contest_scoring(interaction)
         contest_settings = await get_contest_settings(interaction)
+        guild_config = await load_guild_config(interaction)
+        quest_settings = guild_config.get("quest_settings", {}) if isinstance(guild_config.get("quest_settings", {}), dict) else {}
+        team_mode_effective = bool(quest_settings.get("enable_team_quests", False)) and not bool(
+            quest_settings.get("use_global_quests", False)
+        )
         include_ppe_quest_points = bool(contest_settings.get("ppe_contest_include_quest_points", False))
-
-        regular_quest_points = 0
-        shiny_quest_points = 0
-        skin_quest_points = 0
+        ppe_quest_scoring = TeamContestScoring(include_quest_points=False)
         if include_ppe_quest_points:
             regular_quest_points, shiny_quest_points, skin_quest_points = await get_quest_points(interaction)
+            ppe_quest_scoring = TeamContestScoring(
+                include_quest_points=True,
+                regular_quest_points=int(regular_quest_points),
+                shiny_quest_points=int(shiny_quest_points),
+                skin_quest_points=int(skin_quest_points),
+            )
 
         leaderboard_data = []
         for pid, data in records.items():
@@ -35,12 +51,16 @@ async def command(interaction: discord.Interaction):
             ppe_points = compute_ppe_points(data, aggregate=scoring.ppe_aggregate_points)
             quest_points = 0.0
             if include_ppe_quest_points:
-                quests = getattr(data, "quests", None)
-                if quests is not None:
-                    quest_points = float(
-                        len(getattr(quests, "completed_items", [])) * int(regular_quest_points)
-                        + len(getattr(quests, "completed_shinies", [])) * int(shiny_quest_points)
-                        + len(getattr(quests, "completed_skins", [])) * int(skin_quest_points)
+                if team_mode_effective and isinstance(getattr(data, "team_name", None), str) and data.team_name:
+                    quest_points = compute_team_shared_quest_points(
+                        team_name=data.team_name,
+                        quest_settings=quest_settings,
+                        scoring=ppe_quest_scoring,
+                    )
+                else:
+                    quest_points = compute_quest_points_from_quests(
+                        getattr(data, "quests", None),
+                        scoring=ppe_quest_scoring,
                     )
 
             points = ppe_points + quest_points

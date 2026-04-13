@@ -30,9 +30,11 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
         "skin_points": 15,
         "num_resets": 3,
         "use_global_quests": False,
+        "enable_team_quests": False,
         "global_regular_quests": [],
         "global_shiny_quests": [],
         "global_skin_quests": [],
+        "team_quests_state": {},
     },
     "realmshark_settings": {
         "enabled": False,
@@ -124,6 +126,27 @@ def _normalized_targets(config: Dict[str, Any]) -> Dict[str, Any]:
                 normalized.append(text)
         return normalized
 
+    def _as_team_quest_state_map(value: Any) -> dict[str, dict[str, list[str]]]:
+        if not isinstance(value, dict):
+            return {}
+
+        output: dict[str, dict[str, list[str]]] = {}
+        for raw_team_name, raw_state in value.items():
+            if not isinstance(raw_team_name, str):
+                continue
+            team_name = raw_team_name.strip().lower()
+            if not team_name or not isinstance(raw_state, dict):
+                continue
+            output[team_name] = {
+                "current_items": _as_string_list(raw_state.get("current_items")),
+                "current_shinies": _as_string_list(raw_state.get("current_shinies")),
+                "current_skins": _as_string_list(raw_state.get("current_skins")),
+                "completed_items": _as_string_list(raw_state.get("completed_items")),
+                "completed_shinies": _as_string_list(raw_state.get("completed_shinies")),
+                "completed_skins": _as_string_list(raw_state.get("completed_skins")),
+            }
+        return output
+
     return {
         "regular_target": _as_non_negative_int(settings.get("regular_target"), _DEFAULT_CONFIG["quest_settings"]["regular_target"]),
         "shiny_target": _as_non_negative_int(settings.get("shiny_target"), _DEFAULT_CONFIG["quest_settings"]["shiny_target"]),
@@ -133,9 +156,11 @@ def _normalized_targets(config: Dict[str, Any]) -> Dict[str, Any]:
         "skin_points": _as_non_negative_int(settings.get("skin_points"), _DEFAULT_CONFIG["quest_settings"]["skin_points"]),
         "num_resets": _as_non_negative_int(settings.get("num_resets"), _DEFAULT_CONFIG["quest_settings"]["num_resets"]),
         "use_global_quests": bool(settings.get("use_global_quests", _DEFAULT_CONFIG["quest_settings"]["use_global_quests"])),
+        "enable_team_quests": bool(settings.get("enable_team_quests", _DEFAULT_CONFIG["quest_settings"]["enable_team_quests"])),
         "global_regular_quests": _as_string_list(settings.get("global_regular_quests")),
         "global_shiny_quests": _as_string_list(settings.get("global_shiny_quests")),
         "global_skin_quests": _as_string_list(settings.get("global_skin_quests")),
+        "team_quests_state": _as_team_quest_state_map(settings.get("team_quests_state")),
     }
 
 

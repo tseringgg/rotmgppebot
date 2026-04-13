@@ -289,6 +289,7 @@ def build_leaderboard_manager_embed(settings: dict) -> discord.Embed:
         value=(
             f"Current status: **{'Enabled' if ppe_quest_enabled else 'Disabled'}**\n"
             "When enabled, completed quests add to PPE leaderboard totals.\n"
+            "If team shared quests are enabled, each team member receives their team shared quest total.\n"
             "Works with aggregate mode: all PPE points + quest points are combined."
         ),
         inline=False,
@@ -307,6 +308,7 @@ def build_leaderboard_manager_embed(settings: dict) -> discord.Embed:
         value=(
             f"Current status: **{'Enabled' if team_quest_enabled else 'Disabled'}**\n"
             "When enabled, completed quests add points to team totals.\n"
+            "If team shared quests are enabled, shared quest points are counted once per team.\n"
             "When disabled, team totals use PPE points only."
         ),
         inline=False,

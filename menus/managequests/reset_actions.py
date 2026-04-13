@@ -8,8 +8,9 @@ from discord import ui
 from menus.menu_utils import ConfirmCancelView, OwnerBoundView
 from menus.managequests.common import build_global_payload, build_reset_active_lines, build_reset_completion_lines
 from menus.managequests.services import apply_selected_reset_actions
-from utils.guild_config import get_quest_targets, load_guild_config
-from utils.player_records import ensure_player_exists, load_player_records, save_player_records
+from utils.guild_config import get_quest_targets, load_guild_config, save_guild_config
+from utils.player_records import ensure_player_exists, load_player_records, load_teams, save_player_records
+from utils.quest_modes import build_team_quests_context
 from utils.quest_manager import refresh_player_quests
 
 ACTION_RESET_COMPLETED_ITEMS = "action_reset_completed_items"
@@ -209,16 +210,25 @@ async def open_reset_for_member(
 
     # Ensure the admin reset menu always opens with an up-to-date quest list.
     regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
+    teams = await load_teams(interaction)
     changed = refresh_player_quests(
         player_data,
         target_item_quests=regular_target,
         target_shiny_quests=shiny_target,
         target_skin_quests=skin_target,
         global_quests=build_global_payload(config["quest_settings"]),
+        team_quests=build_team_quests_context(
+            settings=config["quest_settings"],
+            player_data=player_data,
+            records=records,
+            teams=teams,
+        ),
     )
 
     if changed or player_data.quest_resets_remaining != resets_remaining:
         await save_player_records(interaction, records)
+        if bool(config["quest_settings"].get("enable_team_quests", False)) and not bool(config["quest_settings"].get("use_global_quests", False)):
+            await save_guild_config(interaction, config)
 
     active_item_quests = list(player_data.quests.current_items)
     active_shiny_quests = list(player_data.quests.current_shinies)
@@ -290,15 +300,24 @@ async def open_reset_for_self(interaction: discord.Interaction) -> None:
         )
 
     regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
+    teams = await load_teams(interaction)
     changed = refresh_player_quests(
         player_data,
         target_item_quests=regular_target,
         target_shiny_quests=shiny_target,
         target_skin_quests=skin_target,
         global_quests=build_global_payload(config["quest_settings"]),
+        team_quests=build_team_quests_context(
+            settings=config["quest_settings"],
+            player_data=player_data,
+            records=records,
+            teams=teams,
+        ),
     )
     if changed or player_data.quest_resets_remaining != resets_remaining:
         await save_player_records(interaction, records)
+        if bool(config["quest_settings"].get("enable_team_quests", False)) and not bool(config["quest_settings"].get("use_global_quests", False)):
+            await save_guild_config(interaction, config)
 
     active_item_quests = list(player_data.quests.current_items)
     active_shiny_quests = list(player_data.quests.current_shinies)

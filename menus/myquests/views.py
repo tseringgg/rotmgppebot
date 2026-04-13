@@ -24,6 +24,7 @@ class MyQuestsView(OwnerBoundView):
         current_shiny: Sequence[str],
         current_skin: Sequence[str],
         current_all: Sequence[str],
+        completed_all: Sequence[str],
         completed_embed: discord.Embed,
         global_mode_enabled: bool = False,
         reset_callback: Callable[[discord.Interaction], Awaitable[None]] | None = None,
@@ -39,6 +40,7 @@ class MyQuestsView(OwnerBoundView):
         self.current_shiny = list(current_shiny)
         self.current_skin = list(current_skin)
         self.current_all = list(current_all)
+        self.completed_all = list(completed_all)
         self.completed_embed = completed_embed
         self.global_mode_enabled = global_mode_enabled
 
@@ -111,7 +113,10 @@ class MyQuestsView(OwnerBoundView):
 
     @discord.ui.button(label="Completed", style=discord.ButtonStyle.success)
     async def completed(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await interaction.response.edit_message(embed=self.completed_embed, attachments=[], view=self)
+        img = board_file(self.completed_all, f"{self.display_name}'s Completed Quests", "myquests_completed.png")
+        embed = self.completed_embed.copy()
+        embed.set_image(url="attachment://myquests_completed.png")
+        await interaction.response.edit_message(embed=embed, attachments=[img], view=self)
 
     @discord.ui.button(label="Reset Quests", style=discord.ButtonStyle.danger)
     async def reset_quests(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

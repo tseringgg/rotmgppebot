@@ -5,8 +5,10 @@ from typing import Dict, Optional
 
 import discord
 from dataclass import TeamData
+from utils.guild_config import load_guild_config, save_guild_config
 from utils.player_records import ensure_player_exists, load_player_records, load_teams, save_player_records, save_teams
-from utils.team_contest_scoring import compute_team_member_points, load_team_contest_scoring
+from utils.quest_modes import normalize_team_key
+from utils.team_contest_scoring import compute_team_member_points, compute_team_shared_quest_points, load_team_contest_scoring
 
 class TeamManager:
     """Centralized manager for team data operations."""
@@ -19,6 +21,41 @@ class TeamManager:
         if guild_id not in self._locks:
             self._locks[guild_id] = asyncio.Lock()
         return self._locks[guild_id]
+
+    async def _rename_team_quest_state(self, interaction: discord.Interaction, *, old_name: str, new_name: str) -> None:
+        config = await load_guild_config(interaction)
+        quest_settings = config.get("quest_settings", {}) if isinstance(config.get("quest_settings", {}), dict) else {}
+        state_map = quest_settings.get("team_quests_state")
+        if not isinstance(state_map, dict):
+            return
+
+        old_key = normalize_team_key(old_name)
+        new_key = normalize_team_key(new_name)
+        if not old_key or not new_key or old_key == new_key:
+            return
+        if old_key not in state_map:
+            return
+
+        state_map[new_key] = state_map.pop(old_key)
+        quest_settings["team_quests_state"] = state_map
+        config["quest_settings"] = quest_settings
+        await save_guild_config(interaction, config)
+
+    async def _remove_team_quest_state(self, interaction: discord.Interaction, *, team_name: str) -> None:
+        config = await load_guild_config(interaction)
+        quest_settings = config.get("quest_settings", {}) if isinstance(config.get("quest_settings", {}), dict) else {}
+        state_map = quest_settings.get("team_quests_state")
+        if not isinstance(state_map, dict):
+            return
+
+        team_key = normalize_team_key(team_name)
+        if not team_key or team_key not in state_map:
+            return
+
+        state_map.pop(team_key, None)
+        quest_settings["team_quests_state"] = state_map
+        config["quest_settings"] = quest_settings
+        await save_guild_config(interaction, config)
     
     async def execute_transaction(self, interaction: discord.Interaction, operation):
         """Execute a data operation atomically with proper locking."""
@@ -115,6 +152,9 @@ class TeamManager:
                     team = teams[team_name]
                     if player_id in team.members:
                         team.members.remove(player_id)
+                    if not team.members:
+                        teams.pop(team_name, None)
+                        await self._remove_team_quest_state(interaction, team_name=team_name)
                     
                     # If player was the last member (besides might not be applicable), can optionally delete team
                     # But for now, we'll leave empty teams as is
@@ -140,6 +180,10 @@ class TeamManager:
                 if player_id in team.members:
                     team.members.remove(player_id)
                     found_team = team_name
+
+            if found_team and found_team in teams and not teams[found_team].members:
+                teams.pop(found_team, None)
+                await self._remove_team_quest_state(interaction, team_name=found_team)
             
             # Also try to update their player record if it already exists.
             if player_id in records:
@@ -177,6 +221,8 @@ class TeamManager:
             for member_id in team.members:
                 if member_id in records:
                     records[member_id].team_name = new_name
+
+            await self._rename_team_quest_state(interaction, old_name=actual_old_name, new_name=new_name)
             
             return team
         
@@ -192,6 +238,11 @@ class TeamManager:
         async def operation(teams, records, interaction):
             leaderboard_data = []
             scoring = await load_team_contest_scoring(interaction)
+            guild_config = await load_guild_config(interaction)
+            quest_settings = guild_config.get("quest_settings", {}) if isinstance(guild_config.get("quest_settings", {}), dict) else {}
+            team_mode_effective = bool(quest_settings.get("enable_team_quests", False)) and not bool(
+                quest_settings.get("use_global_quests", False)
+            )
             
             for team_name, team in teams.items():
                 ppe_points = 0.0
@@ -207,7 +258,15 @@ class TeamManager:
                             aggregate=scoring.team_aggregate_points,
                         )
                         ppe_points += member_ppe_points
-                        quest_points += member_quest_points
+                        if not team_mode_effective:
+                            quest_points += member_quest_points
+
+                if scoring.include_quest_points and team_mode_effective:
+                    quest_points = compute_team_shared_quest_points(
+                        team_name=team_name,
+                        quest_settings=quest_settings,
+                        scoring=scoring,
+                    )
 
                 total_points = ppe_points + quest_points
                 

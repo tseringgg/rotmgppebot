@@ -8,6 +8,7 @@ from typing import Any
 import discord
 
 from utils.guild_config import get_contest_settings, get_quest_points
+from utils.quest_modes import normalize_team_key
 
 
 @dataclass(slots=True)
@@ -95,16 +96,50 @@ def compute_team_member_points(
 
     quest_points = 0.0
     if player_data and scoring.include_quest_points:
-        quests = getattr(player_data, "quests", None)
-        if quests is not None:
-            quest_points = float(
-                len(getattr(quests, "completed_items", [])) * scoring.regular_quest_points
-                + len(getattr(quests, "completed_shinies", [])) * scoring.shiny_quest_points
-                + len(getattr(quests, "completed_skins", [])) * scoring.skin_quest_points
-            )
+        quest_points = compute_quest_points_from_quests(getattr(player_data, "quests", None), scoring=scoring)
 
     total_points = ppe_points + quest_points
     return ppe_points, quest_points, total_points
+
+
+def compute_quest_points_from_quests(quests: Any, *, scoring: TeamContestScoring) -> float:
+    if quests is None:
+        return 0.0
+    return float(
+        len(getattr(quests, "completed_items", [])) * scoring.regular_quest_points
+        + len(getattr(quests, "completed_shinies", [])) * scoring.shiny_quest_points
+        + len(getattr(quests, "completed_skins", [])) * scoring.skin_quest_points
+    )
+
+
+def compute_quest_points_from_state(state: dict[str, Any] | None, *, scoring: TeamContestScoring) -> float:
+    if not isinstance(state, dict):
+        return 0.0
+    return float(
+        len(state.get("completed_items", [])) * scoring.regular_quest_points
+        + len(state.get("completed_shinies", [])) * scoring.shiny_quest_points
+        + len(state.get("completed_skins", [])) * scoring.skin_quest_points
+    )
+
+
+def compute_team_shared_quest_points(
+    *,
+    team_name: str,
+    quest_settings: dict[str, Any],
+    scoring: TeamContestScoring,
+) -> float:
+    if not bool(quest_settings.get("enable_team_quests", False)):
+        return 0.0
+    if bool(quest_settings.get("use_global_quests", False)):
+        return 0.0
+
+    state_map = quest_settings.get("team_quests_state", {})
+    if not isinstance(state_map, dict):
+        return 0.0
+
+    key = normalize_team_key(team_name)
+    state = state_map.get(key)
+    return compute_quest_points_from_state(state, scoring=scoring)
 
 
 def format_points_breakdown(

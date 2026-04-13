@@ -9,12 +9,13 @@ from typing import Any
 import discord
 
 from dataclass import PPEData, PlayerData
-from utils.guild_config import get_quest_targets, load_guild_config
+from utils.guild_config import get_quest_targets, load_guild_config, save_guild_config
 from utils.item_log_timestamps import seasonal_item_variant_key
 from utils.message_utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
 from utils.player_manager import player_manager
-from utils.player_records import ensure_player_exists, load_player_records, save_player_records
+from utils.player_records import ensure_player_exists, load_player_records, load_teams, save_player_records
 from utils.points_service import has_item_variant
+from utils.quest_modes import build_global_quests_payload, build_team_quests_context
 from utils.quest_manager import refresh_player_quests, remove_item_from_completed_quests, update_quests_for_item
 from utils.season_loot_history import add_season_item_log, normalize_rarity, remove_season_item_log, unique_season_item_count
 
@@ -228,6 +229,14 @@ async def add_season_loot(
     if update_quests:
         regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
         config = await load_guild_config(interaction)
+        quest_settings = config["quest_settings"]
+        teams = await load_teams(interaction)
+        team_context = build_team_quests_context(
+            settings=quest_settings,
+            player_data=player_data,
+            records=records,
+            teams=teams,
+        )
         quest_update = update_quests_for_item(
             player_data,
             item_name,
@@ -235,13 +244,11 @@ async def add_season_loot(
             target_item_quests=regular_target,
             target_shiny_quests=shiny_target,
             target_skin_quests=skin_target,
-            global_quests={
-                "enabled": bool(config["quest_settings"].get("use_global_quests", False)),
-                "regular": list(config["quest_settings"].get("global_regular_quests", [])),
-                "shiny": list(config["quest_settings"].get("global_shiny_quests", [])),
-                "skin": list(config["quest_settings"].get("global_skin_quests", [])),
-            },
+            global_quests=build_global_quests_payload(quest_settings),
+            team_quests=team_context,
         )
+        if quest_update.get("team_state_changed"):
+            await save_guild_config(interaction, config)
 
     new_unique = unique_season_item_count(player_data)
     await save_player_records(interaction, records)
@@ -297,18 +304,24 @@ async def remove_season_loot(
         removed_quest_entries = remove_item_from_completed_quests(player_data, item_name, shiny)
         regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
         config = await load_guild_config(interaction)
+        quest_settings = config["quest_settings"]
+        teams = await load_teams(interaction)
+        team_context = build_team_quests_context(
+            settings=quest_settings,
+            player_data=player_data,
+            records=records,
+            teams=teams,
+        )
         refresh_player_quests(
             player_data,
             target_item_quests=regular_target,
             target_shiny_quests=shiny_target,
             target_skin_quests=skin_target,
-            global_quests={
-                "enabled": bool(config["quest_settings"].get("use_global_quests", False)),
-                "regular": list(config["quest_settings"].get("global_regular_quests", [])),
-                "shiny": list(config["quest_settings"].get("global_shiny_quests", [])),
-                "skin": list(config["quest_settings"].get("global_skin_quests", [])),
-            },
+            global_quests=build_global_quests_payload(quest_settings),
+            team_quests=team_context,
         )
+        if bool(quest_settings.get("enable_team_quests", False)) and not bool(quest_settings.get("use_global_quests", False)):
+            await save_guild_config(interaction, config)
         quest_update = removed_quest_entries
 
     new_unique = unique_season_item_count(player_data)

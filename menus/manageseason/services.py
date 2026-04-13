@@ -768,6 +768,23 @@ def _collect_team_names_from_records(records: dict[int, Any]) -> set[str]:
     return team_names
 
 
+def _clear_team_quest_mode_state(config: dict[str, Any], *, disable_team_mode: bool = False) -> bool:
+    quest_settings = config.get("quest_settings", {}) if isinstance(config.get("quest_settings", {}), dict) else {}
+    changed = False
+
+    if quest_settings.get("team_quests_state") != {}:
+        quest_settings["team_quests_state"] = {}
+        changed = True
+
+    if disable_team_mode and bool(quest_settings.get("enable_team_quests", False)):
+        quest_settings["enable_team_quests"] = False
+        changed = True
+
+    if changed:
+        config["quest_settings"] = quest_settings
+    return changed
+
+
 async def reset_all_ppe_characters(interaction: discord.Interaction) -> ResetPPECharactersSummary:
     """Reset all character records while preserving seasonal and quest progress."""
     records = await load_player_records(interaction)
@@ -803,6 +820,7 @@ async def reset_all_quests(interaction: discord.Interaction) -> ResetQuestsSumma
     records = await load_player_records(interaction)
     config = await load_guild_config(interaction)
     default_reset_limit = int(config["quest_settings"]["num_resets"])
+    config_changed = _clear_team_quest_mode_state(config)
 
     players_updated = 0
     quest_entries_cleared = 0
@@ -827,6 +845,8 @@ async def reset_all_quests(interaction: discord.Interaction) -> ResetQuestsSumma
             players_updated += 1
 
     await save_player_records(interaction, records)
+    if config_changed:
+        await save_guild_config(interaction, config)
     return ResetQuestsSummary(
         players_updated=players_updated,
         quest_entries_cleared=quest_entries_cleared,
@@ -839,6 +859,7 @@ async def reset_all_seasonal_information(interaction: discord.Interaction) -> Re
     records = await load_player_records(interaction)
     config = await load_guild_config(interaction)
     default_reset_limit = int(config["quest_settings"]["num_resets"])
+    config_changed = _clear_team_quest_mode_state(config)
 
     players_updated = 0
     unique_items_cleared = 0
@@ -870,6 +891,8 @@ async def reset_all_seasonal_information(interaction: discord.Interaction) -> Re
             players_updated += 1
 
     await save_player_records(interaction, records)
+    if config_changed:
+        await save_guild_config(interaction, config)
     return ResetSeasonalInfoSummary(
         players_updated=players_updated,
         unique_items_cleared=unique_items_cleared,
@@ -885,6 +908,8 @@ async def reset_all_teams(interaction: discord.Interaction) -> ResetTeamsSummary
 
     records = await load_player_records(interaction)
     teams = await load_teams(interaction)
+    config = await load_guild_config(interaction)
+    config_changed = _clear_team_quest_mode_state(config, disable_team_mode=True)
 
     team_names = set(teams.keys())
     team_names.update(_collect_team_names_from_records(records))
@@ -900,6 +925,8 @@ async def reset_all_teams(interaction: discord.Interaction) -> ResetTeamsSummary
     teams_deleted = len(teams)
     teams.clear()
     await save_teams(interaction, teams)
+    if config_changed:
+        await save_guild_config(interaction, config)
 
     team_roles_deleted = await _delete_team_roles(interaction.guild, team_names)
     return ResetTeamsSummary(
@@ -1239,12 +1266,15 @@ async def reset_season_data(
     records = await load_player_records(interaction)
     config = await load_guild_config(interaction)
     default_reset_limit = int(config["quest_settings"]["num_resets"])
+    config_changed = _clear_team_quest_mode_state(config, disable_team_mode=True)
 
     teams = await load_teams(interaction)
     team_names = set(teams.keys())
 
     ppes_cleared, items_cleared, quest_entries_cleared = _reset_player_records(records, default_reset_limit)
     await save_player_records(interaction, records)
+    if config_changed:
+        await save_guild_config(interaction, config)
 
     teams_deleted = len(teams)
     teams.clear()

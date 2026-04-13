@@ -11,8 +11,9 @@ import discord
 
 from utils.calc_points import normalize_item_name
 from utils.gen_graphic_board.generate_board import generate_quest_board
-from utils.guild_config import get_quest_points, get_quest_targets, load_guild_config
-from utils.player_records import ensure_player_exists, load_player_records, save_player_records
+from utils.guild_config import get_quest_points, get_quest_targets, load_guild_config, save_guild_config
+from utils.player_records import ensure_player_exists, load_player_records, load_teams, save_player_records
+from utils.quest_modes import build_global_quests_payload, build_team_quests_context
 from utils.quest_manager import refresh_player_quests
 
 
@@ -300,18 +301,22 @@ async def build_myquests_state_for_player(
 
     regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
     regular_points, shiny_points, skin_points = await get_quest_points(interaction)
+    quest_settings = config["quest_settings"]
+    teams = await load_teams(interaction)
+    team_context = build_team_quests_context(
+        settings=quest_settings,
+        player_data=player_data,
+        records=records,
+        teams=teams,
+    )
 
     changed = refresh_player_quests(
         player_data,
         target_item_quests=regular_target,
         target_shiny_quests=shiny_target,
         target_skin_quests=skin_target,
-        global_quests={
-            "enabled": bool(config["quest_settings"].get("use_global_quests", False)),
-            "regular": list(config["quest_settings"].get("global_regular_quests", [])),
-            "shiny": list(config["quest_settings"].get("global_shiny_quests", [])),
-            "skin": list(config["quest_settings"].get("global_skin_quests", [])),
-        },
+        global_quests=build_global_quests_payload(quest_settings),
+        team_quests=team_context,
     )
 
     if player_data.quest_resets_remaining != resets_remaining:
@@ -320,11 +325,14 @@ async def build_myquests_state_for_player(
 
     if changed:
         await save_player_records(interaction, records)
+        if bool(quest_settings.get("enable_team_quests", False)) and not bool(quest_settings.get("use_global_quests", False)):
+            await save_guild_config(interaction, config)
 
     quests = player_data.quests
     current_regular = list(quests.current_items)
     current_shiny = list(quests.current_shinies)
     current_skin = list(quests.current_skins)
+    completed_all = list(quests.completed_items) + list(quests.completed_shinies) + list(quests.completed_skins)
 
     return {
         "user_id": int(player_id),
@@ -340,14 +348,15 @@ async def build_myquests_state_for_player(
             regular_target,
             shiny_target,
             skin_target,
-            bool(config["quest_settings"].get("use_global_quests", False)),
+            bool(quest_settings.get("use_global_quests", False)),
         ),
         "completed_embed": build_completed_embed(quests, regular_points, shiny_points, skin_points),
         "current_regular": current_regular,
         "current_shiny": current_shiny,
         "current_skin": current_skin,
         "current_all": current_regular + current_shiny + current_skin,
-        "global_mode_enabled": bool(config["quest_settings"].get("use_global_quests", False)),
+        "completed_all": completed_all,
+        "global_mode_enabled": bool(quest_settings.get("use_global_quests", False)),
     }
 
 

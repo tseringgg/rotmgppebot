@@ -5,16 +5,17 @@ from __future__ import annotations
 import discord
 
 from utils.guild_config import load_guild_config
+from utils.quest_modes import (
+    build_global_quests_payload,
+    build_quest_mode_payload as _build_quest_mode_payload,
+    ensure_team_quests_state as _ensure_team_quests_state,
+    normalize_team_key as _normalize_team_key,
+)
 
 
 def build_global_payload(settings: dict) -> dict:
     """Create the quest-manager payload structure expected by refresh_player_quests."""
-    return {
-        "enabled": bool(settings.get("use_global_quests", False)),
-        "regular": list(settings.get("global_regular_quests", [])),
-        "shiny": list(settings.get("global_shiny_quests", [])),
-        "skin": list(settings.get("global_skin_quests", [])),
-    }
+    return build_global_quests_payload(settings)
 
 
 def coerce_non_negative_int(raw_value: str, field_name: str) -> int:
@@ -47,8 +48,21 @@ async def load_managequests_settings(interaction: discord.Interaction) -> dict:
     return dict(config["quest_settings"])
 
 
+def normalize_team_key(team_name: str | None) -> str:
+    return _normalize_team_key(team_name)
+
+
+def ensure_team_quests_state(settings: dict) -> dict[str, dict[str, list[str]]]:
+    return _ensure_team_quests_state(settings)
+
+
+def build_quest_mode_payload(settings: dict) -> dict:
+    return _build_quest_mode_payload(settings)
+
+
 def build_managequests_home_embed(settings: dict) -> discord.Embed:
     global_enabled = bool(settings.get("use_global_quests", False))
+    team_enabled = bool(settings.get("enable_team_quests", False))
     regular_global = len(settings.get("global_regular_quests", []))
     shiny_global = len(settings.get("global_shiny_quests", []))
     skin_global = len(settings.get("global_skin_quests", []))
@@ -78,9 +92,17 @@ def build_managequests_home_embed(settings: dict) -> discord.Embed:
         inline=True,
     )
     embed.add_field(
-        name="Global Quests",
+        name="Quest Modes",
         value=(
-            f"Enabled: **{'Yes' if global_enabled else 'No'}**\n"
+            f"Global quests: **{'Enabled' if global_enabled else 'Disabled'}**\n"
+            f"Team quests: **{'Enabled' if team_enabled else 'Disabled'}**\n"
+            "Precedence: **Global > Team > Personal**"
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="Global Quest Pools",
+        value=(
             f"Regular pool: **{regular_global}**\n"
             f"Shiny pool: **{shiny_global}**\n"
             f"Skin pool: **{skin_global}**"
@@ -96,7 +118,49 @@ def build_managequests_home_embed(settings: dict) -> discord.Embed:
         inline=False,
     )
     embed.set_footer(
-        text="Use Edit Quest Settings to update targets/points, Set Global Quests to enforce shared quests, or Manage Player's Quests for targeted actions."
+        text="Use Manage Quest Mode to configure global/team quest behavior and precedence."
+    )
+    return embed
+
+
+def build_quest_mode_embed(settings: dict) -> discord.Embed:
+    global_enabled = bool(settings.get("use_global_quests", False))
+    team_enabled = bool(settings.get("enable_team_quests", False))
+
+    if global_enabled and team_enabled:
+        effective = "Global (team mode suppressed)"
+    elif global_enabled:
+        effective = "Global"
+    elif team_enabled:
+        effective = "Team Shared"
+    else:
+        effective = "Personal"
+
+    team_state_map = ensure_team_quests_state(settings)
+
+    embed = discord.Embed(
+        title="Manage Quest Mode",
+        description="Configure how quests are assigned and shared across players.",
+        color=discord.Color.dark_blue(),
+    )
+    embed.add_field(
+        name="Current Mode",
+        value=(
+            f"Global quests: **{'Enabled' if global_enabled else 'Disabled'}**\n"
+            f"Team quests: **{'Enabled' if team_enabled else 'Disabled'}**\n"
+            f"Effective mode: **{effective}**"
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="Precedence",
+        value="Global quests always take precedence over team quests.",
+        inline=False,
+    )
+    embed.add_field(
+        name="Team Shared Quest State",
+        value=f"Tracked teams: **{len(team_state_map)}**",
+        inline=False,
     )
     return embed
 

@@ -7,7 +7,7 @@ A comprehensive Discord bot for managing competitions and more in Realm of the M
 ### Player Features
 - **Create & Manage PPEs**: Create PPEs with automatic penalty calculations.
 - **Season Management**: Track whole season loot, beyond individual characters. Auto-updated with character loot.
-- **Account Quests**: Get item, shiny, and skin quests with automated completion tracking via `/myquests`.
+- **Account Quests**: Get item, shiny, and skin quests with automated completion tracking via `/myquests`, including board views for active and completed quest sets.
 - **Team Functionality**: You can be added to a team and be assigned a team-specific role with points automatically counted together.
 - **Loot Tracking**: Track and graphically view regular, shiny, and divine items and skins automatically or manually.
 - **Sniffer Integration**: Automatically connect in-game characters to your bot account via sniffer for automated logging.
@@ -17,7 +17,7 @@ A comprehensive Discord bot for managing competitions and more in Realm of the M
 
 ### Admin Features
 - **Player Management**: One central dashboard for managing any player via `/manageplayer`.
-- **Quest Management**: View and reset quest progress for any contest player, including setting up global, shared quests via `/managequests`.
+- **Quest Management**: View and reset quest progress for any contest player, configure quest mode (Global vs Team Shared), and manage global quest pools via `/managequests`.
 - **Team Management**: Use `/manageteams` to create, update, and delete teams; assign members through `/manageplayer`
 - **Global Season Management**: Manage the overall season and the nitty gritty details of how the bot works with `/manageseason`. *Note: this board is still a work in-progress.*
 
@@ -230,7 +230,7 @@ If you don't want to set up the Sniffer, you can easily enable text-based image 
 | `/addpointsfor` | Manually add points to a specific PPE |
 | `/refreshpointsfor` | Recalculate points for a specific PPE |
 | `/refreshallpoints` | Fix all PPE point totals server-wide |
-| `/managequests` | View or update per-server quest targets (regular/shiny/skin), global quest pools, and run Reset All Quests from the menu |
+| `/managequests` | View or update per-server quest targets (regular/shiny/skin), manage quest mode (Global/Team Shared), edit global quest pools, and run Reset All Quests from the menu |
 | `/manageseason` | Open season admin controls: step-by-step Reset Season, contests, picture suggestions, and point settings |
 | `/forcereset` | Emergency full data wipe for this guild (server owner only); use when you need a complete restart |
 | `/addseasonlootfor` | Add a unique item to another player's season collection |
@@ -238,6 +238,7 @@ If you don't want to set up the Sniffer, you can easily enable text-based image 
 
 Legacy standalone commands for `/myloot`, `/myppes`, and `/showseasonloot` were retired in favor of `/myinfo`.
 The `/myquests` command and the My Info -> Show Quests button now use the same shared menu view implementation.
+When Team Shared Quests are disabled, each member's personal completed quests are rebuilt from team-completed quests they personally own in seasonal loot.
 Quest reset actions are now menu-integrated:
 - Use `/myquests` -> `Reset Quests` for self resets.
 - Use `/manageplayer` -> `Show Quests` -> `Reset Quests` for admin resets.

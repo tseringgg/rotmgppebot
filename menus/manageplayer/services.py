@@ -6,10 +6,11 @@ import discord
 
 from dataclass import PPEData, PlayerData
 from menus.manageplayer.targets import ManagedPlayerTarget, admin_role, player_role
-from utils.guild_config import get_quest_targets, load_guild_config
+from utils.guild_config import get_quest_targets, load_guild_config, save_guild_config
 from utils.pagination import LootPaginationView, chunk_lines_to_pages
 from utils.player_manager import player_manager
-from utils.player_records import ensure_player_exists, load_player_records, save_player_records
+from utils.player_records import ensure_player_exists, load_player_records, load_teams, save_player_records
+from utils.quest_modes import build_global_quests_payload, build_team_quests_context
 from utils.sniffer_helpers.realmshark_cleanup import clear_member_character_links, clear_ppe_character_links
 from utils.quest_manager import refresh_player_quests
 from utils.team_manager import team_manager
@@ -51,20 +52,26 @@ async def send_target_quests_followup(interaction: discord.Interaction, target: 
         resets_remaining = default_reset_limit
 
     regular_target, shiny_target, skin_target = await get_quest_targets(interaction)
+    quest_settings = config["quest_settings"]
+    teams = await load_teams(interaction)
+    team_context = build_team_quests_context(
+        settings=quest_settings,
+        player_data=player_data,
+        records=records,
+        teams=teams,
+    )
     changed = refresh_player_quests(
         player_data,
         target_item_quests=regular_target,
         target_shiny_quests=shiny_target,
         target_skin_quests=skin_target,
-        global_quests={
-            "enabled": bool(config["quest_settings"].get("use_global_quests", False)),
-            "regular": list(config["quest_settings"].get("global_regular_quests", [])),
-            "shiny": list(config["quest_settings"].get("global_shiny_quests", [])),
-            "skin": list(config["quest_settings"].get("global_skin_quests", [])),
-        },
+        global_quests=build_global_quests_payload(quest_settings),
+        team_quests=team_context,
     )
     if changed:
         await save_player_records(interaction, records)
+        if bool(quest_settings.get("enable_team_quests", False)) and not bool(quest_settings.get("use_global_quests", False)):
+            await save_guild_config(interaction, config)
     elif player_data.quest_resets_remaining != resets_remaining:
         player_data.quest_resets_remaining = resets_remaining
         await save_player_records(interaction, records)

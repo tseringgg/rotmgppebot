@@ -69,6 +69,7 @@ class GlobalQuestsView(OwnerBoundView):
     async def _enable_global_quests(self, interaction: discord.Interaction) -> None:
         settings = await load_managequests_settings(interaction)
         settings["use_global_quests"] = True
+        settings["enable_team_quests"] = False
         await save_settings(interaction, settings)
 
         players_adjusted, active_removed, _ = await apply_settings_to_players(interaction, settings=settings)
@@ -213,10 +214,10 @@ class GlobalQuestsView(OwnerBoundView):
         )
 
     async def _back(self, interaction: discord.Interaction) -> None:
-        from menus.managequests.submenus.home.views import ManageQuestsHomeView
+        from menus.managequests.submenus.quest_mode.views import QuestModeView
         
         settings = await load_managequests_settings(interaction)
-        view = ManageQuestsHomeView(owner_id=self.owner_id, settings=settings)
+        view = QuestModeView(owner_id=self.owner_id, settings=settings)
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
 
