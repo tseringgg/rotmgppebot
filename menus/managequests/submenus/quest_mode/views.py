@@ -99,6 +99,13 @@ class QuestModeView(OwnerBoundView):
         )
         await interaction.response.send_message(message, view=view, ephemeral=True)
         await view.wait()
+
+        # Close the ephemeral confirmation prompt after a decision/timeout.
+        try:
+            await interaction.delete_original_response()
+        except discord.HTTPException:
+            pass
+
         if not view.confirmed:
             await interaction.followup.send("❌ Action cancelled.", ephemeral=True)
             return False
@@ -111,7 +118,16 @@ class QuestModeView(OwnerBoundView):
             return
 
         if interaction.message is not None:
-            await interaction.message.edit(embed=self.current_embed(), view=self)
+            try:
+                await interaction.message.edit(embed=self.current_embed(), view=self)
+                return
+            except discord.NotFound:
+                # Ephemeral-origin messages can be unavailable via channel edit routes.
+                pass
+            except discord.HTTPException:
+                pass
+
+        await interaction.followup.send(embed=self.current_embed(), view=self, ephemeral=True)
 
     async def _send_action_error(self, interaction: discord.Interaction, *, action: str, exc: Exception) -> None:
         error_ref = f"qm-{int(time.time())}"
