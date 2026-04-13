@@ -129,6 +129,7 @@ def create_loot_markdown_file(
         _as_float(points_breakdown.get("loot_raw"), 0.0)
         + _as_float(points_breakdown.get("bonus_raw"), 0.0)
         + _as_float(points_breakdown.get("penalty_raw"), 0.0)
+        + _as_float(points_breakdown.get("set_bonus_raw"), 0.0)
     )
     penalty_inputs = penalty_inputs_from_bonuses(ppe_data.bonuses, guild_config=guild_config)
     penalty_input_breakdown = starting_penalty_breakdown_from_inputs(
