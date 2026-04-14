@@ -2,10 +2,9 @@ import discord
 from dataclass import Bonus
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.bonus_data import load_bonuses
-from utils.embed_builders import build_loot_embed
 from utils.guild_config import load_guild_config
+from utils.loot_ops import send_ppe_markdown_followup
 from utils.points_service import recompute_ppe_points
-from utils.loot_helpers.loot_table_message import LootTableMessage
 
 async def command(interaction: discord.Interaction, bonus_name: str):
     if not interaction.guild:
@@ -21,6 +20,9 @@ async def command(interaction: discord.Interaction, bonus_name: str):
             f"Use the autocomplete list to choose one.",
             ephemeral=True
         )
+
+    # Acknowledge quickly before record/config I/O to avoid interaction timeout.
+    await interaction.response.defer(thinking=True)
     
     # Load player records
     records = await load_player_records(interaction)
@@ -29,7 +31,7 @@ async def command(interaction: discord.Interaction, bonus_name: str):
     
     # Check if player has an active PPE
     if player_data.active_ppe is None:
-        return await interaction.response.send_message(
+        return await interaction.followup.send(
             "❌ You don't have an active PPE. Create one first with `/newppe`.",
             ephemeral=True
         )
@@ -42,7 +44,7 @@ async def command(interaction: discord.Interaction, bonus_name: str):
             break
     
     if not active_ppe:
-        return await interaction.response.send_message(
+        return await interaction.followup.send(
             "❌ Could not find your active PPE.",
             ephemeral=True
         )
@@ -58,7 +60,7 @@ async def command(interaction: discord.Interaction, bonus_name: str):
     
     if existing_bonus:
         if not bonus_data.repeatable:
-            return await interaction.response.send_message(
+            return await interaction.followup.send(
                 f"❌ You already have the `{bonus_name}` bonus and it is not repeatable.",
                 ephemeral=True
             )
@@ -77,8 +79,10 @@ async def command(interaction: discord.Interaction, bonus_name: str):
         active_ppe.bonuses.append(new_bonus)
         quantity_text = ""
 
+    old_points = round(float(active_ppe.points), 2)
     guild_config = await load_guild_config(interaction)
     recompute_ppe_points(active_ppe, guild_config)
+    new_points = round(float(active_ppe.points), 2)
     
     # Save records
     await save_player_records(interaction=interaction, records=records)
@@ -88,19 +92,8 @@ async def command(interaction: discord.Interaction, bonus_name: str):
     response_msg = (
         f"✅ Added bonus `{bonus_name}` to PPE #{active_ppe.id} ({active_ppe.name})!{quantity_text}\n"
         f"**+{bonus_data.points} points**{repeatable_text}\n"
+        f"Points: **{old_points} -> {new_points}**"
     )
-    
-    # Use LootTableMessage to handle response + markdown file
-    loot_message = LootTableMessage(
-        interaction=interaction,
-        message_type="markdown",
-        response=response_msg,
-        response_ephemeral=False,
-        ephemeral=True,
-    )
-    
-    await loot_message.send_player_loot(
-        active_ppe, 
-        user_id=interaction.user.id, 
-        recently_added=bonus_name
-    )
+
+    await interaction.followup.send(response_msg, ephemeral=False)
+    await send_ppe_markdown_followup(interaction, ppe=active_ppe, ephemeral=True)
