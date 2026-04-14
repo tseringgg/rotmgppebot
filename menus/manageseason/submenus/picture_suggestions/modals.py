@@ -28,8 +28,9 @@ def _channel_mentions(guild: discord.Guild | None, channel_ids: list[int]) -> st
     mentions: list[str] = []
     for channel_id in channel_ids:
         if guild is not None:
-            channel = guild.get_channel(channel_id)
-            if isinstance(channel, discord.TextChannel):
+            resolver = getattr(guild, "get_channel_or_thread", guild.get_channel)
+            channel = resolver(channel_id)
+            if isinstance(channel, (discord.TextChannel, discord.Thread)):
                 mentions.append(channel.mention)
                 continue
         mentions.append(f"`{channel_id}`")

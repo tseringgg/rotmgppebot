@@ -309,9 +309,10 @@ async def create_join_contest_embed(
     if existing_message_id > 0:
         raise ValueError("A join embed is already configured. Delete it first.")
 
-    channel = interaction.guild.get_channel(int(channel_id))
-    if not isinstance(channel, discord.TextChannel):
-        raise ValueError("Please provide a valid text channel in this server.")
+    resolver = getattr(interaction.guild, "get_channel_or_thread", interaction.guild.get_channel)
+    channel = resolver(int(channel_id))
+    if not isinstance(channel, (discord.TextChannel, discord.Thread)):
+        raise ValueError("Please provide a valid text channel or thread in this server.")
 
     role = discord.utils.get(interaction.guild.roles, name="PPE Player")
     if role is None:
@@ -352,8 +353,9 @@ async def delete_join_contest_embed(interaction: discord.Interaction) -> dict[st
     deleted_message = False
 
     if channel_id > 0 and message_id > 0:
-        channel = interaction.guild.get_channel(channel_id)
-        if isinstance(channel, discord.TextChannel):
+        resolver = getattr(interaction.guild, "get_channel_or_thread", interaction.guild.get_channel)
+        channel = resolver(channel_id)
+        if isinstance(channel, (discord.TextChannel, discord.Thread)):
             try:
                 message = await channel.fetch_message(message_id)
             except (discord.NotFound, discord.Forbidden, discord.HTTPException):
@@ -1118,8 +1120,9 @@ async def _clear_join_embed_reactions(
     if join_channel_id <= 0 or join_message_id <= 0:
         return 0
 
-    channel = interaction.guild.get_channel(join_channel_id)
-    if not isinstance(channel, discord.TextChannel):
+    resolver = getattr(interaction.guild, "get_channel_or_thread", interaction.guild.get_channel)
+    channel = resolver(join_channel_id)
+    if not isinstance(channel, (discord.TextChannel, discord.Thread)):
         return 0
 
     try:

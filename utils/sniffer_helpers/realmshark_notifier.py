@@ -32,6 +32,7 @@ _MIN_SEND_INTERVAL_SECONDS = _env_float("REALMSHARK_MIN_SEND_INTERVAL_SECONDS", 
 _CHANNEL_CACHE: dict[int, tuple[int, float]] = {}
 _SEND_LOCK = asyncio.Lock()
 _NEXT_ALLOWED_SEND_MONOTONIC = 0.0
+_GuildMessageChannel = discord.TextChannel | discord.Thread
 
 
 def _discord_absolute_now() -> str:
@@ -48,15 +49,21 @@ def _with_optional_timestamp(message: str) -> str:
     return message
 
 
-def _is_writable_text_channel(channel: discord.abc.GuildChannel | None, me: discord.Member | None) -> bool:
-    if not isinstance(channel, discord.TextChannel):
+def _is_writable_message_channel(
+    channel: discord.abc.GuildChannel | discord.Thread | None,
+    me: discord.Member | None,
+) -> bool:
+    if not isinstance(channel, (discord.TextChannel, discord.Thread)):
         return False
     if me is None:
         return False
-    return channel.permissions_for(me).send_messages
+    perms = channel.permissions_for(me)
+    if isinstance(channel, discord.Thread):
+        return bool(perms.send_messages_in_threads or perms.send_messages)
+    return bool(perms.send_messages)
 
 
-def _get_cached_announce_channel(guild: discord.Guild, me: discord.Member | None) -> discord.TextChannel | None:
+def _get_cached_announce_channel(guild: discord.Guild, me: discord.Member | None) -> _GuildMessageChannel | None:
     cached = _CHANNEL_CACHE.get(guild.id)
     if cached is None:
         return None
@@ -66,8 +73,9 @@ def _get_cached_announce_channel(guild: discord.Guild, me: discord.Member | None
         _CHANNEL_CACHE.pop(guild.id, None)
         return None
 
-    channel = guild.get_channel(channel_id)
-    if not _is_writable_text_channel(channel, me):
+    resolver = getattr(guild, "get_channel_or_thread", guild.get_channel)
+    channel = resolver(channel_id)
+    if not _is_writable_message_channel(channel, me):
         _CHANNEL_CACHE.pop(guild.id, None)
         return None
 
@@ -79,7 +87,7 @@ def _cache_announce_channel(guild_id: int, channel_id: int) -> None:
 
 
 async def _throttled_send(
-    channel: discord.TextChannel,
+    channel: _GuildMessageChannel,
     *,
     content: str,
     file: discord.File | None = None,
@@ -129,14 +137,15 @@ def _resolve_announce_channel(
     guild: discord.Guild,
     me: discord.Member | None,
     channel_id: int | None,
-) -> discord.TextChannel | None:
+) -> _GuildMessageChannel | None:
     cached_channel = _get_cached_announce_channel(guild, me)
     if cached_channel is not None:
         return cached_channel
 
     if channel_id is not None and channel_id > 0:
-        configured_channel = guild.get_channel(channel_id)
-        if _is_writable_text_channel(configured_channel, me):
+        resolver = getattr(guild, "get_channel_or_thread", guild.get_channel)
+        configured_channel = resolver(channel_id)
+        if _is_writable_message_channel(configured_channel, me):
             _cache_announce_channel(guild.id, configured_channel.id)
             return configured_channel
 
@@ -149,12 +158,12 @@ def _resolve_announce_channel(
                 f"[REALMSHARK] Configured announce channel {channel_id} not found in guild {guild.id}, falling back."
             )
 
-    if _is_writable_text_channel(guild.system_channel, me):
+    if _is_writable_message_channel(guild.system_channel, me):
         _cache_announce_channel(guild.id, guild.system_channel.id)
         return guild.system_channel
 
     channel = next(
-        (c for c in guild.text_channels if _is_writable_text_channel(c, me)),
+        (c for c in guild.text_channels if _is_writable_message_channel(c, me)),
         None,
     )
     if channel is not None:

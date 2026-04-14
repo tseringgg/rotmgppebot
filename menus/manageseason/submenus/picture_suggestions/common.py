@@ -7,8 +7,9 @@ import discord
 
 def _channel_display(guild: discord.Guild | None, channel_id: int) -> str:
     if guild is not None:
-        channel = guild.get_channel(channel_id)
-        if isinstance(channel, discord.TextChannel):
+        resolver = getattr(guild, "get_channel_or_thread", guild.get_channel)
+        channel = resolver(channel_id)
+        if isinstance(channel, (discord.TextChannel, discord.Thread)):
             return channel.mention
     return f"`{channel_id}`"
 
@@ -95,7 +96,7 @@ def build_picture_suggestions_manage_embed(
         embed.add_field(
             name="Non-Text Channels Detected",
             value=(
-                "These stored channels are not regular text channels and are ignored:\n"
+                "These stored channels are not text channels or threads and are ignored:\n"
                 f"{wrong_type_preview}{suffix}"
             ),
             inline=False,

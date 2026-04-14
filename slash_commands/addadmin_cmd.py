@@ -6,8 +6,23 @@ async def command(interaction: discord.Interaction, member: discord.Member):
         await interaction.response.send_message("❌ This command can only be used in a server.", ephemeral=True)
         return
 
-    if interaction.user.id != interaction.guild.owner_id:
-        await interaction.response.send_message("❌ Only the server owner can use this command.", ephemeral=True)
+    actor = interaction.user if isinstance(interaction.user, discord.Member) else None
+    if actor is None:
+        await interaction.response.send_message("❌ Unable to validate your server permissions.", ephemeral=True)
+        return
+
+    actor_permissions = actor.guild_permissions
+    is_server_admin = bool(
+        actor.id == interaction.guild.owner_id
+        or actor_permissions.administrator
+        or actor_permissions.manage_guild
+        or actor_permissions.manage_roles
+    )
+    if not is_server_admin:
+        await interaction.response.send_message(
+            "❌ Only server admins/mods (or the server owner) can use this command.",
+            ephemeral=True,
+        )
         return
 
     role = discord.utils.get(interaction.guild.roles, name="PPE Admin")

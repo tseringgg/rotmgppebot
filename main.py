@@ -259,7 +259,10 @@ async def ppe_type_autocomplete(
     return matches[:25]
 
 @bot.event
-async def on_guild_join(guild: discord.Guild | None):
+async def on_guild_join(
+    guild: discord.Guild | None,
+    announce_channel: discord.abc.Messageable | None = None,
+):
     if not guild:
         print("[WARN] on_guild_join called with no guild.")
         return
@@ -294,14 +297,16 @@ async def on_guild_join(guild: discord.Guild | None):
         "- `PPE Player`: Can register PPEs, post loot, and view leaderboards."
     )
 
-    # Find a channel to send the message
-    channel = (
-        guild.system_channel
-        or next(
-            (c for c in guild.text_channels if c.permissions_for(guild.me).send_messages),
-            None
+    # Find a channel to send the message.
+    channel = announce_channel
+    if channel is None:
+        channel = (
+            guild.system_channel
+            or next(
+                (c for c in guild.text_channels if c.permissions_for(guild.me).send_messages),
+                None
+            )
         )
-    )
     if channel:
         try:
             await channel.send(setup_msg)
@@ -373,7 +378,7 @@ async def on_message(message: discord.Message):
 @bot.tree.command(name="setuproles", description="Check and create required PPE roles in this server.", guilds=guilds)
 @commands.has_permissions(manage_roles=True)
 async def setup_roles(interaction: discord.Interaction):
-    await on_guild_join(interaction.guild)
+    await on_guild_join(interaction.guild, announce_channel=interaction.channel)
     await interaction.response.send_message("🔁 Setup roles check complete.")
 
 

@@ -194,8 +194,9 @@ def mention_for_channel(guild: discord.Guild | None, channel_id: int) -> str:
     if guild is None or channel_id <= 0:
         return "Default (system/first writable text channel)"
 
-    channel = guild.get_channel(channel_id)
-    if isinstance(channel, discord.TextChannel):
+    resolver = getattr(guild, "get_channel_or_thread", guild.get_channel)
+    channel = resolver(channel_id)
+    if isinstance(channel, (discord.TextChannel, discord.Thread)):
         return channel.mention
     return str(channel_id)
 

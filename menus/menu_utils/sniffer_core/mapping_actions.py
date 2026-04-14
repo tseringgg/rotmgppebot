@@ -56,7 +56,7 @@ async def set_enabled(interaction: discord.Interaction, enabled: bool) -> None:
 
 async def set_announce_channel(
     interaction: discord.Interaction,
-    channel: discord.TextChannel | None,
+    channel: discord.TextChannel | discord.Thread | None,
 ) -> None:
     await realmshark_services.set_announce_channel(interaction, channel)
 

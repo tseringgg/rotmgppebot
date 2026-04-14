@@ -70,16 +70,20 @@ class OutputChannelIdModal(discord.ui.Modal, title="Set Sniffer Output Channel")
 
         parsed_channel_id = parse_channel_id(str(self.channel_id.value))
         if parsed_channel_id is None:
-            await interaction.response.send_message("Provide a valid text channel ID or #channel mention.", ephemeral=True)
+            await interaction.response.send_message("Provide a valid channel/thread ID or #mention.", ephemeral=True)
             return
 
         if interaction.guild is None:
             await interaction.response.send_message("This action can only be used in a server.", ephemeral=True)
             return
 
-        channel = interaction.guild.get_channel(parsed_channel_id)
-        if not isinstance(channel, discord.TextChannel):
-            await interaction.response.send_message("Channel ID must resolve to a text channel in this server.", ephemeral=True)
+        resolver = getattr(interaction.guild, "get_channel_or_thread", interaction.guild.get_channel)
+        channel = resolver(parsed_channel_id)
+        if not isinstance(channel, (discord.TextChannel, discord.Thread)):
+            await interaction.response.send_message(
+                "Channel ID must resolve to a text channel or thread in this server.",
+                ephemeral=True,
+            )
             return
 
         await set_output_channel(interaction, parsed_channel_id)
