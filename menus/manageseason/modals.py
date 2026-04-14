@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import discord
 
-from utils.ppe_types import ppe_type_label
+from utils.ppe_types import ppe_type_label, ppe_type_short_label
 from menus.manageseason.services import (
     load_character_settings_for_menu,
     load_points_settings_for_menu,
@@ -680,7 +680,8 @@ class EditPpeTypeMultiplierModal(discord.ui.Modal):
         current_value: float,
         source_message: discord.Message | None,
     ) -> None:
-        super().__init__(title=f"Edit PPE Type Points - {ppe_type_label(ppe_type)}", timeout=300)
+        short_label = ppe_type_short_label(ppe_type)
+        super().__init__(title=f"Edit PPE Multiplier - {short_label}", timeout=300)
         self.owner_id = owner_id
         self.ppe_type = ppe_type
         self.source_message = source_message

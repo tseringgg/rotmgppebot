@@ -220,6 +220,9 @@ class _AllowedPpeTypesSelect(discord.ui.Select):
             return
 
         view.selected_types = normalize_allowed_ppe_types(list(self.values))
+        saved = await update_allowed_ppe_types(interaction, allowed_types=view.selected_types)
+        view.selected_types = normalize_allowed_ppe_types(saved.get("allowed_ppe_types"))
+        view.ppe_types_enabled = bool(saved.get("enable_ppe_types", view.ppe_types_enabled))
         for option in self.options:
             option.default = option.value in view.selected_types
         await interaction.response.edit_message(embed=view.current_embed(), view=view)

@@ -12,6 +12,7 @@ PPE_TYPE_UT_NO_PET = "ut_no_pet"
 PPE_TYPE_SHINY_ONLY = "shiny_only"
 PPE_TYPE_SHINY_NO_PET = "shiny_no_pet"
 PPE_TYPE_LEGENDARY_OR_SHINY = "legendary_or_shiny"
+PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET = "legendary_or_shiny_no_pet"
 PPE_TYPE_NO_PET = "no_pet"
 PPE_TYPE_DIVINE_SHINY = "divine_shiny"
 PPE_TYPE_DIVINE_SHINY_NO_PET = "divine_shiny_no_pet"
@@ -27,6 +28,7 @@ PPE_TYPE_ORDER = [
     PPE_TYPE_SHINY_ONLY,
     PPE_TYPE_SHINY_NO_PET,
     PPE_TYPE_LEGENDARY_OR_SHINY,
+    PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET,
     PPE_TYPE_NO_PET,
     PPE_TYPE_DIVINE_SHINY,
     PPE_TYPE_DIVINE_SHINY_NO_PET,
@@ -43,6 +45,7 @@ PPE_TYPE_LABELS = {
     PPE_TYPE_SHINY_ONLY: "Shiny Only PPE",
     PPE_TYPE_SHINY_NO_PET: "Shiny Only & No Pet PPE",
     PPE_TYPE_LEGENDARY_OR_SHINY: "Legendary or Shiny PPE",
+    PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET: "Legendary or Shiny & No Pet PPE",
     PPE_TYPE_NO_PET: "No Pet PPE (NPE)",
     PPE_TYPE_DIVINE_SHINY: "Divine & Shiny PPE",
     PPE_TYPE_DIVINE_SHINY_NO_PET: "Divine & Shiny & No Pet PPE",
@@ -59,6 +62,7 @@ PPE_TYPE_SHORT_LABELS = {
     PPE_TYPE_SHINY_ONLY: "SPE",
     PPE_TYPE_SHINY_NO_PET: "SNPE",
     PPE_TYPE_LEGENDARY_OR_SHINY: "SLPE",
+    PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET: "SLNPE",
     PPE_TYPE_NO_PET: "NPE",
     PPE_TYPE_DIVINE_SHINY: "D+SPE",
     PPE_TYPE_DIVINE_SHINY_NO_PET: "DSNPE",
@@ -77,6 +81,7 @@ DEFAULT_PPE_TYPE_MULTIPLIERS = {
     PPE_TYPE_SHINY_ONLY: 1.5,
     PPE_TYPE_SHINY_NO_PET: 1.95,
     PPE_TYPE_LEGENDARY_OR_SHINY: 1.3,
+    PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET: 1.69,
     PPE_TYPE_NO_PET: 1.3,
     PPE_TYPE_DIVINE_SHINY: 2.0,
     PPE_TYPE_DIVINE_SHINY_NO_PET: 2.6,
@@ -146,6 +151,12 @@ def normalize_ppe_type(value: Any) -> str:
         "legendary_or_shiny": PPE_TYPE_LEGENDARY_OR_SHINY,
         "legendaryorshiny": PPE_TYPE_LEGENDARY_OR_SHINY,
         "slpe": PPE_TYPE_LEGENDARY_OR_SHINY,
+        PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET: PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET,
+        "legendary_or_shiny_no_pet": PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET,
+        "legendary_or_shiny_no_pet_ppe": PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET,
+        "legendary_or_shiny_and_no_pet": PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET,
+        "legendaryorshinynopet": PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET,
+        "slnpe": PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET,
         PPE_TYPE_NO_PET: PPE_TYPE_NO_PET,
         "npe": PPE_TYPE_NO_PET,
         "no_pet_ppe": PPE_TYPE_NO_PET,
