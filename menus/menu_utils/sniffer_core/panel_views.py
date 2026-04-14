@@ -14,9 +14,10 @@ from menus.menu_utils.sniffer_core.panel_common import (
     normalize_character_metadata as _normalize_character_metadata,
     normalize_seasonal_ids as _normalize_seasonal_ids,
     parse_positive_int as _parse_positive_int,
+    migrate_legacy_pending_for_user as _migrate_legacy_pending_for_user,
 )
 from menus.menu_utils.sniffer_core.mapping_actions import configure
-from utils.guild_config import get_realmshark_settings
+from utils.guild_config import get_realmshark_settings, set_realmshark_settings
 from utils.player_records import ensure_player_exists, load_player_records
 from utils.sniffer_helpers.realmshark_pending_store import get_pending_character_entry, load_pending
 async def _resolve_character_id_for_panel(
@@ -52,6 +53,12 @@ async def _player_character_lists(
     settings = await get_realmshark_settings(interaction)
     links = settings.get("links", {}) if isinstance(settings.get("links"), dict) else {}
     user_links = _iter_user_links(links, user_id=user_id, token=token)
+
+    migrated = await _migrate_legacy_pending_for_user(interaction.guild.id, user_links, links)
+    if migrated:
+        settings["links"] = links
+        await set_realmshark_settings(interaction, settings)
+        user_links = _iter_user_links(links, user_id=user_id, token=token)
 
     all_ids: set[int] = set()
     mapped_ids: set[int] = set()

@@ -13,9 +13,11 @@ from menus.menu_utils.sniffer_core.panel_common import (
     normalize_character_metadata as _normalize_character_metadata,
     normalize_seasonal_ids as _normalize_seasonal_ids,
     parse_positive_int as _parse_positive_int,
+    migrate_legacy_pending_for_user as _migrate_legacy_pending_for_user,
     player_character_lists as _player_character_lists,
     resolve_character_id_for_panel as _resolve_character_id_for_panel,
 )
+from menus.menu_utils.sniffer_core.common import token_preview as _token_preview
 from menus.menu_utils.sniffer_core.panel_views import RealmSharkConfigurePanelView, render_panel_embed
 from utils.guild_config import get_realmshark_settings, set_realmshark_settings
 from utils.player_records import load_player_records
@@ -137,6 +139,13 @@ async def _admin_character_entries(interaction: discord.Interaction, mode: str) 
     for user_id, link_data_list in user_to_links.items():
         all_ids: set[int] = set()
         mapped_ids: set[int] = set()
+
+        user_links = [(token, link_data) for token, link_data in links.items() if isinstance(link_data, dict) and _parse_positive_int(link_data.get("user_id")) == user_id]
+        migrated = await _migrate_legacy_pending_for_user(interaction.guild.id, user_links, links)
+        if migrated:
+            settings["links"] = links
+            await set_realmshark_settings(interaction, settings)
+            user_links = [(token, link_data) for token, link_data in links.items() if isinstance(link_data, dict) and _parse_positive_int(link_data.get("user_id")) == user_id]
 
         for link_data in link_data_list:
             all_ids.update(_collect_character_ids_from_link(link_data))

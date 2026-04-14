@@ -7,6 +7,10 @@ from utils.guild_config import load_guild_config
 from utils.points_service import recompute_ppe_points
 from utils.loot_helpers.loot_table_message import LootTableMessage
 
+
+def _format_points(value: float) -> str:
+    return str(int(value)) if float(value).is_integer() else f"{float(value):.1f}".rstrip("0").rstrip(".")
+
 async def command(interaction: discord.Interaction, user: discord.Member, id: int, bonus_name: str):
     if not interaction.guild:
         return await interaction.response.send_message("❌ This command can only be used in a server.")
@@ -48,6 +52,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
         )
     
     bonus_data = available_bonuses[bonus_name]
+    old_points = float(target_ppe.points)
     
     # Check if bonus already exists
     existing_bonus = None
@@ -79,6 +84,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
 
     guild_config = await load_guild_config(interaction)
     recompute_ppe_points(target_ppe, guild_config)
+    new_points = float(target_ppe.points)
     
     # Save records
     await save_player_records(interaction=interaction, records=records)
@@ -86,7 +92,8 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     # Create response message
     repeatable_text = " (repeatable)" if bonus_data.repeatable else " (one-time)"
     response_msg = (
-        f"✅ Added bonus `{bonus_name}` to {user.display_name}'s PPE #{target_ppe.id} ({target_ppe.name})!{quantity_text}\n"
+        f"✅ Bonus logged for {user.display_name}'s PPE #{target_ppe.id} ({target_ppe.name})!{quantity_text}\n"
+        f"Points: {_format_points(old_points)} -> {_format_points(new_points)}\n"
         f"**+{bonus_data.points} points**{repeatable_text}\n"
     )
     

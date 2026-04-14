@@ -2,6 +2,7 @@ import discord
 
 from menus.leaderboard.common import build_ranked_entry_lines, send_error_response, send_leaderboard
 from menus.leaderboard.services import member_display_name, require_guild
+from utils.ppe_types import normalize_ppe_type, ppe_type_short_label
 from utils.team_contest_scoring import (
     TeamContestScoring,
     compute_ppe_points,
@@ -97,13 +98,15 @@ async def command(interaction: discord.Interaction):
 
             is_inactive = active_ppe_id != best_ppe.id
             marker = " • (inactive)" if is_inactive else ""
+            ppe_type = ppe_type_short_label(normalize_ppe_type(getattr(best_ppe, "ppe_type", None)))
+            class_label = f"{best_ppe.name} [{ppe_type}]"
             if include_ppe_quest_points:
                 rows.append(
-                    f"**{player.title()}** — {best_ppe.name}: "
+                    f"**{player.title()}** — {class_label}: "
                     f"{ppe_points:.1f} + {quest_points:.1f} = **{points:.1f}** pts{marker}"
                 )
             else:
-                rows.append(f"**{player.title()}** — {best_ppe.name}: **{points:.1f}** pts{marker}")
+                rows.append(f"**{player.title()}** — {class_label}: **{points:.1f}** pts{marker}")
 
         await send_leaderboard(
             interaction,
