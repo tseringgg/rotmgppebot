@@ -7,7 +7,7 @@ from typing import Any
 import discord
 
 from menus.menu_utils.sniffer_core import common as realmshark_common
-from utils.guild_config import get_realmshark_settings
+from utils.guild_config import get_realmshark_settings, set_realmshark_settings
 from utils.sniffer_helpers.realmshark_pending_store import (
     get_pending_character_entry,
     load_pending,
@@ -203,6 +203,12 @@ async def player_character_lists(
     settings = await get_realmshark_settings(interaction)
     links = settings.get("links", {}) if isinstance(settings.get("links"), dict) else {}
     user_links = iter_user_links(links, user_id=user_id, token=token)
+
+    migrated = await migrate_legacy_pending_for_user(interaction.guild.id, user_links, links)
+    if migrated:
+        settings["links"] = links
+        await set_realmshark_settings(interaction, settings)
+        user_links = iter_user_links(links, user_id=user_id, token=token)
 
     all_ids: set[int] = set()
     mapped_ids: set[int] = set()

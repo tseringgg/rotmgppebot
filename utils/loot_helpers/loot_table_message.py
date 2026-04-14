@@ -31,12 +31,19 @@ class LootTableMessage:
 
     async def send_player_loot(self, active_ppe, **kwargs):
         try:
-            if self.response and not self.already_responded:
-                await self.interaction.response.send_message(
-                    self.response,
-                    file=self.config.get("response_file"),
-                    ephemeral=self.config.get("response_ephemeral", False),
-                )
+            if self.response:
+                if self.already_responded:
+                    await self.interaction.followup.send(
+                        self.response,
+                        file=self.config.get("response_file"),
+                        ephemeral=self.config.get("response_ephemeral", False),
+                    )
+                else:
+                    await self.interaction.response.send_message(
+                        self.response,
+                        file=self.config.get("response_file"),
+                        ephemeral=self.config.get("response_ephemeral", False),
+                    )
 
             if self.message_type == "markdown":
                 await self._send_markdown_file(active_ppe)

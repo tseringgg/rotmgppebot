@@ -594,6 +594,17 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
                 f"Routing to addseasonloot guild_id={guild_id} user_id={linked_user_id}"
             )
             result = await _addseasonloot_with_duplicate_ok(guild_id, linked_user_id, item_name, shiny, item_rarity)
+            await append_pending_event(
+                guild_id,
+                linked_user_id,
+                character_id=character_id,
+                item_name=item_name,
+                item_rarity=normalize_rarity(item_rarity),
+                shiny=shiny,
+                divine=divine,
+                character_name=character_name,
+                character_class=character_class,
+            )
         elif bound_ppe_id is not None:
             try:
                 mode = "addloot"

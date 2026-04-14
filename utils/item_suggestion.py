@@ -20,15 +20,28 @@ from utils.loot_constants import normalize_rarity
 
 
 class RaritySelect(discord.ui.Select):
-    def __init__(self):
+    def __init__(self, selected: str = "common"):
+        selected_value = normalize_rarity(selected)
         options = [
-            discord.SelectOption(label="Common", value="common", default=True),
-            discord.SelectOption(label="Uncommon", value="uncommon"),
-            discord.SelectOption(label="Rare", value="rare"),
-            discord.SelectOption(label="Legendary", value="legendary"),
-            discord.SelectOption(label="Divine", value="divine"),
+            discord.SelectOption(label="Common", value="common", default=selected_value == "common"),
+            discord.SelectOption(label="Uncommon", value="uncommon", default=selected_value == "uncommon"),
+            discord.SelectOption(label="Rare", value="rare", default=selected_value == "rare"),
+            discord.SelectOption(label="Legendary", value="legendary", default=selected_value == "legendary"),
+            discord.SelectOption(label="Divine", value="divine", default=selected_value == "divine"),
         ]
-        super().__init__(placeholder="Rarity: Common", min_values=1, max_values=1, options=options, row=1)
+        super().__init__(
+            placeholder=f"Rarity: {selected_value.title()}",
+            min_values=1,
+            max_values=1,
+            options=options,
+            row=1,
+        )
+
+    def sync_selected(self, rarity: str) -> None:
+        selected_value = normalize_rarity(rarity)
+        self.placeholder = f"Rarity: {selected_value.title()}"
+        for option in self.options:
+            option.default = option.value == selected_value
 
     async def callback(self, interaction: discord.Interaction):
         view = self.view
@@ -38,7 +51,7 @@ class RaritySelect(discord.ui.Select):
             return
 
         view.rarity = normalize_rarity(self.values[0])
-        self.placeholder = f"Rarity: {view.rarity.title()}"
+        self.sync_selected(view.rarity)
         await interaction.response.edit_message(view=view)
 
 # ---------------------------------------------------------------------------
@@ -102,7 +115,8 @@ class ItemSuggestionView(discord.ui.View):
         self.suggested_item = suggested_item
         self.is_shiny = False
         self.rarity = "common"
-        self.add_item(RaritySelect())
+        self.rarity_select = RaritySelect(self.rarity)
+        self.add_item(self.rarity_select)
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -138,6 +152,7 @@ class ItemSuggestionView(discord.ui.View):
         self.is_shiny = not self.is_shiny
         button.label = "Shiny: Yes" if self.is_shiny else "Shiny: No"
         button.style = discord.ButtonStyle.success if self.is_shiny else discord.ButtonStyle.secondary
+        self.rarity_select.sync_selected(self.rarity)
         await interaction.response.edit_message(view=self)
 
     @discord.ui.button(label="Add", style=discord.ButtonStyle.success, row=0)

@@ -34,7 +34,7 @@ async def command(interaction: discord.Interaction, class_name: str):
         rows = []
         for player, ppe_id, points, ppe_type, _pid, is_inactive in character_data:
             marker = " • (inactive)" if is_inactive else ""
-            rows.append(f"**{player.title()}** — PPE #{ppe_id} [{ppe_type}]: **{points:.1f}** pts{marker}")
+            rows.append(f"**{player.title()}** — {class_name} [{ppe_type}] (PPE #{ppe_id}): **{points:.1f}** pts{marker}")
 
         await send_leaderboard(
             interaction,
