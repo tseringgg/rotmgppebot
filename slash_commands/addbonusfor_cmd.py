@@ -77,6 +77,9 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
         target_ppe.bonuses.append(new_bonus)
         quantity_text = ""
 
+    # Acknowledge before the potentially slower recompute/save/file steps.
+    await interaction.response.defer()
+
     guild_config = await load_guild_config(interaction)
     recompute_ppe_points(target_ppe, guild_config)
     
@@ -95,6 +98,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
         interaction=interaction,
         message_type="markdown",
         response=response_msg,
+        already_responded=True,
         response_ephemeral=False,
         ephemeral=True,
     )
