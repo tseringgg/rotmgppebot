@@ -81,15 +81,29 @@ def _safe_positive_float(value: object, fallback: float) -> float:
 
 
 def _build_penalty_rate_lines(penalty_weights: dict) -> list[str]:
-    pet_level_per_point = _safe_positive_float(penalty_weights.get("pet_level_per_point"), 4.0)
-    exalts_per_point = _safe_positive_float(penalty_weights.get("exalts_per_point"), 2.0)
-    loot_percent_per_point = _safe_positive_float(penalty_weights.get("loot_percent_per_point"), 0.5)
-    incombat_seconds_per_point = _safe_positive_float(penalty_weights.get("incombat_seconds_per_point"), 0.1)
+    def _format_rate(value: object, fallback: float) -> str:
+        try:
+            parsed = float(value)
+        except (TypeError, ValueError):
+            parsed = fallback
+        if parsed <= 0:
+            return "0"
+        return f"{-1.0 / parsed:.2f}"
+
+    def _format_incombat_rate(value: object, fallback: float) -> str:
+        try:
+            parsed = float(value)
+        except (TypeError, ValueError):
+            parsed = fallback
+        if parsed <= 0:
+            return "0"
+        return f"{-0.2 / parsed:.2f}"
+
     return [
-        f"• Pet Level: **{-1.0 / pet_level_per_point:.2f}** pts per level",
-        f"• Exalts: **{-1.0 / exalts_per_point:.2f}** pts per exalt",
-        f"• Loot Boost: **{-1.0 / loot_percent_per_point:.2f}** pts per 1% boost",
-        f"• In-Combat Reduction: **{-0.2 / incombat_seconds_per_point:.2f}** pts per 0.2 seconds",
+        f"• Pet Level: **{_format_rate(penalty_weights.get('pet_level_per_point'), 4.0)}** pts per level",
+        f"• Exalts: **{_format_rate(penalty_weights.get('exalts_per_point'), 2.0)}** pts per exalt",
+        f"• Loot Boost: **{_format_rate(penalty_weights.get('loot_percent_per_point'), 0.5)}** pts per 1% boost",
+        f"• In-Combat Reduction: **{_format_incombat_rate(penalty_weights.get('incombat_seconds_per_point'), 0.1)}** pts per 0.2 seconds",
     ]
 
 
@@ -121,7 +135,8 @@ def build_manageseason_home_embed() -> discord.Embed:
     embed.add_field(
         name="Manage Contests",
         value=(
-            "Set the default `/leaderboard` contest board, configure team leaderboard scoring, and manage the join-role embed."
+            "Set the default `/leaderboard` contest board, configure leaderboard scoring, and manage the join-role embed.\n"
+            "Default PPE quest behavior: only completed quest items found on the active PPE count toward PPE leaderboard quest points."
         ),
         inline=False,
     )
@@ -157,6 +172,7 @@ def build_manage_contests_embed(settings: dict) -> discord.Embed:
     ppe_aggregate_enabled = bool(settings.get("ppe_aggregate_points_enabled", False))
     team_aggregate_enabled = bool(settings.get("team_aggregate_points_enabled", False))
     ppe_quest_enabled = bool(settings.get("ppe_contest_include_quest_points", False))
+    ppe_active_filter_enabled = bool(settings.get("ppe_contest_require_active_ppe_quest_items", True))
     team_quest_enabled = bool(settings.get("team_contest_include_quest_points", False))
     join_channel_id = int(settings.get("join_contest_channel_id", 0) or 0)
     join_message_id = int(settings.get("join_contest_message_id", 0) or 0)
@@ -188,6 +204,7 @@ def build_manage_contests_embed(settings: dict) -> discord.Embed:
             f"PPE aggregate points: **{'Enabled' if ppe_aggregate_enabled else 'Disabled'}**\n"
             f"Team aggregate points: **{'Enabled' if team_aggregate_enabled else 'Disabled'}**\n"
             f"PPE contest quest scoring: **{'Enabled' if ppe_quest_enabled else 'Disabled'}**\n"
+            f"PPE quest/PPE item match required: **{'Enabled' if ppe_active_filter_enabled else 'Disabled'}**\n"
             f"Team contest quest scoring: **{'Enabled' if team_quest_enabled else 'Disabled'}**"
         ),
         inline=False,
@@ -200,7 +217,7 @@ def build_manage_contests_embed(settings: dict) -> discord.Embed:
         ),
         inline=False,
     )
-    embed.set_footer(text="Quest scoring is disabled by default for team contests.")
+    embed.set_footer(text="PPE quest-to-active-PPE matching is enabled by default.")
     return embed
 
 
@@ -267,6 +284,7 @@ def build_leaderboard_manager_embed(settings: dict) -> discord.Embed:
     """Build the leaderboard manager embed."""
     ppe_aggregate_enabled = bool(settings.get("ppe_aggregate_points_enabled", False))
     ppe_quest_enabled = bool(settings.get("ppe_contest_include_quest_points", False))
+    ppe_active_filter_enabled = bool(settings.get("ppe_contest_require_active_ppe_quest_items", True))
     team_aggregate_enabled = bool(settings.get("team_aggregate_points_enabled", False))
     team_quest_enabled = bool(settings.get("team_contest_include_quest_points", False))
 
@@ -291,6 +309,15 @@ def build_leaderboard_manager_embed(settings: dict) -> discord.Embed:
             "When enabled, completed quests add to PPE leaderboard totals.\n"
             "If team shared quests are enabled, each team member receives their team shared quest total.\n"
             "Works with aggregate mode: all PPE points + quest points are combined."
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="PPE Quest/PPE Item Match",
+        value=(
+            f"Current status: **{'Enabled' if ppe_active_filter_enabled else 'Disabled'}**\n"
+            "When enabled, PPE quest points only count completed quests where the item exists on that player's active PPE loot.\n"
+            "When disabled, all completed quests count for PPE quest points (legacy behavior)."
         ),
         inline=False,
     )
@@ -408,6 +435,16 @@ def build_point_settings_embed(settings: dict) -> discord.Embed:
             f"• Point Reduction: **{duplicate_reduction:.2f}x**\n"
             "• Applies to every duplicate copy after the first.\n"
             "• Set `0` to disable duplicate points"
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="Top Point Handling",
+        value=(
+            f"• Mode: **{str(settings.get('tops_point_mode', 'current')).title()}**\n"
+            "• Current: Tops keep their normal repeat behavior.\n"
+            "• Once: Tops only award points the first time they are logged.\n"
+            "• None: Tops still log to seasonal loot, but award no points."
         ),
         inline=False,
     )

@@ -42,7 +42,7 @@ class ManagePlayerPenaltiesModal(discord.ui.Modal, title="Set PPE Penalties"):
     )
     ppe_type = discord.ui.TextInput(
         label="PPE Type",
-        placeholder="Examples: PPE, Duo PPE, DPE, UPE, SPE, NPE, D+SPE",
+        placeholder="Examples: PPE, Duo PPE, DPE, UPE, SPE, SLPE, UNPE",
         required=True,
         max_length=32,
     )

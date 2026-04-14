@@ -34,15 +34,15 @@ def normalize_item_name(name: str) -> str:
     normalized = " ".join(normalized.split())
     return normalized.strip()
 
-# --- Load points table from CSV ---
 @lru_cache(maxsize=1)
-def load_loot_points():
-    loot_points = {}
+def _load_loot_entries():
+    loot_entries = {}
     with open(LOOT_POINTS_CSV, newline='', encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             item_name_raw = row.get("Item Name")
             points_raw = row.get("Points")
+            loot_type_raw = row.get("Loot Type", "")
             # Skip rows with missing columns (empty rows in CSV)
             if item_name_raw is None or points_raw is None:
                 continue
@@ -52,8 +52,22 @@ def load_loot_points():
                 continue
             name = normalize_item_name(item_name)
             points = float(points_str)
-            loot_points[name] = points
-    return loot_points
+            loot_entries[name] = {
+                "points": points,
+                "loot_type": str(loot_type_raw).strip().lower(),
+            }
+    return loot_entries
+
+
+# --- Load points table from CSV ---
+@lru_cache(maxsize=1)
+def load_loot_points():
+    return {name: float(entry["points"]) for name, entry in _load_loot_entries().items()}
+
+
+@lru_cache(maxsize=1)
+def load_loot_types():
+    return {name: str(entry["loot_type"]) for name, entry in _load_loot_entries().items()}
 
 
 

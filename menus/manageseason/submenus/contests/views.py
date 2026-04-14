@@ -15,6 +15,7 @@ from menus.manageseason.services import (
     load_contest_settings_for_menu,
     update_default_contest_leaderboard,
     update_ppe_aggregate_points_setting,
+    update_ppe_contest_active_ppe_quest_filter_setting,
     update_ppe_contest_quest_points_setting,
     update_team_aggregate_points_setting,
     update_team_contest_quest_points_setting,
@@ -232,6 +233,12 @@ class LeaderboardManagerView(OwnerBoundView):
             disable_label="Disable PPE Quest Points",
         )
         self._sync_toggle_button(
+            self.toggle_ppe_active_ppe_filter,
+            enabled=bool(self.settings.get("ppe_contest_require_active_ppe_quest_items", True)),
+            enable_label="Enable PPE Quest/PPE Match",
+            disable_label="Disable PPE Quest/PPE Match",
+        )
+        self._sync_toggle_button(
             self.toggle_ppe_aggregate_points,
             enabled=bool(self.settings.get("ppe_aggregate_points_enabled", False)),
             enable_label="Enable PPE Aggregate Points",
@@ -261,6 +268,16 @@ class LeaderboardManagerView(OwnerBoundView):
     async def toggle_ppe_quest_points(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         currently_enabled = bool(self.settings.get("ppe_contest_include_quest_points", False))
         self.settings = await update_ppe_contest_quest_points_setting(
+            interaction,
+            enabled=not currently_enabled,
+        )
+        self._sync_toggle_buttons()
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+    @discord.ui.button(label="Enable PPE Quest/PPE Match", style=discord.ButtonStyle.success, row=1)
+    async def toggle_ppe_active_ppe_filter(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        currently_enabled = bool(self.settings.get("ppe_contest_require_active_ppe_quest_items", True))
+        self.settings = await update_ppe_contest_active_ppe_quest_filter_setting(
             interaction,
             enabled=not currently_enabled,
         )

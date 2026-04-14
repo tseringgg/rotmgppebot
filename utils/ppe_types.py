@@ -1,45 +1,67 @@
-"""Utilities for ppe types."""
-
 from __future__ import annotations
 
 from typing import Any
 
 PPE_TYPE_REGULAR = "regular"
 PPE_TYPE_DUO = "duo"
+PPE_TYPE_DUO_NO_PET = "duo_no_pet"
 PPE_TYPE_DIVINE_ONLY = "divine_only"
+PPE_TYPE_DIVINE_NO_PET = "divine_no_pet"
 PPE_TYPE_UT_ONLY = "ut_only"
+PPE_TYPE_UT_NO_PET = "ut_no_pet"
 PPE_TYPE_SHINY_ONLY = "shiny_only"
+PPE_TYPE_SHINY_NO_PET = "shiny_no_pet"
+PPE_TYPE_LEGENDARY_OR_SHINY = "legendary_or_shiny"
 PPE_TYPE_NO_PET = "no_pet"
 PPE_TYPE_DIVINE_SHINY = "divine_shiny"
+PPE_TYPE_DIVINE_SHINY_NO_PET = "divine_shiny_no_pet"
 
 PPE_TYPE_ORDER = [
     PPE_TYPE_REGULAR,
     PPE_TYPE_DUO,
+    PPE_TYPE_DUO_NO_PET,
     PPE_TYPE_DIVINE_ONLY,
+    PPE_TYPE_DIVINE_NO_PET,
     PPE_TYPE_UT_ONLY,
+    PPE_TYPE_UT_NO_PET,
     PPE_TYPE_SHINY_ONLY,
+    PPE_TYPE_SHINY_NO_PET,
+    PPE_TYPE_LEGENDARY_OR_SHINY,
     PPE_TYPE_NO_PET,
     PPE_TYPE_DIVINE_SHINY,
+    PPE_TYPE_DIVINE_SHINY_NO_PET,
 ]
 
 PPE_TYPE_LABELS = {
     PPE_TYPE_REGULAR: "Regular PPE",
     PPE_TYPE_DUO: "Duo PPE",
+    PPE_TYPE_DUO_NO_PET: "Duo No Pet PPE",
     PPE_TYPE_DIVINE_ONLY: "Divine Only PPE",
+    PPE_TYPE_DIVINE_NO_PET: "Divine Only & No Pet PPE",
     PPE_TYPE_UT_ONLY: "UT Only PPE",
+    PPE_TYPE_UT_NO_PET: "UT Only & No Pet PPE",
     PPE_TYPE_SHINY_ONLY: "Shiny Only PPE",
+    PPE_TYPE_SHINY_NO_PET: "Shiny Only & No Pet PPE",
+    PPE_TYPE_LEGENDARY_OR_SHINY: "Legendary or Shiny PPE",
     PPE_TYPE_NO_PET: "No Pet PPE (NPE)",
     PPE_TYPE_DIVINE_SHINY: "Divine & Shiny PPE",
+    PPE_TYPE_DIVINE_SHINY_NO_PET: "Divine & Shiny & No Pet PPE",
 }
 
 PPE_TYPE_SHORT_LABELS = {
     PPE_TYPE_REGULAR: "PPE",
     PPE_TYPE_DUO: "Duo PPE",
+    PPE_TYPE_DUO_NO_PET: "Duo NPE",
     PPE_TYPE_DIVINE_ONLY: "DPE",
+    PPE_TYPE_DIVINE_NO_PET: "Div NPE",
     PPE_TYPE_UT_ONLY: "UPE",
+    PPE_TYPE_UT_NO_PET: "UNPE",
     PPE_TYPE_SHINY_ONLY: "SPE",
+    PPE_TYPE_SHINY_NO_PET: "SNPE",
+    PPE_TYPE_LEGENDARY_OR_SHINY: "SLPE",
     PPE_TYPE_NO_PET: "NPE",
     PPE_TYPE_DIVINE_SHINY: "D+SPE",
+    PPE_TYPE_DIVINE_SHINY_NO_PET: "DSNPE",
 }
 
 DEFAULT_PPE_TYPE = PPE_TYPE_REGULAR
@@ -47,11 +69,17 @@ DEFAULT_PPE_TYPE = PPE_TYPE_REGULAR
 DEFAULT_PPE_TYPE_MULTIPLIERS = {
     PPE_TYPE_REGULAR: 1.0,
     PPE_TYPE_DUO: 0.7,
+    PPE_TYPE_DUO_NO_PET: 0.91,
     PPE_TYPE_DIVINE_ONLY: 1.5,
+    PPE_TYPE_DIVINE_NO_PET: 1.95,
     PPE_TYPE_UT_ONLY: 1.3,
+    PPE_TYPE_UT_NO_PET: 1.69,
     PPE_TYPE_SHINY_ONLY: 1.5,
+    PPE_TYPE_SHINY_NO_PET: 1.95,
+    PPE_TYPE_LEGENDARY_OR_SHINY: 1.3,
     PPE_TYPE_NO_PET: 1.3,
     PPE_TYPE_DIVINE_SHINY: 2.0,
+    PPE_TYPE_DIVINE_SHINY_NO_PET: 2.6,
 }
 
 
@@ -84,18 +112,40 @@ def normalize_ppe_type(value: Any) -> str:
         PPE_TYPE_DUO: PPE_TYPE_DUO,
         "duo_ppe": PPE_TYPE_DUO,
         "duoppe": PPE_TYPE_DUO,
+        PPE_TYPE_DUO_NO_PET: PPE_TYPE_DUO_NO_PET,
+        "duo_no_pet_ppe": PPE_TYPE_DUO_NO_PET,
+        "duo_no_pet": PPE_TYPE_DUO_NO_PET,
+        "duonopet": PPE_TYPE_DUO_NO_PET,
         PPE_TYPE_DIVINE_ONLY: PPE_TYPE_DIVINE_ONLY,
         "dpe": PPE_TYPE_DIVINE_ONLY,
         "divineonly": PPE_TYPE_DIVINE_ONLY,
         "divine_only_ppe": PPE_TYPE_DIVINE_ONLY,
+        PPE_TYPE_DIVINE_NO_PET: PPE_TYPE_DIVINE_NO_PET,
+        "divine_no_pet_ppe": PPE_TYPE_DIVINE_NO_PET,
+        "divine_no_pet": PPE_TYPE_DIVINE_NO_PET,
+        "divinenopet": PPE_TYPE_DIVINE_NO_PET,
         PPE_TYPE_UT_ONLY: PPE_TYPE_UT_ONLY,
         "upe": PPE_TYPE_UT_ONLY,
         "utonly": PPE_TYPE_UT_ONLY,
         "ut_only_ppe": PPE_TYPE_UT_ONLY,
+        PPE_TYPE_UT_NO_PET: PPE_TYPE_UT_NO_PET,
+        "ut_no_pet_ppe": PPE_TYPE_UT_NO_PET,
+        "ut_only_and_no_pet_ppe": PPE_TYPE_UT_NO_PET,
+        "ut_no_pet": PPE_TYPE_UT_NO_PET,
+        "utnopet": PPE_TYPE_UT_NO_PET,
         PPE_TYPE_SHINY_ONLY: PPE_TYPE_SHINY_ONLY,
         "spe": PPE_TYPE_SHINY_ONLY,
         "shinyonly": PPE_TYPE_SHINY_ONLY,
         "shiny_only_ppe": PPE_TYPE_SHINY_ONLY,
+        PPE_TYPE_SHINY_NO_PET: PPE_TYPE_SHINY_NO_PET,
+        "shiny_no_pet_ppe": PPE_TYPE_SHINY_NO_PET,
+        "shiny_no_pet": PPE_TYPE_SHINY_NO_PET,
+        "shinynopet": PPE_TYPE_SHINY_NO_PET,
+        PPE_TYPE_LEGENDARY_OR_SHINY: PPE_TYPE_LEGENDARY_OR_SHINY,
+        "legendary_or_shiny_ppe": PPE_TYPE_LEGENDARY_OR_SHINY,
+        "legendary_or_shiny": PPE_TYPE_LEGENDARY_OR_SHINY,
+        "legendaryorshiny": PPE_TYPE_LEGENDARY_OR_SHINY,
+        "slpe": PPE_TYPE_LEGENDARY_OR_SHINY,
         PPE_TYPE_NO_PET: PPE_TYPE_NO_PET,
         "npe": PPE_TYPE_NO_PET,
         "no_pet_ppe": PPE_TYPE_NO_PET,
@@ -108,6 +158,12 @@ def normalize_ppe_type(value: Any) -> str:
         "divine&shiny": PPE_TYPE_DIVINE_SHINY,
         "divine_and_shiny": PPE_TYPE_DIVINE_SHINY,
         "divine_and_shiny_ppe": PPE_TYPE_DIVINE_SHINY,
+        PPE_TYPE_DIVINE_SHINY_NO_PET: PPE_TYPE_DIVINE_SHINY_NO_PET,
+        "divine_shiny_no_pet_ppe": PPE_TYPE_DIVINE_SHINY_NO_PET,
+        "divine_shiny_no_pet": PPE_TYPE_DIVINE_SHINY_NO_PET,
+        "divine_and_shiny_and_no_pet": PPE_TYPE_DIVINE_SHINY_NO_PET,
+        "divine_and_shiny_no_pet_ppe": PPE_TYPE_DIVINE_SHINY_NO_PET,
+        "divineshynopet": PPE_TYPE_DIVINE_SHINY_NO_PET,
     }
 
     return aliases.get(text, DEFAULT_PPE_TYPE)

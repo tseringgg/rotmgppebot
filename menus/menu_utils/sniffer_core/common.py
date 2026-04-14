@@ -17,7 +17,10 @@ def token_preview(token: str) -> str:
 
 
 def format_points(points: float) -> str:
-    return str(int(points)) if points == int(points) else f"{points:.1f}"
+    rounded = round(float(points), 2)
+    if rounded.is_integer():
+        return str(int(rounded))
+    return f"{rounded:.2f}".rstrip("0").rstrip(".")
 
 
 def build_pending_loot_summary(events: list[dict[str, Any]]) -> str:

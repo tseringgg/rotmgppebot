@@ -5,6 +5,7 @@ from menus.leaderboard.services import member_display_name, require_guild
 from utils.team_contest_scoring import (
     TeamContestScoring,
     compute_ppe_points,
+    compute_quest_points_from_quests_and_active_ppe,
     compute_quest_points_from_quests,
     compute_team_shared_quest_points,
     get_best_ppe,
@@ -29,6 +30,7 @@ async def command(interaction: discord.Interaction):
             quest_settings.get("use_global_quests", False)
         )
         include_ppe_quest_points = bool(contest_settings.get("ppe_contest_include_quest_points", False))
+        require_active_ppe_items_for_quests = bool(contest_settings.get("ppe_contest_require_active_ppe_quest_items", True))
         ppe_quest_scoring = TeamContestScoring(include_quest_points=False)
         if include_ppe_quest_points:
             regular_quest_points, shiny_quest_points, skin_quest_points = await get_quest_points(interaction)
@@ -51,7 +53,15 @@ async def command(interaction: discord.Interaction):
             ppe_points = compute_ppe_points(data, aggregate=scoring.ppe_aggregate_points)
             quest_points = 0.0
             if include_ppe_quest_points:
-                if team_mode_effective and isinstance(getattr(data, "team_name", None), str) and data.team_name:
+                if require_active_ppe_items_for_quests:
+                    active_ppe_id = getattr(data, "active_ppe", None)
+                    active_ppe = next((ppe for ppe in ppes if ppe.id == active_ppe_id), None)
+                    quest_points = compute_quest_points_from_quests_and_active_ppe(
+                        getattr(data, "quests", None),
+                        active_ppe,
+                        scoring=ppe_quest_scoring,
+                    )
+                elif team_mode_effective and isinstance(getattr(data, "team_name", None), str) and data.team_name:
                     quest_points = compute_team_shared_quest_points(
                         team_name=data.team_name,
                         quest_settings=quest_settings,

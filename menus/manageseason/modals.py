@@ -418,19 +418,10 @@ class EditPenaltyBaseRatesModal(discord.ui.Modal, title="Edit Penalty Base Rates
         except (TypeError, ValueError):
             incombat_seconds_per_point = 0.1
 
-        if pet_level_per_point <= 0:
-            pet_level_per_point = 4.0
-        if exalts_per_point <= 0:
-            exalts_per_point = 2.0
-        if loot_percent_per_point <= 0:
-            loot_percent_per_point = 0.5
-        if incombat_seconds_per_point <= 0:
-            incombat_seconds_per_point = 0.1
-
-        self.pet_points_per_level.default = f"{-1.0 / pet_level_per_point:.2f}"
-        self.exalts_points_per_exalt.default = f"{-1.0 / exalts_per_point:.2f}"
-        self.loot_points_per_percent.default = f"{-1.0 / loot_percent_per_point:.2f}"
-        self.incombat_points_per_second.default = f"{-1.0 / incombat_seconds_per_point:.2f}"
+        self.pet_points_per_level.default = f"{(-1.0 / pet_level_per_point):.2f}" if pet_level_per_point > 0 else "0.00"
+        self.exalts_points_per_exalt.default = f"{(-1.0 / exalts_per_point):.2f}" if exalts_per_point > 0 else "0.00"
+        self.loot_points_per_percent.default = f"{(-1.0 / loot_percent_per_point):.2f}" if loot_percent_per_point > 0 else "0.00"
+        self.incombat_points_per_second.default = f"{(-1.0 / incombat_seconds_per_point):.2f}" if incombat_seconds_per_point > 0 else "0.00"
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         if interaction.user.id != self.owner_id:
@@ -470,19 +461,6 @@ class EditPenaltyBaseRatesModal(discord.ui.Modal, title="Edit Penalty Base Rates
             await interaction.response.send_message("ERROR: Provide at least one base rate to update.", ephemeral=True)
             return
 
-        if pet_points_per_level is not None and abs(pet_points_per_level) <= 0:
-            await interaction.response.send_message("ERROR: Pet level rate must be non-zero.", ephemeral=True)
-            return
-        if exalts_points_per_exalt is not None and abs(exalts_points_per_exalt) <= 0:
-            await interaction.response.send_message("ERROR: Exalts rate must be non-zero.", ephemeral=True)
-            return
-        if loot_points_per_percent is not None and abs(loot_points_per_percent) <= 0:
-            await interaction.response.send_message("ERROR: Loot boost rate must be non-zero.", ephemeral=True)
-            return
-        if incombat_points_per_second is not None and abs(incombat_points_per_second) <= 0:
-            await interaction.response.send_message("ERROR: In-combat rate must be non-zero.", ephemeral=True)
-            return
-
         confirm_text = (
             "⚠️ **Apply penalty base-rate changes and recalculate all PPE characters?**\n"
             "These rates define how starting penalty points are generated.\n\n"
@@ -508,19 +486,41 @@ class EditPenaltyBaseRatesModal(discord.ui.Modal, title="Edit Penalty Base Rates
         )
 
         weights = settings.get("penalty_weights", {}) if isinstance(settings.get("penalty_weights"), dict) else {}
-        pet_level_per_point = float(weights.get("pet_level_per_point", 4.0) or 4.0)
-        exalts_per_point = float(weights.get("exalts_per_point", 2.0) or 2.0)
-        loot_percent_per_point = float(weights.get("loot_percent_per_point", 0.5) or 0.5)
-        incombat_seconds_per_point = float(weights.get("incombat_seconds_per_point", 0.1) or 0.1)
+        try:
+            pet_level_per_point = float(weights.get("pet_level_per_point", 4.0))
+        except (TypeError, ValueError):
+            pet_level_per_point = 4.0
+        try:
+            exalts_per_point = float(weights.get("exalts_per_point", 2.0))
+        except (TypeError, ValueError):
+            exalts_per_point = 2.0
+        try:
+            loot_percent_per_point = float(weights.get("loot_percent_per_point", 0.5))
+        except (TypeError, ValueError):
+            loot_percent_per_point = 0.5
+        try:
+            incombat_seconds_per_point = float(weights.get("incombat_seconds_per_point", 0.1))
+        except (TypeError, ValueError):
+            incombat_seconds_per_point = 0.1
+
+        summary_lines = ["Updated penalty base rates."]
+        summary_lines.append(
+            f"Pet Level Rate: {(-1.0 / pet_level_per_point):.2f} pts/level" if pet_level_per_point > 0 else "Pet Level Rate: 0.00 pts/level"
+        )
+        summary_lines.append(
+            f"Exalts Rate: {(-1.0 / exalts_per_point):.2f} pts/exalt" if exalts_per_point > 0 else "Exalts Rate: 0.00 pts/exalt"
+        )
+        summary_lines.append(
+            f"Loot Boost Rate: {(-1.0 / loot_percent_per_point):.2f} pts/1% boost" if loot_percent_per_point > 0 else "Loot Boost Rate: 0.00 pts/1% boost"
+        )
+        summary_lines.append(
+            f"In-Combat Rate: {(-1.0 / incombat_seconds_per_point):.2f} pts/1.0s" if incombat_seconds_per_point > 0 else "In-Combat Rate: 0.00 pts/1.0s"
+        )
+        summary_lines.append(f"PPEs recalculated: {refresh_summary.ppes_processed}")
+        summary_lines.append(f"PPE totals changed: {refresh_summary.ppes_updated}")
 
         await interaction.followup.send(
-            "Updated penalty base rates.\n"
-            f"Pet Level Rate: {-1.0 / pet_level_per_point:.2f} pts/level\n"
-            f"Exalts Rate: {-1.0 / exalts_per_point:.2f} pts/exalt\n"
-            f"Loot Boost Rate: {-1.0 / loot_percent_per_point:.2f} pts/1% boost\n"
-            f"In-Combat Rate: {-1.0 / incombat_seconds_per_point:.2f} pts/1.0s\n"
-            f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
-            f"PPE totals changed: {refresh_summary.ppes_updated}",
+            "\n".join(summary_lines),
             ephemeral=True,
         )
 

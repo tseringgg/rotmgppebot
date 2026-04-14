@@ -256,6 +256,19 @@ async def update_ppe_contest_quest_points_setting(
     )
 
 
+async def update_ppe_contest_active_ppe_quest_filter_setting(
+    interaction: discord.Interaction,
+    *,
+    enabled: bool,
+) -> dict[str, Any]:
+    """Toggle whether PPE contest quest points only count items on the active PPE."""
+    return await _update_contest_bool_setting(
+        interaction,
+        setting_key="ppe_contest_require_active_ppe_quest_items",
+        enabled=enabled,
+    )
+
+
 async def update_ppe_aggregate_points_setting(
     interaction: discord.Interaction,
     *,
@@ -550,15 +563,12 @@ async def update_pet_point_modifiers(
 
     if pet_points_per_level is not None:
         safe_points = abs(float(pet_points_per_level))
-        if safe_points <= 0:
-            raise ValueError("Pet starting points-per-level must be non-zero.")
-
         penalty_weights = (
             dict(settings.get("penalty_weights", {}))
             if isinstance(settings.get("penalty_weights"), dict)
             else {}
         )
-        penalty_weights["pet_level_per_point"] = 1.0 / safe_points
+        penalty_weights["pet_level_per_point"] = 0.0 if safe_points == 0 else 1.0 / safe_points
         settings["penalty_weights"] = penalty_weights
         settings = await set_points_settings(interaction, settings)
 
@@ -587,27 +597,19 @@ async def update_penalty_base_rates(
 
     if pet_points_per_level is not None:
         safe_points = abs(float(pet_points_per_level))
-        if safe_points <= 0:
-            raise ValueError("Pet level rate must be non-zero.")
-        penalty_weights["pet_level_per_point"] = 1.0 / safe_points
+        penalty_weights["pet_level_per_point"] = 0.0 if safe_points == 0 else 1.0 / safe_points
 
     if exalts_points_per_exalt is not None:
         safe_points = abs(float(exalts_points_per_exalt))
-        if safe_points <= 0:
-            raise ValueError("Exalts rate must be non-zero.")
-        penalty_weights["exalts_per_point"] = 1.0 / safe_points
+        penalty_weights["exalts_per_point"] = 0.0 if safe_points == 0 else 1.0 / safe_points
 
     if loot_points_per_percent is not None:
         safe_points = abs(float(loot_points_per_percent))
-        if safe_points <= 0:
-            raise ValueError("Loot boost rate must be non-zero.")
-        penalty_weights["loot_percent_per_point"] = 1.0 / safe_points
+        penalty_weights["loot_percent_per_point"] = 0.0 if safe_points == 0 else 1.0 / safe_points
 
     if incombat_points_per_second is not None:
         safe_points = abs(float(incombat_points_per_second))
-        if safe_points <= 0:
-            raise ValueError("In-combat rate must be non-zero.")
-        penalty_weights["incombat_seconds_per_point"] = 1.0 / safe_points
+        penalty_weights["incombat_seconds_per_point"] = 0.0 if safe_points == 0 else 1.0 / safe_points
 
     settings["penalty_weights"] = penalty_weights
     settings = await set_points_settings(interaction, settings)
@@ -629,6 +631,27 @@ async def update_duplicate_item_point_reduction(
         interaction,
         duplicate_point_reduction=max(0.0, float(duplicate_point_reduction)),
     )
+    refresh_summary = await refresh_all_character_points(
+        interaction,
+        guild_config={"points_settings": settings},
+    )
+    return dict(settings), refresh_summary
+
+
+async def update_top_point_mode(
+    interaction: discord.Interaction,
+    *,
+    tops_point_mode: str,
+) -> tuple[dict[str, Any], PointsRefreshSummary]:
+    """Update how Tops loot is scored and refresh all PPE totals."""
+    settings = await get_points_settings(interaction)
+    mode = str(tops_point_mode).strip().lower()
+    if mode not in {"current", "once", "none"}:
+        raise ValueError("Invalid top point mode.")
+
+    settings["tops_point_mode"] = mode
+    settings = await set_points_settings(interaction, settings)
+
     refresh_summary = await refresh_all_character_points(
         interaction,
         guild_config={"points_settings": settings},

@@ -6,11 +6,17 @@ from menus.menu_utils.base_views import OwnerBoundView
 from utils.ppe_types import (
     PPE_TYPE_DIVINE_ONLY,
     PPE_TYPE_DIVINE_SHINY,
+    PPE_TYPE_DIVINE_NO_PET,
+    PPE_TYPE_DIVINE_SHINY_NO_PET,
     PPE_TYPE_DUO,
+    PPE_TYPE_DUO_NO_PET,
+    PPE_TYPE_LEGENDARY_OR_SHINY,
     PPE_TYPE_NO_PET,
     PPE_TYPE_REGULAR,
     PPE_TYPE_SHINY_ONLY,
+    PPE_TYPE_SHINY_NO_PET,
     PPE_TYPE_UT_ONLY,
+    PPE_TYPE_UT_NO_PET,
     ppe_type_short_label,
 )
 
@@ -166,11 +172,17 @@ def build_help_embed(section_key: str) -> discord.Embed:
         lines = [
             f"- **{ppe_type_short_label(PPE_TYPE_REGULAR)}**: Standard PPE rules.",
             f"- **{ppe_type_short_label(PPE_TYPE_DUO)}**: Run with a duo partner.",
+            f"- **{ppe_type_short_label(PPE_TYPE_DUO_NO_PET)}**: Duo partner rules with no pet.",
             f"- **{ppe_type_short_label(PPE_TYPE_DIVINE_ONLY)}**: Divine-only challenge rules.",
+            f"- **{ppe_type_short_label(PPE_TYPE_DIVINE_NO_PET)}**: Divine-only challenge rules with no pet.",
             f"- **{ppe_type_short_label(PPE_TYPE_UT_ONLY)}**: UT-only challenge rules.",
+            f"- **{ppe_type_short_label(PPE_TYPE_UT_NO_PET)}**: UT-only challenge rules with no pet.",
             f"- **{ppe_type_short_label(PPE_TYPE_SHINY_ONLY)}**: Shiny-only challenge rules.",
+            f"- **{ppe_type_short_label(PPE_TYPE_SHINY_NO_PET)}**: Shiny-only challenge rules with no pet.",
+            f"- **{ppe_type_short_label(PPE_TYPE_LEGENDARY_OR_SHINY)}**: Legendary-or-shiny challenge rules.",
             f"- **{ppe_type_short_label(PPE_TYPE_NO_PET)}**: No-pet challenge rules.",
             f"- **{ppe_type_short_label(PPE_TYPE_DIVINE_SHINY)}**: Divine + Shiny combined challenge.",
+            f"- **{ppe_type_short_label(PPE_TYPE_DIVINE_SHINY_NO_PET)}**: Divine + Shiny combined challenge with no pet.",
         ]
         embed.add_field(name="Available PPE Types", value="\n".join(lines), inline=False)
         embed.add_field(

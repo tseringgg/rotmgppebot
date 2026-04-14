@@ -564,7 +564,6 @@ async def addplayer(interaction: discord.Interaction, member: discord.Member):
 
 
 @bot.tree.command(name="addadmin", description="Add PPE Admin role to a member.", guilds=guilds)
-@require_ppe_roles(admin_required=True)
 async def addadmin(interaction: discord.Interaction, member: discord.Member):
     await addadmin_cmd.command(interaction, member)
 

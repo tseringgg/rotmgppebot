@@ -21,6 +21,7 @@ from menus.manageseason.modals import (
     EditRarityModifiersModal,
 )
 from menus.manageseason.services import load_character_settings_for_menu, load_points_settings_for_menu
+from menus.manageseason.services import update_top_point_mode
 from utils.ppe_types import all_ppe_types, ppe_type_label
 from menus.menu_utils import OwnerBoundView
 
@@ -35,6 +36,12 @@ class ManagePointSettingsView(OwnerBoundView):
 
     def current_embed(self) -> discord.Embed:
         return build_point_settings_embed(self.settings)
+
+    @discord.ui.button(label="Adjust Top Points", style=discord.ButtonStyle.success, row=3)
+    async def adjust_top_points(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.settings = await load_points_settings_for_menu(interaction)
+        view = ManageTopPointSettingsView(owner_id=self.owner_id, settings=self.settings)
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
     @discord.ui.button(label="Edit Global Modifiers", style=discord.ButtonStyle.success, row=0)
     async def edit_global(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -106,7 +113,7 @@ class ManagePointSettingsView(OwnerBoundView):
         view = ManageSetPointsView(owner_id=self.owner_id, settings=self.settings)
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=3)
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=4)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         from menus.manageseason.submenus.home.views import ManageSeasonHomeView
 
@@ -294,10 +301,99 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
 
+class _TopPointModeSelect(discord.ui.Select):
+    def __init__(self, *, owner_id: int, selected_mode: str) -> None:
+        options = [
+            discord.SelectOption(
+                label="Current Behavior",
+                value="current",
+                description="Keep Tops repeatable with the current scoring behavior.",
+                default=selected_mode == "current",
+            ),
+            discord.SelectOption(
+                label="Points Once",
+                value="once",
+                description="Tops only score the first time they are logged.",
+                default=selected_mode == "once",
+            ),
+            discord.SelectOption(
+                label="No Points",
+                value="none",
+                description="Tops still log seasonally but never award points.",
+                default=selected_mode == "none",
+            ),
+        ]
+        super().__init__(
+            placeholder="Choose how Tops should score",
+            min_values=1,
+            max_values=1,
+            options=options,
+            row=0,
+        )
+        self.owner_id = owner_id
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManageTopPointSettingsView):
+            await interaction.response.send_message("Invalid selector state.", ephemeral=True)
+            return
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This selector belongs to another user.", ephemeral=True)
+            return
+
+        view.selected_mode = self.values[0]
+        for option in self.options:
+            option.default = option.value == view.selected_mode
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+
+class ManageTopPointSettingsView(OwnerBoundView):
+    def __init__(self, *, owner_id: int, settings: dict, selected_mode: str | None = None) -> None:
+        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
+        self.owner_id = owner_id
+        self.settings = settings
+
+        mode = str(settings.get("tops_point_mode", "current")).strip().lower()
+        if selected_mode in {"current", "once", "none"}:
+            mode = selected_mode
+        self.selected_mode = mode if mode in {"current", "once", "none"} else "current"
+
+        self.add_item(_TopPointModeSelect(owner_id=self.owner_id, selected_mode=self.selected_mode))
+
+    def current_embed(self) -> discord.Embed:
+        return build_point_settings_embed(self.settings)
+
+    @discord.ui.button(label="Apply Selected Mode", style=discord.ButtonStyle.success, row=1)
+    async def apply_selected_mode(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.settings = await load_points_settings_for_menu(interaction)
+        settings, refresh_summary = await update_top_point_mode(
+            interaction,
+            tops_point_mode=self.selected_mode,
+        )
+
+        self.settings = settings
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+        await interaction.followup.send(
+            "Updated top point handling.\n"
+            f"Mode: {str(settings.get('tops_point_mode', self.selected_mode)).title()}\n"
+            f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
+            f"PPE totals changed: {refresh_summary.ppes_updated}",
+            ephemeral=True,
+        )
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
+    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        settings = await load_points_settings_for_menu(interaction)
+        view = ManagePointSettingsView(owner_id=self.owner_id, settings=settings)
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+
 __all__ = [
     "ManagePointSettingsView",
     "ManageGlobalPointSettingsView",
     "ManageClassPointSettingsView",
     "ManagePpeTypePointSettingsView",
+    "ManageTopPointSettingsView",
     "_ClassModifierSelect",
 ]

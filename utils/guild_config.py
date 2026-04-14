@@ -47,6 +47,7 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
         "default_contest_leaderboard": None,
         "ppe_aggregate_points_enabled": False,
         "ppe_contest_include_quest_points": False,
+        "ppe_contest_require_active_ppe_quest_items": True,
         "team_aggregate_points_enabled": False,
         "team_contest_include_quest_points": False,
         "join_contest_channel_id": 0,
@@ -60,6 +61,7 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
             "penalty_percent": 0.0,
             "total_percent": 0.0,
         },
+        "tops_point_mode": "current",
         "rarity_multipliers": {
             "common": 1.0,
             "uncommon": 1.0,
@@ -338,6 +340,12 @@ def _normalized_contest_settings(config: Dict[str, Any]) -> Dict[str, Any]:
                 _DEFAULT_CONFIG["contest_settings"]["ppe_contest_include_quest_points"],
             )
         ),
+        "ppe_contest_require_active_ppe_quest_items": bool(
+            settings.get(
+                "ppe_contest_require_active_ppe_quest_items",
+                _DEFAULT_CONFIG["contest_settings"]["ppe_contest_require_active_ppe_quest_items"],
+            )
+        ),
         "team_aggregate_points_enabled": bool(
             settings.get(
                 "team_aggregate_points_enabled",
@@ -362,6 +370,12 @@ def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
     raw_starting_penalty_modifiers = (
         raw.get("starting_penalty_modifiers", {}) if isinstance(raw.get("starting_penalty_modifiers", {}), dict) else {}
     )
+
+    def _normalize_tops_point_mode(value: Any) -> str:
+        mode = str(value).strip().lower()
+        if mode in {"current", "once", "none"}:
+            return mode
+        return _DEFAULT_CONFIG["points_settings"]["tops_point_mode"]
 
     def _as_float(value: Any, fallback: float = 0.0) -> float:
         try:
@@ -401,24 +415,24 @@ def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
 
     raw_penalty_weights = raw.get("penalty_weights", {}) if isinstance(raw.get("penalty_weights", {}), dict) else {}
 
-    def _positive_float(value: Any, fallback: float) -> float:
+    def _non_negative_float(value: Any, fallback: float) -> float:
         parsed = _as_float(value, fallback)
-        return parsed if parsed > 0 else fallback
+        return parsed if parsed >= 0 else fallback
 
     normalized_penalty_weights = {
-        "pet_level_per_point": _positive_float(
+        "pet_level_per_point": _non_negative_float(
             raw_penalty_weights.get("pet_level_per_point"),
             _DEFAULT_CONFIG["points_settings"]["penalty_weights"]["pet_level_per_point"],
         ),
-        "exalts_per_point": _positive_float(
+        "exalts_per_point": _non_negative_float(
             raw_penalty_weights.get("exalts_per_point"),
             _DEFAULT_CONFIG["points_settings"]["penalty_weights"]["exalts_per_point"],
         ),
-        "loot_percent_per_point": _positive_float(
+        "loot_percent_per_point": _non_negative_float(
             raw_penalty_weights.get("loot_percent_per_point"),
             _DEFAULT_CONFIG["points_settings"]["penalty_weights"]["loot_percent_per_point"],
         ),
-        "incombat_seconds_per_point": _positive_float(
+        "incombat_seconds_per_point": _non_negative_float(
             raw_penalty_weights.get("incombat_seconds_per_point"),
             _DEFAULT_CONFIG["points_settings"]["penalty_weights"]["incombat_seconds_per_point"],
         ),
@@ -470,6 +484,7 @@ def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
 
     return {
         "global": normalized_global,
+        "tops_point_mode": _normalize_tops_point_mode(raw.get("tops_point_mode", _DEFAULT_CONFIG["points_settings"]["tops_point_mode"])),
         "rarity_multipliers": normalized_rarity_multipliers,
         "starting_penalty_modifiers": normalized_starting_penalty_modifiers,
         "duplicate_point_reduction": duplicate_point_reduction,

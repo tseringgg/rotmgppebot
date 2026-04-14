@@ -5,7 +5,7 @@ from typing import Any, Dict, Iterable
 
 from dataclass import Bonus, Loot, PPEData
 from utils.ppe_types import DEFAULT_PPE_TYPE_MULTIPLIERS, normalize_ppe_type, normalize_ppe_type_multipliers
-from utils.calc_points import load_loot_points, normalize_item_name
+from utils.calc_points import load_loot_points, load_loot_types, normalize_item_name
 from utils.guild_config import get_rarity_multipliers
 from utils.loot_constants import normalize_rarity
 
@@ -24,6 +24,11 @@ DEFAULT_PENALTY_WEIGHTS = {
     "loot_percent_per_point": 0.5,
     "incombat_seconds_per_point": 0.1,
 }
+
+MAX_PET_LEVEL = 100
+MAX_EXALTS = 40
+MAX_LOOT_BOOST = 25.0
+MAX_INCOMBAT_REDUCTION = max(VALID_INCOMBAT_REDUCTION_OPTIONS)
 
 PENALTY_COMPONENT_NAMES = {
     "pet": "Pet Level Penalty",
@@ -120,16 +125,38 @@ def _get_penalty_weights(guild_config: Dict[str, Any] | None) -> Dict[str, float
     points_settings = _get_points_settings(guild_config)
     raw_weights = points_settings.get("penalty_weights", {}) if isinstance(points_settings.get("penalty_weights", {}), dict) else {}
 
-    def _positive_float(key: str, fallback: float) -> float:
+    def _non_negative_float(key: str, fallback: float) -> float:
         parsed = _as_float(raw_weights.get(key), fallback)
-        return parsed if parsed > 0 else fallback
+        return parsed if parsed >= 0 else fallback
 
     return {
-        "pet_level_per_point": _positive_float("pet_level_per_point", DEFAULT_PENALTY_WEIGHTS["pet_level_per_point"]),
-        "exalts_per_point": _positive_float("exalts_per_point", DEFAULT_PENALTY_WEIGHTS["exalts_per_point"]),
-        "loot_percent_per_point": _positive_float("loot_percent_per_point", DEFAULT_PENALTY_WEIGHTS["loot_percent_per_point"]),
-        "incombat_seconds_per_point": _positive_float("incombat_seconds_per_point", DEFAULT_PENALTY_WEIGHTS["incombat_seconds_per_point"]),
+        "pet_level_per_point": _non_negative_float("pet_level_per_point", DEFAULT_PENALTY_WEIGHTS["pet_level_per_point"]),
+        "exalts_per_point": _non_negative_float("exalts_per_point", DEFAULT_PENALTY_WEIGHTS["exalts_per_point"]),
+        "loot_percent_per_point": _non_negative_float("loot_percent_per_point", DEFAULT_PENALTY_WEIGHTS["loot_percent_per_point"]),
+        "incombat_seconds_per_point": _non_negative_float("incombat_seconds_per_point", DEFAULT_PENALTY_WEIGHTS["incombat_seconds_per_point"]),
     }
+
+
+def _get_tops_point_mode(guild_config: Dict[str, Any] | None) -> str:
+    points_settings = _get_points_settings(guild_config)
+    mode = str(points_settings.get("tops_point_mode", "current")).strip().lower()
+    if mode in {"current", "once", "none"}:
+        return mode
+    return "current"
+
+
+def _normalize_item_key(item_name: str, shiny: bool) -> str:
+    normalized_item = normalize_item_name(item_name)
+    return f"{normalized_item} (shiny)" if shiny else normalized_item
+
+
+def _is_tops_item(item_name: str, shiny: bool = False) -> bool:
+    loot_types = load_loot_types()
+    lookup = _normalize_item_key(item_name, shiny)
+    loot_type = loot_types.get(lookup)
+    if loot_type is None and shiny:
+        loot_type = loot_types.get(normalize_item_name(item_name))
+    return str(loot_type).strip().lower() == "tops"
 
 
 def _get_modifier_bucket(points_settings: Dict[str, Any], class_name: str) -> Dict[str, float | None]:
@@ -216,6 +243,15 @@ def _starting_penalty_breakdown_from_raw_components(
         }
 
     return breakdown
+
+
+def _clamp_penalty_inputs(*, pet_level: int, num_exalts: int, percent_loot: float, incombat_reduction: float) -> Dict[str, float]:
+    return {
+        "pet_level": float(min(MAX_PET_LEVEL, max(0, int(pet_level)))),
+        "num_exalts": float(min(MAX_EXALTS, max(0, int(num_exalts)))),
+        "percent_loot": float(min(MAX_LOOT_BOOST, max(0.0, float(percent_loot)))),
+        "incombat_reduction": float(min(MAX_INCOMBAT_REDUCTION, max(0.0, float(incombat_reduction)))),
+    }
 
 
 def compute_item_reduction_percent_from_inputs(
@@ -477,6 +513,14 @@ def calculate_item_points(
 
     effective_rarity = normalize_rarity(rarity)
     final_points = base_points * _rarity_multiplier_for(effective_rarity, guild_config)
+
+    if _is_tops_item(item_name, shiny):
+        tops_mode = _get_tops_point_mode(guild_config)
+        if tops_mode == "none":
+            return 0.0
+        if tops_mode == "once":
+            return final_points
+
     if quantity == 1:
         return final_points
 
@@ -639,11 +683,15 @@ def compute_penalty_components(
     guild_config: Dict[str, Any] | None = None,
 ) -> Dict[str, float]:
     weights = _get_penalty_weights(guild_config)
+    pet_weight = weights["pet_level_per_point"]
+    exalts_weight = weights["exalts_per_point"]
+    loot_weight = weights["loot_percent_per_point"]
+    incombat_weight = weights["incombat_seconds_per_point"]
     return {
-        PENALTY_COMPONENT_NAMES["pet"]: -round(pet_level / weights["pet_level_per_point"]),
-        PENALTY_COMPONENT_NAMES["exalts"]: -(num_exalts / weights["exalts_per_point"]),
-        PENALTY_COMPONENT_NAMES["loot"]: -(percent_loot / weights["loot_percent_per_point"]),
-        PENALTY_COMPONENT_NAMES["incombat"]: -(incombat_reduction / weights["incombat_seconds_per_point"]),
+        PENALTY_COMPONENT_NAMES["pet"]: 0.0 if pet_weight <= 0 else -round(pet_level / pet_weight),
+        PENALTY_COMPONENT_NAMES["exalts"]: 0.0 if exalts_weight <= 0 else -(num_exalts / exalts_weight),
+        PENALTY_COMPONENT_NAMES["loot"]: 0.0 if loot_weight <= 0 else -(percent_loot / loot_weight),
+        PENALTY_COMPONENT_NAMES["incombat"]: 0.0 if incombat_weight <= 0 else -(incombat_reduction / incombat_weight),
     }
 
 
@@ -676,17 +724,22 @@ def penalty_inputs_from_bonuses(
     penalties = penalty_map_from_bonuses(bonuses)
     weights = _get_penalty_weights(guild_config)
 
-    pet_level = int(round(-weights["pet_level_per_point"] * penalties["pet"])) if penalties["pet"] != 0 else 0
-    exalts = int(round(-weights["exalts_per_point"] * penalties["exalts"])) if penalties["exalts"] != 0 else 0
-    loot_boost = round(-weights["loot_percent_per_point"] * penalties["loot"], 1) if penalties["loot"] != 0 else 0.0
-    incombat = round(-weights["incombat_seconds_per_point"] * penalties["incombat"], 1) if penalties["incombat"] != 0 else 0.0
+    pet_weight = weights["pet_level_per_point"]
+    exalts_weight = weights["exalts_per_point"]
+    loot_weight = weights["loot_percent_per_point"]
+    incombat_weight = weights["incombat_seconds_per_point"]
 
-    return {
-        "pet_level": max(0, pet_level),
-        "num_exalts": max(0, exalts),
-        "percent_loot": max(0.0, loot_boost),
-        "incombat_reduction": max(0.0, incombat),
-    }
+    pet_level = int(round(-pet_weight * penalties["pet"])) if penalties["pet"] != 0 and pet_weight > 0 else 0
+    exalts = int(round(-exalts_weight * penalties["exalts"])) if penalties["exalts"] != 0 and exalts_weight > 0 else 0
+    loot_boost = round(-loot_weight * penalties["loot"], 1) if penalties["loot"] != 0 and loot_weight > 0 else 0.0
+    incombat = round(-incombat_weight * penalties["incombat"], 1) if penalties["incombat"] != 0 and incombat_weight > 0 else 0.0
+
+    return _clamp_penalty_inputs(
+        pet_level=pet_level,
+        num_exalts=exalts,
+        percent_loot=loot_boost,
+        incombat_reduction=incombat,
+    )
 
 
 def build_penalty_bonuses(components: Dict[str, float]) -> list[Bonus]:

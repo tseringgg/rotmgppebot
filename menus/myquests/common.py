@@ -15,6 +15,7 @@ from utils.guild_config import get_quest_points, get_quest_targets, load_guild_c
 from utils.player_records import ensure_player_exists, load_player_records, load_teams, save_player_records
 from utils.quest_modes import build_global_quests_payload, build_team_quests_context
 from utils.quest_manager import refresh_player_quests
+from utils.team_contest_scoring import compute_active_ppe_completed_quest_counts
 
 
 _BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -238,7 +239,7 @@ def build_category_embed(title: str, item_names: Sequence[str], attachment_name:
     return embed
 
 
-def build_completed_embed(quests, points_regular: int, points_shiny: int, points_skin: int) -> discord.Embed:
+def build_completed_embed(quests, points_regular: int, points_shiny: int, points_skin: int, active_ppe) -> discord.Embed:
     lines = ["**Completed Quests**", ""]
 
     total_points = 0
@@ -274,6 +275,15 @@ def build_completed_embed(quests, points_regular: int, points_shiny: int, points
         title="Completed Quest Log",
         description=description,
         color=discord.Color.green(),
+    )
+    active_overlap = compute_active_ppe_completed_quest_counts(quests, active_ppe)
+    embed.add_field(
+        name="Current Active PPE",
+        value=(
+            f"Completed quests on active PPE loot: **{active_overlap['total']}** "
+            f"(Regular: **{active_overlap['regular']}**, Shiny: **{active_overlap['shiny']}**, Skin: **{active_overlap['skin']}**)."
+        ),
+        inline=False,
     )
     embed.add_field(name="Total Completed Quest Points", value=f"**{total_points}**", inline=False)
     return embed
@@ -329,6 +339,7 @@ async def build_myquests_state_for_player(
             await save_guild_config(interaction, config)
 
     quests = player_data.quests
+    active_ppe = next((ppe for ppe in getattr(player_data, "ppes", []) if ppe.id == player_data.active_ppe), None)
     current_regular = list(quests.current_items)
     current_shiny = list(quests.current_shinies)
     current_skin = list(quests.current_skins)
@@ -350,7 +361,7 @@ async def build_myquests_state_for_player(
             skin_target,
             bool(quest_settings.get("use_global_quests", False)),
         ),
-        "completed_embed": build_completed_embed(quests, regular_points, shiny_points, skin_points),
+        "completed_embed": build_completed_embed(quests, regular_points, shiny_points, skin_points, active_ppe),
         "current_regular": current_regular,
         "current_shiny": current_shiny,
         "current_skin": current_skin,

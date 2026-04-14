@@ -7,6 +7,7 @@ from typing import Any
 
 import discord
 
+from utils.calc_points import normalize_item_name
 from utils.guild_config import get_contest_settings, get_quest_points
 from utils.quest_modes import normalize_team_key
 
@@ -119,6 +120,97 @@ def compute_quest_points_from_state(state: dict[str, Any] | None, *, scoring: Te
         len(state.get("completed_items", [])) * scoring.regular_quest_points
         + len(state.get("completed_shinies", [])) * scoring.shiny_quest_points
         + len(state.get("completed_skins", [])) * scoring.skin_quest_points
+    )
+
+
+def _strip_shiny_suffix(item_name: str) -> str:
+    normalized = normalize_item_name(item_name)
+    if normalized.lower().endswith("(shiny)"):
+        return normalized[: -len("(shiny)")].strip()
+    return normalized
+
+
+def _normalized_variant_key(item_name: str, *, shiny: bool) -> tuple[str, bool]:
+    return (_strip_shiny_suffix(item_name).lower(), bool(shiny))
+
+
+def _active_ppe_loot_variant_keys(active_ppe: Any) -> set[tuple[str, bool]]:
+    if active_ppe is None:
+        return set()
+
+    loot_entries = getattr(active_ppe, "loot", None)
+    if not isinstance(loot_entries, list):
+        return set()
+
+    keys: set[tuple[str, bool]] = set()
+    for loot in loot_entries:
+        try:
+            quantity = int(getattr(loot, "quantity", 0) or 0)
+        except (TypeError, ValueError):
+            quantity = 0
+        if quantity <= 0:
+            continue
+
+        item_name = str(getattr(loot, "item_name", "") or "").strip()
+        if not item_name:
+            continue
+        keys.add(_normalized_variant_key(item_name, shiny=bool(getattr(loot, "shiny", False))))
+    return keys
+
+
+def compute_active_ppe_completed_quest_counts(quests: Any, active_ppe: Any) -> dict[str, int]:
+    """Count completed quests that overlap with loot on the active PPE."""
+    if quests is None:
+        return {
+            "regular": 0,
+            "shiny": 0,
+            "skin": 0,
+            "total": 0,
+        }
+
+    active_loot = _active_ppe_loot_variant_keys(active_ppe)
+    if not active_loot:
+        return {
+            "regular": 0,
+            "shiny": 0,
+            "skin": 0,
+            "total": 0,
+        }
+
+    regular = sum(
+        1
+        for item_name in getattr(quests, "completed_items", [])
+        if _normalized_variant_key(str(item_name), shiny=False) in active_loot
+    )
+    shiny = sum(
+        1
+        for item_name in getattr(quests, "completed_shinies", [])
+        if _normalized_variant_key(str(item_name), shiny=True) in active_loot
+    )
+    skin = sum(
+        1
+        for item_name in getattr(quests, "completed_skins", [])
+        if _normalized_variant_key(str(item_name), shiny=False) in active_loot
+    )
+    return {
+        "regular": regular,
+        "shiny": shiny,
+        "skin": skin,
+        "total": regular + shiny + skin,
+    }
+
+
+def compute_quest_points_from_quests_and_active_ppe(
+    quests: Any,
+    active_ppe: Any,
+    *,
+    scoring: TeamContestScoring,
+) -> float:
+    counts = compute_active_ppe_completed_quest_counts(quests, active_ppe)
+    return float(
+        counts["regular"] * scoring.regular_quest_points
+        + counts["shiny"] * scoring.shiny_quest_points
+        + counts["skin"] * scoring.skin_quest_points
     )
 
 
