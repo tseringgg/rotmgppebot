@@ -21,6 +21,9 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
             f"Use the autocomplete list to choose one.",
             ephemeral=True
         )
+
+    # Acknowledge before potentially slower record/config I/O.
+    await interaction.response.defer(thinking=True)
     
     # Load player records
     records = await load_player_records(interaction)
@@ -29,7 +32,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     
     # Check if target player has any PPEs
     if not player_data.ppes:
-        return await interaction.response.send_message(
+        return await interaction.followup.send(
             f"❌ {user.display_name} doesn't have any PPEs.",
             ephemeral=True
         )
@@ -42,7 +45,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
             break
     
     if not target_ppe:
-        return await interaction.response.send_message(
+        return await interaction.followup.send(
             f"❌ Could not find PPE #{id} for {user.display_name}.",
             ephemeral=True
         )
@@ -58,7 +61,7 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     
     if existing_bonus:
         if not bonus_data.repeatable:
-            return await interaction.response.send_message(
+            return await interaction.followup.send(
                 f"❌ PPE #{id} already has the `{bonus_name}` bonus. This bonus is not repeatable.",
                 ephemeral=True
             )
@@ -76,9 +79,6 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
         # Add bonus to PPE
         target_ppe.bonuses.append(new_bonus)
         quantity_text = ""
-
-    # Acknowledge before the potentially slower recompute/save/file steps.
-    await interaction.response.defer()
 
     guild_config = await load_guild_config(interaction)
     recompute_ppe_points(target_ppe, guild_config)
