@@ -96,9 +96,9 @@ async def command(interaction: discord.Interaction, bonus_name: str):
     repeatable_text = " (repeatable)" if bonus_data.repeatable else " (one-time)"
     response_msg = (
         f"✅ Bonus logged for PPE #{active_ppe.id} ({active_ppe.name})!{quantity_text}\n"
-        f"Points: {_format_points(old_points)} -> {_format_points(new_points)}\n"
-        f"**+{bonus_data.points} points**{repeatable_text}\n"
-        f"Points: **{old_points} -> {new_points}**"
+        f"Logged bonus: **{bonus_data.name}**\n"
+        f"Bonus value: **+{bonus_data.points} points**{repeatable_text}\n"
+        f"Points: {_format_points(old_points)} -> {_format_points(new_points)}"
     )
 
     await interaction.followup.send(response_msg, ephemeral=False)

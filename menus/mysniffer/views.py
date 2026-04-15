@@ -74,7 +74,7 @@ class MySnifferHomeView(OwnerBoundView):
             )
             return
 
-        await open_panel(interaction, "show_all")
+        await open_panel(interaction, "show_pending")
 
     @discord.ui.button(label="Refresh", style=discord.ButtonStyle.secondary)
     async def refresh(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

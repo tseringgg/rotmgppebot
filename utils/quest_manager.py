@@ -165,7 +165,8 @@ def _team_owned_norms(member_records: list[PlayerData]) -> tuple[set[str], set[s
     owned_shiny_targets: set[str] = set()
     for member_data in member_records:
         for item_name, shiny in season_unique_items(member_data):
-            owned_regular.add(normalize_item_name(item_name).lower())
+            if not shiny:
+                owned_regular.add(normalize_item_name(item_name).lower())
             if shiny:
                 owned_shiny_targets.add(_quest_target_norm(item_name, shiny=True))
     return owned_regular, owned_shiny_targets
@@ -431,8 +432,9 @@ def _quest_target_norm(item_name: str, shiny: bool = False) -> str:
 
 def _owned_regular_norms(player_data: PlayerData) -> set[str]:
     owned = set()
-    for item_name, _shiny in season_unique_items(player_data):
-        owned.add(normalize_item_name(item_name).lower())
+    for item_name, shiny in season_unique_items(player_data):
+        if not shiny:
+            owned.add(normalize_item_name(item_name).lower())
     return owned
 
 
@@ -752,7 +754,7 @@ def update_quests_for_item(
 
     remaining_item_quests = []
     for quest in quests.current_items:
-        if normalize_item_name(quest).lower() == normalized_regular:
+        if not shiny and normalize_item_name(quest).lower() == normalized_regular:
             completed_items.append(quest)
             if not _contains_name(quests.completed_items, quest):
                 quests.completed_items.append(quest)
@@ -772,7 +774,7 @@ def update_quests_for_item(
 
     remaining_skin_quests = []
     for quest in quests.current_skins:
-        if normalize_item_name(quest).lower() == normalized_regular:
+        if not shiny and normalize_item_name(quest).lower() == normalized_regular:
             completed_skins.append(quest)
             if not _contains_name(quests.completed_skins, quest):
                 quests.completed_skins.append(quest)
@@ -824,11 +826,11 @@ def remove_item_from_completed_quests(player_data: PlayerData, item_name: str, s
 
     removed_completed_items = [
         quest for quest in quests.completed_items
-        if normalize_item_name(quest).lower() == normalized_regular
+        if not shiny and normalize_item_name(quest).lower() == normalized_regular
     ]
     removed_completed_skins = [
         quest for quest in quests.completed_skins
-        if normalize_item_name(quest).lower() == normalized_regular
+        if not shiny and normalize_item_name(quest).lower() == normalized_regular
     ]
     removed_completed_shinies = [
         quest for quest in quests.completed_shinies

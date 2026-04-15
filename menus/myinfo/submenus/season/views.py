@@ -76,16 +76,17 @@ class SeasonLootVariantView(SeasonLootVariantActionsView):
         key = ensure_player_exists(records, interaction.user.id)
         player_data = records[key]
 
+        # Close the source menu first so long graph renders do not hit Discord's response timeout.
+        await close_myinfo_menu(interaction)
+
         graph_image = build_item_graph(player_data, display_name=interaction.user.display_name)
         if graph_image is None:
-            await send_interaction_text(
-                interaction,
+            await interaction.followup.send(
                 "No season loot timestamps found yet. Add season loot first to generate an item graph.",
                 ephemeral=True,
             )
             return
 
-        await close_myinfo_menu(interaction)
         await interaction.followup.send(
             file=discord.File(graph_image, filename="season_item_graph.png"),
             ephemeral=False,

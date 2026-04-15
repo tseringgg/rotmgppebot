@@ -7,6 +7,7 @@ from menus.leaderboard.submenus.character.views import CharacterLeaderboardClass
 from utils.contest_leaderboards import contest_leaderboard_label
 
 from . import (
+    conteststats,
     contestleaderboard,
     ppeleaderboard,
     questleaderboard,
@@ -31,6 +32,7 @@ def leaderboard_home_embed(contest_settings: dict | None = None) -> discord.Embe
     embed.add_field(name="Season Loot Leaderboard", value="Unique seasonal item counts.", inline=False)
     embed.add_field(name="Team Leaderboard", value="Combined team standings.", inline=False)
     embed.add_field(name="Contest Leaderboard", value=f"Configured default: **{default_contest_label}**", inline=False)
+    embed.add_field(name="Contest Stats", value="Contest-wide wrapped stats across all players.", inline=False)
     return embed
 
 
@@ -66,6 +68,10 @@ class LeaderboardHomeView(OwnerBoundView):
     @discord.ui.button(label="Team Leaderboard", style=discord.ButtonStyle.primary, row=2)
     async def team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await teamleaderboard.command(interaction)
+
+    @discord.ui.button(label="Contest Stats", style=discord.ButtonStyle.success, row=2)
+    async def contest_stats(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await conteststats.command(interaction)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=3)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
