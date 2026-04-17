@@ -1068,9 +1068,15 @@ class ComboShortcutModal(discord.ui.Modal, title="Edit Combo Multiplier"):
                 preset_name=display_name,
                 preset_short=short_name,
             )
+            if self.source_message is None:
+                await interaction.response.send_message(embed=wizard.current_embed(), view=wizard, ephemeral=True)
+                return
+
             await interaction.response.send_message("Opening combo editor...", ephemeral=True)
-            if self.source_message is not None:
+            try:
                 await self.source_message.edit(embed=wizard.current_embed(), view=wizard)
+            except discord.HTTPException:
+                await interaction.followup.send(embed=wizard.current_embed(), view=wizard, ephemeral=True)
             return
 
         from menus.manageseason.submenus.points.views import ManageComboMultiplierWizardView
@@ -1080,9 +1086,15 @@ class ComboShortcutModal(discord.ui.Modal, title="Edit Combo Multiplier"):
             character_settings=self.character_settings,
             source_message=self.source_message,
         )
+        if self.source_message is None:
+            await interaction.response.send_message(embed=wizard.current_embed(), view=wizard, ephemeral=True)
+            return
+
         await interaction.response.send_message("Opening combo editor...", ephemeral=True)
-        if self.source_message is not None:
+        try:
             await self.source_message.edit(embed=wizard.current_embed(), view=wizard)
+        except discord.HTTPException:
+            await interaction.followup.send(embed=wizard.current_embed(), view=wizard, ephemeral=True)
 
 
 class ComboOverrideSettingsModal(discord.ui.Modal):

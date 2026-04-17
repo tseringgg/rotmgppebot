@@ -117,6 +117,7 @@ def default_ppe_type_options() -> dict[str, Any]:
         "enforce_rarity_on_shiny": False,
         "duo_enabled": False,
         "duo_partner_id": None,
+        "duo_link_id": None,
     }
 
 
@@ -157,7 +158,9 @@ def build_ppe_type_options(
     enforce_rarity_on_shiny: Any,
     duo_enabled: Any,
     duo_partner_id: Any,
+    duo_link_id: Any = None,
 ) -> dict[str, Any]:
+    normalized_duo_link_id = str(duo_link_id or "").strip() or None
     options = {
         "regular": parse_yes_no(regular, default=True),
         "uses_pet": parse_yes_no(uses_pet, default=True),
@@ -167,6 +170,7 @@ def build_ppe_type_options(
         "enforce_rarity_on_shiny": parse_yes_no(enforce_rarity_on_shiny, default=False),
         "duo_enabled": parse_yes_no(duo_enabled, default=False),
         "duo_partner_id": _normalize_discord_id(duo_partner_id),
+        "duo_link_id": normalized_duo_link_id,
     }
     return normalize_ppe_type_options(options)
 
@@ -206,6 +210,7 @@ def options_from_signature(signature: Any, *, duo_partner_id: Any = None) -> dic
         enforce_rarity_on_shiny=token_map.get("enforce_shiny_rarity"),
         duo_enabled=token_map.get("duo"),
         duo_partner_id=duo_partner_id,
+        duo_link_id=None,
     )
 
 
@@ -260,6 +265,7 @@ def normalize_ppe_type_options(value: Any, *, current_type: Any = None) -> dict[
         options["enforce_rarity_on_shiny"] = bool(raw.get("enforce_rarity_on_shiny", options["enforce_rarity_on_shiny"]))
         options["duo_enabled"] = bool(raw.get("duo_enabled", options["duo_enabled"]))
         options["duo_partner_id"] = _normalize_discord_id(raw.get("duo_partner_id"))
+        options["duo_link_id"] = str(raw.get("duo_link_id", "")).strip() or None
     else:
         options = legacy_ppe_type_to_options(current_type)
 
@@ -275,6 +281,7 @@ def normalize_ppe_type_options(value: Any, *, current_type: Any = None) -> dict[
 
     if not options["duo_enabled"]:
         options["duo_partner_id"] = None
+        options["duo_link_id"] = None
 
     return options
 
