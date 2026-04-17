@@ -14,11 +14,16 @@ from menus.manageseason.common import (
     build_point_settings_embed,
 )
 from menus.manageseason.modals import (
+    BackfillLegacyPpeTypeFieldsModal,
     EditPenaltyBaseRatesModal,
     EditClassPointSettingsModal,
+    EditIterativeBaseMultipliersModal,
+    EditIterativeComboMultiplierModal,
+    EditPpeComboLabelModal,
     EditDuplicateItemPointsModal,
     EditGlobalPointSettingsModal,
     EditPetModifierModal,
+    EditPpeTypeLabelModal,
     EditPpeTypeMultiplierModal,
     EditRarityModifiersModal,
 )
@@ -234,9 +239,13 @@ class ManageClassPointSettingsView(OwnerBoundView):
 
 
 class _PpeTypeSelect(discord.ui.Select):
-    def __init__(self, *, selected_type: str) -> None:
+    def __init__(self, *, selected_type: str, character_settings: dict | None = None) -> None:
         options = [
-            discord.SelectOption(label=ppe_type_label(ppe_type), value=ppe_type, default=(ppe_type == selected_type))
+            discord.SelectOption(
+                label=ppe_type_label(ppe_type, ppe_settings=character_settings),
+                value=ppe_type,
+                default=(ppe_type == selected_type),
+            )
             for ppe_type in all_ppe_types()
         ]
         super().__init__(
@@ -269,7 +278,7 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
         self.character_settings = character_settings
         all_types = all_ppe_types()
         self.selected_type = selected_type if selected_type in all_types else all_types[0]
-        self.add_item(_PpeTypeSelect(selected_type=self.selected_type))
+        self.add_item(_PpeTypeSelect(selected_type=self.selected_type, character_settings=self.character_settings))
 
     def current_embed(self) -> discord.Embed:
         return build_ppe_type_points_embed(self.character_settings)
@@ -287,6 +296,60 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
                 owner_id=self.owner_id,
                 ppe_type=self.selected_type,
                 current_value=float(multipliers.get(self.selected_type, 1.0)),
+                source_message=interaction.message,
+            )
+        )
+
+    @discord.ui.button(label="Edit Iterative Base", style=discord.ButtonStyle.success, row=1)
+    async def edit_iterative_base(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.character_settings = await load_character_settings_for_menu(interaction)
+        await interaction.response.send_modal(
+            EditIterativeBaseMultipliersModal(
+                owner_id=self.owner_id,
+                character_settings=self.character_settings,
+                source_message=interaction.message,
+            )
+        )
+
+    @discord.ui.button(label="Edit Combo Override", style=discord.ButtonStyle.success, row=1)
+    async def edit_combo_override(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.character_settings = await load_character_settings_for_menu(interaction)
+        await interaction.response.send_modal(
+            EditIterativeComboMultiplierModal(
+                owner_id=self.owner_id,
+                source_message=interaction.message,
+                character_settings=self.character_settings,
+            )
+        )
+
+    @discord.ui.button(label="Edit Selected Type Label", style=discord.ButtonStyle.primary, row=2)
+    async def edit_selected_type_label(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.character_settings = await load_character_settings_for_menu(interaction)
+        await interaction.response.send_modal(
+            EditPpeTypeLabelModal(
+                owner_id=self.owner_id,
+                ppe_type=self.selected_type,
+                character_settings=self.character_settings,
+                source_message=interaction.message,
+            )
+        )
+
+    @discord.ui.button(label="Edit Combo Label Override", style=discord.ButtonStyle.primary, row=2)
+    async def edit_combo_label_override(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.character_settings = await load_character_settings_for_menu(interaction)
+        await interaction.response.send_modal(
+            EditPpeComboLabelModal(
+                owner_id=self.owner_id,
+                source_message=interaction.message,
+                character_settings=self.character_settings,
+            )
+        )
+
+    @discord.ui.button(label="Backfill Legacy Fields", style=discord.ButtonStyle.danger, row=2)
+    async def backfill_legacy_fields(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await interaction.response.send_modal(
+            BackfillLegacyPpeTypeFieldsModal(
+                owner_id=self.owner_id,
                 source_message=interaction.message,
             )
         )

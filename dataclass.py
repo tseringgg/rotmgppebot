@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 from enum import Enum
 
-from utils.ppe_types import DEFAULT_PPE_TYPE
+from utils.ppe_types import DEFAULT_PPE_TYPE, default_ppe_type_options
 
 ROTMG_CLASSES = [
     "Wizard", "Priest", "Archer", "Rogue", "Warrior", "Knight", "Paladin",
@@ -56,6 +56,7 @@ class PPEData:
     loot: List[Loot] = field(default_factory=list)
     bonuses: List[Bonus] = field(default_factory=list)
     ppe_type: str = DEFAULT_PPE_TYPE
+    ppe_type_options: Dict[str, Optional[int] | bool | str | None] = field(default_factory=default_ppe_type_options)
     completed_sets: List[str] = field(default_factory=list)
 
 @dataclass

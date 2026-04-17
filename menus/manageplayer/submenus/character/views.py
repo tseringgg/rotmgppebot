@@ -8,7 +8,16 @@ import discord
 
 from dataclass import PPEData, PlayerData
 from menus.menu_utils.character_carousel import CharacterCarouselPolicy
-from utils.ppe_types import ppe_type_short_label, resolve_edit_ppe_type
+from utils.ppe_types import (
+    build_ppe_type_options,
+    infer_legacy_ppe_type_from_options,
+    normalize_ppe_type_options,
+    options_from_signature,
+    ppe_type_compact_summary,
+    ppe_type_option_signature,
+    ppe_type_short_label,
+    resolve_edit_ppe_type,
+)
 from menus.manageplayer.common import (
     character_embed_for_target,
     close_manageplayer_menu,
@@ -102,10 +111,20 @@ class ManagePlayerPenaltiesModal(discord.ui.Modal, title="Set PPE Penalties"):
             allowed_types=ppe_settings.get("allowed_ppe_types", []),
         )
         if type_error:
-            await interaction.response.send_message(type_error, ephemeral=False)
-            return
-
-        ppe.ppe_type = resolved_type
+            current_options = getattr(ppe, "ppe_type_options", {})
+            duo_partner_id = current_options.get("duo_partner_id") if isinstance(current_options, dict) else None
+            signature_options = options_from_signature(
+                self.ppe_type.value,
+                duo_partner_id=duo_partner_id,
+            )
+            if signature_options is None:
+                await interaction.response.send_message(type_error, ephemeral=False)
+                return
+            ppe.ppe_type_options = signature_options
+            ppe.ppe_type = infer_legacy_ppe_type_from_options(signature_options)
+        else:
+            ppe.ppe_type = resolved_type
+            ppe.ppe_type_options = normalize_ppe_type_options(None, current_type=resolved_type)
 
         penalty_result = apply_penalties_to_ppe(
             ppe,
@@ -260,6 +279,30 @@ class ManagePlayerCharactersView(OwnerBoundView):
             connected_ppe_ids=self.connected_ppe_ids,
         )
         await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Manage PPE Type", style=discord.ButtonStyle.primary, row=2)
+    async def manage_ppe_type(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        selected = self.current_ppe()
+        guild_config = self.guild_config or await load_guild_config(interaction)
+        ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config.get("ppe_settings", {}), dict) else {}
+        wizard = ManagePlayerPpeTypeWizardView(
+            owner_id=interaction.user.id,
+            target=self.target,
+            ppe_id=int(selected.id),
+            max_ppes=self.max_ppes,
+            source_message=interaction.message,
+            connected_ppe_ids=self.connected_ppe_ids,
+            ppe_settings=ppe_settings,
+            initial_options=normalize_ppe_type_options(
+                getattr(selected, "ppe_type_options", None),
+                current_type=getattr(selected, "ppe_type", None),
+            ),
+        )
+        await interaction.response.send_message(
+            wizard.prompt_text(),
+            view=wizard,
+            ephemeral=True,
+        )
 
     @discord.ui.button(label="Delete PPE", style=discord.ButtonStyle.danger, row=1)
     async def delete_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -461,3 +504,364 @@ class ManagePlayerDeletePpeConfirmView(OwnerBoundView):
             preferred_ppe_id=self.ppe_id,
         )
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+
+class ManagePlayerDuoPartnerIdModal(discord.ui.Modal, title="Set Duo Partner Discord ID"):
+    partner_id = discord.ui.TextInput(
+        label="Discord User ID",
+        placeholder="Example: 123456789012345678",
+        required=True,
+        max_length=24,
+    )
+
+    def __init__(self, *, wizard: "ManagePlayerPpeTypeWizardView") -> None:
+        super().__init__(timeout=180)
+        self.wizard = wizard
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.wizard.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        partner_text = str(self.partner_id.value or "").strip()
+        if not partner_text.isdigit() or int(partner_text) <= 0:
+            await interaction.response.send_message("Please enter a valid numeric Discord ID.", ephemeral=True)
+            return
+
+        self.wizard.state["duo_partner_id"] = int(partner_text)
+        await interaction.response.send_message(
+            f"Saved duo partner as <@{partner_text}>. Click Continue in the wizard to finish.",
+            ephemeral=True,
+        )
+
+
+class _ManagePlayerRaritySelect(discord.ui.Select):
+    def __init__(self, *, selected: str) -> None:
+        options = [
+            discord.SelectOption(label="Common", value="common", default=selected == "common"),
+            discord.SelectOption(label="Uncommon", value="uncommon", default=selected == "uncommon"),
+            discord.SelectOption(label="Rare", value="rare", default=selected == "rare"),
+            discord.SelectOption(label="Legendary", value="legendary", default=selected == "legendary"),
+            discord.SelectOption(label="Divine", value="divine", default=selected == "divine"),
+        ]
+        super().__init__(
+            placeholder="Select minimum rarity",
+            min_values=1,
+            max_values=1,
+            options=options,
+            row=0,
+        )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManagePlayerPpeTypeWizardView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        view.state["minimum_rarity"] = self.values[0]
+        await view.advance(interaction)
+
+
+class ManagePlayerPpeTypeWizardView(discord.ui.View):
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        target: ManagedPlayerTarget,
+        ppe_id: int,
+        max_ppes: int,
+        source_message: discord.Message | None,
+        connected_ppe_ids: set[int],
+        ppe_settings: dict,
+        initial_options: dict,
+    ) -> None:
+        super().__init__(timeout=600)
+        self.owner_id = owner_id
+        self.target = target
+        self.ppe_id = ppe_id
+        self.max_ppes = max_ppes
+        self.source_message = source_message
+        self.connected_ppe_ids = connected_ppe_ids
+        self.ppe_settings = ppe_settings if isinstance(ppe_settings, dict) else {}
+        self.base_multipliers = self.ppe_settings.get("iterative_base_multipliers", {}) if isinstance(self.ppe_settings.get("iterative_base_multipliers", {}), dict) else {}
+        self.state: dict[str, object] = dict(initial_options)
+        self.step = "regular"
+        self._rebuild_items()
+
+    def _multiplier_hint(self, key: str, fallback: float) -> str:
+        try:
+            value = float(self.base_multipliers.get(key, fallback))
+        except (TypeError, ValueError):
+            value = fallback
+        return f"x{value:.2f}"
+
+    def _rarity_hint(self) -> str:
+        bucket = self.base_multipliers.get("minimum_rarity", {}) if isinstance(self.base_multipliers.get("minimum_rarity", {}), dict) else {}
+
+        def _value(name: str, fallback: float) -> str:
+            try:
+                parsed = float(bucket.get(name, fallback))
+            except (TypeError, ValueError):
+                parsed = fallback
+            return f"{name.title()} {parsed:.2f}x"
+
+        return ", ".join([
+            _value("common", 1.0),
+            _value("uncommon", 1.1),
+            _value("rare", 1.2),
+            _value("legendary", 1.4),
+            _value("divine", 1.5),
+        ])
+
+    def prompt_text(self) -> str:
+        if self.step == "regular":
+            return "Are you going to do a regular PPE?"
+        if self.step == "uses_pet":
+            return f"Are you gonna use a pet? (No pet: {self._multiplier_hint('no_pet', 1.3)})"
+        if self.step == "allows_tiered":
+            return f"Do you allow yourself to use tiered items? (No tiered: {self._multiplier_hint('no_tiered', 1.3)})"
+        if self.step == "minimum_rarity":
+            return f"What is the minimum rarity for this PPE? ({self._rarity_hint()})"
+        if self.step == "shiny_only":
+            return f"Are you shiny only? (Yes: {self._multiplier_hint('shiny_only', 1.5)})"
+        if self.step == "enforce_shiny":
+            return "Will your rarity requirement be enforced on shiny items?"
+        if self.step == "duo":
+            return f"Would you like to do a duo PPE? (Yes: {self._multiplier_hint('duo', 0.6)})"
+        if self.step == "duo_partner":
+            partner_id = self.state.get("duo_partner_id")
+            partner_line = f"Current duo partner: <@{partner_id}>" if isinstance(partner_id, int) else "Current duo partner: not set"
+            return (
+                "Enter duo partner Discord ID.\n"
+                "How to find it: User Settings -> Advanced -> Developer Mode ON, then right click user and Copy User ID.\n"
+                f"{partner_line}"
+            )
+        if self.step == "confirm":
+            options = build_ppe_type_options(
+                regular=self.state.get("regular", True),
+                uses_pet=self.state.get("uses_pet", True),
+                allows_tiered=self.state.get("allows_tiered", True),
+                minimum_rarity=self.state.get("minimum_rarity", "common"),
+                shiny_only=self.state.get("shiny_only", False),
+                enforce_rarity_on_shiny=self.state.get("enforce_rarity_on_shiny", False),
+                duo_enabled=self.state.get("duo_enabled", False),
+                duo_partner_id=self.state.get("duo_partner_id"),
+            )
+            signature = ppe_type_option_signature(options)
+            summary = ppe_type_compact_summary(options, ppe_settings=self.ppe_settings)
+            partner_line = "None"
+            if options.get("duo_enabled"):
+                partner_id = options.get("duo_partner_id")
+                partner_line = f"<@{partner_id}>" if partner_id else "Missing"
+            return (
+                f"Confirm PPE type update for PPE #{self.ppe_id}.\n"
+                f"Summary: {summary}\n"
+                f"Signature: `{signature}`\n"
+                f"Duo Partner: {partner_line}\n"
+                "Click Confirm Update to save."
+            )
+        return "Continue setup."
+
+    def _set_yes_no(self, value: bool) -> None:
+        if self.step == "regular":
+            self.state["regular"] = value
+        elif self.step == "uses_pet":
+            self.state["uses_pet"] = value
+        elif self.step == "allows_tiered":
+            self.state["allows_tiered"] = value
+        elif self.step == "shiny_only":
+            self.state["shiny_only"] = value
+        elif self.step == "enforce_shiny":
+            self.state["enforce_rarity_on_shiny"] = value
+        elif self.step == "duo":
+            self.state["duo_enabled"] = value
+            if not value:
+                self.state["duo_partner_id"] = None
+
+    def _next_step(self) -> str:
+        if self.step == "regular":
+            return "duo" if bool(self.state.get("regular")) else "uses_pet"
+        if self.step == "uses_pet":
+            return "allows_tiered"
+        if self.step == "allows_tiered":
+            return "minimum_rarity"
+        if self.step == "minimum_rarity":
+            return "shiny_only"
+        if self.step == "shiny_only":
+            return "enforce_shiny" if bool(self.state.get("shiny_only")) else "duo"
+        if self.step == "enforce_shiny":
+            return "duo"
+        if self.step == "duo":
+            return "duo_partner" if bool(self.state.get("duo_enabled")) else "confirm"
+        if self.step == "duo_partner":
+            return "confirm"
+        return "confirm"
+
+    async def advance(self, interaction: discord.Interaction) -> None:
+        self.step = self._next_step()
+        self._rebuild_items()
+        await interaction.response.edit_message(content=self.prompt_text(), view=self)
+
+    def _rebuild_items(self) -> None:
+        self.clear_items()
+        if self.step in {"regular", "uses_pet", "allows_tiered", "shiny_only", "enforce_shiny", "duo"}:
+            self.add_item(_ManagePlayerWizardYesButton())
+            self.add_item(_ManagePlayerWizardNoButton())
+            self.add_item(_ManagePlayerWizardCancelButton())
+            return
+        if self.step == "minimum_rarity":
+            self.add_item(_ManagePlayerRaritySelect(selected=str(self.state.get("minimum_rarity", "common"))))
+            self.add_item(_ManagePlayerWizardCancelButton())
+            return
+        if self.step == "duo_partner":
+            self.add_item(_ManagePlayerWizardSetDuoIdButton())
+            self.add_item(_ManagePlayerWizardContinueButton())
+            self.add_item(_ManagePlayerWizardCancelButton())
+            return
+        if self.step == "confirm":
+            self.add_item(_ManagePlayerWizardConfirmButton())
+            self.add_item(_ManagePlayerWizardCancelButton())
+
+
+class _ManagePlayerWizardYesButton(discord.ui.Button):
+    def __init__(self) -> None:
+        super().__init__(label="Yes", style=discord.ButtonStyle.success, row=0)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManagePlayerPpeTypeWizardView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        view._set_yes_no(True)
+        await view.advance(interaction)
+
+
+class _ManagePlayerWizardNoButton(discord.ui.Button):
+    def __init__(self) -> None:
+        super().__init__(label="No", style=discord.ButtonStyle.secondary, row=0)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManagePlayerPpeTypeWizardView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        view._set_yes_no(False)
+        await view.advance(interaction)
+
+
+class _ManagePlayerWizardSetDuoIdButton(discord.ui.Button):
+    def __init__(self) -> None:
+        super().__init__(label="Set Duo Partner ID", style=discord.ButtonStyle.primary, row=0)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManagePlayerPpeTypeWizardView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        await interaction.response.send_modal(ManagePlayerDuoPartnerIdModal(wizard=view))
+
+
+class _ManagePlayerWizardContinueButton(discord.ui.Button):
+    def __init__(self) -> None:
+        super().__init__(label="Continue", style=discord.ButtonStyle.success, row=0)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManagePlayerPpeTypeWizardView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        if bool(view.state.get("duo_enabled")) and not isinstance(view.state.get("duo_partner_id"), int):
+            await interaction.response.send_message("Please set a valid duo partner Discord ID first.", ephemeral=True)
+            return
+        await view.advance(interaction)
+
+
+class _ManagePlayerWizardConfirmButton(discord.ui.Button):
+    def __init__(self) -> None:
+        super().__init__(label="Confirm Update", style=discord.ButtonStyle.success, row=0)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManagePlayerPpeTypeWizardView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        records = await load_player_records(interaction)
+        key = ensure_player_exists(records, view.target.user_id)
+        player_data = records[key]
+        ppe = find_ppe_or_raise(player_data, view.ppe_id)
+        guild_config = await load_guild_config(interaction)
+
+        options = build_ppe_type_options(
+            regular=view.state.get("regular", True),
+            uses_pet=view.state.get("uses_pet", True),
+            allows_tiered=view.state.get("allows_tiered", True),
+            minimum_rarity=view.state.get("minimum_rarity", "common"),
+            shiny_only=view.state.get("shiny_only", False),
+            enforce_rarity_on_shiny=view.state.get("enforce_rarity_on_shiny", False),
+            duo_enabled=view.state.get("duo_enabled", False),
+            duo_partner_id=view.state.get("duo_partner_id"),
+        )
+        ppe.ppe_type_options = options
+        ppe.ppe_type = infer_legacy_ppe_type_from_options(options)
+        points = recompute_ppe_points(ppe, guild_config).get("total", getattr(ppe, "points", 0.0))
+        await save_player_records(interaction=interaction, records=records)
+
+        summary = ppe_type_compact_summary(options, fallback_type=ppe.ppe_type, ppe_settings=guild_config.get("ppe_settings", {}))
+        await interaction.response.edit_message(content="PPE type updated.", view=None)
+        await interaction.followup.send(
+            f"✅ Updated PPE #{ppe.id} type for {view.target.display_name} to **{summary}**. "
+            f"New total: {float(points):.2f} points.",
+            ephemeral=False,
+        )
+
+        if view.source_message is not None:
+            refreshed = await load_target_player_data(interaction, view.target.user_id)
+            refreshed_guild_config = await load_guild_config(interaction)
+            connected_ids = await realmshark_connected_ppe_ids(interaction, view.target.user_id)
+            refreshed_view = ManagePlayerCharactersView(
+                owner_id=view.owner_id,
+                target=view.target,
+                max_ppes=view.max_ppes,
+                player_data=refreshed,
+                connected_ppe_ids=connected_ids,
+                guild_config=refreshed_guild_config,
+                preferred_ppe_id=view.ppe_id,
+            )
+            try:
+                await view.source_message.edit(embed=refreshed_view.current_embed(), view=refreshed_view)
+            except discord.HTTPException:
+                pass
+
+
+class _ManagePlayerWizardCancelButton(discord.ui.Button):
+    def __init__(self) -> None:
+        super().__init__(label="Cancel", style=discord.ButtonStyle.danger, row=1)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManagePlayerPpeTypeWizardView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        await interaction.response.edit_message(content="Cancelled PPE type update.", view=None)

@@ -12,7 +12,7 @@ from dataclasses import asdict
 import discord
 from dataclass import Loot, PPEData, PlayerData, Bonus, TeamData, QuestData
 from utils.loot_constants import normalize_rarity, rarity_rank
-from utils.ppe_types import normalize_ppe_type
+from utils.ppe_types import normalize_ppe_type, normalize_ppe_type_options
 
 _DASH_VARIANTS = "\u2010\u2011\u2012\u2013\u2014\u2015\u2212"
 
@@ -153,13 +153,20 @@ def normalize_ppe(ppe: dict) -> PPEData:
     if isinstance(completed_sets_raw, list):
         completed_sets = [str(s) for s in completed_sets_raw if s]
     
+    normalized_type = normalize_ppe_type(ppe.get("ppe_type"))
+    normalized_options = normalize_ppe_type_options(
+        ppe.get("ppe_type_options"),
+        current_type=normalized_type,
+    )
+
     return PPEData(
         id=ppe.get("id", 0),
         name=ppe.get("name", "Unknown"),
         points=float(ppe.get("points", 0)),
         loot=loot_objects,
         bonuses=bonus_objects,
-        ppe_type=normalize_ppe_type(ppe.get("ppe_type")),
+        ppe_type=normalized_type,
+        ppe_type_options=normalized_options,
         completed_sets=completed_sets,
     )
 
@@ -313,6 +320,10 @@ def _serialize_player_data(data: PlayerData) -> Dict[str, Any]:
                 ],
                 "bonuses": [asdict(b) for b in p.bonuses],
                 "ppe_type": normalize_ppe_type(getattr(p, "ppe_type", None)),
+                "ppe_type_options": normalize_ppe_type_options(
+                    getattr(p, "ppe_type_options", None),
+                    current_type=getattr(p, "ppe_type", None),
+                ),
                 "completed_sets": list(getattr(p, "completed_sets", [])),
             }
             for p in data.ppes

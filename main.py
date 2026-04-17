@@ -302,14 +302,14 @@ async def ppe_type_autocomplete(
     guild_config = await load_guild_config(interaction)
     ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config.get("ppe_settings", {}), dict) else {}
     if not bool(ppe_settings.get("enable_ppe_types", True)):
-        return [app_commands.Choice(name=ppe_type_label(DEFAULT_PPE_TYPE), value=DEFAULT_PPE_TYPE)]
+        return [app_commands.Choice(name=ppe_type_label(DEFAULT_PPE_TYPE, ppe_settings=ppe_settings), value=DEFAULT_PPE_TYPE)]
 
     allowed = normalize_allowed_ppe_types(ppe_settings.get("allowed_ppe_types"))
     current_text = str(current or "").casefold().strip()
     matches: list[app_commands.Choice[str]] = []
 
     for ppe_type in allowed:
-        label = ppe_type_label(ppe_type)
+        label = ppe_type_label(ppe_type, ppe_settings=ppe_settings)
         if current_text and current_text not in label.casefold() and current_text not in ppe_type.casefold():
             continue
         matches.append(app_commands.Choice(name=label, value=ppe_type))

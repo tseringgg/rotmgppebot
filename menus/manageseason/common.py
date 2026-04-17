@@ -39,7 +39,7 @@ def _build_class_override_lines(class_overrides: dict) -> list[str]:
     return lines
 
 
-def _build_ppe_type_multiplier_lines(multipliers: dict) -> list[str]:
+def _build_ppe_type_multiplier_lines(multipliers: dict, *, ppe_settings: dict | None = None) -> list[str]:
     lines: list[str] = []
     for ppe_type in all_ppe_types():
         value = 1.0
@@ -47,7 +47,33 @@ def _build_ppe_type_multiplier_lines(multipliers: dict) -> list[str]:
             value = float(multipliers.get(ppe_type, 1.0))
         except (TypeError, ValueError):
             value = 1.0
-        lines.append(f"• {ppe_type_label(ppe_type)}: {value:.2f}x")
+        lines.append(f"• {ppe_type_label(ppe_type, ppe_settings=ppe_settings)}: {value:.2f}x")
+    return lines
+
+
+def _build_type_label_override_lines(character_settings: dict) -> list[str]:
+    labels = character_settings.get("type_label_overrides", {}) if isinstance(character_settings.get("type_label_overrides", {}), dict) else {}
+    shorts = character_settings.get("type_short_label_overrides", {}) if isinstance(character_settings.get("type_short_label_overrides", {}), dict) else {}
+    lines: list[str] = []
+    for ppe_type in all_ppe_types():
+        name_value = str(labels.get(ppe_type, "")).strip()
+        short_value = str(shorts.get(ppe_type, "")).strip()
+        if not name_value and not short_value:
+            continue
+        display_name = name_value or ppe_type_label(ppe_type)
+        display_short = short_value or "(auto)"
+        lines.append(f"• {ppe_type}: {display_name} [{display_short}]")
+    return lines
+
+
+def _build_combo_label_override_lines(character_settings: dict) -> list[str]:
+    overrides = character_settings.get("combo_label_overrides", {}) if isinstance(character_settings.get("combo_label_overrides", {}), dict) else {}
+    lines: list[str] = []
+    for signature in sorted(overrides.keys()):
+        entry = overrides.get(signature, {}) if isinstance(overrides.get(signature, {}), dict) else {}
+        name_value = str(entry.get("name", "")).strip() or "(none)"
+        short_value = str(entry.get("short", "")).strip() or "(none)"
+        lines.append(f"• {signature}: {name_value} [{short_value}]")
     return lines
 
 
@@ -691,13 +717,25 @@ def build_ppe_type_points_embed(character_settings: dict) -> discord.Embed:
         if isinstance(character_settings.get("ppe_type_multipliers"), dict)
         else {}
     )
-    lines = _build_ppe_type_multiplier_lines(multipliers)
+    lines = _build_ppe_type_multiplier_lines(multipliers, ppe_settings=character_settings)
+    override_lines = _build_type_label_override_lines(character_settings)
+    combo_lines = _build_combo_label_override_lines(character_settings)
     embed = discord.Embed(
         title="PPE Type Point Multipliers",
-        description="Edit how much each PPE type scales final points.",
+        description="Edit type multipliers and custom display labels/shorthands.",
         color=discord.Color.dark_teal(),
     )
     embed.add_field(name="Current Multipliers", value="\n".join(lines), inline=False)
+    embed.add_field(
+        name="Legacy Type Label Overrides",
+        value="\n".join(override_lines[:10]) if override_lines else "No custom legacy type labels configured.",
+        inline=False,
+    )
+    embed.add_field(
+        name="Combo Label Overrides",
+        value="\n".join(combo_lines[:10]) if combo_lines else "No custom combo label overrides configured.",
+        inline=False,
+    )
     embed.set_footer(text="Changing multipliers recalculates all character totals immediately.")
     return embed
 

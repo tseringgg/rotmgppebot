@@ -8,7 +8,7 @@ import discord
 
 from dataclass import PPEData, PlayerData
 from menus.menu_utils import SafeResponse
-from utils.ppe_types import normalize_ppe_type, ppe_type_label, ppe_type_short_label
+from utils.ppe_types import normalize_ppe_type, ppe_type_compact_summary, ppe_type_display_from_options
 from utils.guild_config import get_realmshark_settings, load_guild_config
 from utils.loot_helpers.loot_share_commands import share_active_ppe_loot_image
 from utils.message_utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
@@ -44,16 +44,18 @@ def get_best_ppe(player_data: PlayerData) -> PPEData | None:
     return max(sorted_ppes, key=lambda p: float(p.points), default=None)
 
 
-def ppe_type_text(ppe: PPEData, *, compact: bool = False) -> str:
+def ppe_type_text(ppe: PPEData, *, compact: bool = False, guild_config: dict | None = None) -> str:
     normalized = normalize_ppe_type(getattr(ppe, "ppe_type", None))
+    options = getattr(ppe, "ppe_type_options", None)
+    ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config, dict) and isinstance(guild_config.get("ppe_settings", {}), dict) else None
     if compact:
-        return ppe_type_short_label(normalized)
-
-    full = ppe_type_label(normalized)
-    short = ppe_type_short_label(normalized)
-    if full == short:
-        return full
-    return f"{full} ({short})"
+        return ppe_type_compact_summary(options, fallback_type=normalized, ppe_settings=ppe_settings)
+    return ppe_type_display_from_options(
+        options,
+        fallback_type=normalized,
+        ppe_settings=ppe_settings,
+        compact=False,
+    )
 
 
 def penalty_stats_text(ppe: PPEData, guild_config: dict | None = None) -> str:
@@ -102,7 +104,9 @@ def loot_adjustments_text(ppe: PPEData, guild_config: dict | None = None) -> str
         f"Loot Boost: {float(defaults['percent_loot']):g}% -> -{float(adjustments['loot_reduction_percent']):.2f}%\n"
         f"In-Combat: {float(defaults['incombat_reduction']):g}s -> -{float(adjustments['incombat_reduction_percent']):.2f}%\n"
         f"Stat Reduction: **-{float(adjustments['total_reduction_percent']):.2f}%** ({float(adjustments['reduction_multiplier']):.2f}x)\n"
-        f"Type Multiplier: **{float(adjustments['type_multiplier']):.2f}x**\n"
+        f"Type Multiplier: **{float(adjustments['type_multiplier']):.2f}x** "
+        f"({str(adjustments.get('type_multiplier_source', 'legacy')).title()})\n"
+        f"Type Signature: `{str(adjustments.get('type_multiplier_signature', 'legacy'))}`\n"
         f"Combined Multiplier: **{combined_multiplier:.2f}x**"
     )
 
@@ -168,8 +172,8 @@ def build_character_embed(
     is_realmshark_connected: bool,
     guild_config: dict | None = None,
 ) -> discord.Embed:
-    character_type = ppe_type_text(ppe)
-    compact_type = ppe_type_text(ppe, compact=True)
+    character_type = ppe_type_text(ppe, guild_config=guild_config)
+    compact_type = ppe_type_text(ppe, compact=True, guild_config=guild_config)
     distinct_loot_items = len([loot for loot in ppe.loot if int(loot.quantity) > 0])
 
     title_prefix: list[str] = []

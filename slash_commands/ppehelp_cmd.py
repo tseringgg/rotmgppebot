@@ -165,31 +165,38 @@ def build_help_embed(section_key: str) -> discord.Embed:
         embed = discord.Embed(
             title="PPE Bot Help - Types of PPEs",
             description=(
-                "The PPE types available in your server may change depending on what admins configure in "
-                "`/manageseason` under Character Settings."
+                "PPE type scoring is now option-based. You choose rules, and the bot builds your type summary and multiplier."
             ),
             color=discord.Color.blurple(),
         )
         lines = [
-            f"- **{ppe_type_short_label(PPE_TYPE_REGULAR)}**: Standard PPE rules.",
-            f"- **{ppe_type_short_label(PPE_TYPE_DUO)}**: Run with a duo partner.",
-            f"- **{ppe_type_short_label(PPE_TYPE_DUO_NO_PET)}**: Duo partner rules with no pet.",
-            f"- **{ppe_type_short_label(PPE_TYPE_DIVINE_ONLY)}**: Divine-only challenge rules.",
-            f"- **{ppe_type_short_label(PPE_TYPE_DIVINE_NO_PET)}**: Divine-only challenge rules with no pet.",
-            f"- **{ppe_type_short_label(PPE_TYPE_UT_ONLY)}**: UT-only challenge rules.",
-            f"- **{ppe_type_short_label(PPE_TYPE_UT_NO_PET)}**: UT-only challenge rules with no pet.",
-            f"- **{ppe_type_short_label(PPE_TYPE_SHINY_ONLY)}**: Shiny-only challenge rules.",
-            f"- **{ppe_type_short_label(PPE_TYPE_SHINY_NO_PET)}**: Shiny-only challenge rules with no pet.",
-            f"- **{ppe_type_short_label(PPE_TYPE_LEGENDARY_OR_SHINY)}**: Legendary-or-shiny challenge rules.",
-            f"- **{ppe_type_short_label(PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET)}**: Legendary-or-shiny challenge rules with no pet.",
-            f"- **{ppe_type_short_label(PPE_TYPE_NO_PET)}**: No-pet challenge rules.",
-            f"- **{ppe_type_short_label(PPE_TYPE_DIVINE_SHINY)}**: Divine + Shiny combined challenge.",
-            f"- **{ppe_type_short_label(PPE_TYPE_DIVINE_SHINY_NO_PET)}**: Divine + Shiny combined challenge with no pet.",
+            "- Regular PPE: skips most option questions and keeps baseline type rules.",
+            "- No Pet: default multiplier x1.3.",
+            "- No Tiered: default multiplier x1.3.",
+            "- Minimum rarity: Common x1.0, Uncommon x1.1, Rare x1.2, Legendary x1.4, Divine x1.5.",
+            "- Shiny only: default multiplier x1.5.",
+            "- Enforce rarity on shiny: if enabled with high rarity, extra stacking can apply.",
+            "- Duo: default multiplier x0.6 and requires your partner Discord ID.",
         ]
-        embed.add_field(name="Available PPE Types", value="\n".join(lines), inline=False)
+        embed.add_field(name="Option Multipliers (Defaults)", value="\n".join(lines), inline=False)
         embed.add_field(
-            name="Tip",
-            value="Use `/newppe` (or MyInfo -> Manage Characters -> New PPE) to pick a type when multiple are enabled.",
+            name="Shorthand Tokens",
+            value=(
+                "- `NPE`: no pet\n"
+                "- `UT0`: no tiered\n"
+                "- `MINU/MINR/MINL/MIND`: minimum rarity\n"
+                "- `SH`: shiny only\n"
+                "- `ERS`: enforce rarity on shiny\n"
+                "- `DUO`: duo enabled"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="Custom Names and Shorthands",
+            value=(
+                "Admins can customize labels in `/manageseason -> Manage Point Settings -> Edit PPE Type Points`.\n"
+                "You can override both legacy type names and specific option-combination signatures."
+            ),
             inline=False,
         )
         embed.set_footer(text=_common_footer())

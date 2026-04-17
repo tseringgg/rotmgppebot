@@ -4,7 +4,16 @@ import math
 from typing import Any, Dict, Iterable
 
 from dataclass import Bonus, Loot, PPEData
-from utils.ppe_types import DEFAULT_PPE_TYPE_MULTIPLIERS, normalize_ppe_type, normalize_ppe_type_multipliers
+from utils.ppe_types import (
+    DEFAULT_PPE_TYPE_MULTIPLIERS,
+    compute_iterative_multiplier,
+    normalize_iterative_combo_overrides,
+    normalize_iterative_option_multipliers,
+    normalize_ppe_type,
+    normalize_ppe_type_multipliers,
+    normalize_ppe_type_options,
+    ppe_type_option_signature,
+)
 from utils.calc_points import load_loot_points, load_loot_types, normalize_item_name
 from utils.guild_config import get_rarity_multipliers
 from utils.loot_constants import normalize_rarity
@@ -134,10 +143,47 @@ def get_ppe_type_multiplier_for_ppe(
     ppe: PPEData,
     guild_config: Dict[str, Any] | None = None,
 ) -> float:
+    details = get_ppe_type_multiplier_details_for_ppe(ppe, guild_config)
+    return float(details["multiplier"])
+
+
+def get_ppe_type_multiplier_details_for_ppe(
+    ppe: PPEData,
+    guild_config: Dict[str, Any] | None = None,
+) -> Dict[str, Any]:
     ppe_settings = _get_ppe_settings(guild_config)
+    raw_options = getattr(ppe, "ppe_type_options", None)
+
+    if isinstance(raw_options, dict) and raw_options:
+        normalized_options = normalize_ppe_type_options(raw_options, current_type=getattr(ppe, "ppe_type", None))
+        signature = ppe_type_option_signature(normalized_options)
+        normalized_overrides = normalize_iterative_combo_overrides(ppe_settings.get("iterative_combo_overrides"))
+
+        override_multiplier = normalized_overrides.get(signature)
+        if override_multiplier is not None:
+            return {
+                "multiplier": float(override_multiplier),
+                "source": "override",
+                "signature": signature,
+            }
+
+        base_multiplier, source, signature = compute_iterative_multiplier(
+            normalized_options,
+            ppe_settings.get("iterative_base_multipliers"),
+        )
+        return {
+            "multiplier": float(base_multiplier),
+            "source": source,
+            "signature": signature,
+        }
+
     normalized_multipliers = normalize_ppe_type_multipliers(ppe_settings.get("ppe_type_multipliers"))
     ppe_type = normalize_ppe_type(getattr(ppe, "ppe_type", None))
-    return float(normalized_multipliers.get(ppe_type, DEFAULT_PPE_TYPE_MULTIPLIERS["regular"]))
+    return {
+        "multiplier": float(normalized_multipliers.get(ppe_type, DEFAULT_PPE_TYPE_MULTIPLIERS["regular"])),
+        "source": "legacy",
+        "signature": "legacy",
+    }
 
 
 def _get_penalty_weights(guild_config: Dict[str, Any] | None) -> Dict[str, float]:
@@ -389,7 +435,8 @@ def loot_adjustments_for_ppe(
     modifier_bucket = get_effective_modifier_bucket_for_ppe(ppe, guild_config)
     loot_multiplier = apply_percent_modifier(1.0, _as_float(modifier_bucket.get("loot_percent"), 0.0))
     total_multiplier = apply_percent_modifier(1.0, _as_float(modifier_bucket.get("total_percent"), 0.0))
-    type_multiplier = get_ppe_type_multiplier_for_ppe(ppe, guild_config)
+    multiplier_details = get_ppe_type_multiplier_details_for_ppe(ppe, guild_config)
+    type_multiplier = float(multiplier_details["multiplier"])
     combined_multiplier = reduction_multiplier * loot_multiplier * total_multiplier * type_multiplier
     return {
         "pet_reduction_percent": float(reduction_breakdown["pet_reduction_percent"]),
@@ -401,6 +448,8 @@ def loot_adjustments_for_ppe(
         "loot_percent_multiplier": loot_multiplier,
         "total_percent_multiplier": total_multiplier,
         "type_multiplier": type_multiplier,
+        "type_multiplier_source": str(multiplier_details.get("source", "legacy")),
+        "type_multiplier_signature": str(multiplier_details.get("signature", "legacy")),
         "combined_item_multiplier": combined_multiplier,
     }
 

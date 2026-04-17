@@ -6,14 +6,20 @@ import discord
 
 from utils.ppe_types import ppe_type_label, ppe_type_short_label
 from menus.manageseason.services import (
+    backfill_legacy_ppe_type_options,
+    clear_ppe_type_display_override,
     load_character_settings_for_menu,
     load_points_settings_for_menu,
+    set_combo_display_override,
+    set_iterative_combo_multiplier_override,
     update_class_point_override,
     update_duplicate_match_mode,
     update_duplicate_item_point_reduction,
     update_global_point_modifiers,
+    update_iterative_base_option_multipliers,
     update_penalty_base_rates,
     update_pet_point_modifiers,
+    update_ppe_type_display_overrides,
     update_ppe_type_multipliers,
     update_rarity_multipliers,
 )
@@ -739,6 +745,314 @@ class EditPpeTypeMultiplierModal(discord.ui.Modal):
             f"Updated {ppe_type_label(self.ppe_type)} multiplier to {float(settings.get('ppe_type_multipliers', {}).get(self.ppe_type, parsed)):.2f}x.\n"
             f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
             f"PPE totals changed: {refresh_summary.ppes_updated}",
+            ephemeral=True,
+        )
+
+        await _refresh_point_settings_message(
+            interaction=interaction,
+            owner_id=self.owner_id,
+            source_message=self.source_message,
+            source_screen="ppe_type",
+        )
+
+
+class EditPpeTypeLabelModal(discord.ui.Modal):
+    full_name = discord.ui.TextInput(
+        label="Display Name",
+        placeholder="Example: Divine & Shiny PPE",
+        required=False,
+        max_length=80,
+    )
+    short_name = discord.ui.TextInput(
+        label="Short Label",
+        placeholder="Example: D+SPE",
+        required=False,
+        max_length=40,
+    )
+
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        ppe_type: str,
+        character_settings: dict,
+        source_message: discord.Message | None,
+    ) -> None:
+        short_label = ppe_type_short_label(ppe_type, ppe_settings=character_settings)
+        super().__init__(title=f"Edit Type Label - {short_label}", timeout=300)
+        self.owner_id = owner_id
+        self.ppe_type = ppe_type
+        self.source_message = source_message
+
+        labels = character_settings.get("type_label_overrides", {}) if isinstance(character_settings.get("type_label_overrides", {}), dict) else {}
+        shorts = character_settings.get("type_short_label_overrides", {}) if isinstance(character_settings.get("type_short_label_overrides", {}), dict) else {}
+        self.full_name.default = str(labels.get(ppe_type, ""))
+        self.short_name.default = str(shorts.get(ppe_type, ""))
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        full_name = str(self.full_name.value or "").strip()
+        short_name = str(self.short_name.value or "").strip()
+
+        if not full_name and not short_name:
+            settings = await clear_ppe_type_display_override(
+                interaction,
+                ppe_type=self.ppe_type,
+            )
+            await interaction.response.send_message(
+                f"Cleared custom label override for {ppe_type_label(self.ppe_type)}.",
+                ephemeral=True,
+            )
+        else:
+            settings = await update_ppe_type_display_overrides(
+                interaction,
+                label_overrides={self.ppe_type: full_name} if full_name else {},
+                short_label_overrides={self.ppe_type: short_name} if short_name else {},
+            )
+            await interaction.response.send_message(
+                f"Updated custom label for {ppe_type_label(self.ppe_type)}.",
+                ephemeral=True,
+            )
+
+        await _refresh_point_settings_message(
+            interaction=interaction,
+            owner_id=self.owner_id,
+            source_message=self.source_message,
+            source_screen="ppe_type",
+            settings=settings,
+        )
+
+
+class EditIterativeBaseMultipliersModal(discord.ui.Modal, title="Edit Iterative Base Multipliers"):
+    no_pet = discord.ui.TextInput(label="No Pet Multiplier", placeholder="1.3", required=False, max_length=20)
+    no_tiered = discord.ui.TextInput(label="No Tiered Multiplier", placeholder="1.3", required=False, max_length=20)
+    shiny_only = discord.ui.TextInput(label="Shiny Only Multiplier", placeholder="1.5", required=False, max_length=20)
+    enforce_shiny = discord.ui.TextInput(label="Enforce Shiny Rarity Multiplier", placeholder="1.0", required=False, max_length=20)
+    duo = discord.ui.TextInput(label="Duo Multiplier", placeholder="0.6", required=False, max_length=20)
+
+    def __init__(self, *, owner_id: int, character_settings: dict, source_message: discord.Message | None) -> None:
+        super().__init__(timeout=300)
+        self.owner_id = owner_id
+        self.source_message = source_message
+        base = character_settings.get("iterative_base_multipliers", {}) if isinstance(character_settings.get("iterative_base_multipliers", {}), dict) else {}
+        self.no_pet.default = f"{float(base.get('no_pet', 1.3)):.2f}"
+        self.no_tiered.default = f"{float(base.get('no_tiered', 1.3)):.2f}"
+        self.shiny_only.default = f"{float(base.get('shiny_only', 1.5)):.2f}"
+        self.enforce_shiny.default = f"{float(base.get('enforce_shiny_rarity', 1.0)):.2f}"
+        self.duo.default = f"{float(base.get('duo', 0.6)):.2f}"
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        try:
+            no_pet = _parse_optional_float(self.no_pet.value, field_name="no_pet")
+            no_tiered = _parse_optional_float(self.no_tiered.value, field_name="no_tiered")
+            shiny_only = _parse_optional_float(self.shiny_only.value, field_name="shiny_only")
+            enforce_shiny = _parse_optional_float(self.enforce_shiny.value, field_name="enforce_shiny_rarity")
+            duo = _parse_optional_float(self.duo.value, field_name="duo")
+        except ValueError as exc:
+            await interaction.response.send_message(str(exc), ephemeral=True)
+            return
+
+        character_settings = await load_character_settings_for_menu(interaction)
+        base = character_settings.get("iterative_base_multipliers", {}) if isinstance(character_settings.get("iterative_base_multipliers", {}), dict) else {}
+        updated = dict(base)
+        if no_pet is not None:
+            updated["no_pet"] = no_pet
+        if no_tiered is not None:
+            updated["no_tiered"] = no_tiered
+        if shiny_only is not None:
+            updated["shiny_only"] = shiny_only
+        if enforce_shiny is not None:
+            updated["enforce_shiny_rarity"] = enforce_shiny
+        if duo is not None:
+            updated["duo"] = duo
+
+        settings, refresh_summary = await update_iterative_base_option_multipliers(
+            interaction,
+            multipliers=updated,
+        )
+        await interaction.response.send_message(
+            "Updated iterative base multipliers.\n"
+            f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
+            f"PPE totals changed: {refresh_summary.ppes_updated}",
+            ephemeral=True,
+        )
+        await _refresh_point_settings_message(
+            interaction=interaction,
+            owner_id=self.owner_id,
+            source_message=self.source_message,
+            source_screen="ppe_type",
+            settings=settings,
+        )
+
+
+class EditIterativeComboMultiplierModal(discord.ui.Modal, title="Edit Combo Multiplier Override"):
+    signature = discord.ui.TextInput(
+        label="Combination Signature",
+        placeholder="pet:yes|tiered:no|minimum:divine|shiny:yes|enforce_shiny_rarity:yes|duo:no",
+        required=True,
+        max_length=220,
+    )
+    multiplier = discord.ui.TextInput(
+        label="Override Multiplier (blank to remove)",
+        placeholder="Example: 5.0",
+        required=False,
+        max_length=20,
+    )
+
+    def __init__(self, *, owner_id: int, source_message: discord.Message | None, character_settings: dict | None = None) -> None:
+        super().__init__(timeout=300)
+        self.owner_id = owner_id
+        self.source_message = source_message
+        if isinstance(character_settings, dict):
+            overrides = character_settings.get("iterative_combo_overrides", {}) if isinstance(character_settings.get("iterative_combo_overrides", {}), dict) else {}
+            if overrides:
+                first_key = sorted(overrides.keys())[0]
+                self.signature.default = first_key
+                self.multiplier.default = f"{float(overrides[first_key]):.2f}"
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        signature = str(self.signature.value or "").strip().lower()
+        multiplier_text = str(self.multiplier.value or "").strip()
+        parsed_multiplier: float | None = None
+        if multiplier_text:
+            try:
+                parsed_multiplier = float(multiplier_text)
+            except ValueError:
+                await interaction.response.send_message("Multiplier must be a number.", ephemeral=True)
+                return
+            if parsed_multiplier <= 0:
+                await interaction.response.send_message("Multiplier must be greater than 0.", ephemeral=True)
+                return
+
+        settings, refresh_summary = await set_iterative_combo_multiplier_override(
+            interaction,
+            signature=signature,
+            multiplier=parsed_multiplier,
+        )
+        action_text = "Updated" if parsed_multiplier is not None else "Removed"
+        await interaction.response.send_message(
+            f"{action_text} combo multiplier override for `{signature}`.\n"
+            f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
+            f"PPE totals changed: {refresh_summary.ppes_updated}",
+            ephemeral=True,
+        )
+        await _refresh_point_settings_message(
+            interaction=interaction,
+            owner_id=self.owner_id,
+            source_message=self.source_message,
+            source_screen="ppe_type",
+            settings=settings,
+        )
+
+
+class EditPpeComboLabelModal(discord.ui.Modal, title="Edit Combo Label Override"):
+    signature = discord.ui.TextInput(
+        label="Combination Signature",
+        placeholder="Example: pet:yes|tiered:no|minimum:divine|shiny:yes|enforce_shiny_rarity:yes|duo:no",
+        required=True,
+        max_length=220,
+    )
+    full_name = discord.ui.TextInput(
+        label="Display Name",
+        placeholder="Example: Divine & Shiny PPE",
+        required=False,
+        max_length=80,
+    )
+    short_name = discord.ui.TextInput(
+        label="Short Label",
+        placeholder="Example: D+SPE",
+        required=False,
+        max_length=40,
+    )
+
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        source_message: discord.Message | None,
+        default_signature: str = "",
+        character_settings: dict | None = None,
+    ) -> None:
+        super().__init__(timeout=300)
+        self.owner_id = owner_id
+        self.source_message = source_message
+        self.signature.default = default_signature
+
+        if isinstance(character_settings, dict) and default_signature:
+            overrides = character_settings.get("combo_label_overrides", {}) if isinstance(character_settings.get("combo_label_overrides", {}), dict) else {}
+            existing = overrides.get(default_signature, {}) if isinstance(overrides.get(default_signature, {}), dict) else {}
+            self.full_name.default = str(existing.get("name", ""))
+            self.short_name.default = str(existing.get("short", ""))
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        signature = str(self.signature.value or "").strip().lower()
+        full_name = str(self.full_name.value or "").strip()
+        short_name = str(self.short_name.value or "").strip()
+
+        try:
+            settings = await set_combo_display_override(
+                interaction,
+                signature=signature,
+                name=full_name or None,
+                short=short_name or None,
+            )
+        except ValueError as exc:
+            await interaction.response.send_message(str(exc), ephemeral=True)
+            return
+
+        if not full_name and not short_name:
+            await interaction.response.send_message(f"Cleared combo label override for `{signature}`.", ephemeral=True)
+        else:
+            await interaction.response.send_message(f"Updated combo label override for `{signature}`.", ephemeral=True)
+
+        await _refresh_point_settings_message(
+            interaction=interaction,
+            owner_id=self.owner_id,
+            source_message=self.source_message,
+            source_screen="ppe_type",
+            settings=settings,
+        )
+
+
+class BackfillLegacyPpeTypeFieldsModal(discord.ui.Modal, title="Backfill Legacy PPE Type Fields"):
+    confirm = discord.ui.TextInput(
+        label="Type BACKFILL to continue",
+        placeholder="BACKFILL",
+        required=True,
+        max_length=20,
+    )
+
+    def __init__(self, *, owner_id: int, source_message: discord.Message | None) -> None:
+        super().__init__(timeout=180)
+        self.owner_id = owner_id
+        self.source_message = source_message
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        if str(self.confirm.value or "").strip().upper() != "BACKFILL":
+            await interaction.response.send_message("Cancelled. You must type BACKFILL exactly.", ephemeral=True)
+            return
+
+        players_touched, ppes_touched = await backfill_legacy_ppe_type_options(interaction)
+        await interaction.response.send_message(
+            f"Legacy backfill complete. Players updated: {players_touched}, PPEs updated: {ppes_touched}.",
             ephemeral=True,
         )
 

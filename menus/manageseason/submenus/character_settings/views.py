@@ -142,12 +142,14 @@ class ManageCharacterSettingsHomeView(OwnerBoundView):
         current_max_characters: int,
         ppe_types_enabled: bool,
         allowed_ppe_types: list[str],
+        ppe_settings: dict | None = None,
     ) -> None:
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.owner_id = owner_id
         self.current_max_characters = int(current_max_characters)
         self.ppe_types_enabled = bool(ppe_types_enabled)
         self.allowed_ppe_types = normalize_allowed_ppe_types(allowed_ppe_types)
+        self.ppe_settings = ppe_settings if isinstance(ppe_settings, dict) else {}
 
     def current_embed(self) -> discord.Embed:
         return build_character_settings_home_embed(
@@ -181,6 +183,7 @@ class ManageCharacterSettingsHomeView(OwnerBoundView):
             current_max_characters=self.current_max_characters,
             ppe_types_enabled=self.ppe_types_enabled,
             allowed_ppe_types=self.allowed_ppe_types,
+            ppe_settings=self.ppe_settings,
         )
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
@@ -193,10 +196,10 @@ class ManageCharacterSettingsHomeView(OwnerBoundView):
 
 
 class _AllowedPpeTypesSelect(discord.ui.Select):
-    def __init__(self, *, selected_types: list[str]) -> None:
+    def __init__(self, *, selected_types: list[str], ppe_settings: dict | None = None) -> None:
         options = [
             discord.SelectOption(
-                label=ppe_type_label(ppe_type),
+                label=ppe_type_label(ppe_type, ppe_settings=ppe_settings),
                 value=ppe_type,
                 default=(ppe_type in selected_types),
             )
@@ -236,13 +239,15 @@ class ManageAllowedPpeTypesView(OwnerBoundView):
         current_max_characters: int,
         ppe_types_enabled: bool,
         allowed_ppe_types: list[str],
+        ppe_settings: dict | None = None,
     ) -> None:
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.owner_id = owner_id
         self.current_max_characters = int(current_max_characters)
         self.ppe_types_enabled = bool(ppe_types_enabled)
         self.selected_types = normalize_allowed_ppe_types(allowed_ppe_types)
-        self.add_item(_AllowedPpeTypesSelect(selected_types=self.selected_types))
+        self.ppe_settings = ppe_settings if isinstance(ppe_settings, dict) else {}
+        self.add_item(_AllowedPpeTypesSelect(selected_types=self.selected_types, ppe_settings=self.ppe_settings))
 
     def current_embed(self) -> discord.Embed:
         return build_character_settings_home_embed(
@@ -259,6 +264,7 @@ class ManageAllowedPpeTypesView(OwnerBoundView):
             current_max_characters=self.current_max_characters,
             ppe_types_enabled=bool(saved.get("enable_ppe_types", True)),
             allowed_ppe_types=normalize_allowed_ppe_types(saved.get("allowed_ppe_types")),
+            ppe_settings=saved,
         )
         await interaction.response.edit_message(embed=refreshed.current_embed(), view=refreshed)
 

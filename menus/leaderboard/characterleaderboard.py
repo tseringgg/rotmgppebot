@@ -2,7 +2,8 @@ import discord
 
 from menus.leaderboard.common import build_ranked_entry_lines, send_error_response, send_leaderboard
 from menus.leaderboard.services import member_display_name, require_guild
-from utils.ppe_types import normalize_ppe_type, ppe_type_short_label
+from utils.guild_config import load_guild_config
+from utils.ppe_types import normalize_ppe_type, ppe_type_compact_summary
 from utils.player_records import load_player_records
 
 
@@ -13,6 +14,8 @@ async def command(interaction: discord.Interaction, class_name: str):
 
     try:
         records = await load_player_records(interaction)
+        guild_config = await load_guild_config(interaction)
+        ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config.get("ppe_settings", {}), dict) else {}
 
         character_data = []
         for pid, data in records.items():
@@ -26,7 +29,11 @@ async def command(interaction: discord.Interaction, class_name: str):
                 if str(ppe.name).lower() == class_name.lower():
                     player = member_display_name(guild, pid)
                     is_inactive = data.active_ppe != ppe.id
-                    ppe_type = ppe_type_short_label(normalize_ppe_type(getattr(ppe, "ppe_type", None)))
+                    ppe_type = ppe_type_compact_summary(
+                        getattr(ppe, "ppe_type_options", None),
+                        fallback_type=normalize_ppe_type(getattr(ppe, "ppe_type", None)),
+                        ppe_settings=ppe_settings,
+                    )
                     character_data.append((player, ppe.id, ppe.points, ppe_type, pid, is_inactive))
 
         character_data.sort(key=lambda x: x[2], reverse=True)
