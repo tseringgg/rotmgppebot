@@ -9,6 +9,7 @@ from typing import Any
 import discord
 
 from utils.ppe_types import (
+    normalize_iterative_combo_overrides,
     normalize_allowed_ppe_types,
     normalize_ppe_combo_label_overrides,
     normalize_ppe_type,
@@ -671,6 +672,25 @@ async def update_combo_multiplier_details(
 
     settings["iterative_combo_overrides"] = combo_overrides
     settings["combo_label_overrides"] = label_overrides
+    saved = await set_ppe_settings(interaction, settings)
+
+    guild_config = await load_guild_config(interaction)
+    guild_config["ppe_settings"] = dict(saved)
+    refresh_summary = await refresh_all_character_points(
+        interaction,
+        guild_config=guild_config,
+    )
+    return dict(saved), refresh_summary
+
+
+async def clear_all_ppe_type_overrides(
+    interaction: discord.Interaction,
+) -> tuple[dict[str, Any], PointsRefreshSummary]:
+    settings = await get_ppe_settings(interaction)
+    settings["iterative_combo_overrides"] = normalize_iterative_combo_overrides({})
+    settings["combo_label_overrides"] = normalize_ppe_combo_label_overrides({})
+    settings["type_label_overrides"] = normalize_ppe_type_label_overrides({})
+    settings["type_short_label_overrides"] = normalize_ppe_type_short_label_overrides({})
     saved = await set_ppe_settings(interaction, settings)
 
     guild_config = await load_guild_config(interaction)

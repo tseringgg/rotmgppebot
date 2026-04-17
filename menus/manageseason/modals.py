@@ -18,6 +18,7 @@ from utils.ppe_types import (
 )
 from menus.manageseason.services import (
     backfill_legacy_ppe_type_options,
+    clear_all_ppe_type_overrides,
     clear_ppe_type_display_override,
     load_character_settings_for_menu,
     load_points_settings_for_menu,
@@ -1127,8 +1128,7 @@ class ComboOverrideSettingsModal(discord.ui.Modal):
         preset_name: str = "",
         preset_short: str = "",
     ) -> None:
-        short_label = str(signature or "combo").strip()
-        super().__init__(title=f"Set Combo Label & Multiplier - {short_label}", timeout=300)
+        super().__init__(title="Set Combo Label & Multiplier", timeout=300)
         self.owner_id = owner_id
         self.signature = str(signature or "").strip().lower()
         self.source_message = source_message
@@ -1176,6 +1176,8 @@ class ComboOverrideSettingsModal(discord.ui.Modal):
             await interaction.response.send_message("ERROR: Multiplier must be greater than 0.", ephemeral=True)
             return
 
+        await interaction.response.defer(ephemeral=True)
+
         settings, refresh_summary = await update_combo_multiplier_details(
             interaction,
             signature=self.signature,
@@ -1184,8 +1186,47 @@ class ComboOverrideSettingsModal(discord.ui.Modal):
             short=short_name or None,
         )
 
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"Updated combo override for `{self.signature}`.\n"
+            f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
+            f"PPE totals changed: {refresh_summary.ppes_updated}",
+            ephemeral=True,
+        )
+
+        await _refresh_point_settings_message(
+            interaction=interaction,
+            owner_id=self.owner_id,
+            source_message=self.source_message,
+            source_screen="ppe_type",
+            settings=settings,
+        )
+
+
+class ResetAllPpeTypeOverridesModal(discord.ui.Modal, title="Reset All PPE Overrides"):
+    confirm = discord.ui.TextInput(
+        label="Type RESET to confirm",
+        placeholder="RESET",
+        required=True,
+        max_length=20,
+    )
+
+    def __init__(self, *, owner_id: int, source_message: discord.Message | None) -> None:
+        super().__init__(timeout=180)
+        self.owner_id = owner_id
+        self.source_message = source_message
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        if str(self.confirm.value or "").strip().upper() != "RESET":
+            await interaction.response.send_message("Cancelled. You must type RESET exactly.", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+        settings, refresh_summary = await clear_all_ppe_type_overrides(interaction)
+        await interaction.followup.send(
+            "Cleared all PPE type/combo label and combo multiplier overrides.\n"
             f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
             f"PPE totals changed: {refresh_summary.ppes_updated}",
             ephemeral=True,

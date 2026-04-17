@@ -20,6 +20,7 @@ from menus.manageseason.modals import (
     EditIterativeBaseMultipliersModal,
     ComboOverrideSettingsModal,
     ComboShortcutModal,
+    ResetAllPpeTypeOverridesModal,
     EditDuplicateItemPointsModal,
     EditGlobalPointSettingsModal,
     EditPetModifierModal,
@@ -280,6 +281,15 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
     async def backfill_legacy_fields(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await interaction.response.send_modal(
             BackfillLegacyPpeTypeFieldsModal(
+                owner_id=self.owner_id,
+                source_message=interaction.message,
+            )
+        )
+
+    @discord.ui.button(label="Reset All Overrides", style=discord.ButtonStyle.danger, row=3)
+    async def reset_all_overrides(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await interaction.response.send_modal(
+            ResetAllPpeTypeOverridesModal(
                 owner_id=self.owner_id,
                 source_message=interaction.message,
             )

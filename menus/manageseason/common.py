@@ -762,7 +762,7 @@ def build_ppe_type_points_embed(character_settings: dict) -> discord.Embed:
         value=(
             "• Edit Combo Multiplier: searches current PPE type labels, short labels, combo labels, or signatures.\n"
             "• Edit Iterative Base Multipliers: edits per-rule factors (No Pet, No Tiered, rarity, shiny, duo).\n"
-            "• Set Combo Label & Multiplier: saves the combo label overrides and multiplier for the current signature.\n"
+            "• Reset All Overrides: clears all combo/type label overrides and combo multiplier overrides.\n"
             "• Backfill Legacy Fields: migrates older data fields to newer type/option storage."
         ),
         inline=False,
