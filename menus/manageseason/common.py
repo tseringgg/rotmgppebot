@@ -776,7 +776,7 @@ def build_point_settings_embed(settings: dict) -> discord.Embed:
     )
     embed.add_field(
         name="PPE Type Multipliers",
-        value="Use **Edit PPE Type Points** to manage final-score multipliers per PPE type.",
+        value="Use **Edit PPE Type** to manage final-score multipliers per PPE type.",
         inline=False,
     )
     embed.set_footer(text="Any points-setting change triggers a full PPE points recalculation.")

@@ -212,7 +212,7 @@ def build_help_embed(section_key: str, *, ppe_settings: dict | None = None) -> d
         embed.add_field(
             name="Custom Names and Shorthands",
             value=(
-                "Admins can customize labels in `/manageseason -> Manage Point Settings -> Edit PPE Type Points`.\n"
+                "Admins can customize labels in `/manageseason -> Manage Point Settings -> Edit PPE Type`.\n"
                 "Use combo overrides to set custom names/shorthands for specific option-combination signatures."
             ),
             inline=False,

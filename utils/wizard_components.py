@@ -6,6 +6,7 @@ import discord
 
 
 MINIMUM_RARITY_VALUES = ("common", "uncommon", "rare", "legendary", "divine")
+SHINY_ONLY_MINIMUM_RARITY_VALUES = ("all_shinies_allowed", "legendary", "divine")
 
 
 def build_minimum_rarity_handlers(
@@ -27,6 +28,13 @@ def build_minimum_rarity_handlers(
     return _on_selected, _on_continue
 
 
+def get_minimum_rarity_options(shiny_only: bool) -> tuple[str, ...]:
+    """Get the available minimum rarity options based on shiny_only setting."""
+    if shiny_only:
+        return SHINY_ONLY_MINIMUM_RARITY_VALUES
+    return MINIMUM_RARITY_VALUES
+
+
 class MinimumRaritySelect(discord.ui.Select):
     def __init__(
         self,
@@ -37,18 +45,22 @@ class MinimumRaritySelect(discord.ui.Select):
         on_selected: Callable[[discord.Interaction, str], Awaitable[None]],
         owner_error: str = "This menu belongs to another user.",
         row: int = 0,
+        shiny_only: bool = False,
     ) -> None:
         selected_value = str(selected or "common").strip().lower()
-        if selected_value not in MINIMUM_RARITY_VALUES:
-            selected_value = "common"
+        available_values = get_minimum_rarity_options(shiny_only)
+        
+        # Adjust selected value if needed based on available options
+        if selected_value not in available_values:
+            selected_value = available_values[0]
 
         options = [
             discord.SelectOption(
-                label=value.title(),
+                label=_rarity_option_label(value),
                 value=value,
                 default=selected_value == value,
             )
-            for value in MINIMUM_RARITY_VALUES
+            for value in available_values
         ]
         super().__init__(
             placeholder="Select minimum rarity",
@@ -76,6 +88,19 @@ class MinimumRaritySelect(discord.ui.Select):
             option.default = option.value == selected_value
 
         await self._on_selected(interaction, selected_value)
+
+
+def _rarity_option_label(value: str) -> str:
+    """Get the display label for a minimum rarity option."""
+    labels = {
+        "common": "Common",
+        "uncommon": "Uncommon",
+        "rare": "Rare",
+        "legendary": "Legendary",
+        "divine": "Divine",
+        "all_shinies_allowed": "All Shinies Allowed",
+    }
+    return labels.get(value.lower(), value.title())
 
 
 class MinimumRarityContinueButton(discord.ui.Button):

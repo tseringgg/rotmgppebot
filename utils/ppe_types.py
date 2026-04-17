@@ -90,6 +90,7 @@ DEFAULT_PPE_TYPE_MULTIPLIERS = {
 }
 
 PPE_MIN_RARITY_ORDER = ["common", "uncommon", "rare", "legendary", "divine"]
+PPE_MIN_RARITY_VALUES = [*PPE_MIN_RARITY_ORDER, "all_shinies_allowed"]
 
 DEFAULT_ITERATIVE_OPTION_MULTIPLIERS = {
     "no_pet": 1.3,
@@ -215,10 +216,21 @@ def options_from_signature(signature: Any, *, duo_partner_id: Any = None) -> dic
 
 
 def normalize_minimum_rarity(value: Any) -> str:
+    raw = str(value or "").strip().lower()
+    if raw in {"all_shinies_allowed", "all_shinies", "allshiniesallowed"}:
+        return "all_shinies_allowed"
     rarity = normalize_rarity(value, "common")
     if rarity not in PPE_MIN_RARITY_ORDER:
         return "common"
     return rarity
+
+
+def minimum_rarity_effective(value: Any) -> str:
+    """Return rarity bucket used for multiplier calculations."""
+    normalized = normalize_minimum_rarity(value)
+    if normalized == "all_shinies_allowed":
+        return "common"
+    return normalized
 
 
 def legacy_ppe_type_to_options(value: Any) -> dict[str, Any]:
@@ -278,6 +290,8 @@ def normalize_ppe_type_options(value: Any, *, current_type: Any = None) -> dict[
 
     if not options["shiny_only"]:
         options["enforce_rarity_on_shiny"] = False
+        if options["minimum_rarity"] == "all_shinies_allowed":
+            options["minimum_rarity"] = "common"
 
     if not options["duo_enabled"]:
         options["duo_partner_id"] = None
@@ -288,33 +302,34 @@ def normalize_ppe_type_options(value: Any, *, current_type: Any = None) -> dict[
 
 def infer_legacy_ppe_type_from_options(options_value: Any) -> str:
     options = normalize_ppe_type_options(options_value)
+    effective_minimum = minimum_rarity_effective(options["minimum_rarity"])
     if options["regular"] and not options["duo_enabled"]:
         return PPE_TYPE_REGULAR
-    if options["duo_enabled"] and options["uses_pet"] and options["minimum_rarity"] == "common" and options["allows_tiered"] and not options["shiny_only"]:
+    if options["duo_enabled"] and options["uses_pet"] and effective_minimum == "common" and options["allows_tiered"] and not options["shiny_only"]:
         return PPE_TYPE_DUO
-    if options["duo_enabled"] and not options["uses_pet"] and options["minimum_rarity"] == "common" and options["allows_tiered"] and not options["shiny_only"]:
+    if options["duo_enabled"] and not options["uses_pet"] and effective_minimum == "common" and options["allows_tiered"] and not options["shiny_only"]:
         return PPE_TYPE_DUO_NO_PET
-    if not options["uses_pet"] and options["minimum_rarity"] == "common" and options["allows_tiered"] and not options["shiny_only"] and not options["duo_enabled"]:
+    if not options["uses_pet"] and effective_minimum == "common" and options["allows_tiered"] and not options["shiny_only"] and not options["duo_enabled"]:
         return PPE_TYPE_NO_PET
-    if not options["allows_tiered"] and options["uses_pet"] and options["minimum_rarity"] == "common" and not options["shiny_only"] and not options["duo_enabled"]:
+    if not options["allows_tiered"] and options["uses_pet"] and effective_minimum == "common" and not options["shiny_only"] and not options["duo_enabled"]:
         return PPE_TYPE_UT_ONLY
-    if not options["allows_tiered"] and not options["uses_pet"] and options["minimum_rarity"] == "common" and not options["shiny_only"] and not options["duo_enabled"]:
+    if not options["allows_tiered"] and not options["uses_pet"] and effective_minimum == "common" and not options["shiny_only"] and not options["duo_enabled"]:
         return PPE_TYPE_UT_NO_PET
-    if options["minimum_rarity"] == "divine" and options["shiny_only"] and options["uses_pet"] and not options["duo_enabled"]:
+    if effective_minimum == "divine" and options["shiny_only"] and options["uses_pet"] and not options["duo_enabled"]:
         return PPE_TYPE_DIVINE_SHINY
-    if options["minimum_rarity"] == "divine" and options["shiny_only"] and not options["uses_pet"] and not options["duo_enabled"]:
+    if effective_minimum == "divine" and options["shiny_only"] and not options["uses_pet"] and not options["duo_enabled"]:
         return PPE_TYPE_DIVINE_SHINY_NO_PET
-    if options["minimum_rarity"] == "divine" and not options["shiny_only"] and options["uses_pet"] and not options["duo_enabled"]:
+    if effective_minimum == "divine" and not options["shiny_only"] and options["uses_pet"] and not options["duo_enabled"]:
         return PPE_TYPE_DIVINE_ONLY
-    if options["minimum_rarity"] == "divine" and not options["shiny_only"] and not options["uses_pet"] and not options["duo_enabled"]:
+    if effective_minimum == "divine" and not options["shiny_only"] and not options["uses_pet"] and not options["duo_enabled"]:
         return PPE_TYPE_DIVINE_NO_PET
-    if options["minimum_rarity"] == "legendary" and not options["shiny_only"] and options["uses_pet"] and not options["duo_enabled"]:
+    if effective_minimum == "legendary" and not options["shiny_only"] and options["uses_pet"] and not options["duo_enabled"]:
         return PPE_TYPE_LEGENDARY_OR_SHINY
-    if options["minimum_rarity"] == "legendary" and not options["shiny_only"] and not options["uses_pet"] and not options["duo_enabled"]:
+    if effective_minimum == "legendary" and not options["shiny_only"] and not options["uses_pet"] and not options["duo_enabled"]:
         return PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET
-    if options["shiny_only"] and options["minimum_rarity"] == "common" and options["uses_pet"] and not options["duo_enabled"]:
+    if options["shiny_only"] and effective_minimum == "common" and options["uses_pet"] and not options["duo_enabled"]:
         return PPE_TYPE_SHINY_ONLY
-    if options["shiny_only"] and options["minimum_rarity"] == "common" and not options["uses_pet"] and not options["duo_enabled"]:
+    if options["shiny_only"] and effective_minimum == "common" and not options["uses_pet"] and not options["duo_enabled"]:
         return PPE_TYPE_SHINY_NO_PET
     return DEFAULT_PPE_TYPE
 
@@ -355,6 +370,7 @@ def normalize_iterative_option_multipliers(value: Any) -> dict[str, Any]:
     normalized_rarity: dict[str, float] = {}
     for rarity in PPE_MIN_RARITY_ORDER:
         normalized_rarity[rarity] = _positive_float(raw_rarities.get(rarity), rarity_defaults[rarity])
+    normalized_rarity["all_shinies_allowed"] = normalized_rarity["common"]
 
     return {
         "no_pet": _positive_float(raw.get("no_pet"), DEFAULT_ITERATIVE_OPTION_MULTIPLIERS["no_pet"]),
@@ -614,7 +630,9 @@ def iterative_multiplier_breakdown(
         components.append({"key": "no_tiered", "label": "No Tiered", "multiplier": value})
 
     minimum_rarity = normalize_minimum_rarity(options.get("minimum_rarity"))
-    rarity_multiplier = float(multipliers["minimum_rarity"][minimum_rarity])
+    minimum_rarity_effective_value = minimum_rarity_effective(minimum_rarity)
+    rarity_multiplier = float(multipliers["minimum_rarity"][minimum_rarity_effective_value])
+    minimum_rarity_label = "All Shinies Allowed" if minimum_rarity == "all_shinies_allowed" else minimum_rarity.title()
     if options["shiny_only"]:
         shiny_multiplier = float(multipliers["shiny_only"])
         enforce_multiplier = float(multipliers["enforce_shiny_rarity"])
@@ -624,7 +642,7 @@ def iterative_multiplier_breakdown(
             components.append(
                 {
                     "key": "shiny_rarity_combined",
-                    "label": f"Shiny + Minimum Rarity ({minimum_rarity.title()})",
+                    "label": f"Shiny + Minimum Rarity ({minimum_rarity_label})",
                     "multiplier": combined_multiplier,
                 }
             )
@@ -634,17 +652,17 @@ def iterative_multiplier_breakdown(
             components.append(
                 {
                     "key": "shiny_rarity_combined",
-                    "label": f"Shiny + Minimum Rarity Blend ({minimum_rarity.title()})",
+                    "label": f"Shiny + Minimum Rarity Blend ({minimum_rarity_label})",
                     "multiplier": combined_multiplier,
                 }
             )
     else:
         multiplier *= rarity_multiplier
-        if minimum_rarity != "common" or rarity_multiplier != 1.0:
+        if minimum_rarity_effective_value != "common" or rarity_multiplier != 1.0:
             components.append(
                 {
                     "key": "minimum_rarity",
-                    "label": f"Minimum Rarity ({minimum_rarity.title()})",
+                    "label": f"Minimum Rarity ({minimum_rarity_label})",
                     "multiplier": rarity_multiplier,
                 }
             )

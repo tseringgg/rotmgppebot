@@ -42,6 +42,7 @@ from utils.wizard_components import (
     MinimumRarityContinueButton,
     MinimumRaritySelect,
     build_minimum_rarity_handlers,
+    get_minimum_rarity_options,
 )
 
 
@@ -533,11 +534,38 @@ class ManagePlayerDuoPartnerIdModal(discord.ui.Modal, title="Set Duo Partner Dis
             await interaction.response.send_message("Please enter a valid numeric Discord ID.", ephemeral=True)
             return
 
-        self.wizard.state["duo_partner_id"] = int(partner_text)
+        partner_id = int(partner_text)
+        
+        # Validate that partner exists in guild
+        if not interaction.guild:
+            await interaction.response.send_message("This command can only be used in a server.", ephemeral=True)
+            return
+        
+        guild_member = interaction.guild.get_member(partner_id)
+        if guild_member is None:
+            await interaction.response.send_message(
+                f"❌ User <@{partner_id}> is not in this server.",
+                ephemeral=True,
+            )
+            return
+        
+        # Validate that partner is already a PPE player
+        records = await load_player_records(interaction)
+        partner_player = records.get(partner_id)
+        if partner_player is None or not getattr(partner_player, "ppes", []):
+            await interaction.response.send_message(
+                f"❌ <@{partner_id}> is not a PPE player yet. They need to create their first PPE before you can pair with them.",
+                ephemeral=True,
+            )
+            return
+
+        self.wizard.state["duo_partner_id"] = partner_id
         await interaction.response.send_message(
-            f"Saved duo partner as <@{partner_text}>. Click Continue in the wizard to finish.",
+            f"✅ Duo partner set to <@{partner_id}>.",
             ephemeral=True,
         )
+
+        await self.wizard.advance_from_modal()
 
 
 class ManagePlayerPpeTypeWizardView(discord.ui.View):
@@ -589,20 +617,28 @@ class ManagePlayerPpeTypeWizardView(discord.ui.View):
     def _rarity_hint(self) -> str:
         bucket = self.base_multipliers.get("minimum_rarity", {}) if isinstance(self.base_multipliers.get("minimum_rarity", {}), dict) else {}
 
+        shiny_only = bool(self.state.get("shiny_only", False))
+        available_options = get_minimum_rarity_options(shiny_only)
+
+        fallback_map = {
+            "all_shinies_allowed": 1.0,
+            "common": 1.0,
+            "uncommon": 1.1,
+            "rare": 1.2,
+            "legendary": 1.4,
+            "divine": 1.5,
+        }
+
         def _value(name: str, fallback: float) -> str:
             try:
                 parsed = float(bucket.get(name, fallback))
             except (TypeError, ValueError):
                 parsed = fallback
+            if name == "all_shinies_allowed":
+                return f"All Shinies Allowed {parsed:.2f}x"
             return f"{name.title()} {parsed:.2f}x"
 
-        return ", ".join([
-            _value("common", 1.0),
-            _value("uncommon", 1.1),
-            _value("rare", 1.2),
-            _value("legendary", 1.4),
-            _value("divine", 1.5),
-        ])
+        return ", ".join([_value(opt, fallback_map.get(opt, 1.0)) for opt in available_options])
 
     def prompt_text(self) -> str:
         if self.step == "regular":
@@ -611,10 +647,10 @@ class ManagePlayerPpeTypeWizardView(discord.ui.View):
             return f"Are you gonna use a pet? (No pet: {self._multiplier_hint('no_pet', 1.3)})"
         if self.step == "allows_tiered":
             return f"Do you allow yourself to use tiered items? (No tiered: {self._multiplier_hint('no_tiered', 1.3)})"
-        if self.step == "minimum_rarity":
-            return f"What is the minimum rarity for this PPE? ({self._rarity_hint()})"
         if self.step == "shiny_only":
-            return f"Are you shiny only? (Yes: {self._multiplier_hint('shiny_only', 1.5)})"
+            return f"Is this combo shiny only? (Yes: {self._multiplier_hint('shiny_only', 1.5)})"
+        if self.step == "minimum_rarity":
+            return f"What is the minimum rarity for this combo? ({self._rarity_hint()})"
         if self.step == "enforce_shiny":
             return "Will your rarity requirement be enforced on shiny items?"
         if self.step == "duo":
@@ -675,10 +711,10 @@ class ManagePlayerPpeTypeWizardView(discord.ui.View):
         if self.step == "uses_pet":
             return "allows_tiered"
         if self.step == "allows_tiered":
-            return "minimum_rarity"
-        if self.step == "minimum_rarity":
             return "shiny_only"
         if self.step == "shiny_only":
+            return "minimum_rarity"
+        if self.step == "minimum_rarity":
             return "enforce_shiny" if bool(self.state.get("shiny_only")) else "duo"
         if self.step == "enforce_shiny":
             return "duo"
@@ -692,6 +728,12 @@ class ManagePlayerPpeTypeWizardView(discord.ui.View):
         self.step = self._next_step()
         self._rebuild_items()
         await interaction.response.edit_message(content=self.prompt_text(), view=self)
+
+    async def advance_from_modal(self) -> None:
+        self.step = self._next_step()
+        self._rebuild_items()
+        if self.source_message is not None:
+            await self.source_message.edit(content=self.prompt_text(), view=self)
 
     def _rebuild_items(self) -> None:
         self.clear_items()
@@ -707,6 +749,7 @@ class ManagePlayerPpeTypeWizardView(discord.ui.View):
                     owner_id=self.owner_id,
                     view_type=ManagePlayerPpeTypeWizardView,
                     on_selected=self._minimum_rarity_on_selected,
+                    shiny_only=bool(self.state.get("shiny_only", False)),
                 )
             )
             self.add_item(

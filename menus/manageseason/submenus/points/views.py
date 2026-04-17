@@ -40,6 +40,7 @@ from utils.wizard_components import (
     MinimumRarityContinueButton,
     MinimumRaritySelect,
     build_minimum_rarity_handlers,
+    get_minimum_rarity_options,
 )
 from menus.menu_utils import OwnerBoundView
 
@@ -73,7 +74,7 @@ class ManagePointSettingsView(OwnerBoundView):
         view = ManageClassPointSettingsView(owner_id=self.owner_id, settings=self.settings)
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
-    @discord.ui.button(label="Edit PPE Type Points", style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(label="Edit PPE Type", style=discord.ButtonStyle.success, row=1)
     async def edit_ppe_type_points(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         character_settings = await load_character_settings_for_menu(interaction)
         view = ManagePpeTypePointSettingsView(owner_id=self.owner_id, character_settings=character_settings)
@@ -581,21 +582,28 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
             else {}
         )
         rarity = base.get("minimum_rarity", {}) if isinstance(base.get("minimum_rarity"), dict) else {}
+        shiny_only = bool(self.state.get("shiny_only", False))
+        available_options = get_minimum_rarity_options(shiny_only)
+
+        fallback_map = {
+            "all_shinies_allowed": 1.0,
+            "common": 1.0,
+            "uncommon": 1.1,
+            "rare": 1.2,
+            "legendary": 1.4,
+            "divine": 1.5,
+        }
 
         def _value(name: str, fallback: float) -> str:
             try:
                 parsed = float(rarity.get(name, fallback))
             except (TypeError, ValueError):
                 parsed = fallback
+            if name == "all_shinies_allowed":
+                return f"All Shinies Allowed {parsed:.2f}x"
             return f"{name.title()} {parsed:.2f}x"
 
-        return ", ".join([
-            _value("common", 1.0),
-            _value("uncommon", 1.1),
-            _value("rare", 1.2),
-            _value("legendary", 1.4),
-            _value("divine", 1.5),
-        ])
+        return ", ".join([_value(opt, fallback_map.get(opt, 1.0)) for opt in available_options])
 
     def _summary_embed(self) -> discord.Embed:
         options = self._current_options()
@@ -620,7 +628,7 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
                 f"Regular: {'Yes' if bool(options.get('regular', True)) else 'No'}\n"
                 f"Use Pet: {'Yes' if bool(options.get('uses_pet', True)) else 'No'}\n"
                 f"Allow Tiered: {'Yes' if bool(options.get('allows_tiered', True)) else 'No'}\n"
-                f"Minimum Rarity: {str(options.get('minimum_rarity', 'common')).title()}\n"
+                f"Minimum Rarity: {('All Shinies Allowed' if str(options.get('minimum_rarity', 'common')).strip().lower() == 'all_shinies_allowed' else str(options.get('minimum_rarity', 'common')).title())}\n"
                 f"Shiny Only: {'Yes' if bool(options.get('shiny_only', False)) else 'No'}\n"
                 f"Enforce Shiny Rarity: {'Yes' if bool(options.get('enforce_rarity_on_shiny', False)) else 'No'}\n"
                 f"Duo: {'Yes' if bool(options.get('duo_enabled', False)) else 'No'}"
@@ -642,11 +650,6 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
         embed.add_field(
             name="Final Multiplier",
             value=f"x{float(breakdown.get('multiplier', 1.0)):.2f}",
-            inline=False,
-        )
-        embed.add_field(
-            name="Current Label",
-            value=f"Name: {combo_name}\nShort: {combo_short}",
             inline=False,
         )
         embed.add_field(
@@ -684,10 +687,10 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
             return f"Does this combo use a pet? (No pet: {self._multiplier_hint('no_pet', 1.3)})"
         if self.step == "allows_tiered":
             return f"Does this combo allow tiered items? (No tiered: {self._multiplier_hint('no_tiered', 1.3)})"
-        if self.step == "minimum_rarity":
-            return f"What is the minimum rarity for this combo? ({self._rarity_hint()})"
         if self.step == "shiny_only":
             return f"Is this combo shiny only? (Yes: {self._multiplier_hint('shiny_only', 1.5)})"
+        if self.step == "minimum_rarity":
+            return f"What is the minimum rarity for this combo? ({self._rarity_hint()})"
         if self.step == "enforce_shiny":
             return "Will the rarity requirement be enforced on shiny items?"
         if self.step == "duo":
@@ -724,10 +727,10 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
         if self.step == "uses_pet":
             return "allows_tiered"
         if self.step == "allows_tiered":
-            return "minimum_rarity"
-        if self.step == "minimum_rarity":
             return "shiny_only"
         if self.step == "shiny_only":
+            return "minimum_rarity"
+        if self.step == "minimum_rarity":
             return "enforce_shiny" if bool(self.state.get("shiny_only")) else "duo"
         if self.step == "enforce_shiny":
             return "duo"
@@ -767,6 +770,7 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
                     owner_id=self.owner_id,
                     view_type=ManageComboMultiplierWizardView,
                     on_selected=self._minimum_rarity_on_selected,
+                    shiny_only=bool(self.state.get("shiny_only", False)),
                 )
             )
             self.add_item(
