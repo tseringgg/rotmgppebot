@@ -722,10 +722,22 @@ def build_ppe_type_points_embed(character_settings: dict) -> discord.Embed:
     combo_lines = _build_combo_label_override_lines(character_settings)
     embed = discord.Embed(
         title="PPE Type Point Multipliers",
-        description="Edit type multipliers and custom display labels/shorthands.",
+        description="Configure how PPE type rules translate into final point multipliers and labels.",
         color=discord.Color.dark_teal(),
     )
     embed.add_field(name="Current Multipliers", value="\n".join(lines), inline=False)
+    embed.add_field(
+        name="Button Guide",
+        value=(
+            "• Edit Selected PPE Type Multiplier: updates the selected legacy type's fixed multiplier.\n"
+            "• Edit Iterative Base Multipliers: edits per-rule factors (No Pet, No Tiered, rarity, shiny, duo).\n"
+            "• Edit Combo Multiplier Override: sets a direct multiplier for one exact option signature.\n"
+            "• Edit Selected Legacy Type Label: renames the full/short label for one legacy PPE type.\n"
+            "• Edit Combo Display Label Override: custom name/short label for one iterative combo signature.\n"
+            "• Backfill Legacy Fields: migrates older data fields to newer type/option storage."
+        ),
+        inline=False,
+    )
     embed.add_field(
         name="Legacy Type Label Overrides",
         value="\n".join(override_lines[:10]) if override_lines else "No custom legacy type labels configured.",

@@ -503,30 +503,69 @@ def compute_iterative_multiplier(
     options_value: Any,
     multipliers_value: Any,
 ) -> tuple[float, str, str]:
+    breakdown = iterative_multiplier_breakdown(options_value, multipliers_value)
+    return float(breakdown["multiplier"]), "base", str(breakdown["signature"])
+
+
+def iterative_multiplier_breakdown(
+    options_value: Any,
+    multipliers_value: Any,
+) -> dict[str, Any]:
     options = normalize_ppe_type_options(options_value)
     signature = ppe_type_option_signature(options)
     multipliers = normalize_iterative_option_multipliers(multipliers_value)
 
+    components: list[dict[str, Any]] = []
     multiplier = 1.0
+
     if not options["uses_pet"]:
-        multiplier *= float(multipliers["no_pet"])
+        value = float(multipliers["no_pet"])
+        multiplier *= value
+        components.append({"key": "no_pet", "label": "No Pet", "multiplier": value})
+
     if not options["allows_tiered"]:
-        multiplier *= float(multipliers["no_tiered"])
+        value = float(multipliers["no_tiered"])
+        multiplier *= value
+        components.append({"key": "no_tiered", "label": "No Tiered", "multiplier": value})
 
     minimum_rarity = normalize_minimum_rarity(options.get("minimum_rarity"))
     rarity_multiplier = float(multipliers["minimum_rarity"][minimum_rarity])
     multiplier *= rarity_multiplier
+    if minimum_rarity != "common" or rarity_multiplier != 1.0:
+        components.append(
+            {
+                "key": "minimum_rarity",
+                "label": f"Minimum Rarity ({minimum_rarity.title()}+)",
+                "multiplier": rarity_multiplier,
+            }
+        )
 
     if options["shiny_only"]:
         shiny_multiplier = float(multipliers["shiny_only"])
         multiplier *= shiny_multiplier
+        components.append({"key": "shiny_only", "label": "Shiny Only", "multiplier": shiny_multiplier})
         if options["enforce_rarity_on_shiny"] and rarity_rank(minimum_rarity) > rarity_rank("rare"):
-            multiplier *= rarity_multiplier * shiny_multiplier * float(multipliers["enforce_shiny_rarity"])
+            enforce_multiplier = float(multipliers["enforce_shiny_rarity"])
+            extra_pass_multiplier = rarity_multiplier * shiny_multiplier * enforce_multiplier
+            multiplier *= extra_pass_multiplier
+            components.append(
+                {
+                    "key": "enforce_shiny_rarity",
+                    "label": "Shiny Rarity Enforcement",
+                    "multiplier": extra_pass_multiplier,
+                }
+            )
 
     if options["duo_enabled"]:
-        multiplier *= float(multipliers["duo"])
+        value = float(multipliers["duo"])
+        multiplier *= value
+        components.append({"key": "duo", "label": "Duo", "multiplier": value})
 
-    return multiplier, "base", signature
+    return {
+        "multiplier": float(multiplier),
+        "signature": signature,
+        "components": components,
+    }
 
 
 def ppe_type_label(ppe_type: str, ppe_settings: Any = None) -> str:

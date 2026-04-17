@@ -283,7 +283,7 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
     def current_embed(self) -> discord.Embed:
         return build_ppe_type_points_embed(self.character_settings)
 
-    @discord.ui.button(label="Edit Selected PPE Type", style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(label="Edit Selected PPE Type Multiplier", style=discord.ButtonStyle.success, row=1)
     async def edit_selected_type(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.character_settings = await load_character_settings_for_menu(interaction)
         multipliers = (
@@ -300,7 +300,7 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
             )
         )
 
-    @discord.ui.button(label="Edit Iterative Base", style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(label="Edit Iterative Base Multipliers", style=discord.ButtonStyle.success, row=1)
     async def edit_iterative_base(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.character_settings = await load_character_settings_for_menu(interaction)
         await interaction.response.send_modal(
@@ -311,7 +311,7 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
             )
         )
 
-    @discord.ui.button(label="Edit Combo Override", style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(label="Edit Combo Multiplier Override", style=discord.ButtonStyle.success, row=2)
     async def edit_combo_override(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.character_settings = await load_character_settings_for_menu(interaction)
         await interaction.response.send_modal(
@@ -322,7 +322,7 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
             )
         )
 
-    @discord.ui.button(label="Edit Selected Type Label", style=discord.ButtonStyle.primary, row=2)
+    @discord.ui.button(label="Edit Selected Legacy Type Label", style=discord.ButtonStyle.primary, row=2)
     async def edit_selected_type_label(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.character_settings = await load_character_settings_for_menu(interaction)
         await interaction.response.send_modal(
@@ -334,7 +334,7 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
             )
         )
 
-    @discord.ui.button(label="Edit Combo Label Override", style=discord.ButtonStyle.primary, row=2)
+    @discord.ui.button(label="Edit Combo Display Label Override", style=discord.ButtonStyle.primary, row=3)
     async def edit_combo_label_override(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.character_settings = await load_character_settings_for_menu(interaction)
         await interaction.response.send_modal(
@@ -345,7 +345,7 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
             )
         )
 
-    @discord.ui.button(label="Backfill Legacy Fields", style=discord.ButtonStyle.danger, row=2)
+    @discord.ui.button(label="Backfill Legacy Fields", style=discord.ButtonStyle.danger, row=3)
     async def backfill_legacy_fields(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await interaction.response.send_modal(
             BackfillLegacyPpeTypeFieldsModal(
@@ -354,7 +354,7 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
             )
         )
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=4)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         settings = await load_points_settings_for_menu(interaction)
         view = ManagePointSettingsView(owner_id=self.owner_id, settings=settings)
