@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import discord
 
-from utils.ppe_types import DEFAULT_PPE_TYPE, normalize_allowed_ppe_types, ppe_type_label
+from utils.ppe_types import DEFAULT_PPE_TYPE, normalize_allowed_ppe_types, ppe_type_label, ppe_type_short_label
 from menus.manageplayer.common import (
     close_manageplayer_menu,
     send_followup_text,
@@ -31,6 +31,7 @@ from menus.myquests import open_myquests_menu_for_player
 from utils.guild_config import load_guild_config, get_max_ppes
 from utils.player_records import load_teams
 from dataclass import ROTMGClass
+from utils.points_service import loot_adjustment_detail_lines
 
 
 class CreateCharacterModal(discord.ui.Modal, title="Create New Character"):
@@ -117,7 +118,9 @@ class CreateCharacterModal(discord.ui.Modal, title="Create New Character"):
         await interaction.response.send_message(
             f"✅ Created `PPE #{result['next_id']}` for **{self.target.display_name}** "
             f"(`{result['class_name']}`, {result['ppe_type_label']}) and set it as their active PPE.\n"
-            f"They now have {result['ppe_count']}/{result['max_ppes']} PPEs.",
+            f"They now have {result['ppe_count']}/{result['max_ppes']} PPEs.\n\n"
+            f"**Loot Adjustments**\n"
+            f"{chr(10).join(loot_adjustment_detail_lines(result['loot_adjustments']))}\n",
             embed=result["embed"],
             ephemeral=False,
         )
@@ -156,7 +159,7 @@ class _CreateCharacterTypeSelect(discord.ui.Select):
         view.selected_type = self.values[0]
         for option in self.options:
             option.default = option.value == view.selected_type
-        await interaction.response.edit_message(view=view)
+        await interaction.response.edit_message(content=view.current_content(), view=view)
 
 
 class CreateCharacterTypePickerView(discord.ui.View):
@@ -176,6 +179,19 @@ class CreateCharacterTypePickerView(discord.ui.View):
         self.selected_type = allowed_types[0]
         self.add_item(_CreateCharacterTypeSelect(allowed_types=allowed_types, selected_type=self.selected_type))
 
+    def current_content(self) -> str:
+        return (
+            f"Choose a PPE type for {self.target.display_name}.\n"
+            f"Selected so far: **{ppe_type_short_label(self.selected_type)}**"
+        )
+
+    def _no_characters_embed(self) -> discord.Embed:
+        return discord.Embed(
+            title="No Characters",
+            description=f"{self.target.display_name} has no PPE characters.",
+            color=discord.Color.orange(),
+        )
+
     @discord.ui.button(label="Continue", style=discord.ButtonStyle.success, row=1)
     async def continue_to_modal(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if interaction.user.id != self.owner_id:
@@ -191,12 +207,27 @@ class CreateCharacterTypePickerView(discord.ui.View):
             )
         )
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
+    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        await interaction.response.edit_message(
+            content=None,
+            embed=self._no_characters_embed(),
+            view=NoCharactersView(
+                owner_id=self.owner_id,
+                target=self.target,
+                max_ppes=self.max_ppes,
+            ),
+        )
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if interaction.user.id != self.owner_id:
             await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
             return
-        await interaction.response.edit_message(content="Cancelled character creation.", view=None)
+        await interaction.response.edit_message(content="Cancelled character creation.", embed=None, view=None)
 
 
 class NoCharactersView(OwnerBoundView):
@@ -232,14 +263,15 @@ class NoCharactersView(OwnerBoundView):
             )
             return
 
+        picker_view = CreateCharacterTypePickerView(
+            owner_id=interaction.user.id,
+            target=self.target,
+            max_ppes=self.max_ppes,
+            allowed_types=allowed_types,
+        )
         await interaction.response.send_message(
-            f"Choose a PPE type for {self.target.display_name}.",
-            view=CreateCharacterTypePickerView(
-                owner_id=interaction.user.id,
-                target=self.target,
-                max_ppes=self.max_ppes,
-                allowed_types=allowed_types,
-            ),
+            picker_view.current_content(),
+            view=picker_view,
             ephemeral=True,
         )
 

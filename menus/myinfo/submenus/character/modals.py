@@ -16,7 +16,7 @@ from menus.myinfo.common import (
 from utils.guild_config import load_guild_config
 from utils.penalty_embed import build_penalty_infographic_embed
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
-from utils.points_service import apply_penalties_to_ppe, parse_penalty_inputs, recompute_ppe_points
+from utils.points_service import apply_penalties_to_ppe, loot_adjustment_detail_lines, parse_penalty_inputs, recompute_ppe_points
 from slash_commands.newppe_cmd import create_new_ppe_for_user
 
 
@@ -186,11 +186,7 @@ class NewPPEFromMyInfoModal(discord.ui.Modal, title="Create New PPE"):
             f"and set it as your active PPE.\n"
             f"You now have {result['ppe_count']}/{result['max_ppes']} PPEs.\n\n"
             f"**Loot Adjustments**\n"
-            f"Stat Reduction: **-{float(result['loot_adjustments']['total_reduction_percent']):.2f}%** "
-            f"({float(result['loot_adjustments']['reduction_multiplier']):.2f}x)\n"
-            f"Type Multiplier: **{float(result['loot_adjustments']['type_multiplier']):.2f}x**\n"
-            f"Combined Multiplier: **{float(result['loot_adjustments']['combined_item_multiplier']):.2f}x**\n"
-            f"All items will be worth **{float(result['loot_adjustments']['combined_item_multiplier']):.2f}x more** for you.\n",
+            f"{chr(10).join(loot_adjustment_detail_lines(result['loot_adjustments']))}\n",
             embed=result["embed"],
             ephemeral=False,
         )

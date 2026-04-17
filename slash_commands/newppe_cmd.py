@@ -14,7 +14,13 @@ from utils.ppe_types import (
 )
 from utils.penalty_embed import build_penalty_infographic_embed
 from utils.guild_config import get_max_ppes, load_guild_config
-from utils.points_service import apply_penalties_to_ppe, loot_adjustments_for_ppe, parse_penalty_inputs, recompute_ppe_points
+from utils.points_service import (
+    apply_penalties_to_ppe,
+    loot_adjustment_detail_lines,
+    loot_adjustments_for_ppe,
+    parse_penalty_inputs,
+    recompute_ppe_points,
+)
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 
 
@@ -203,6 +209,8 @@ async def command(
     except ValueError as exc:
         return await interaction.response.send_message(str(exc), ephemeral=True)
 
+    loot_adjustment_lines = "\n".join(loot_adjustment_detail_lines(result["loot_adjustments"]))
+
     await interaction.response.send_message(
         f"✅ Created `PPE #{result['next_id']}` for your `{result['class_name']}` "
         f"({result['ppe_type_label']}) "
@@ -210,11 +218,7 @@ async def command(
         f"and set it as your active PPE.\n"
         f"You now have {result['ppe_count']}/{result['max_ppes']} PPEs.\n\n"
         f"**Loot Adjustments**\n"
-        f"Stat Reduction: **-{float(result['loot_adjustments']['total_reduction_percent']):.2f}%** "
-        f"({float(result['loot_adjustments']['reduction_multiplier']):.2f}x)\n"
-        f"Type Multiplier: **{float(result['loot_adjustments']['type_multiplier']):.2f}x**\n"
-        f"Combined Multiplier: **{float(result['loot_adjustments']['combined_item_multiplier']):.2f}x**\n"
-        f"All items will be worth **{float(result['loot_adjustments']['combined_item_multiplier']):.2f}x more** for you.\n",
+        f"{loot_adjustment_lines}\n",
         embed=result["embed"],
     )
 

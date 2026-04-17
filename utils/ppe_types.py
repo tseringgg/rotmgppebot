@@ -456,29 +456,41 @@ def ppe_type_compact_summary(options_value: Any, *, fallback_type: Any = None, p
 
     legacy_type = infer_legacy_ppe_type_from_options(options)
 
-    if legacy_type != DEFAULT_PPE_TYPE or (options["regular"] and not options["duo_enabled"]):
-        base = ppe_type_short_label(legacy_type, ppe_settings=ppe_settings)
-    else:
-        base = ppe_type_short_label(DEFAULT_PPE_TYPE, ppe_settings=ppe_settings)
+    base = ppe_type_short_label(legacy_type, ppe_settings=ppe_settings)
+    if legacy_type != DEFAULT_PPE_TYPE:
+        return base
 
+    shorthand = {
+        "uncommon": "Unc",
+        "rare": "Rare",
+        "legendary": "Leg",
+        "divine": "Div",
+    }
     tokens: list[str] = []
     if not options["uses_pet"]:
         tokens.append("NPE")
     if not options["allows_tiered"]:
-        tokens.append("UT0")
+        tokens.append("UT")
     rarity = normalize_minimum_rarity(options.get("minimum_rarity"))
-    if rarity != "common":
-        rarity_token = {
-            "uncommon": "U",
-            "rare": "R",
-            "legendary": "L",
-            "divine": "D",
-        }.get(rarity, rarity[:1].upper())
-        tokens.append(f"MIN{rarity_token}")
-    if options["shiny_only"]:
-        tokens.append("SH")
-    if options["enforce_rarity_on_shiny"]:
-        tokens.append("ERS")
+    if options["shiny_only"] and options["enforce_rarity_on_shiny"]:
+        rarity_label = shorthand.get(rarity, rarity.capitalize())
+        tokens.append(f"SH_Only_{rarity_label}+")
+    elif options["shiny_only"]:
+        tokens.append("SH_Only")
+    else:
+        # Rule 3: Not Shiny Only - check rarity and add "or SH" if ERS is missing
+        if rarity != "common":
+            if not options["enforce_rarity_on_shiny"]:
+                label = shorthand.get(rarity, rarity.capitalize())
+                tokens.append(f"{label}/All_SH")
+            else: # Regular PPE with minimum rarity but no shiny rules.
+                rarity_token = {
+                    "uncommon": "Unc+",
+                    "rare": "Rare+",
+                    "legendary": "Leg+",
+                    "divine": "DivOnly",
+                }.get(rarity, rarity[:1].upper())
+                tokens.append(f"{rarity_token}")
     if options["duo_enabled"]:
         tokens.append("DUO")
 

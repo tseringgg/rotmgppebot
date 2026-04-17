@@ -7,11 +7,13 @@ from dataclass import Bonus, Loot, PPEData
 from utils.ppe_types import (
     DEFAULT_PPE_TYPE_MULTIPLIERS,
     compute_iterative_multiplier,
+    options_from_signature,
     normalize_iterative_combo_overrides,
     normalize_iterative_option_multipliers,
     normalize_ppe_type,
     normalize_ppe_type_multipliers,
     normalize_ppe_type_options,
+    ppe_type_compact_summary,
     ppe_type_option_signature,
 )
 from utils.calc_points import load_loot_points, load_loot_types, normalize_item_name
@@ -452,6 +454,54 @@ def loot_adjustments_for_ppe(
         "type_multiplier_signature": str(multiplier_details.get("signature", "legacy")),
         "combined_item_multiplier": combined_multiplier,
     }
+
+
+def _format_multiplier(value: float) -> str:
+    rounded = round(float(value), 2)
+    if rounded.is_integer():
+        return f"{int(rounded)}x"
+    return f"{rounded:.2f}".rstrip("0").rstrip(".") + "x"
+
+
+def loot_adjustment_detail_lines(loot_adjustments: Dict[str, Any]) -> list[str]:
+    lines: list[str] = []
+
+    component_rows = (
+        ("pet_reduction_percent", "Pet Level"),
+        ("exalts_reduction_percent", "Exalts"),
+        ("loot_reduction_percent", "Loot Boost"),
+        ("incombat_reduction_percent", "In-Combat Reduction"),
+    )
+
+    for key, label in component_rows:
+        percent = _as_float(loot_adjustments.get(key), 0.0)
+        if abs(percent) <= 1e-9:
+            continue
+        multiplier = max(0.0, 1.0 - (percent / 100.0))
+        lines.append(f"{label}: -{percent:.2f}% ({_format_multiplier(multiplier)})")
+
+    total_reduction_percent = _as_float(loot_adjustments.get("total_reduction_percent"), 0.0)
+    if abs(total_reduction_percent) > 1e-9:
+        reduction_multiplier = _as_float(loot_adjustments.get("reduction_multiplier"), 1.0)
+        lines.append(f"Stat Reduction: -{total_reduction_percent:.2f}% ({_format_multiplier(reduction_multiplier)})")
+
+    type_multiplier = _as_float(loot_adjustments.get("type_multiplier"), 1.0)
+    type_signature = str(loot_adjustments.get("type_multiplier_signature", "")).strip()
+    type_summary = ""
+    if type_signature and type_signature != "legacy":
+        options = options_from_signature(type_signature)
+        if options is not None:
+            type_summary = ppe_type_compact_summary(options)
+
+    if type_summary:
+        lines.append(f"Type Multiplier ({type_summary}): {_format_multiplier(type_multiplier)}")
+    else:
+        lines.append(f"Type Multiplier: {_format_multiplier(type_multiplier)}")
+
+    combined_multiplier = _as_float(loot_adjustments.get("combined_item_multiplier"), 1.0)
+    lines.append(f"Combined Multiplier: {_format_multiplier(combined_multiplier)}")
+
+    return lines
 
 
 def _format_points(value: float) -> str:

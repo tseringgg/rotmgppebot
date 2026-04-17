@@ -1,4 +1,4 @@
-"""Utilities for generate board."""
+"""Utilities for generate board. Used for quests."""
 
 from __future__ import annotations
 

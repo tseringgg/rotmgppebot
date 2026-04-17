@@ -14,6 +14,7 @@ from utils.points_service import (
     calculate_item_points as calculate_item_points_service,
     get_effective_modifier_bucket_for_ppe,
     format_starting_penalty_line,
+    loot_adjustment_detail_lines,
     loot_adjustments_for_ppe,
     non_default_points_adjustment_lines,
     recompute_ppe_points,
@@ -123,7 +124,6 @@ def create_loot_markdown_file(
     point_adjustment_lines = non_default_points_adjustment_lines(guild_config, class_names=[class_name])
     points_breakdown = recompute_ppe_points(ppe_data, guild_config)
     loot_adjustments = loot_adjustments_for_ppe(ppe_data, guild_config)
-    type_multiplier = float(loot_adjustments["type_multiplier"])
     scaled_total = _as_float(points_breakdown.get("total"), 0.0)
     unweighted_total = (
         _as_float(points_breakdown.get("loot_raw"), 0.0)
@@ -139,7 +139,6 @@ def create_loot_markdown_file(
         float(penalty_inputs["incombat_reduction"]),
         guild_config=guild_config,
     )
-    item_reduction_multiplier = float(loot_adjustments["reduction_multiplier"])
     total_item_multiplier = float(loot_adjustments["combined_item_multiplier"])
     minimum_total_raw = modifier_bucket.get("minimum_total")
     minimum_total = _as_float(minimum_total_raw, 0.0) if minimum_total_raw is not None else None
@@ -182,8 +181,7 @@ def create_loot_markdown_file(
                     guild_config=guild_config,
                 )
 
-                tags: list[str] = []
-                tags.append(rarity)
+                tags: list[str] = [rarity]
                 if loot.shiny:
                     tags.append("shiny")
 
@@ -198,7 +196,7 @@ def create_loot_markdown_file(
             builder.add_section(heading=dungeon_name, lines=lines)
 
         if unassigned_items:
-            lines: list[str] = []
+            lines = []
             for loot in sorted(
                 unassigned_items,
                 key=lambda entry: (
@@ -216,8 +214,7 @@ def create_loot_markdown_file(
                     guild_config=guild_config,
                 )
 
-                tags: list[str] = []
-                tags.append(rarity)
+                tags: list[str] = [rarity]
                 if loot.shiny:
                     tags.append("shiny")
 
@@ -233,36 +230,29 @@ def create_loot_markdown_file(
     else:
         builder.add_section(heading="Loot Items", lines=["No loot recorded yet."])
 
-    # Add Sets section if there are completed sets
     if ppe_data.completed_sets:
         from utils.set_operations import load_item_sets
+
         all_sets = load_item_sets()
         set_lines: list[str] = []
-        
-        total_set_points = 0.0
         for set_name in sorted(ppe_data.completed_sets):
             if set_name in all_sets:
                 set_type = all_sets[set_name]["type"]
-                # Resolve points using defaults + explicit overrides.
                 set_bonuses = get_set_bonuses(guild_config)
-                
                 points = 0.0
                 if set_type in set_bonuses and set_name in set_bonuses[set_type]:
                     points = float(set_bonuses[set_type][set_name])
-                    total_set_points += points
-                
                 set_lines.append(f"- {set_name} ({set_type}) - {_format_points(points)} pts")
-        
+
         if set_lines:
             builder.add_section(heading="Sets", lines=set_lines)
 
     if ppe_data.bonuses:
         bonus_lines: list[str] = []
         for bonus in sorted(ppe_data.bonuses, key=lambda entry: entry.name.lower()):
-            # Skip "Set Completion Bonus" since sets are displayed in their own section
             if bonus.name == "Set Completion Bonus":
                 continue
-                
+
             total_bonus_points = calculate_bonus_points(bonus)
             if bonus.name in PENALTY_NAMES:
                 if bonus.name == "Pet Level Penalty":
@@ -305,55 +295,29 @@ def create_loot_markdown_file(
                     is_penalty=False,
                     modifier_bucket=modifier_bucket,
                 )
-                points_display = _format_signed_points(scaled_bonus_points)
-                line = f"- {bonus.name} x {bonus.quantity} ({points_display} pts)"
+                line = f"- {bonus.name} x {bonus.quantity} ({_format_signed_points(scaled_bonus_points)} pts)"
             if bonus.repeatable:
                 line += " [repeatable]"
             bonus_lines.append(line)
 
         builder.add_section(heading="Bonuses", lines=bonus_lines)
 
-    # REFRAMED SUMMARY SECTION
     total_loot_items = len(ppe_data.loot) if ppe_data.loot else 0
     total_bonus_items = len(ppe_data.bonuses) if ppe_data.bonuses else 0
-    
     summary_lines = [
         f"Loot entries: {total_loot_items}",
         f"Bonus entries: {total_bonus_items}",
         "",
-        "",
+        f"Minimum total floor: {_format_points(minimum_total)}" if minimum_total is not None else "",
         "Loot Adjustments:",
         "",
-        f"- Pet reduction: -{float(loot_adjustments['pet_reduction_percent']):.2f}%",
-        f"- Exalts reduction: -{float(loot_adjustments['exalts_reduction_percent']):.2f}%",
-        f"- Loot boost reduction: -{float(loot_adjustments['loot_reduction_percent']):.2f}%",
-        f"- In-combat reduction: -{float(loot_adjustments['incombat_reduction_percent']):.2f}%",
-        "",
     ]
-
-    # Add minimum floor if applicable
-    if minimum_total is not None:
-        summary_lines.insert(2, f"Minimum total floor: {_format_points(minimum_total)}")
-
-    # Red lines
-    stat_red_text = f"Stat reduction total: -{float(loot_adjustments['total_reduction_percent']):.2f}% ({item_reduction_multiplier:.2f}x)"
-    summary_lines.append(stat_red_text)
-    
-    type_mult_text = f"Type multiplier: {type_multiplier:.2f}x"
-    summary_lines.append(type_mult_text)
-    
+    summary_lines = [line for line in summary_lines if line != ""]
+    summary_lines.extend(loot_adjustment_detail_lines(loot_adjustments))
     summary_lines.append("")
-
-    # Green line
-    comb_mult_text = f"Combined item multiplier: {total_item_multiplier:.2f}x"
-    summary_lines.append(comb_mult_text)
     summary_lines.append(f"All items are worth {total_item_multiplier:.2f}x for this character.")
 
-    builder.add_section(
-        heading="Summary",
-        lines=summary_lines,
-    )
-
+    builder.add_section(heading="Summary", lines=summary_lines)
     return builder.write_temp_file(
         prefix=f"loot_table_ppe_{ppe_data.id}",
         username=class_name,
