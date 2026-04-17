@@ -32,7 +32,6 @@ from utils.ppe_types import (
     build_ppe_type_options,
     get_ppe_type_multiplier_details_from_options,
     infer_legacy_ppe_type_from_options,
-    normalize_ppe_type_multipliers,
     options_from_signature,
     ppe_type_label,
     ppe_type_option_signature,
@@ -590,21 +589,9 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
         legacy_type = infer_legacy_ppe_type_from_options(options)
         combo_name = self.combo_name or ppe_type_label(legacy_type, ppe_settings=self.character_settings)
         combo_short = self.combo_short or ppe_type_short_label(legacy_type, ppe_settings=self.character_settings)
-        multiplier_overrides = (
-            self.character_settings.get("iterative_combo_overrides", {})
-            if isinstance(self.character_settings.get("iterative_combo_overrides"), dict)
-            else {}
-        )
-        if str(breakdown.get("source", "")).strip().lower() == "preset":
-            current_override_multiplier = float(breakdown.get("multiplier", 1.0))
-            override_source = "Legacy type preset"
-        elif self.signature in multiplier_overrides:
-            current_override_multiplier = float(multiplier_overrides[self.signature])
-            override_source = "Combo override"
-        else:
-            legacy_multipliers = normalize_ppe_type_multipliers(self.character_settings.get("ppe_type_multipliers"))
-            current_override_multiplier = float(legacy_multipliers.get(legacy_type, 1.0))
-            override_source = "Legacy type preset"
+        source = str(breakdown.get("source", "base")).strip().lower()
+        current_override_multiplier = float(breakdown.get("multiplier", 1.0))
+        override_source = "Combo override" if source == "override" else "Iterative base"
         embed = discord.Embed(
             title="Combo Multiplier Summary",
             description="Review the selected combo values, then set the label and multiplier.",
@@ -646,7 +633,7 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
             inline=False,
         )
         embed.add_field(
-            name="Current Multiplier Preset",
+            name="Current Multiplier Source",
             value=f"{override_source}: x{current_override_multiplier:.2f}",
             inline=False,
         )

@@ -669,23 +669,8 @@ def get_ppe_type_multiplier_details_from_options(
             "legacy_type": legacy_type,
             "components": base_breakdown.get("components", []),
             "component_lines": [
-                "Combo Override Applied (replaces computed/preset stack).",
+                "Combo Override Applied (replaces iterative stack).",
                 f"Override Multiplier: {_format_multiplier(float(override_multiplier))}",
-            ],
-        }
-
-    if legacy_type is not None:
-        legacy_multipliers = normalize_ppe_type_multipliers(settings.get("ppe_type_multipliers"))
-        multiplier = float(legacy_multipliers.get(legacy_type, DEFAULT_PPE_TYPE_MULTIPLIERS[DEFAULT_PPE_TYPE]))
-        return {
-            "multiplier": multiplier,
-            "source": "preset",
-            "signature": signature,
-            "legacy_type": legacy_type,
-            "components": [],
-            "component_lines": [
-                "Legacy PPE type preset applied (overrides the iterative stack).",
-                f"Preset Multiplier: {_format_multiplier(multiplier)}",
             ],
         }
 

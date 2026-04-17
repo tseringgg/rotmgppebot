@@ -8,8 +8,12 @@ from utils.ppe_types import (
     PPE_MIN_RARITY_ORDER,
     find_ppe_type_by_label,
     find_combo_label_override,
+    get_ppe_type_multiplier_details_from_options,
     infer_legacy_ppe_type_from_options,
     legacy_ppe_type_to_options,
+    normalize_combo_signature,
+    normalize_iterative_combo_overrides,
+    normalize_ppe_combo_label_overrides,
     options_from_signature,
     ppe_type_option_signature,
     ppe_type_label,
@@ -890,13 +894,13 @@ class EditIterativeBaseMultipliersModal(discord.ui.Modal, title="Edit Iterative 
     no_pet = discord.ui.TextInput(label="No Pet Multiplier", placeholder="1.3", required=False, max_length=20)
     no_tiered = discord.ui.TextInput(label="No Tiered Multiplier", placeholder="1.3", required=False, max_length=20)
     minimum_rarity_multipliers = discord.ui.TextInput(
-        label="Minimum Rarity Multipliers (common, uncommon, rare, legendary, divine)",
+        label="Rarity Multipliers (C,U,R,L,D)",
         placeholder="1.00, 1.10, 1.20, 1.40, 1.50",
         required=False,
         max_length=120,
     )
     shiny_multipliers = discord.ui.TextInput(
-        label="Shiny Multipliers (shiny_only, enforce_shiny_rarity)",
+        label="Shiny Multipliers (only,enforce)",
         placeholder="1.50, 1.00",
         required=False,
         max_length=40,
@@ -1157,21 +1161,24 @@ class ComboOverrideSettingsModal(discord.ui.Modal):
     ) -> None:
         super().__init__(title="Set Combo Label & Multiplier", timeout=300)
         self.owner_id = owner_id
-        self.signature = str(signature or "").strip().lower()
+        self.signature = normalize_combo_signature(signature)
         self.source_message = source_message
 
         settings = character_settings if isinstance(character_settings, dict) else {}
-        overrides = settings.get("combo_label_overrides", {}) if isinstance(settings.get("combo_label_overrides"), dict) else {}
+        overrides = normalize_ppe_combo_label_overrides(settings.get("combo_label_overrides"))
         label_entry = overrides.get(self.signature, {}) if isinstance(overrides.get(self.signature, {}), dict) else {}
-        multiplier_overrides = settings.get("iterative_combo_overrides", {}) if isinstance(settings.get("iterative_combo_overrides"), dict) else {}
+        multiplier_overrides = normalize_iterative_combo_overrides(settings.get("iterative_combo_overrides"))
         options = options_from_signature(self.signature)
 
         fallback_full = ""
         fallback_short = ""
+        computed_multiplier: float | None = None
         if isinstance(options, dict):
             legacy_type = infer_legacy_ppe_type_from_options(options)
             fallback_full = ppe_type_label(legacy_type, ppe_settings=settings)
             fallback_short = ppe_type_short_label(legacy_type, ppe_settings=settings)
+            details = get_ppe_type_multiplier_details_from_options(options, settings)
+            computed_multiplier = float(details.get("multiplier", 1.0))
 
         preset_name = str(preset_name or "").strip()
         preset_short = str(preset_short or "").strip()
@@ -1179,6 +1186,8 @@ class ComboOverrideSettingsModal(discord.ui.Modal):
         self.short_name.default = preset_short or str(label_entry.get("short", "")).strip() or fallback_short
         if self.signature in multiplier_overrides:
             self.multiplier.default = f"{float(multiplier_overrides[self.signature]):.2f}"
+        elif computed_multiplier is not None:
+            self.multiplier.default = f"{computed_multiplier:.2f}"
         else:
             self.multiplier.default = ""
 
