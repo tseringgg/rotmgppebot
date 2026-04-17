@@ -11,6 +11,7 @@ from menus.leaderboard.services import member_display_name, require_guild
 from utils.calc_points import normalize_item_name
 from utils.guild_config import get_quest_points
 from utils.player_records import load_player_records
+from utils.ppe_types import ppe_type_short_label
 from utils.season_loot_history import season_unique_items
 
 _LOOT_CSV_PATH = Path("rotmg_loot_drops_updated.csv")
@@ -73,6 +74,7 @@ async def command(interaction: discord.Interaction) -> None:
 
         player_totals: list[dict[str, object]] = []
         class_counts: Counter[str] = Counter()
+        ppe_type_counts: Counter[str] = Counter()
         dungeon_counts_by_player: dict[int, Counter[str]] = {}
 
         total_characters = 0
@@ -107,6 +109,9 @@ async def command(interaction: discord.Interaction) -> None:
                 class_name = str(getattr(getattr(ppe, "name", "Unknown"), "value", getattr(ppe, "name", "Unknown")))
                 class_counts[class_name] += 1
                 player_classes[class_name] += 1
+
+                ppe_type = str(getattr(ppe, "ppe_type", "") or "")
+                ppe_type_counts[ppe_type_short_label(ppe_type)] += 1
 
                 for loot in list(getattr(ppe, "loot", []) or []):
                     item_name = normalize_item_name(str(getattr(loot, "item_name", "")))
@@ -162,7 +167,7 @@ async def command(interaction: discord.Interaction) -> None:
         character_spammer = by_metric("characters")[0]
         class_specialist = by_metric("class_focus_pct")[0]
 
-        obsessed_rows: list[tuple[float, str, str, int]] = []
+        obsessed_rows: list[tuple[int, float, str, str]] = []
         for row in player_totals:
             user_id = int(row["user_id"])
             dungeons = dungeon_counts_by_player.get(user_id, Counter())
@@ -171,15 +176,20 @@ async def command(interaction: discord.Interaction) -> None:
             top_dungeon, top_count = sorted(dungeons.items(), key=lambda item: (-item[1], item[0].lower()))[0]
             mapped = max(1, int(row["mapped_drops"]))
             pct = (top_count / mapped) * 100
-            obsessed_rows.append((pct, str(row["display_name"]), top_dungeon, top_count))
+            obsessed_rows.append((top_count, pct, str(row["display_name"]), top_dungeon))
 
-        obsessed_rows.sort(key=lambda item: (-item[0], item[1].lower(), item[2].lower()))
+        obsessed_rows.sort(key=lambda item: (-item[0], -item[1], item[2].lower(), item[3].lower()))
         obsessed = obsessed_rows[0] if obsessed_rows else None
 
         top_classes = sorted(class_counts.items(), key=lambda item: (-item[1], item[0].lower()))
         class_lines = [f"- **{name}**: {count}" for name, count in top_classes[:5]]
         if not class_lines:
             class_lines.append("- No character classes logged yet.")
+
+        top_ppe_types = sorted(ppe_type_counts.items(), key=lambda item: (-item[1], item[0].lower()))
+        ppe_type_lines = [f"- **{name}**: {count}" for name, count in top_ppe_types[:6]]
+        if not ppe_type_lines:
+            ppe_type_lines.append("- No PPE types logged yet.")
 
         least_line = ""
         if top_classes:
@@ -220,8 +230,9 @@ async def command(interaction: discord.Interaction) -> None:
             obsessed_value = "Not enough mapped dungeon drops yet to call this one."
         else:
             obsessed_value = (
-                f"**{obsessed[1]}** is farming **{obsessed[2]}** hard: "
-                f"**{obsessed[0]:.0f}%** of mapped drops ({obsessed[3]} drops)."
+                f"**{obsessed[2]}** is farming **{obsessed[3]}** the hardest with "
+                f"**{obsessed[0]}** mapped drops there"
+                f" ({obsessed[1]:.0f}% of their mapped drops)."
             )
 
         embed.add_field(name="Obsessed with one dungeon.", value=obsessed_value, inline=False)
@@ -229,6 +240,12 @@ async def command(interaction: discord.Interaction) -> None:
         embed.add_field(
             name="Character Type Meta",
             value="\n".join(class_lines) + least_line,
+            inline=False,
+        )
+
+        embed.add_field(
+            name="PPE Types",
+            value="\n".join(ppe_type_lines),
             inline=False,
         )
 

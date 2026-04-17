@@ -317,7 +317,10 @@ class RealmSharkAdminPanelView(OwnerBoundView):
             return
         self.mode = "show_pending"
         if not await self._refresh_entries(interaction):
-            return
+            # Fallback: if there are no pending entries, switch to show_all.
+            self.mode = "show_all"
+            if not await self._refresh_entries(interaction):
+                return
         await self._render(interaction)
 
     @discord.ui.button(label="Show All", style=discord.ButtonStyle.primary)
@@ -364,16 +367,20 @@ async def admin_panel(interaction: discord.Interaction, member: discord.Member, 
         user_id=member.id,
         token=None,
     )
-    active_ids = pending_unmapped_ids if mode == "show_pending" else all_ids
+    resolved_mode = mode
+    if mode == "show_pending" and not pending_unmapped_ids:
+        resolved_mode = "show_all"
+
+    active_ids = pending_unmapped_ids if resolved_mode == "show_pending" else all_ids
 
     resolved_character_id = _resolve_character_id_for_panel(
-        mode,
+        resolved_mode,
         active_ids,
         pending_unmapped_ids,
     )
 
     if resolved_character_id is None:
-        if mode == "show_pending":
+        if resolved_mode == "show_pending":
             return await interaction.response.send_message(
                 f"No pending unmapped character IDs found for {member.mention}.",
                 ephemeral=True,
@@ -388,13 +395,13 @@ async def admin_panel(interaction: discord.Interaction, member: discord.Member, 
         member.id,
         resolved_character_id,
         None,
-        mode,
+        resolved_mode,
     )
     embed = await render_panel_embed(
         interaction,
         resolved_character_id,
         None,
-        mode=mode,
+        mode=resolved_mode,
         all_character_ids=active_ids,
         pending_ids=pending_unmapped_ids,
         target_user_id=member.id,

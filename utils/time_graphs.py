@@ -131,6 +131,16 @@ def _build_integer_ticks(y_min_raw: float, y_max_raw: float) -> list[int]:
     return ticks
 
 
+def _append_current_time_point(x_values: list[int], y_values: list[float]) -> None:
+    if not x_values or not y_values:
+        return
+
+    now_ts = int(datetime.now(timezone.utc).timestamp())
+    if now_ts > int(x_values[-1]):
+        x_values.append(now_ts)
+        y_values.append(float(y_values[-1]))
+
+
 def _draw_line_chart(
     *,
     title: str,
@@ -207,8 +217,8 @@ def _draw_line_chart(
     span_seconds = max(0, x_max - x_min)
     max_x_labels = max(3, min(8, (chart_right - chart_left) // 140))
     x_ticks = _build_time_ticks(x_min, x_max, max_labels=max_x_labels)
-    last_label_right = -10_000
-    for idx, ts_value in enumerate(x_ticks):
+    x_label_candidates: list[tuple[int, str, int, int]] = []
+    for ts_value in x_ticks:
         if x_max == x_min:
             x = (chart_left + chart_right) // 2
         else:
@@ -219,9 +229,25 @@ def _draw_line_chart(
         x_box = draw.textbbox((0, 0), x_label, font=tick_font)
         x_w = x_box[2] - x_box[0]
         label_x = max(chart_left, min(chart_right - x_w, x - x_w // 2))
-        if label_x > last_label_right + 10 or idx == len(x_ticks) - 1:
-            draw.text((label_x, chart_bottom + 12), x_label, fill=(188, 217, 240), font=tick_font)
+        x_label_candidates.append((label_x, x_label, x_w, ts_value))
+
+    selected_labels: list[tuple[int, str, int]] = []
+    last_label_right = -10_000
+    for idx, (label_x, x_label, x_w, _ts_value) in enumerate(x_label_candidates):
+        if idx == len(x_label_candidates) - 1:
+            continue
+        if label_x > last_label_right + 10:
+            selected_labels.append((label_x, x_label, x_w))
             last_label_right = label_x + x_w
+
+    if x_label_candidates:
+        final_x, final_label, final_w, _ = x_label_candidates[-1]
+        while selected_labels and final_x <= selected_labels[-1][0] + selected_labels[-1][2] + 10:
+            selected_labels.pop()
+        selected_labels.append((final_x, final_label, final_w))
+
+    for label_x, x_label, _x_w in selected_labels:
+        draw.text((label_x, chart_bottom + 12), x_label, fill=(188, 217, 240), font=tick_font)
 
     draw.line([(chart_left, chart_bottom), (chart_right, chart_bottom)], fill=(214, 236, 255), width=2)
     draw.line([(chart_left, chart_top), (chart_left, chart_bottom)], fill=(214, 236, 255), width=2)
@@ -309,9 +335,11 @@ def build_item_graph(player_data: PlayerData, *, display_name: str) -> BytesIO |
         x_values.append(ts)
         y_values.append(float(total))
 
+    _append_current_time_point(x_values, y_values)
+
     subtitle = (
         f"{len(variant_rows)} variants tracked, {total} total pickups, "
-        f"{_format_date(events[0])} → {_format_date(events[-1])}"
+        f"{_format_date(x_values[0])} → {_format_date(x_values[-1])}"
     )
     return _draw_line_chart(
         title=f"{display_name} - Season Item Graph",
@@ -356,6 +384,8 @@ def build_character_point_graph(
         cumulative += float(delta)
         x_values.append(int(ts))
         y_values.append(float(cumulative))
+
+    _append_current_time_point(x_values, y_values)
 
     subtitle = f"PPE #{ppe.id} point progression from logged drops ({_format_date(x_values[0])} → {_format_date(x_values[-1])})"
     return _draw_line_chart(

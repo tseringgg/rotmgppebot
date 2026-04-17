@@ -223,6 +223,50 @@ def _format_points(value: float) -> str:
     return f"{value:.1f}"
 
 
+def _preview_names(values: list[str], *, limit: int = 3) -> str:
+    cleaned = [str(value).strip() for value in values if str(value).strip()]
+    if not cleaned:
+        return ""
+    if len(cleaned) <= limit:
+        return ", ".join(cleaned)
+    return f"{', '.join(cleaned[:limit])} (+{len(cleaned) - limit} more)"
+
+
+def _quest_set_progress_suffix(result: Dict[str, Any]) -> str:
+    quest_update = result.get("quest_update") if isinstance(result.get("quest_update"), dict) else {}
+
+    quest_completed: list[str] = []
+    for key in ("completed_items", "completed_shinies", "completed_skins"):
+        values = quest_update.get(key, [])
+        if isinstance(values, list):
+            for value in values:
+                text = str(value).strip()
+                if text:
+                    quest_completed.append(text)
+
+    set_completed: list[str] = []
+    raw_sets = result.get("newly_completed_sets", [])
+    if isinstance(raw_sets, list):
+        for raw_entry in raw_sets:
+            if isinstance(raw_entry, (tuple, list)) and raw_entry:
+                set_name = str(raw_entry[0]).strip()
+            else:
+                set_name = str(raw_entry).strip()
+            if set_name:
+                set_completed.append(set_name)
+
+    quest_text = _preview_names(quest_completed)
+    set_text = _preview_names(set_completed)
+
+    if quest_text and set_text:
+        return f" Quest/Set: completed quests: {quest_text}; completed sets: {set_text}."
+    if quest_text:
+        return f" Quest/Set: completed quests: {quest_text}; no new sets completed."
+    if set_text:
+        return f" Quest/Set: no new quests completed; completed sets: {set_text}."
+    return " Quest/Set: no new quest or set completed."
+
+
 def _append_missing_utst_log(guild_id: int, item_name: str, payload: Dict[str, Any]) -> None:
     # Avoid persisting link tokens in plaintext audit files.
     payload_safe = dict(payload)
@@ -345,6 +389,8 @@ async def _addloot_for_user_with_ppe(
         "points_added": result.points_delta,
         "total_points": result.new_points,
         "ppe_id": result.ppe.id,
+        "quest_update": dict(result.quest_update or {}),
+        "newly_completed_sets": list(result.newly_completed_sets or []),
     }
 
 
@@ -370,6 +416,8 @@ async def _addseasonloot_for_user(guild_id: int, user_id: int, item_name: str, s
         "item": f"{item_name}{' (shiny)' if shiny else ''}",
         "season_unique_total": result.new_unique_total,
         "already_present": result.already_present,
+        "quest_update": dict(result.quest_update or {}),
+        "newly_completed_sets": [],
     }
 
 
@@ -761,6 +809,8 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
                 announcement += (
                     " | This new character is still unmapped, use /mysniffer -> Configure Characters to choose PPE vs seasonal"
                 )
+
+        announcement += _quest_set_progress_suffix(result)
 
         if ingest_warning is not None:
             announcement += (

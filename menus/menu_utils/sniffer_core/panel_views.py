@@ -510,16 +510,20 @@ async def open_panel(
         user_id=interaction.user.id,
         token=token,
     )
-    active_ids = pending_unmapped_ids if mode == "show_pending" else all_ids
+    resolved_mode = mode
+    if mode == "show_pending" and not pending_unmapped_ids:
+        resolved_mode = "show_all"
+
+    active_ids = pending_unmapped_ids if resolved_mode == "show_pending" else all_ids
 
     resolved_character_id = await _resolve_character_id_for_panel(
         interaction,
-        mode,
+        resolved_mode,
         active_ids,
         pending_unmapped_ids,
     )
     if resolved_character_id is None:
-        if mode == "show_pending":
+        if resolved_mode == "show_pending":
             return await interaction.response.send_message(
                 "No pending unmapped character IDs found for your account yet.",
                 ephemeral=True,
@@ -529,12 +533,18 @@ async def open_panel(
             ephemeral=True,
         )
 
-    view = RealmSharkConfigurePanelView(interaction.user.id, interaction.user.id, resolved_character_id, token, mode)
+    view = RealmSharkConfigurePanelView(
+        interaction.user.id,
+        interaction.user.id,
+        resolved_character_id,
+        token,
+        resolved_mode,
+    )
     embed = await _build_panel_embed(
         interaction,
         resolved_character_id,
         token,
-        mode,
+        resolved_mode,
         active_ids,
         pending_ids=pending_unmapped_ids,
     )
