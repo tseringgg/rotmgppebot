@@ -102,6 +102,24 @@ def _build_combo_label_override_lines(character_settings: dict) -> list[str]:
     return lines
 
 
+def _build_combo_multiplier_override_lines(character_settings: dict) -> list[str]:
+    overrides = (
+        character_settings.get("iterative_combo_overrides", {})
+        if isinstance(character_settings.get("iterative_combo_overrides", {}), dict)
+        else {}
+    )
+    lines: list[str] = []
+    for signature in sorted(overrides.keys()):
+        try:
+            multiplier = float(overrides.get(signature, 0.0))
+        except (TypeError, ValueError):
+            continue
+        if multiplier <= 0:
+            continue
+        lines.append(f"• {signature}: {multiplier:.2f}x")
+    return lines
+
+
 def _build_starting_penalty_modifier_lines(modifiers: dict) -> list[str]:
     return [
         f"• Pet Level Reduction Rate: {_format_percent(modifiers.get('pet_level_percent_reduction', 0.0))} per level",
@@ -744,6 +762,7 @@ def build_ppe_type_points_embed(character_settings: dict) -> discord.Embed:
     )
     lines = _build_ppe_type_multiplier_lines(multipliers, ppe_settings=character_settings)
     iterative_base_lines = _build_iterative_base_lines(character_settings)
+    combo_multiplier_lines = _build_combo_multiplier_override_lines(character_settings)
     combo_lines = _build_combo_label_override_lines(character_settings)
     embed = discord.Embed(
         title="PPE Type Point Multipliers",
@@ -751,8 +770,12 @@ def build_ppe_type_points_embed(character_settings: dict) -> discord.Embed:
         color=discord.Color.dark_teal(),
     )
     current_value = "\n".join(lines)
+    if combo_multiplier_lines:
+        current_value += "\n\nCombo Multiplier Overrides:\n" + "\n".join(combo_multiplier_lines[:10])
+        if len(combo_multiplier_lines) > 10:
+            current_value += f"\n... and {len(combo_multiplier_lines) - 10} more"
     if combo_lines:
-        current_value += "\n\nCombo Overrides:\n" + "\n".join(combo_lines[:10])
+        current_value += "\n\nCombo Label Overrides:\n" + "\n".join(combo_lines[:10])
         if len(combo_lines) > 10:
             current_value += f"\n... and {len(combo_lines) - 10} more"
     embed.add_field(name="Current PPE Types", value=current_value, inline=False)

@@ -10,7 +10,6 @@ from utils.ppe_types import (
     find_combo_label_override,
     infer_legacy_ppe_type_from_options,
     legacy_ppe_type_to_options,
-    normalize_ppe_type_multipliers,
     options_from_signature,
     ppe_type_option_signature,
     ppe_type_label,
@@ -182,7 +181,10 @@ async def _refresh_point_settings_message(
     try:
         await source_message.edit(embed=view.current_embed(), view=view)
     except discord.HTTPException:
-        pass
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=view.current_embed(), view=view, ephemeral=True)
+        else:
+            await interaction.response.send_message(embed=view.current_embed(), view=view, ephemeral=True)
 
 
 class EditGlobalPointSettingsModal(discord.ui.Modal, title="Edit Global Point Modifiers"):
@@ -1166,13 +1168,10 @@ class ComboOverrideSettingsModal(discord.ui.Modal):
 
         fallback_full = ""
         fallback_short = ""
-        fallback_multiplier: float | None = None
         if isinstance(options, dict):
             legacy_type = infer_legacy_ppe_type_from_options(options)
             fallback_full = ppe_type_label(legacy_type, ppe_settings=settings)
             fallback_short = ppe_type_short_label(legacy_type, ppe_settings=settings)
-            legacy_multipliers = normalize_ppe_type_multipliers(settings.get("ppe_type_multipliers"))
-            fallback_multiplier = float(legacy_multipliers.get(legacy_type, 1.0))
 
         preset_name = str(preset_name or "").strip()
         preset_short = str(preset_short or "").strip()
@@ -1180,8 +1179,8 @@ class ComboOverrideSettingsModal(discord.ui.Modal):
         self.short_name.default = preset_short or str(label_entry.get("short", "")).strip() or fallback_short
         if self.signature in multiplier_overrides:
             self.multiplier.default = f"{float(multiplier_overrides[self.signature]):.2f}"
-        elif fallback_multiplier is not None:
-            self.multiplier.default = f"{fallback_multiplier:.2f}"
+        else:
+            self.multiplier.default = ""
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         if interaction.user.id != self.owner_id:
