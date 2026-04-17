@@ -359,6 +359,20 @@ def normalize_iterative_option_multipliers(value: Any) -> dict[str, Any]:
     }
 
 
+def _as_float(value: Any, fallback: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return fallback
+
+
+def _format_multiplier(value: float) -> str:
+    rounded = round(float(value), 2)
+    if rounded.is_integer():
+        return f"{int(rounded)}x"
+    return f"{rounded:.2f}".rstrip("0").rstrip(".") + "x"
+
+
 def normalize_iterative_combo_overrides(value: Any) -> dict[str, float]:
     if not isinstance(value, dict):
         return {}
@@ -586,6 +600,73 @@ def iterative_multiplier_breakdown(
         "multiplier": float(multiplier),
         "signature": signature,
         "components": components,
+    }
+
+
+def resolve_legacy_ppe_type_from_options(options_value: Any, *, current_type: Any = None) -> str | None:
+    options = normalize_ppe_type_options(options_value, current_type=current_type)
+    legacy_type = infer_legacy_ppe_type_from_options(options)
+    canonical_options = legacy_ppe_type_to_options(legacy_type)
+    if ppe_type_option_signature(options) == ppe_type_option_signature(canonical_options):
+        return legacy_type
+    return None
+
+
+def get_ppe_type_multiplier_details_from_options(
+    options_value: Any,
+    ppe_settings: Any = None,
+    *,
+    current_type: Any = None,
+) -> dict[str, Any]:
+    settings = ppe_settings if isinstance(ppe_settings, dict) else {}
+    normalized_options = normalize_ppe_type_options(options_value, current_type=current_type)
+    signature = ppe_type_option_signature(normalized_options)
+    legacy_type = resolve_legacy_ppe_type_from_options(normalized_options, current_type=current_type)
+
+    if legacy_type is not None:
+        legacy_multipliers = normalize_ppe_type_multipliers(settings.get("ppe_type_multipliers"))
+        multiplier = float(legacy_multipliers.get(legacy_type, DEFAULT_PPE_TYPE_MULTIPLIERS[DEFAULT_PPE_TYPE]))
+        return {
+            "multiplier": multiplier,
+            "source": "preset",
+            "signature": signature,
+            "legacy_type": legacy_type,
+            "components": [],
+            "component_lines": [
+                "Legacy PPE type preset applied (overrides the iterative stack).",
+                f"Preset Multiplier: {_format_multiplier(multiplier)}",
+            ],
+        }
+
+    normalized_overrides = normalize_iterative_combo_overrides(settings.get("iterative_combo_overrides"))
+    override_multiplier = normalized_overrides.get(signature)
+    if override_multiplier is not None:
+        base_breakdown = iterative_multiplier_breakdown(normalized_options, settings.get("iterative_base_multipliers"))
+        return {
+            "multiplier": float(override_multiplier),
+            "source": "override",
+            "signature": signature,
+            "legacy_type": legacy_type,
+            "components": base_breakdown.get("components", []),
+            "component_lines": [
+                "Combo Override Applied (replaces computed stack).",
+                f"Override Multiplier: {_format_multiplier(float(override_multiplier))}",
+            ],
+        }
+
+    base_breakdown = iterative_multiplier_breakdown(normalized_options, settings.get("iterative_base_multipliers"))
+    component_lines = [
+        f"{str(component.get('label', 'Component')).strip()}: {_format_multiplier(_as_float(component.get('multiplier'), 1.0))}"
+        for component in base_breakdown.get("components", [])
+        if isinstance(component, dict)
+    ]
+    return {
+        "multiplier": float(base_breakdown["multiplier"]),
+        "source": "base",
+        "signature": str(base_breakdown["signature"]),
+        "legacy_type": legacy_type,
+        "components": base_breakdown.get("components", []),
+        "component_lines": component_lines,
     }
 
 

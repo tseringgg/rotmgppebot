@@ -34,8 +34,8 @@ from menus.manageseason.services import update_duplicate_match_mode, update_top_
 from utils.ppe_types import (
     all_ppe_types,
     build_ppe_type_options,
+    get_ppe_type_multiplier_details_from_options,
     infer_legacy_ppe_type_from_options,
-    iterative_multiplier_breakdown,
     normalize_ppe_type_multipliers,
     options_from_signature,
     ppe_type_compact_summary,
@@ -636,7 +636,7 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
 
     def _summary_embed(self) -> discord.Embed:
         options = self._current_options()
-        breakdown = iterative_multiplier_breakdown(options, self.character_settings.get("iterative_base_multipliers"))
+        breakdown = get_ppe_type_multiplier_details_from_options(options, self.character_settings)
         components = breakdown.get("components", []) if isinstance(breakdown.get("components", []), list) else []
         self.signature = str(breakdown.get("signature", self.signature or "")).strip().lower()
         legacy_type = infer_legacy_ppe_type_from_options(options)
@@ -647,7 +647,10 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
             if isinstance(self.character_settings.get("iterative_combo_overrides"), dict)
             else {}
         )
-        if self.signature in multiplier_overrides:
+        if str(breakdown.get("source", "")).strip().lower() == "preset":
+            current_override_multiplier = float(breakdown.get("multiplier", 1.0))
+            override_source = "Legacy type preset"
+        elif self.signature in multiplier_overrides:
             current_override_multiplier = float(multiplier_overrides[self.signature])
             override_source = "Combo override"
         else:
@@ -673,9 +676,9 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
             inline=False,
         )
         component_lines = [
-            f"• {str(component.get('label', 'Component')).strip()}: x{float(component.get('multiplier', 1.0)):.2f}"
-            for component in components
-            if isinstance(component, dict)
+            f"• {str(line).strip()}"
+            for line in breakdown.get("component_lines", [])
+            if str(line).strip()
         ]
         if not component_lines:
             component_lines = ["• No combo-specific multipliers apply."]

@@ -6,16 +6,11 @@ from typing import Any, Dict, Iterable
 from dataclass import Bonus, Loot, PPEData
 from utils.ppe_types import (
     DEFAULT_PPE_TYPE_MULTIPLIERS,
-    compute_iterative_multiplier,
-    iterative_multiplier_breakdown,
+    get_ppe_type_multiplier_details_from_options,
     options_from_signature,
-    normalize_iterative_combo_overrides,
-    normalize_iterative_option_multipliers,
     normalize_ppe_type,
     normalize_ppe_type_multipliers,
-    normalize_ppe_type_options,
     ppe_type_compact_summary,
-    ppe_type_option_signature,
 )
 from utils.calc_points import load_loot_points, load_loot_types, normalize_item_name
 from utils.guild_config import get_rarity_multipliers
@@ -158,54 +153,27 @@ def get_ppe_type_multiplier_details_for_ppe(
     raw_options = getattr(ppe, "ppe_type_options", None)
 
     if isinstance(raw_options, dict) and raw_options:
-        normalized_options = normalize_ppe_type_options(raw_options, current_type=getattr(ppe, "ppe_type", None))
-        signature = ppe_type_option_signature(normalized_options)
-        normalized_overrides = normalize_iterative_combo_overrides(ppe_settings.get("iterative_combo_overrides"))
-
-        override_multiplier = normalized_overrides.get(signature)
-        if override_multiplier is not None:
-            base_breakdown = iterative_multiplier_breakdown(
-                normalized_options,
-                ppe_settings.get("iterative_base_multipliers"),
-            )
-            return {
-                "multiplier": float(override_multiplier),
-                "source": "override",
-                "signature": signature,
-                "components": base_breakdown.get("components", []),
-                "component_lines": [
-                    "Combo Override Applied (replaces computed stack).",
-                    f"Override Multiplier: {_format_multiplier(float(override_multiplier))}",
-                ],
-            }
-
-        base_multiplier, source, signature = compute_iterative_multiplier(
-            normalized_options,
-            ppe_settings.get("iterative_base_multipliers"),
+        details = get_ppe_type_multiplier_details_from_options(
+            raw_options,
+            ppe_settings,
+            current_type=getattr(ppe, "ppe_type", None),
         )
-        breakdown = iterative_multiplier_breakdown(
-            normalized_options,
-            ppe_settings.get("iterative_base_multipliers"),
-        )
-        component_lines = [
-            f"{str(component.get('label', 'Component')).strip()}: {_format_multiplier(_as_float(component.get('multiplier'), 1.0))}"
-            for component in breakdown.get("components", [])
-            if isinstance(component, dict)
-        ]
         return {
-            "multiplier": float(base_multiplier),
-            "source": source,
-            "signature": signature,
-            "components": breakdown.get("components", []),
-            "component_lines": component_lines,
+            "multiplier": float(details["multiplier"]),
+            "source": str(details.get("source", "base")),
+            "signature": str(details.get("signature", "legacy")),
+            "legacy_type": details.get("legacy_type"),
+            "components": list(details.get("components", [])),
+            "component_lines": list(details.get("component_lines", [])),
         }
 
-    normalized_multipliers = normalize_ppe_type_multipliers(ppe_settings.get("ppe_type_multipliers"))
     ppe_type = normalize_ppe_type(getattr(ppe, "ppe_type", None))
+    normalized_multipliers = normalize_ppe_type_multipliers(ppe_settings.get("ppe_type_multipliers"))
     return {
         "multiplier": float(normalized_multipliers.get(ppe_type, DEFAULT_PPE_TYPE_MULTIPLIERS["regular"])),
         "source": "legacy",
         "signature": "legacy",
+        "legacy_type": ppe_type,
         "components": [],
         "component_lines": [],
     }
@@ -510,6 +478,7 @@ def loot_adjustment_detail_lines(loot_adjustments: Dict[str, Any]) -> list[str]:
         lines.append(f"Stat Reduction: -{total_reduction_percent:.2f}% ({_format_multiplier(reduction_multiplier)})")
 
     type_multiplier = _as_float(loot_adjustments.get("type_multiplier"), 1.0)
+    type_source = str(loot_adjustments.get("type_multiplier_source", "")).strip().lower()
     type_signature = str(loot_adjustments.get("type_multiplier_signature", "")).strip()
     type_summary = ""
     if type_signature and type_signature != "legacy":
@@ -518,9 +487,15 @@ def loot_adjustment_detail_lines(loot_adjustments: Dict[str, Any]) -> list[str]:
             type_summary = ppe_type_compact_summary(options)
 
     if type_summary:
-        lines.append(f"Type Multiplier ({type_summary}): {_format_multiplier(type_multiplier)}")
+        if type_source == "preset":
+            lines.append(f"Type Multiplier ({type_summary}): {type_multiplier:.2f} (overridden)")
+        else:
+            lines.append(f"Type Multiplier ({type_summary}): {_format_multiplier(type_multiplier)}")
     else:
-        lines.append(f"Type Multiplier: {_format_multiplier(type_multiplier)}")
+        if type_source == "preset":
+            lines.append(f"Type Multiplier: {type_multiplier:.2f} (overridden)")
+        else:
+            lines.append(f"Type Multiplier: {_format_multiplier(type_multiplier)}")
 
     type_component_lines = loot_adjustments.get("type_multiplier_component_lines", [])
     if isinstance(type_component_lines, list):

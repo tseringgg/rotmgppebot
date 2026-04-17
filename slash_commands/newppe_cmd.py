@@ -5,7 +5,7 @@ import discord
 from dataclass import PPEData, ROTMGClass
 from utils.ppe_types import (
     build_ppe_type_options,
-    iterative_multiplier_breakdown,
+    get_ppe_type_multiplier_details_from_options,
     infer_legacy_ppe_type_from_options,
     normalize_ppe_type_options,
     ppe_type_compact_summary,
@@ -375,11 +375,11 @@ class NewPpeIterativeWizardView(discord.ui.View):
                 duo_enabled=self.state.get("duo_enabled", False),
                 duo_partner_id=self.state.get("duo_partner_id"),
             )
-            breakdown = iterative_multiplier_breakdown(options, self.ppe_settings.get("iterative_base_multipliers"))
+            breakdown = get_ppe_type_multiplier_details_from_options(options, self.ppe_settings)
             component_lines = [
-                f"- {str(component.get('label', 'Component')).strip()}: x{float(component.get('multiplier', 1.0)):.2f}"
-                for component in breakdown.get("components", [])
-                if isinstance(component, dict)
+                f"- {str(line).strip()}"
+                for line in breakdown.get("component_lines", [])
+                if str(line).strip()
             ]
             if not component_lines:
                 component_lines = ["- No extra combo multipliers apply."]
@@ -602,7 +602,8 @@ class _WizardCreatePpeButton(discord.ui.Button):
             f"**Loot Adjustments**\n"
             f"Stat Reduction: **-{float(result['loot_adjustments']['total_reduction_percent']):.2f}%** "
             f"({float(result['loot_adjustments']['reduction_multiplier']):.2f}x)\n"
-            f"Type Multiplier: **{float(result['loot_adjustments']['type_multiplier']):.2f}x**\n"
+            f"Type Multiplier: **{float(result['loot_adjustments']['type_multiplier']):.2f}"
+            f"{' (overridden)' if str(result['loot_adjustments'].get('type_multiplier_source', '')).strip().lower() == 'preset' else 'x'}**\n"
             f"Combined Multiplier: **{float(result['loot_adjustments']['combined_item_multiplier']):.2f}x**",
             embed=result["embed"],
             ephemeral=False,
