@@ -10,6 +10,7 @@ import discord
 from utils.ppe_types import (
     all_ppe_types,
     normalize_allowed_ppe_types,
+    normalize_combo_signature,
     normalize_iterative_combo_overrides,
     normalize_iterative_option_multipliers,
     normalize_ppe_combo_label_overrides,
@@ -710,7 +711,7 @@ async def set_iterative_ppe_combo_override(
 ) -> Dict[str, Any]:
     settings = await get_ppe_settings(interaction)
     current = normalize_iterative_combo_overrides(settings.get("iterative_combo_overrides"))
-    normalized_signature = str(signature or "").strip().lower()
+    normalized_signature = normalize_combo_signature(signature)
     if normalized_signature:
         if multiplier is None:
             current.pop(normalized_signature, None)

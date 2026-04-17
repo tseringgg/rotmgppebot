@@ -9,6 +9,7 @@ from typing import Any
 import discord
 
 from utils.ppe_types import (
+    normalize_combo_signature,
     normalize_iterative_combo_overrides,
     normalize_allowed_ppe_types,
     normalize_ppe_combo_label_overrides,
@@ -625,7 +626,7 @@ async def set_combo_display_override(
 ) -> dict[str, Any]:
     settings = await get_ppe_settings(interaction)
     overrides = normalize_ppe_combo_label_overrides(settings.get("combo_label_overrides"))
-    normalized_signature = str(signature or "").strip().lower()
+    normalized_signature = normalize_combo_signature(signature)
     if not normalized_signature:
         raise ValueError("Signature is required.")
 
@@ -654,7 +655,7 @@ async def update_combo_multiplier_details(
     combo_overrides = normalize_iterative_combo_overrides(settings.get("iterative_combo_overrides"))
     label_overrides = normalize_ppe_combo_label_overrides(settings.get("combo_label_overrides"))
 
-    normalized_signature = str(signature or "").strip().lower()
+    normalized_signature = normalize_combo_signature(signature)
     if not normalized_signature:
         raise ValueError("Signature is required.")
 
@@ -685,12 +686,15 @@ async def update_combo_multiplier_details(
 
 async def clear_all_ppe_type_overrides(
     interaction: discord.Interaction,
+    *,
+    clear_type_labels: bool = True,
 ) -> tuple[dict[str, Any], PointsRefreshSummary]:
     settings = await get_ppe_settings(interaction)
     settings["iterative_combo_overrides"] = normalize_iterative_combo_overrides({})
     settings["combo_label_overrides"] = normalize_ppe_combo_label_overrides({})
-    settings["type_label_overrides"] = normalize_ppe_type_label_overrides({})
-    settings["type_short_label_overrides"] = normalize_ppe_type_short_label_overrides({})
+    if clear_type_labels:
+        settings["type_label_overrides"] = normalize_ppe_type_label_overrides({})
+        settings["type_short_label_overrides"] = normalize_ppe_type_short_label_overrides({})
     saved = await set_ppe_settings(interaction, settings)
 
     guild_config = await load_guild_config(interaction)

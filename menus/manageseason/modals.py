@@ -91,6 +91,28 @@ def _parse_minimum_rarity_multipliers(raw_value: str) -> dict[str, float] | None
     return dict(zip(PPE_MIN_RARITY_ORDER, parsed_values))
 
 
+def _parse_shiny_multiplier_pair(raw_value: str) -> tuple[float, float] | None:
+    text = str(raw_value or "").strip()
+    if not text:
+        return None
+
+    parts = [segment.strip() for segment in text.split(",") if segment.strip()]
+    if len(parts) != 2:
+        raise ValueError(
+            "ERROR: `shiny_multipliers` must contain exactly 2 comma-separated numbers in this order: shiny_only, enforce_shiny_rarity."
+        )
+
+    try:
+        shiny_only = float(parts[0])
+        enforce_shiny = float(parts[1])
+    except ValueError as exc:
+        raise ValueError(
+            "ERROR: `shiny_multipliers` must contain only numbers separated by a comma."
+        ) from exc
+
+    return shiny_only, enforce_shiny
+
+
 async def _confirm_points_update(
     *,
     interaction: discord.Interaction,
@@ -871,8 +893,12 @@ class EditIterativeBaseMultipliersModal(discord.ui.Modal, title="Edit Iterative 
         required=False,
         max_length=120,
     )
-    shiny_only = discord.ui.TextInput(label="Shiny Only Multiplier", placeholder="1.5", required=False, max_length=20)
-    enforce_shiny = discord.ui.TextInput(label="Enforce Shiny Rarity Multiplier", placeholder="1.0", required=False, max_length=20)
+    shiny_multipliers = discord.ui.TextInput(
+        label="Shiny Multipliers (shiny_only, enforce_shiny_rarity)",
+        placeholder="1.50, 1.00",
+        required=False,
+        max_length=40,
+    )
     duo = discord.ui.TextInput(label="Duo Multiplier", placeholder="0.6", required=False, max_length=20)
 
     def __init__(self, *, owner_id: int, character_settings: dict, source_message: discord.Message | None) -> None:
@@ -887,8 +913,9 @@ class EditIterativeBaseMultipliersModal(discord.ui.Modal, title="Edit Iterative 
             f"{float(rarity.get(name, default)):.2f}"
             for name, default in zip(PPE_MIN_RARITY_ORDER, [1.0, 1.1, 1.2, 1.4, 1.5])
         )
-        self.shiny_only.default = f"{float(base.get('shiny_only', 1.5)):.2f}"
-        self.enforce_shiny.default = f"{float(base.get('enforce_shiny_rarity', 1.0)):.2f}"
+        self.shiny_multipliers.default = (
+            f"{float(base.get('shiny_only', 1.5)):.2f}, {float(base.get('enforce_shiny_rarity', 1.0)):.2f}"
+        )
         self.duo.default = f"{float(base.get('duo', 0.6)):.2f}"
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
@@ -900,8 +927,7 @@ class EditIterativeBaseMultipliersModal(discord.ui.Modal, title="Edit Iterative 
             no_pet = _parse_optional_float(self.no_pet.value, field_name="no_pet")
             no_tiered = _parse_optional_float(self.no_tiered.value, field_name="no_tiered")
             minimum_rarity_multipliers = _parse_minimum_rarity_multipliers(self.minimum_rarity_multipliers.value)
-            shiny_only = _parse_optional_float(self.shiny_only.value, field_name="shiny_only")
-            enforce_shiny = _parse_optional_float(self.enforce_shiny.value, field_name="enforce_shiny_rarity")
+            shiny_pair = _parse_shiny_multiplier_pair(self.shiny_multipliers.value)
             duo = _parse_optional_float(self.duo.value, field_name="duo")
         except ValueError as exc:
             await interaction.response.send_message(str(exc), ephemeral=True)
@@ -916,10 +942,9 @@ class EditIterativeBaseMultipliersModal(discord.ui.Modal, title="Edit Iterative 
             updated["no_tiered"] = no_tiered
         if minimum_rarity_multipliers is not None:
             updated["minimum_rarity"] = minimum_rarity_multipliers
-        if shiny_only is not None:
-            updated["shiny_only"] = shiny_only
-        if enforce_shiny is not None:
-            updated["enforce_shiny_rarity"] = enforce_shiny
+        if shiny_pair is not None:
+            updated["shiny_only"] = shiny_pair[0]
+            updated["enforce_shiny_rarity"] = shiny_pair[1]
         if duo is not None:
             updated["duo"] = duo
 
@@ -1186,8 +1211,10 @@ class ComboOverrideSettingsModal(discord.ui.Modal):
             short=short_name or None,
         )
 
+        action_text = "Cleared" if parsed_multiplier is None and not display_name and not short_name else "Updated"
+
         await interaction.followup.send(
-            f"Updated combo override for `{self.signature}`.\n"
+            f"{action_text} combo override for `{self.signature}`.\n"
             f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
             f"PPE totals changed: {refresh_summary.ppes_updated}",
             ephemeral=True,
@@ -1209,6 +1236,12 @@ class ResetAllPpeTypeOverridesModal(discord.ui.Modal, title="Reset All PPE Overr
         required=True,
         max_length=20,
     )
+    reset_scope = discord.ui.TextInput(
+        label="Reset Scope (all or combo)",
+        placeholder="all",
+        required=False,
+        max_length=20,
+    )
 
     def __init__(self, *, owner_id: int, source_message: discord.Message | None) -> None:
         super().__init__(timeout=180)
@@ -1223,10 +1256,27 @@ class ResetAllPpeTypeOverridesModal(discord.ui.Modal, title="Reset All PPE Overr
             await interaction.response.send_message("Cancelled. You must type RESET exactly.", ephemeral=True)
             return
 
+        scope_raw = str(self.reset_scope.value or "").strip().lower()
+        if scope_raw in {"", "all", "everything"}:
+            clear_type_labels = True
+            clear_message = "Cleared all PPE type/combo label and combo multiplier overrides."
+        elif scope_raw in {"combo", "combos", "combo-only", "combo_only"}:
+            clear_type_labels = False
+            clear_message = "Cleared combo label and combo multiplier overrides (type label overrides kept)."
+        else:
+            await interaction.response.send_message(
+                "ERROR: Reset Scope must be `all` or `combo`.",
+                ephemeral=True,
+            )
+            return
+
         await interaction.response.defer(ephemeral=True)
-        settings, refresh_summary = await clear_all_ppe_type_overrides(interaction)
+        settings, refresh_summary = await clear_all_ppe_type_overrides(
+            interaction,
+            clear_type_labels=clear_type_labels,
+        )
         await interaction.followup.send(
-            "Cleared all PPE type/combo label and combo multiplier overrides.\n"
+            f"{clear_message}\n"
             f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
             f"PPE totals changed: {refresh_summary.ppes_updated}",
             ephemeral=True,

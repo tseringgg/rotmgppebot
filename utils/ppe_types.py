@@ -380,6 +380,19 @@ def _format_multiplier(value: float) -> str:
     return f"{rounded:.2f}".rstrip("0").rstrip(".") + "x"
 
 
+def normalize_combo_signature(value: Any) -> str:
+    text = str(value or "").strip().lower()
+    if not text:
+        return ""
+    if text == "regular":
+        return "regular"
+
+    parsed = options_from_signature(text)
+    if isinstance(parsed, dict):
+        return ppe_type_option_signature(parsed)
+    return text
+
+
 def normalize_iterative_combo_overrides(value: Any) -> dict[str, float]:
     if not isinstance(value, dict):
         return {}
@@ -387,7 +400,7 @@ def normalize_iterative_combo_overrides(value: Any) -> dict[str, float]:
     for raw_signature, raw_multiplier in value.items():
         if not isinstance(raw_signature, str):
             continue
-        signature = raw_signature.strip().lower()
+        signature = normalize_combo_signature(raw_signature)
         if not signature:
             continue
         try:
@@ -437,7 +450,7 @@ def normalize_ppe_combo_label_overrides(value: Any) -> dict[str, dict[str, str]]
     for raw_signature, raw_entry in value.items():
         if not isinstance(raw_signature, str):
             continue
-        signature = raw_signature.strip().lower()
+        signature = normalize_combo_signature(raw_signature)
         if not signature:
             continue
         entry = raw_entry if isinstance(raw_entry, dict) else {}
@@ -492,7 +505,7 @@ def _ppe_settings_dict(value: Any) -> dict[str, Any]:
 def _combo_display_override(signature: str, ppe_settings: Any, *, compact: bool) -> str | None:
     settings = _ppe_settings_dict(ppe_settings)
     overrides = normalize_ppe_combo_label_overrides(settings.get("combo_label_overrides"))
-    entry = overrides.get(str(signature or "").strip().lower())
+    entry = overrides.get(normalize_combo_signature(signature))
     if not isinstance(entry, dict):
         return None
     key = "short" if compact else "name"
@@ -645,6 +658,22 @@ def get_ppe_type_multiplier_details_from_options(
     signature = ppe_type_option_signature(normalized_options)
     legacy_type = resolve_legacy_ppe_type_from_options(normalized_options, current_type=current_type)
 
+    normalized_overrides = normalize_iterative_combo_overrides(settings.get("iterative_combo_overrides"))
+    override_multiplier = normalized_overrides.get(signature)
+    if override_multiplier is not None:
+        base_breakdown = iterative_multiplier_breakdown(normalized_options, settings.get("iterative_base_multipliers"))
+        return {
+            "multiplier": float(override_multiplier),
+            "source": "override",
+            "signature": signature,
+            "legacy_type": legacy_type,
+            "components": base_breakdown.get("components", []),
+            "component_lines": [
+                "Combo Override Applied (replaces computed/preset stack).",
+                f"Override Multiplier: {_format_multiplier(float(override_multiplier))}",
+            ],
+        }
+
     if legacy_type is not None:
         legacy_multipliers = normalize_ppe_type_multipliers(settings.get("ppe_type_multipliers"))
         multiplier = float(legacy_multipliers.get(legacy_type, DEFAULT_PPE_TYPE_MULTIPLIERS[DEFAULT_PPE_TYPE]))
@@ -657,22 +686,6 @@ def get_ppe_type_multiplier_details_from_options(
             "component_lines": [
                 "Legacy PPE type preset applied (overrides the iterative stack).",
                 f"Preset Multiplier: {_format_multiplier(multiplier)}",
-            ],
-        }
-
-    normalized_overrides = normalize_iterative_combo_overrides(settings.get("iterative_combo_overrides"))
-    override_multiplier = normalized_overrides.get(signature)
-    if override_multiplier is not None:
-        base_breakdown = iterative_multiplier_breakdown(normalized_options, settings.get("iterative_base_multipliers"))
-        return {
-            "multiplier": float(override_multiplier),
-            "source": "override",
-            "signature": signature,
-            "legacy_type": legacy_type,
-            "components": base_breakdown.get("components", []),
-            "component_lines": [
-                "Combo Override Applied (replaces computed stack).",
-                f"Override Multiplier: {_format_multiplier(float(override_multiplier))}",
             ],
         }
 

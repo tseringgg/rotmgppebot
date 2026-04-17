@@ -268,14 +268,21 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
 
     @discord.ui.button(label="Edit Iterative Base Multipliers", style=discord.ButtonStyle.success, row=2)
     async def edit_iterative_base(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        self.character_settings = await load_character_settings_for_menu(interaction)
-        await interaction.response.send_modal(
-            EditIterativeBaseMultipliersModal(
-                owner_id=self.owner_id,
-                character_settings=self.character_settings,
-                source_message=interaction.message,
+        try:
+            self.character_settings = await load_character_settings_for_menu(interaction)
+            await interaction.response.send_modal(
+                EditIterativeBaseMultipliersModal(
+                    owner_id=self.owner_id,
+                    character_settings=self.character_settings,
+                    source_message=interaction.message,
+                )
             )
-        )
+        except Exception as exc:
+            error_text = f"ERROR: Could not open the iterative base multiplier editor: {exc}"
+            if interaction.response.is_done():
+                await interaction.followup.send(error_text, ephemeral=True)
+            else:
+                await interaction.response.send_message(error_text, ephemeral=True)
 
     @discord.ui.button(label="Backfill Legacy Fields", style=discord.ButtonStyle.danger, row=3)
     async def backfill_legacy_fields(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
