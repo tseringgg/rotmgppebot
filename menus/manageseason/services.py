@@ -19,6 +19,8 @@ from utils.ppe_types import (
     normalize_ppe_type_multipliers,
     normalize_ppe_type_options,
     normalize_ppe_type_short_label_overrides,
+    DEFAULT_PPE_TYPE_MULTIPLIERS,
+    DEFAULT_ITERATIVE_OPTION_MULTIPLIERS,
 )
 from utils.bot_cost_tracking import (
     ensure_guild_cost_log_file,
@@ -50,6 +52,7 @@ from utils.points_service import recompute_ppe_points
 from utils.sniffer_helpers.realmshark_pending_store import clear_all_pending_for_guild
 from utils.contest_leaderboards import normalize_contest_leaderboard_id
 from utils.sniffer_helpers.realmshark_cleanup import clear_ppe_character_links
+from utils.group_ppes import clear_all_group_ppes
 from utils.settings.channel_settings import (
     clear_item_suggestions_enabled_channels,
     set_item_suggestions_mode_enabled,
@@ -1057,6 +1060,9 @@ def _clear_team_quest_mode_state(config: dict[str, Any], *, disable_team_mode: b
 
 async def reset_all_ppe_characters(interaction: discord.Interaction) -> ResetPPECharactersSummary:
     """Reset all character records while preserving seasonal and quest progress."""
+    if interaction.guild is None:
+        raise ValueError("This action can only be used in a server.")
+    
     records = await load_player_records(interaction)
 
     players_updated = 0
@@ -1079,6 +1085,10 @@ async def reset_all_ppe_characters(interaction: discord.Interaction) -> ResetPPE
             players_updated += 1
 
     await save_player_records(interaction, records)
+    
+    # Clear all duo partner linkages
+    await clear_all_group_ppes(interaction.guild.id)
+    
     return ResetPPECharactersSummary(
         players_updated=players_updated,
         ppes_cleared=ppes_cleared,
@@ -1317,6 +1327,14 @@ async def reset_admin_tunable_settings_to_defaults(interaction: discord.Interact
     reset_contest_settings["join_contest_message_id"] = preserved_join_message_id
     reset_contest_settings["join_contest_emoji"] = preserved_join_emoji
     reset_config["contest_settings"] = reset_contest_settings
+
+    # Reset PPE type configurations to defaults
+    reset_ppe_settings = dict(reset_config.get("ppe_settings", {}))
+    reset_ppe_settings["ppe_type_multipliers"] = normalize_ppe_type_multipliers(DEFAULT_PPE_TYPE_MULTIPLIERS)
+    reset_ppe_settings["iterative_base_multipliers"] = normalize_iterative_combo_overrides(DEFAULT_ITERATIVE_OPTION_MULTIPLIERS)
+    reset_ppe_settings["iterative_combo_overrides"] = normalize_iterative_combo_overrides({})
+    reset_ppe_settings["iterative_cleared_signatures"] = normalize_cleared_combo_signatures([])
+    reset_config["ppe_settings"] = reset_ppe_settings
 
     await save_guild_config(interaction, reset_config)
 

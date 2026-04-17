@@ -19,6 +19,7 @@ from utils.ppe_types import (
     ppe_type_option_signature,
     ppe_type_short_label,
 )
+from utils.group_ppes import get_duo_partner
 from menus.manageseason.services import (
     backfill_legacy_ppe_type_options,
     clear_all_ppe_type_overrides,
@@ -1061,6 +1062,13 @@ class ComboShortcutModal(discord.ui.Modal, title="Edit Combo Multiplier"):
             await interaction.response.send_message("Please enter a short label, signature, or N/A.", ephemeral=True)
             return
 
+        # Load duo partner from group_ppes
+        duo_partner_id = None
+        try:
+            duo_partner_id = await get_duo_partner(interaction, self.owner_id)
+        except Exception:
+            pass  # If loading fails, just continue without the duo partner
+
         if raw_value.casefold() != "n/a":
             resolved = find_combo_label_override(raw_value, self.character_settings)
             resolved_type = find_ppe_type_by_label(raw_value, self.character_settings)
@@ -1088,6 +1096,10 @@ class ComboShortcutModal(discord.ui.Modal, title="Edit Combo Multiplier"):
                 signature = ppe_type_option_signature(options)
                 display_name = ""
                 short_name = ""
+
+            # Include duo partner in preset options if available
+            if isinstance(preset_options, dict) and duo_partner_id:
+                preset_options["duo_partner_id"] = duo_partner_id
 
             from menus.manageseason.submenus.points.views import ManageComboMultiplierWizardView
 
@@ -1118,6 +1130,11 @@ class ComboShortcutModal(discord.ui.Modal, title="Edit Combo Multiplier"):
             character_settings=self.character_settings,
             source_message=self.source_message,
         )
+        
+        # Set duo partner from group_ppes if available
+        if duo_partner_id:
+            wizard.state["duo_partner_id"] = duo_partner_id
+        
         if self.source_message is None:
             await interaction.response.send_message(embed=wizard.current_embed(), view=wizard, ephemeral=True)
             return

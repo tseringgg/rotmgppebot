@@ -28,6 +28,7 @@ from menus.manageseason.modals import (
 )
 from menus.manageseason.services import load_character_settings_for_menu, load_points_settings_for_menu
 from menus.manageseason.services import update_duplicate_match_mode, update_top_point_mode
+from utils.group_ppes import set_duo_partner, get_duo_partner
 from utils.ppe_types import (
     build_ppe_type_options,
     get_ppe_type_multiplier_details_from_options,
@@ -455,7 +456,19 @@ class _ComboDuoPartnerIdModal(discord.ui.Modal, title="Set Duo Partner Discord I
             await interaction.response.send_message("Please enter a valid numeric Discord ID.", ephemeral=True)
             return
 
-        self.wizard.state["duo_partner_id"] = int(partner_text)
+        partner_id = int(partner_text)
+        self.wizard.state["duo_partner_id"] = partner_id
+        
+        # Save the duo partnership to the group_ppes file
+        try:
+            await set_duo_partner(interaction, self.wizard.owner_id, partner_id)
+        except Exception as exc:
+            await interaction.response.send_message(
+                f"ERROR: Could not save duo partnership: {exc}",
+                ephemeral=True,
+            )
+            return
+        
         await interaction.response.send_message(
             f"Saved duo partner as <@{partner_text}>. Click Continue in the combo editor to finish.",
             ephemeral=True,
