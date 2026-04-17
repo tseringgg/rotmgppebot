@@ -5,10 +5,14 @@ from __future__ import annotations
 import discord
 
 from utils.ppe_types import (
+    PPE_MIN_RARITY_ORDER,
+    find_ppe_type_by_label,
     find_combo_label_override,
     infer_legacy_ppe_type_from_options,
+    legacy_ppe_type_to_options,
     normalize_ppe_type_multipliers,
     options_from_signature,
+    ppe_type_option_signature,
     ppe_type_label,
     ppe_type_short_label,
 )
@@ -61,6 +65,29 @@ def _parse_minimum_total(raw_value: str) -> tuple[float | None, bool]:
         raise ValueError(
             "ERROR: `minimum_total` must be a number, or use `none` to clear the minimum-total floor."
         ) from exc
+
+
+def _parse_minimum_rarity_multipliers(raw_value: str) -> dict[str, float] | None:
+    text = str(raw_value or "").strip()
+    if not text:
+        return None
+
+    values = [segment.strip() for segment in text.split(",") if segment.strip()]
+    if len(values) != len(PPE_MIN_RARITY_ORDER):
+        raise ValueError(
+            "ERROR: `minimum_rarity_multipliers` must contain 5 comma-separated numbers in this order: common, uncommon, rare, legendary, divine."
+        )
+
+    parsed_values: list[float] = []
+    for value_text in values:
+        try:
+            parsed_values.append(float(value_text))
+        except ValueError as exc:
+            raise ValueError(
+                "ERROR: `minimum_rarity_multipliers` must contain only numbers separated by commas."
+            ) from exc
+
+    return dict(zip(PPE_MIN_RARITY_ORDER, parsed_values))
 
 
 async def _confirm_points_update(
@@ -837,6 +864,12 @@ class EditPpeTypeLabelModal(discord.ui.Modal):
 class EditIterativeBaseMultipliersModal(discord.ui.Modal, title="Edit Iterative Base Multipliers"):
     no_pet = discord.ui.TextInput(label="No Pet Multiplier", placeholder="1.3", required=False, max_length=20)
     no_tiered = discord.ui.TextInput(label="No Tiered Multiplier", placeholder="1.3", required=False, max_length=20)
+    minimum_rarity_multipliers = discord.ui.TextInput(
+        label="Minimum Rarity Multipliers (common, uncommon, rare, legendary, divine)",
+        placeholder="1.00, 1.10, 1.20, 1.40, 1.50",
+        required=False,
+        max_length=120,
+    )
     shiny_only = discord.ui.TextInput(label="Shiny Only Multiplier", placeholder="1.5", required=False, max_length=20)
     enforce_shiny = discord.ui.TextInput(label="Enforce Shiny Rarity Multiplier", placeholder="1.0", required=False, max_length=20)
     duo = discord.ui.TextInput(label="Duo Multiplier", placeholder="0.6", required=False, max_length=20)
@@ -848,6 +881,11 @@ class EditIterativeBaseMultipliersModal(discord.ui.Modal, title="Edit Iterative 
         base = character_settings.get("iterative_base_multipliers", {}) if isinstance(character_settings.get("iterative_base_multipliers", {}), dict) else {}
         self.no_pet.default = f"{float(base.get('no_pet', 1.3)):.2f}"
         self.no_tiered.default = f"{float(base.get('no_tiered', 1.3)):.2f}"
+        rarity = base.get("minimum_rarity", {}) if isinstance(base.get("minimum_rarity"), dict) else {}
+        self.minimum_rarity_multipliers.default = ", ".join(
+            f"{float(rarity.get(name, default)):.2f}"
+            for name, default in zip(PPE_MIN_RARITY_ORDER, [1.0, 1.1, 1.2, 1.4, 1.5])
+        )
         self.shiny_only.default = f"{float(base.get('shiny_only', 1.5)):.2f}"
         self.enforce_shiny.default = f"{float(base.get('enforce_shiny_rarity', 1.0)):.2f}"
         self.duo.default = f"{float(base.get('duo', 0.6)):.2f}"
@@ -860,6 +898,7 @@ class EditIterativeBaseMultipliersModal(discord.ui.Modal, title="Edit Iterative 
         try:
             no_pet = _parse_optional_float(self.no_pet.value, field_name="no_pet")
             no_tiered = _parse_optional_float(self.no_tiered.value, field_name="no_tiered")
+            minimum_rarity_multipliers = _parse_minimum_rarity_multipliers(self.minimum_rarity_multipliers.value)
             shiny_only = _parse_optional_float(self.shiny_only.value, field_name="shiny_only")
             enforce_shiny = _parse_optional_float(self.enforce_shiny.value, field_name="enforce_shiny_rarity")
             duo = _parse_optional_float(self.duo.value, field_name="duo")
@@ -874,6 +913,8 @@ class EditIterativeBaseMultipliersModal(discord.ui.Modal, title="Edit Iterative 
             updated["no_pet"] = no_pet
         if no_tiered is not None:
             updated["no_tiered"] = no_tiered
+        if minimum_rarity_multipliers is not None:
+            updated["minimum_rarity"] = minimum_rarity_multipliers
         if shiny_only is not None:
             updated["shiny_only"] = shiny_only
         if enforce_shiny is not None:
@@ -966,8 +1007,8 @@ class EditIterativeComboMultiplierModal(discord.ui.Modal, title="Edit Combo Mult
 
 class ComboShortcutModal(discord.ui.Modal, title="Edit Combo Multiplier"):
     shortcut = discord.ui.TextInput(
-        label="Short Label or Signature",
-        placeholder="Type N/A to build a new combo",
+        label="Type Label, Short Label, or Signature",
+        placeholder="Enter a PPE type label, combo label, or signature. Type N/A to build a new combo.",
         required=True,
         max_length=220,
     )
@@ -990,18 +1031,31 @@ class ComboShortcutModal(discord.ui.Modal, title="Edit Combo Multiplier"):
 
         if raw_value.casefold() != "n/a":
             resolved = find_combo_label_override(raw_value, self.character_settings)
+            resolved_type = find_ppe_type_by_label(raw_value, self.character_settings)
             options = options_from_signature(raw_value)
-            if resolved is None and options is None:
+            if resolved is None and resolved_type is None and options is None:
                 await interaction.response.send_message(
-                    "No matching combo short label or signature was found. Use N/A to build a new combo from scratch.",
+                    "No matching combo, PPE type label, short label, or signature was found. Use N/A to build a new combo from scratch.",
                     ephemeral=True,
                 )
                 return
 
-            signature = resolved[0] if resolved is not None else str(raw_value).strip().lower()
-            label_entry = resolved[1] if resolved is not None else {}
-            display_name = str(label_entry.get("name", "")).strip()
-            short_name = str(label_entry.get("short", "")).strip()
+            if resolved is not None:
+                signature = resolved[0]
+                label_entry = resolved[1]
+                display_name = str(label_entry.get("name", "")).strip()
+                short_name = str(label_entry.get("short", "")).strip()
+                preset_options = options_from_signature(signature)
+            elif resolved_type is not None:
+                preset_options = legacy_ppe_type_to_options(resolved_type)
+                signature = ppe_type_option_signature(preset_options)
+                display_name = ppe_type_label(resolved_type, ppe_settings=self.character_settings)
+                short_name = ppe_type_short_label(resolved_type, ppe_settings=self.character_settings)
+            else:
+                preset_options = options
+                signature = ppe_type_option_signature(options)
+                display_name = ""
+                short_name = ""
 
             from menus.manageseason.submenus.points.views import ManageComboMultiplierWizardView
 
@@ -1010,7 +1064,7 @@ class ComboShortcutModal(discord.ui.Modal, title="Edit Combo Multiplier"):
                 character_settings=self.character_settings,
                 source_message=self.source_message,
                 preset_signature=signature,
-                preset_options=options,
+                preset_options=preset_options,
                 preset_name=display_name,
                 preset_short=short_name,
             )
@@ -1058,9 +1112,11 @@ class ComboOverrideSettingsModal(discord.ui.Modal):
         signature: str,
         character_settings: dict | None = None,
         source_message: discord.Message | None,
+        preset_name: str = "",
+        preset_short: str = "",
     ) -> None:
         short_label = str(signature or "combo").strip()
-        super().__init__(title=f"Edit Combo Multiplier - {short_label}", timeout=300)
+        super().__init__(title=f"Set Combo Label & Multiplier - {short_label}", timeout=300)
         self.owner_id = owner_id
         self.signature = str(signature or "").strip().lower()
         self.source_message = source_message
@@ -1081,8 +1137,10 @@ class ComboOverrideSettingsModal(discord.ui.Modal):
             legacy_multipliers = normalize_ppe_type_multipliers(settings.get("ppe_type_multipliers"))
             fallback_multiplier = float(legacy_multipliers.get(legacy_type, 1.0))
 
-        self.display_name.default = str(label_entry.get("name", "")).strip() or fallback_full
-        self.short_name.default = str(label_entry.get("short", "")).strip() or fallback_short
+        preset_name = str(preset_name or "").strip()
+        preset_short = str(preset_short or "").strip()
+        self.display_name.default = preset_name or str(label_entry.get("name", "")).strip() or fallback_full
+        self.short_name.default = preset_short or str(label_entry.get("short", "")).strip() or fallback_short
         if self.signature in multiplier_overrides:
             self.multiplier.default = f"{float(multiplier_overrides[self.signature]):.2f}"
         elif fallback_multiplier is not None:

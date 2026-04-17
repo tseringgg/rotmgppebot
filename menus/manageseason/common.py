@@ -760,9 +760,9 @@ def build_ppe_type_points_embed(character_settings: dict) -> discord.Embed:
     embed.add_field(
         name="Button Guide",
         value=(
-            "• Edit Selected PPE Type Multiplier: updates the selected legacy type's fixed multiplier.\n"
+            "• Edit Combo Multiplier: searches current PPE type labels, short labels, combo labels, or signatures.\n"
             "• Edit Iterative Base Multipliers: edits per-rule factors (No Pet, No Tiered, rarity, shiny, duo).\n"
-            "• Edit Combo Multiplier: sets the summary label and direct multiplier for one exact option signature.\n"
+            "• Set Combo Label & Multiplier: saves the combo label overrides and multiplier for the current signature.\n"
             "• Backfill Legacy Fields: migrates older data fields to newer type/option storage."
         ),
         inline=False,

@@ -463,6 +463,21 @@ def find_combo_label_override(value: Any, ppe_settings: Any = None) -> tuple[str
     return None
 
 
+def find_ppe_type_by_label(value: Any, ppe_settings: Any = None) -> str | None:
+    settings = _ppe_settings_dict(ppe_settings)
+    needle = str(value or "").strip().casefold()
+    if not needle:
+        return None
+
+    for ppe_type in all_ppe_types():
+        if needle == ppe_type_label_with_overrides(ppe_type, settings).strip().casefold():
+            return ppe_type
+        if needle == ppe_type_short_label_with_overrides(ppe_type, settings).strip().casefold():
+            return ppe_type
+
+    return None
+
+
 def _ppe_settings_dict(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 

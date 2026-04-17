@@ -18,26 +18,21 @@ from menus.manageseason.modals import (
     EditPenaltyBaseRatesModal,
     EditClassPointSettingsModal,
     EditIterativeBaseMultipliersModal,
-    EditIterativeComboMultiplierModal,
     ComboOverrideSettingsModal,
     ComboShortcutModal,
-    EditPpeComboLabelModal,
     EditDuplicateItemPointsModal,
     EditGlobalPointSettingsModal,
     EditPetModifierModal,
-    EditPpeTypeMultiplierModal,
     EditRarityModifiersModal,
 )
 from menus.manageseason.services import load_character_settings_for_menu, load_points_settings_for_menu
 from menus.manageseason.services import update_duplicate_match_mode, update_top_point_mode
 from utils.ppe_types import (
-    all_ppe_types,
     build_ppe_type_options,
     get_ppe_type_multiplier_details_from_options,
     infer_legacy_ppe_type_from_options,
     normalize_ppe_type_multipliers,
     options_from_signature,
-    ppe_type_compact_summary,
     ppe_type_label,
     ppe_type_option_signature,
     ppe_type_short_label,
@@ -250,80 +245,16 @@ class ManageClassPointSettingsView(OwnerBoundView):
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
 
-class _PpeTypeSelect(discord.ui.Select):
-    def __init__(self, *, selected_type: str, character_settings: dict | None = None) -> None:
-        options = [
-            discord.SelectOption(
-                label=ppe_type_label(ppe_type, ppe_settings=character_settings),
-                value=ppe_type,
-                default=(ppe_type == selected_type),
-            )
-            for ppe_type in all_ppe_types()
-        ]
-        super().__init__(
-            placeholder="Select a PPE type to edit its multiplier",
-            min_values=1,
-            max_values=1,
-            options=options,
-            row=0,
-        )
-
-    async def callback(self, interaction: discord.Interaction) -> None:
-        view = self.view
-        if not isinstance(view, ManagePpeTypePointSettingsView):
-            await interaction.response.send_message("Invalid selector state.", ephemeral=True)
-            return
-        if interaction.user.id != view.owner_id:
-            await interaction.response.send_message("This selector belongs to another user.", ephemeral=True)
-            return
-
-        view.selected_type = self.values[0]
-        for option in self.options:
-            option.default = option.value == view.selected_type
-        await interaction.response.edit_message(embed=view.current_embed(), view=view)
-
-
 class ManagePpeTypePointSettingsView(OwnerBoundView):
-    def __init__(self, *, owner_id: int, character_settings: dict, selected_type: str | None = None) -> None:
+    def __init__(self, *, owner_id: int, character_settings: dict) -> None:
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.owner_id = owner_id
         self.character_settings = character_settings
-        all_types = all_ppe_types()
-        self.selected_type = selected_type if selected_type in all_types else all_types[0]
-        self.add_item(_PpeTypeSelect(selected_type=self.selected_type, character_settings=self.character_settings))
 
     def current_embed(self) -> discord.Embed:
         return build_ppe_type_points_embed(self.character_settings)
 
-    @discord.ui.button(label="Edit Selected PPE Type Multiplier", style=discord.ButtonStyle.success, row=1)
-    async def edit_selected_type(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        self.character_settings = await load_character_settings_for_menu(interaction)
-        multipliers = (
-            self.character_settings.get("ppe_type_multipliers", {})
-            if isinstance(self.character_settings.get("ppe_type_multipliers"), dict)
-            else {}
-        )
-        await interaction.response.send_modal(
-            EditPpeTypeMultiplierModal(
-                owner_id=self.owner_id,
-                ppe_type=self.selected_type,
-                current_value=float(multipliers.get(self.selected_type, 1.0)),
-                source_message=interaction.message,
-            )
-        )
-
-    @discord.ui.button(label="Edit Iterative Base Multipliers", style=discord.ButtonStyle.success, row=1)
-    async def edit_iterative_base(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        self.character_settings = await load_character_settings_for_menu(interaction)
-        await interaction.response.send_modal(
-            EditIterativeBaseMultipliersModal(
-                owner_id=self.owner_id,
-                character_settings=self.character_settings,
-                source_message=interaction.message,
-            )
-        )
-
-    @discord.ui.button(label="Edit Combo Multiplier", style=discord.ButtonStyle.success, row=2)
+    @discord.ui.button(label="Edit Combo Multiplier", style=discord.ButtonStyle.success, row=1)
     async def edit_combo_override(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.character_settings = await load_character_settings_for_menu(interaction)
         await interaction.response.send_modal(
@@ -331,6 +262,17 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
                 owner_id=self.owner_id,
                 source_message=interaction.message,
                 character_settings=self.character_settings,
+            )
+        )
+
+    @discord.ui.button(label="Edit Iterative Base Multipliers", style=discord.ButtonStyle.success, row=2)
+    async def edit_iterative_base(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.character_settings = await load_character_settings_for_menu(interaction)
+        await interaction.response.send_modal(
+            EditIterativeBaseMultipliersModal(
+                owner_id=self.owner_id,
+                character_settings=self.character_settings,
+                source_message=interaction.message,
             )
         )
 
@@ -399,7 +341,7 @@ class _ComboWizardBackButton(discord.ui.Button):
 
 class _ComboWizardOpenSettingsButton(discord.ui.Button):
     def __init__(self) -> None:
-        super().__init__(label="Set Type Label & Multiplier", style=discord.ButtonStyle.success, row=0)
+        super().__init__(label="Set Combo Label & Multiplier", style=discord.ButtonStyle.success, row=0)
 
     async def callback(self, interaction: discord.Interaction) -> None:
         view = self.view
@@ -416,6 +358,8 @@ class _ComboWizardOpenSettingsButton(discord.ui.Button):
                 signature=view.signature,
                 character_settings=view.character_settings,
                 source_message=view.source_message,
+                preset_name=view.combo_name,
+                preset_short=view.combo_short,
             )
         )
 
