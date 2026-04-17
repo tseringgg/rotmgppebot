@@ -25,6 +25,7 @@ from utils.points_service import (
     recompute_ppe_points,
 )
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
+from utils.wizard_components import MinimumRarityContinueButton, MinimumRaritySelect
 
 
 async def create_new_ppe_for_user(
@@ -422,36 +423,6 @@ class DuoPartnerIdModal(discord.ui.Modal, title="Set Duo Partner Discord ID"):
         )
 
 
-class _RaritySelect(discord.ui.Select):
-    def __init__(self, *, selected: str) -> None:
-        options = [
-            discord.SelectOption(label="Common", value="common", default=selected == "common"),
-            discord.SelectOption(label="Uncommon", value="uncommon", default=selected == "uncommon"),
-            discord.SelectOption(label="Rare", value="rare", default=selected == "rare"),
-            discord.SelectOption(label="Legendary", value="legendary", default=selected == "legendary"),
-            discord.SelectOption(label="Divine", value="divine", default=selected == "divine"),
-        ]
-        super().__init__(
-            placeholder="Select minimum rarity",
-            min_values=1,
-            max_values=1,
-            options=options,
-            row=0,
-        )
-
-    async def callback(self, interaction: discord.Interaction) -> None:
-        view = self.view
-        if not isinstance(view, NewPpeIterativeWizardView):
-            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
-            return
-        if interaction.user.id != view.owner_id:
-            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
-            return
-
-        view.state["minimum_rarity"] = self.values[0]
-        await view.advance(interaction)
-
-
 class NewPpeIterativeWizardView(discord.ui.View):
     def __init__(
         self,
@@ -586,6 +557,13 @@ class NewPpeIterativeWizardView(discord.ui.View):
             if not value:
                 self.state["duo_partner_id"] = None
 
+    async def _on_minimum_rarity_selected(self, interaction: discord.Interaction, rarity: str) -> None:
+        self.state["minimum_rarity"] = rarity
+        await interaction.response.edit_message(content=self.prompt_text(), view=self)
+
+    async def _on_minimum_rarity_continue(self, interaction: discord.Interaction) -> None:
+        await self.advance(interaction)
+
     def _next_step(self) -> str:
         if self.step == "regular":
             return "duo" if bool(self.state.get("regular")) else "uses_pet"
@@ -629,7 +607,21 @@ class NewPpeIterativeWizardView(discord.ui.View):
             self.add_item(_WizardCancelButton())
             return
         if self.step == "minimum_rarity":
-            self.add_item(_RaritySelect(selected=str(self.state.get("minimum_rarity", "common"))))
+            self.add_item(
+                MinimumRaritySelect(
+                    selected=str(self.state.get("minimum_rarity", "common")),
+                    owner_id=self.owner_id,
+                    view_type=NewPpeIterativeWizardView,
+                    on_selected=self._on_minimum_rarity_selected,
+                )
+            )
+            self.add_item(
+                MinimumRarityContinueButton(
+                    owner_id=self.owner_id,
+                    view_type=NewPpeIterativeWizardView,
+                    on_continue=self._on_minimum_rarity_continue,
+                )
+            )
             self.add_item(_WizardBackButton(disabled=not bool(self.history)))
             self.add_item(_WizardCancelButton())
             return

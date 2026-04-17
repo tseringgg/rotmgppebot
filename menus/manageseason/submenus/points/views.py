@@ -37,6 +37,7 @@ from utils.ppe_types import (
     ppe_type_option_signature,
     ppe_type_short_label,
 )
+from utils.wizard_components import MinimumRarityContinueButton, MinimumRaritySelect
 from menus.menu_utils import OwnerBoundView
 
 
@@ -337,40 +338,6 @@ class _ComboWizardNoButton(discord.ui.Button):
             await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
             return
         view._set_yes_no(False)
-        await view.advance(interaction)
-
-
-class _RaritySelect(discord.ui.Select):
-    def __init__(self, *, selected: str) -> None:
-        valid_selected = str(selected or "common").strip().lower()
-        if valid_selected not in {"common", "uncommon", "rare", "legendary", "divine"}:
-            valid_selected = "common"
-
-        options = [
-            discord.SelectOption(label="Common", value="common", default=valid_selected == "common"),
-            discord.SelectOption(label="Uncommon", value="uncommon", default=valid_selected == "uncommon"),
-            discord.SelectOption(label="Rare", value="rare", default=valid_selected == "rare"),
-            discord.SelectOption(label="Legendary", value="legendary", default=valid_selected == "legendary"),
-            discord.SelectOption(label="Divine", value="divine", default=valid_selected == "divine"),
-        ]
-        super().__init__(
-            placeholder="Select minimum rarity",
-            min_values=1,
-            max_values=1,
-            options=options,
-            row=0,
-        )
-
-    async def callback(self, interaction: discord.Interaction) -> None:
-        view = self.view
-        if not isinstance(view, ManageComboMultiplierWizardView):
-            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
-            return
-        if interaction.user.id != view.owner_id:
-            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
-            return
-
-        view.state["minimum_rarity"] = self.values[0]
         await view.advance(interaction)
 
 
@@ -730,6 +697,13 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
             if not value:
                 self.state["duo_partner_id"] = None
 
+    async def _on_minimum_rarity_selected(self, interaction: discord.Interaction, rarity: str) -> None:
+        self.state["minimum_rarity"] = rarity
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+    async def _on_minimum_rarity_continue(self, interaction: discord.Interaction) -> None:
+        await self.advance(interaction)
+
     def _next_step(self) -> str:
         if self.step == "regular":
             return "duo" if bool(self.state.get("regular")) else "uses_pet"
@@ -773,7 +747,21 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
             self.add_item(_ComboWizardCancelButton())
             return
         if self.step == "minimum_rarity":
-            self.add_item(_RaritySelect(selected=str(self.state.get("minimum_rarity", "common"))))
+            self.add_item(
+                MinimumRaritySelect(
+                    selected=str(self.state.get("minimum_rarity", "common")),
+                    owner_id=self.owner_id,
+                    view_type=ManageComboMultiplierWizardView,
+                    on_selected=self._on_minimum_rarity_selected,
+                )
+            )
+            self.add_item(
+                MinimumRarityContinueButton(
+                    owner_id=self.owner_id,
+                    view_type=ManageComboMultiplierWizardView,
+                    on_continue=self._on_minimum_rarity_continue,
+                )
+            )
             self.add_item(_ComboWizardBackButton(disabled=not bool(self.history)))
             self.add_item(_ComboWizardCancelButton())
             return

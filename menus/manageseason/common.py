@@ -765,7 +765,6 @@ def build_ppe_type_points_embed(character_settings: dict) -> discord.Embed:
     lines = _build_ppe_type_multiplier_lines(ppe_settings=character_settings)
     iterative_base_lines = _build_iterative_base_lines(character_settings)
     combo_multiplier_lines = _build_combo_multiplier_override_lines(character_settings)
-    combo_lines = _build_combo_label_override_lines(character_settings)
     embed = discord.Embed(
         title="PPE Type Point Multipliers",
         description="Configure how PPE type rules translate into final point multipliers and labels.",
@@ -776,10 +775,6 @@ def build_ppe_type_points_embed(character_settings: dict) -> discord.Embed:
         current_value += "\n\nCombo Multiplier Overrides:\n" + "\n".join(combo_multiplier_lines[:10])
         if len(combo_multiplier_lines) > 10:
             current_value += f"\n... and {len(combo_multiplier_lines) - 10} more"
-    if combo_lines:
-        current_value += "\n\nCombo Label Overrides:\n" + "\n".join(combo_lines[:10])
-        if len(combo_lines) > 10:
-            current_value += f"\n... and {len(combo_lines) - 10} more"
     embed.add_field(name="Current PPE Types", value=current_value, inline=False)
     embed.add_field(name="Iterative Base Multipliers", value="\n".join(iterative_base_lines), inline=False)
     embed.add_field(
