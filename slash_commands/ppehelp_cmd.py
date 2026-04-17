@@ -3,6 +3,7 @@
 import discord
 
 from menus.menu_utils.base_views import OwnerBoundView
+from utils.guild_config import load_guild_config
 from utils.ppe_types import (
     PPE_TYPE_DIVINE_ONLY,
     PPE_TYPE_DIVINE_SHINY,
@@ -18,6 +19,7 @@ from utils.ppe_types import (
     PPE_TYPE_SHINY_NO_PET,
     PPE_TYPE_UT_ONLY,
     PPE_TYPE_UT_NO_PET,
+    normalize_iterative_option_multipliers,
     ppe_type_short_label,
 )
 
@@ -62,9 +64,10 @@ class HelpSectionButton(discord.ui.Button):
 
 
 class PPEHelpView(OwnerBoundView):
-    def __init__(self, owner_id: int):
+    def __init__(self, owner_id: int, *, ppe_settings: dict | None = None):
         super().__init__(owner_id=owner_id, timeout=600)
         self.current_section = "home"
+        self.ppe_settings = ppe_settings if isinstance(ppe_settings, dict) else {}
 
         for index, section_key in enumerate(SECTIONS):
             row = 0 if index < 5 else 1
@@ -105,7 +108,7 @@ class PPEHelpView(OwnerBoundView):
     async def show_section(self, interaction: discord.Interaction, section_key: str) -> None:
         self.current_section = section_key
         self._sync_button_styles()
-        embed = build_help_embed(section_key)
+        embed = build_help_embed(section_key, ppe_settings=self.ppe_settings)
         await interaction.response.edit_message(embed=embed, view=self)
 
 
@@ -117,7 +120,25 @@ def _common_footer() -> str:
     return "Use /ppehelp anytime."
 
 
-def build_help_embed(section_key: str) -> discord.Embed:
+def _build_iterative_defaults_lines(ppe_settings: dict | None) -> list[str]:
+    base = (
+        ppe_settings.get("iterative_base_multipliers", {})
+        if isinstance(ppe_settings, dict) and isinstance(ppe_settings.get("iterative_base_multipliers"), dict)
+        else {}
+    )
+    multipliers = normalize_iterative_option_multipliers(base)
+    rarity = multipliers.get("minimum_rarity", {}) if isinstance(multipliers.get("minimum_rarity"), dict) else {}
+    return [
+        f"- No Pet: x{float(multipliers.get('no_pet', 1.3)):.2f}",
+        f"- No Tiered: x{float(multipliers.get('no_tiered', 1.3)):.2f}",
+        f"- Minimum rarity: Common x{float(rarity.get('common', 1.0)):.2f}, Uncommon x{float(rarity.get('uncommon', 1.1)):.2f}, Rare x{float(rarity.get('rare', 1.2)):.2f}, Legendary x{float(rarity.get('legendary', 1.4)):.2f}, Divine x{float(rarity.get('divine', 1.5)):.2f}",
+        f"- Shiny Only: x{float(multipliers.get('shiny_only', 1.5)):.2f}",
+        f"- Enforce Shiny Rarity: x{float(multipliers.get('enforce_shiny_rarity', 1.0)):.2f}",
+        f"- Duo: x{float(multipliers.get('duo', 0.6)):.2f}",
+    ]
+
+
+def build_help_embed(section_key: str, *, ppe_settings: dict | None = None) -> discord.Embed:
     if section_key == "home":
         embed = discord.Embed(
             title="PPE Bot Help - Home",
@@ -171,13 +192,10 @@ def build_help_embed(section_key: str) -> discord.Embed:
         )
         lines = [
             "- Regular PPE: skips most option questions and keeps baseline type rules.",
-            "- No Pet: default multiplier x1.3.",
-            "- No Tiered: default multiplier x1.3.",
-            "- Minimum rarity: Common x1.0, Uncommon x1.1, Rare x1.2, Legendary x1.4, Divine x1.5.",
-            "- Shiny only: default multiplier x1.5.",
-            "- Enforce rarity on shiny: if enabled with high rarity, extra stacking can apply.",
-            "- Duo: default multiplier x0.6 and requires your partner Discord ID.",
         ]
+        lines.extend(_build_iterative_defaults_lines(ppe_settings))
+        lines.append("- Enforce rarity on shiny: if enabled with high rarity, extra stacking can apply.")
+        lines.append("- Duo: uses the configured duo multiplier and requires your partner Discord ID.")
         embed.add_field(name="Option Multipliers (Defaults)", value="\n".join(lines), inline=False)
         embed.add_field(
             name="Shorthand Tokens",
@@ -408,6 +426,8 @@ def build_help_embed(section_key: str) -> discord.Embed:
 
 
 async def command(interaction: discord.Interaction):
-    view = PPEHelpView(owner_id=interaction.user.id)
-    embed = build_help_embed("home")
+    guild_config = await load_guild_config(interaction)
+    ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config.get("ppe_settings"), dict) else {}
+    view = PPEHelpView(owner_id=interaction.user.id, ppe_settings=ppe_settings)
+    embed = build_help_embed("home", ppe_settings=ppe_settings)
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)

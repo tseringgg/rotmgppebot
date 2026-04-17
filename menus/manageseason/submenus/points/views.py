@@ -19,6 +19,8 @@ from menus.manageseason.modals import (
     EditClassPointSettingsModal,
     EditIterativeBaseMultipliersModal,
     EditIterativeComboMultiplierModal,
+    ComboOverrideSettingsModal,
+    ComboShortcutModal,
     EditPpeComboLabelModal,
     EditDuplicateItemPointsModal,
     EditGlobalPointSettingsModal,
@@ -29,7 +31,18 @@ from menus.manageseason.modals import (
 )
 from menus.manageseason.services import load_character_settings_for_menu, load_points_settings_for_menu
 from menus.manageseason.services import update_duplicate_match_mode, update_top_point_mode
-from utils.ppe_types import all_ppe_types, ppe_type_label
+from utils.ppe_types import (
+    all_ppe_types,
+    build_ppe_type_options,
+    infer_legacy_ppe_type_from_options,
+    iterative_multiplier_breakdown,
+    normalize_ppe_type_multipliers,
+    options_from_signature,
+    ppe_type_compact_summary,
+    ppe_type_label,
+    ppe_type_option_signature,
+    ppe_type_short_label,
+)
 from menus.menu_utils import OwnerBoundView
 
 
@@ -311,11 +324,11 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
             )
         )
 
-    @discord.ui.button(label="Edit Combo Multiplier Override", style=discord.ButtonStyle.success, row=2)
+    @discord.ui.button(label="Edit Combo Multiplier", style=discord.ButtonStyle.success, row=2)
     async def edit_combo_override(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.character_settings = await load_character_settings_for_menu(interaction)
         await interaction.response.send_modal(
-            EditIterativeComboMultiplierModal(
+            ComboShortcutModal(
                 owner_id=self.owner_id,
                 source_message=interaction.message,
                 character_settings=self.character_settings,
@@ -334,17 +347,6 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
             )
         )
 
-    @discord.ui.button(label="Edit Combo Display Label Override", style=discord.ButtonStyle.primary, row=3)
-    async def edit_combo_label_override(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        self.character_settings = await load_character_settings_for_menu(interaction)
-        await interaction.response.send_modal(
-            EditPpeComboLabelModal(
-                owner_id=self.owner_id,
-                source_message=interaction.message,
-                character_settings=self.character_settings,
-            )
-        )
-
     @discord.ui.button(label="Backfill Legacy Fields", style=discord.ButtonStyle.danger, row=3)
     async def backfill_legacy_fields(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await interaction.response.send_modal(
@@ -359,6 +361,461 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
         settings = await load_points_settings_for_menu(interaction)
         view = ManagePointSettingsView(owner_id=self.owner_id, settings=settings)
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+
+class _ComboWizardYesButton(discord.ui.Button):
+    def __init__(self) -> None:
+        super().__init__(label="Yes", style=discord.ButtonStyle.success, row=0)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManageComboMultiplierWizardView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        view._set_yes_no(True)
+        await view.advance(interaction)
+
+
+class _ComboWizardNoButton(discord.ui.Button):
+    def __init__(self) -> None:
+        super().__init__(label="No", style=discord.ButtonStyle.secondary, row=0)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManageComboMultiplierWizardView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        view._set_yes_no(False)
+        await view.advance(interaction)
+
+
+class _ComboWizardBackButton(discord.ui.Button):
+    def __init__(self, *, disabled: bool) -> None:
+        super().__init__(label="Back", style=discord.ButtonStyle.secondary, row=1, disabled=disabled)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManageComboMultiplierWizardView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        await view.go_back(interaction)
+
+
+class _ComboWizardOpenSettingsButton(discord.ui.Button):
+    def __init__(self) -> None:
+        super().__init__(label="Set Type Label & Multiplier", style=discord.ButtonStyle.success, row=0)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManageComboMultiplierWizardView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        await interaction.response.send_modal(
+            ComboOverrideSettingsModal(
+                owner_id=view.owner_id,
+                signature=view.signature,
+                character_settings=view.character_settings,
+                source_message=view.source_message,
+            )
+        )
+
+
+class _ComboWizardSetDuoIdButton(discord.ui.Button):
+    def __init__(self) -> None:
+        super().__init__(label="Set Duo Partner ID", style=discord.ButtonStyle.primary, row=0)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManageComboMultiplierWizardView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        await interaction.response.send_modal(view.duo_partner_modal())
+
+
+class _ComboWizardContinueButton(discord.ui.Button):
+    def __init__(self) -> None:
+        super().__init__(label="Continue", style=discord.ButtonStyle.success, row=0)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManageComboMultiplierWizardView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        if bool(view.state.get("duo_enabled")) and not isinstance(view.state.get("duo_partner_id"), int):
+            await interaction.response.send_message("Please set a valid duo partner Discord ID first.", ephemeral=True)
+            return
+        await view.advance(interaction)
+
+
+class _ComboWizardCancelButton(discord.ui.Button):
+    def __init__(self) -> None:
+        super().__init__(label="Cancel", style=discord.ButtonStyle.danger, row=1)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManageComboMultiplierWizardView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        await interaction.response.edit_message(content="Cancelled combo edit.", embed=None, view=None)
+
+
+class _ComboDuoPartnerIdModal(discord.ui.Modal, title="Set Duo Partner Discord ID"):
+    partner_id = discord.ui.TextInput(
+        label="Discord User ID",
+        placeholder="Example: 123456789012345678",
+        required=True,
+        max_length=24,
+    )
+
+    def __init__(self, *, wizard: "ManageComboMultiplierWizardView") -> None:
+        super().__init__(timeout=180)
+        self.wizard = wizard
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.wizard.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        partner_text = str(self.partner_id.value or "").strip()
+        if not partner_text.isdigit() or int(partner_text) <= 0:
+            await interaction.response.send_message("Please enter a valid numeric Discord ID.", ephemeral=True)
+            return
+
+        self.wizard.state["duo_partner_id"] = int(partner_text)
+        await interaction.response.send_message(
+            f"Saved duo partner as <@{partner_text}>. Click Continue in the combo editor to finish.",
+            ephemeral=True,
+        )
+
+
+class ManageComboMultiplierWizardView(OwnerBoundView):
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        character_settings: dict,
+        source_message: discord.Message | None,
+        preset_signature: str | None = None,
+        preset_options: dict | None = None,
+        preset_name: str = "",
+        preset_short: str = "",
+    ) -> None:
+        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
+        self.owner_id = owner_id
+        self.character_settings = character_settings
+        self.source_message = source_message
+        self.state: dict[str, object] = {
+            "regular": None,
+            "uses_pet": True,
+            "allows_tiered": True,
+            "minimum_rarity": "common",
+            "shiny_only": False,
+            "enforce_rarity_on_shiny": False,
+            "duo_enabled": False,
+            "duo_partner_id": None,
+        }
+        self.history: list[str] = []
+
+        self.signature = ""
+        self.combo_name = str(preset_name or "").strip()
+        self.combo_short = str(preset_short or "").strip()
+
+        if isinstance(preset_options, dict) or preset_signature:
+            options_source = preset_options if isinstance(preset_options, dict) else options_from_signature(preset_signature)
+            if not isinstance(options_source, dict):
+                options_source = {}
+            options = build_ppe_type_options(
+                regular=options_source.get("regular", True),
+                uses_pet=options_source.get("uses_pet", True),
+                allows_tiered=options_source.get("allows_tiered", True),
+                minimum_rarity=options_source.get("minimum_rarity", "common"),
+                shiny_only=options_source.get("shiny_only", False),
+                enforce_rarity_on_shiny=options_source.get("enforce_rarity_on_shiny", False),
+                duo_enabled=options_source.get("duo_enabled", False),
+                duo_partner_id=options_source.get("duo_partner_id"),
+            )
+            self._apply_options(options)
+            self.signature = ppe_type_option_signature(options)
+            if not self.combo_name and not self.combo_short:
+                entry = (
+                    self.character_settings.get("combo_label_overrides", {})
+                    if isinstance(self.character_settings.get("combo_label_overrides"), dict)
+                    else {}
+                )
+                current = entry.get(self.signature, {}) if isinstance(entry.get(self.signature, {}), dict) else {}
+                self.combo_name = str(current.get("name", "")).strip()
+                self.combo_short = str(current.get("short", "")).strip()
+            self.step = "summary"
+        else:
+            self.step = "regular"
+
+        self._rebuild_items()
+
+    def duo_partner_modal(self) -> discord.ui.Modal:
+        return _ComboDuoPartnerIdModal(wizard=self)
+
+    def _current_options(self) -> dict[str, object]:
+        return build_ppe_type_options(
+            regular=self.state.get("regular", True),
+            uses_pet=self.state.get("uses_pet", True),
+            allows_tiered=self.state.get("allows_tiered", True),
+            minimum_rarity=self.state.get("minimum_rarity", "common"),
+            shiny_only=self.state.get("shiny_only", False),
+            enforce_rarity_on_shiny=self.state.get("enforce_rarity_on_shiny", False),
+            duo_enabled=self.state.get("duo_enabled", False),
+            duo_partner_id=self.state.get("duo_partner_id"),
+        )
+
+    def _apply_options(self, options: dict[str, object]) -> None:
+        self.state["regular"] = bool(options.get("regular", True))
+        self.state["uses_pet"] = bool(options.get("uses_pet", True))
+        self.state["allows_tiered"] = bool(options.get("allows_tiered", True))
+        self.state["minimum_rarity"] = str(options.get("minimum_rarity", "common"))
+        self.state["shiny_only"] = bool(options.get("shiny_only", False))
+        self.state["enforce_rarity_on_shiny"] = bool(options.get("enforce_rarity_on_shiny", False))
+        self.state["duo_enabled"] = bool(options.get("duo_enabled", False))
+        self.state["duo_partner_id"] = options.get("duo_partner_id")
+
+    def _multiplier_hint(self, key: str, fallback: float) -> str:
+        base = (
+            self.character_settings.get("iterative_base_multipliers", {})
+            if isinstance(self.character_settings.get("iterative_base_multipliers"), dict)
+            else {}
+        )
+        multipliers = base if isinstance(base, dict) else {}
+        try:
+            value = float(multipliers.get(key, fallback))
+        except (TypeError, ValueError):
+            value = fallback
+        return f"x{value:.2f}"
+
+    def _rarity_hint(self) -> str:
+        base = (
+            self.character_settings.get("iterative_base_multipliers", {})
+            if isinstance(self.character_settings.get("iterative_base_multipliers"), dict)
+            else {}
+        )
+        rarity = base.get("minimum_rarity", {}) if isinstance(base.get("minimum_rarity"), dict) else {}
+
+        def _value(name: str, fallback: float) -> str:
+            try:
+                parsed = float(rarity.get(name, fallback))
+            except (TypeError, ValueError):
+                parsed = fallback
+            return f"{name.title()} {parsed:.2f}x"
+
+        return ", ".join([
+            _value("common", 1.0),
+            _value("uncommon", 1.1),
+            _value("rare", 1.2),
+            _value("legendary", 1.4),
+            _value("divine", 1.5),
+        ])
+
+    def _summary_embed(self) -> discord.Embed:
+        options = self._current_options()
+        breakdown = iterative_multiplier_breakdown(options, self.character_settings.get("iterative_base_multipliers"))
+        components = breakdown.get("components", []) if isinstance(breakdown.get("components", []), list) else []
+        self.signature = str(breakdown.get("signature", self.signature or "")).strip().lower()
+        legacy_type = infer_legacy_ppe_type_from_options(options)
+        combo_name = self.combo_name or ppe_type_label(legacy_type, ppe_settings=self.character_settings)
+        combo_short = self.combo_short or ppe_type_short_label(legacy_type, ppe_settings=self.character_settings)
+        multiplier_overrides = (
+            self.character_settings.get("iterative_combo_overrides", {})
+            if isinstance(self.character_settings.get("iterative_combo_overrides"), dict)
+            else {}
+        )
+        if self.signature in multiplier_overrides:
+            current_override_multiplier = float(multiplier_overrides[self.signature])
+            override_source = "Combo override"
+        else:
+            legacy_multipliers = normalize_ppe_type_multipliers(self.character_settings.get("ppe_type_multipliers"))
+            current_override_multiplier = float(legacy_multipliers.get(legacy_type, 1.0))
+            override_source = "Legacy type preset"
+        embed = discord.Embed(
+            title="Combo Multiplier Summary",
+            description="Review the selected combo values, then set the label and multiplier.",
+            color=discord.Color.dark_teal(),
+        )
+        embed.add_field(
+            name="Selected Values",
+            value=(
+                f"Regular: {'Yes' if bool(options.get('regular', True)) else 'No'}\n"
+                f"Use Pet: {'Yes' if bool(options.get('uses_pet', True)) else 'No'}\n"
+                f"Allow Tiered: {'Yes' if bool(options.get('allows_tiered', True)) else 'No'}\n"
+                f"Minimum Rarity: {str(options.get('minimum_rarity', 'common')).title()}\n"
+                f"Shiny Only: {'Yes' if bool(options.get('shiny_only', False)) else 'No'}\n"
+                f"Enforce Shiny Rarity: {'Yes' if bool(options.get('enforce_rarity_on_shiny', False)) else 'No'}\n"
+                f"Duo: {'Yes' if bool(options.get('duo_enabled', False)) else 'No'}"
+            ),
+            inline=False,
+        )
+        component_lines = [
+            f"• {str(component.get('label', 'Component')).strip()}: x{float(component.get('multiplier', 1.0)):.2f}"
+            for component in components
+            if isinstance(component, dict)
+        ]
+        if not component_lines:
+            component_lines = ["• No combo-specific multipliers apply."]
+        embed.add_field(
+            name="Multipliers",
+            value="\n".join(component_lines),
+            inline=False,
+        )
+        embed.add_field(
+            name="Final Multiplier",
+            value=f"x{float(breakdown.get('multiplier', 1.0)):.2f}",
+            inline=False,
+        )
+        embed.add_field(
+            name="Current Label",
+            value=f"Name: {combo_name}\nShort: {combo_short}",
+            inline=False,
+        )
+        embed.add_field(
+            name="Current Multiplier Preset",
+            value=f"{override_source}: x{current_override_multiplier:.2f}",
+            inline=False,
+        )
+        embed.add_field(
+            name="Signature",
+            value=f"`{breakdown.get('signature', self.signature or 'pending')}`",
+            inline=False,
+        )
+        return embed
+
+    def current_embed(self) -> discord.Embed:
+        if self.step == "summary":
+            return self._summary_embed()
+        prompt = self.prompt_text()
+        embed = discord.Embed(
+            title="Edit Combo Multiplier",
+            description=prompt,
+            color=discord.Color.dark_teal(),
+        )
+        embed.add_field(name="Shortcut", value="Type N/A to build a new combo from scratch.", inline=False)
+        return embed
+
+    def prompt_text(self) -> str:
+        if self.step == "regular":
+            return "Are you going to make a regular combo type?"
+        if self.step == "uses_pet":
+            return f"Does this combo use a pet? (No pet: {self._multiplier_hint('no_pet', 1.3)})"
+        if self.step == "allows_tiered":
+            return f"Does this combo allow tiered items? (No tiered: {self._multiplier_hint('no_tiered', 1.3)})"
+        if self.step == "minimum_rarity":
+            return f"What is the minimum rarity for this combo? ({self._rarity_hint()})"
+        if self.step == "shiny_only":
+            return f"Is this combo shiny only? (Yes: {self._multiplier_hint('shiny_only', 1.5)})"
+        if self.step == "enforce_shiny":
+            return "Will the rarity requirement be enforced on shiny items?"
+        if self.step == "duo":
+            return f"Does this combo allow duo? (Yes: {self._multiplier_hint('duo', 0.6)})"
+        if self.step == "duo_partner":
+            partner_id = self.state.get("duo_partner_id")
+            partner_line = f"Current duo partner: <@{partner_id}>" if isinstance(partner_id, int) else "Current duo partner: not set"
+            return (
+                "Enter the duo partner Discord ID.\n"
+                "How to find it: User Settings -> Advanced -> Developer Mode ON, then right click your partner and Copy User ID.\n"
+                f"{partner_line}"
+            )
+        return "Review the combo summary."
+
+    def _set_yes_no(self, value: bool) -> None:
+        if self.step == "regular":
+            self.state["regular"] = value
+        elif self.step == "uses_pet":
+            self.state["uses_pet"] = value
+        elif self.step == "allows_tiered":
+            self.state["allows_tiered"] = value
+        elif self.step == "shiny_only":
+            self.state["shiny_only"] = value
+        elif self.step == "enforce_shiny":
+            self.state["enforce_rarity_on_shiny"] = value
+        elif self.step == "duo":
+            self.state["duo_enabled"] = value
+            if not value:
+                self.state["duo_partner_id"] = None
+
+    def _next_step(self) -> str:
+        if self.step == "regular":
+            return "duo" if bool(self.state.get("regular")) else "uses_pet"
+        if self.step == "uses_pet":
+            return "allows_tiered"
+        if self.step == "allows_tiered":
+            return "minimum_rarity"
+        if self.step == "minimum_rarity":
+            return "shiny_only"
+        if self.step == "shiny_only":
+            return "enforce_shiny" if bool(self.state.get("shiny_only")) else "duo"
+        if self.step == "enforce_shiny":
+            return "duo"
+        if self.step == "duo":
+            return "duo_partner" if bool(self.state.get("duo_enabled")) else "summary"
+        if self.step == "duo_partner":
+            return "summary"
+        return "summary"
+
+    async def advance(self, interaction: discord.Interaction) -> None:
+        self.history.append(self.step)
+        self.step = self._next_step()
+        self._rebuild_items()
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+    async def go_back(self, interaction: discord.Interaction) -> None:
+        if not self.history:
+            await interaction.response.send_message("Already at the first step.", ephemeral=True)
+            return
+
+        self.step = self.history.pop()
+        self._rebuild_items()
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+    def _rebuild_items(self) -> None:
+        self.clear_items()
+        if self.step in {"regular", "uses_pet", "allows_tiered", "shiny_only", "enforce_shiny", "duo"}:
+            self.add_item(_ComboWizardYesButton())
+            self.add_item(_ComboWizardNoButton())
+            self.add_item(_ComboWizardBackButton(disabled=not bool(self.history)))
+            self.add_item(_ComboWizardCancelButton())
+            return
+        if self.step == "minimum_rarity":
+            self.add_item(_RaritySelect(selected=str(self.state.get("minimum_rarity", "common"))))
+            self.add_item(_ComboWizardBackButton(disabled=not bool(self.history)))
+            self.add_item(_ComboWizardCancelButton())
+            return
+        if self.step == "duo_partner":
+            self.add_item(_ComboWizardSetDuoIdButton())
+            self.add_item(_ComboWizardBackButton(disabled=not bool(self.history)))
+            self.add_item(_ComboWizardContinueButton())
+            self.add_item(_ComboWizardCancelButton())
+            return
+        if self.step == "summary":
+            self.add_item(_ComboWizardOpenSettingsButton())
+            self.add_item(_ComboWizardBackButton(disabled=not bool(self.history)))
+            self.add_item(_ComboWizardCancelButton())
 
 
 class ManageDuplicateItemsView(OwnerBoundView):

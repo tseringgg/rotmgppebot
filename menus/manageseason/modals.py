@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import discord
 
-from utils.ppe_types import ppe_type_label, ppe_type_short_label
+from utils.ppe_types import (
+    find_combo_label_override,
+    infer_legacy_ppe_type_from_options,
+    normalize_ppe_type_multipliers,
+    options_from_signature,
+    ppe_type_label,
+    ppe_type_short_label,
+)
 from menus.manageseason.services import (
     backfill_legacy_ppe_type_options,
     clear_ppe_type_display_override,
@@ -16,6 +23,7 @@ from menus.manageseason.services import (
     update_duplicate_match_mode,
     update_duplicate_item_point_reduction,
     update_global_point_modifiers,
+    update_combo_multiplier_details,
     update_iterative_base_option_multipliers,
     update_penalty_base_rates,
     update_pet_point_modifiers,
@@ -947,6 +955,172 @@ class EditIterativeComboMultiplierModal(discord.ui.Modal, title="Edit Combo Mult
             f"PPE totals changed: {refresh_summary.ppes_updated}",
             ephemeral=True,
         )
+        await _refresh_point_settings_message(
+            interaction=interaction,
+            owner_id=self.owner_id,
+            source_message=self.source_message,
+            source_screen="ppe_type",
+            settings=settings,
+        )
+
+
+class ComboShortcutModal(discord.ui.Modal, title="Edit Combo Multiplier"):
+    shortcut = discord.ui.TextInput(
+        label="Short Label or Signature",
+        placeholder="Type N/A to build a new combo",
+        required=True,
+        max_length=220,
+    )
+
+    def __init__(self, *, owner_id: int, source_message: discord.Message | None, character_settings: dict | None = None) -> None:
+        super().__init__(timeout=300)
+        self.owner_id = owner_id
+        self.source_message = source_message
+        self.character_settings = character_settings if isinstance(character_settings, dict) else {}
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        raw_value = str(self.shortcut.value or "").strip()
+        if not raw_value:
+            await interaction.response.send_message("Please enter a short label, signature, or N/A.", ephemeral=True)
+            return
+
+        if raw_value.casefold() != "n/a":
+            resolved = find_combo_label_override(raw_value, self.character_settings)
+            options = options_from_signature(raw_value)
+            if resolved is None and options is None:
+                await interaction.response.send_message(
+                    "No matching combo short label or signature was found. Use N/A to build a new combo from scratch.",
+                    ephemeral=True,
+                )
+                return
+
+            signature = resolved[0] if resolved is not None else str(raw_value).strip().lower()
+            label_entry = resolved[1] if resolved is not None else {}
+            display_name = str(label_entry.get("name", "")).strip()
+            short_name = str(label_entry.get("short", "")).strip()
+
+            from menus.manageseason.submenus.points.views import ManageComboMultiplierWizardView
+
+            wizard = ManageComboMultiplierWizardView(
+                owner_id=self.owner_id,
+                character_settings=self.character_settings,
+                source_message=self.source_message,
+                preset_signature=signature,
+                preset_options=options,
+                preset_name=display_name,
+                preset_short=short_name,
+            )
+            await interaction.response.send_message("Opening combo editor...", ephemeral=True)
+            if self.source_message is not None:
+                await self.source_message.edit(embed=wizard.current_embed(), view=wizard)
+            return
+
+        from menus.manageseason.submenus.points.views import ManageComboMultiplierWizardView
+
+        wizard = ManageComboMultiplierWizardView(
+            owner_id=self.owner_id,
+            character_settings=self.character_settings,
+            source_message=self.source_message,
+        )
+        await interaction.response.send_message("Opening combo editor...", ephemeral=True)
+        if self.source_message is not None:
+            await self.source_message.edit(embed=wizard.current_embed(), view=wizard)
+
+
+class ComboOverrideSettingsModal(discord.ui.Modal):
+    display_name = discord.ui.TextInput(
+        label="Display Name",
+        placeholder="Example: Divine & Shiny PPE",
+        required=False,
+        max_length=80,
+    )
+    short_name = discord.ui.TextInput(
+        label="Short Label",
+        placeholder="Example: D+SPE",
+        required=False,
+        max_length=40,
+    )
+    multiplier = discord.ui.TextInput(
+        label="Combo Multiplier Override (blank to remove)",
+        placeholder="Example: 5.0",
+        required=False,
+        max_length=20,
+    )
+
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        signature: str,
+        character_settings: dict | None = None,
+        source_message: discord.Message | None,
+    ) -> None:
+        short_label = str(signature or "combo").strip()
+        super().__init__(title=f"Edit Combo Multiplier - {short_label}", timeout=300)
+        self.owner_id = owner_id
+        self.signature = str(signature or "").strip().lower()
+        self.source_message = source_message
+
+        settings = character_settings if isinstance(character_settings, dict) else {}
+        overrides = settings.get("combo_label_overrides", {}) if isinstance(settings.get("combo_label_overrides"), dict) else {}
+        label_entry = overrides.get(self.signature, {}) if isinstance(overrides.get(self.signature, {}), dict) else {}
+        multiplier_overrides = settings.get("iterative_combo_overrides", {}) if isinstance(settings.get("iterative_combo_overrides"), dict) else {}
+        options = options_from_signature(self.signature)
+
+        fallback_full = ""
+        fallback_short = ""
+        fallback_multiplier: float | None = None
+        if isinstance(options, dict):
+            legacy_type = infer_legacy_ppe_type_from_options(options)
+            fallback_full = ppe_type_label(legacy_type, ppe_settings=settings)
+            fallback_short = ppe_type_short_label(legacy_type, ppe_settings=settings)
+            legacy_multipliers = normalize_ppe_type_multipliers(settings.get("ppe_type_multipliers"))
+            fallback_multiplier = float(legacy_multipliers.get(legacy_type, 1.0))
+
+        self.display_name.default = str(label_entry.get("name", "")).strip() or fallback_full
+        self.short_name.default = str(label_entry.get("short", "")).strip() or fallback_short
+        if self.signature in multiplier_overrides:
+            self.multiplier.default = f"{float(multiplier_overrides[self.signature]):.2f}"
+        elif fallback_multiplier is not None:
+            self.multiplier.default = f"{fallback_multiplier:.2f}"
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        try:
+            parsed_multiplier = _parse_optional_float(self.multiplier.value, field_name="multiplier")
+        except ValueError as exc:
+            await interaction.response.send_message(str(exc), ephemeral=True)
+            return
+
+        display_name = str(self.display_name.value or "").strip()
+        short_name = str(self.short_name.value or "").strip()
+
+        if parsed_multiplier is not None and parsed_multiplier <= 0:
+            await interaction.response.send_message("ERROR: Multiplier must be greater than 0.", ephemeral=True)
+            return
+
+        settings, refresh_summary = await update_combo_multiplier_details(
+            interaction,
+            signature=self.signature,
+            multiplier=parsed_multiplier,
+            name=display_name or None,
+            short=short_name or None,
+        )
+
+        await interaction.response.send_message(
+            f"Updated combo override for `{self.signature}`.\n"
+            f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
+            f"PPE totals changed: {refresh_summary.ppes_updated}",
+            ephemeral=True,
+        )
+
         await _refresh_point_settings_message(
             interaction=interaction,
             owner_id=self.owner_id,

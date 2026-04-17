@@ -640,6 +640,48 @@ async def set_combo_display_override(
     return dict(saved)
 
 
+async def update_combo_multiplier_details(
+    interaction: discord.Interaction,
+    *,
+    signature: str,
+    multiplier: float | None,
+    name: str | None = None,
+    short: str | None = None,
+) -> tuple[dict[str, Any], PointsRefreshSummary]:
+    settings = await get_ppe_settings(interaction)
+
+    combo_overrides = normalize_iterative_combo_overrides(settings.get("iterative_combo_overrides"))
+    label_overrides = normalize_ppe_combo_label_overrides(settings.get("combo_label_overrides"))
+
+    normalized_signature = str(signature or "").strip().lower()
+    if not normalized_signature:
+        raise ValueError("Signature is required.")
+
+    if multiplier is None:
+        combo_overrides.pop(normalized_signature, None)
+    else:
+        combo_overrides[normalized_signature] = float(multiplier)
+
+    clean_name = str(name or "").strip()
+    clean_short = str(short or "").strip()
+    if not clean_name and not clean_short:
+        label_overrides.pop(normalized_signature, None)
+    else:
+        label_overrides[normalized_signature] = {"name": clean_name, "short": clean_short}
+
+    settings["iterative_combo_overrides"] = combo_overrides
+    settings["combo_label_overrides"] = label_overrides
+    saved = await set_ppe_settings(interaction, settings)
+
+    guild_config = await load_guild_config(interaction)
+    guild_config["ppe_settings"] = dict(saved)
+    refresh_summary = await refresh_all_character_points(
+        interaction,
+        guild_config=guild_config,
+    )
+    return dict(saved), refresh_summary
+
+
 async def backfill_legacy_ppe_type_options(
     interaction: discord.Interaction,
 ) -> tuple[int, int]:

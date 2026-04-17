@@ -428,6 +428,27 @@ def normalize_ppe_combo_label_overrides(value: Any) -> dict[str, dict[str, str]]
     return normalized
 
 
+def find_combo_label_override(value: Any, ppe_settings: Any = None) -> tuple[str, dict[str, str]] | None:
+    settings = _ppe_settings_dict(ppe_settings)
+    overrides = normalize_ppe_combo_label_overrides(settings.get("combo_label_overrides"))
+    needle = str(value or "").strip().lower()
+    if not needle:
+        return None
+
+    if needle in overrides:
+        return needle, overrides[needle]
+
+    for signature, entry in overrides.items():
+        if not isinstance(entry, dict):
+            continue
+        short_label = str(entry.get("short", "")).strip().lower()
+        display_name = str(entry.get("name", "")).strip().lower()
+        if needle == short_label or needle == display_name:
+            return signature, entry
+
+    return None
+
+
 def _ppe_settings_dict(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
@@ -535,7 +556,7 @@ def iterative_multiplier_breakdown(
         components.append(
             {
                 "key": "minimum_rarity",
-                "label": f"Minimum Rarity ({minimum_rarity.title()}+)",
+                "label": f"Minimum Rarity ({minimum_rarity.title()})",
                 "multiplier": rarity_multiplier,
             }
         )

@@ -5,6 +5,7 @@ import discord
 from dataclass import PPEData, ROTMGClass
 from utils.ppe_types import (
     build_ppe_type_options,
+    iterative_multiplier_breakdown,
     infer_legacy_ppe_type_from_options,
     normalize_ppe_type_options,
     ppe_type_compact_summary,
@@ -313,6 +314,7 @@ class NewPpeIterativeWizardView(discord.ui.View):
             "duo_enabled": False,
             "duo_partner_id": None,
         }
+        self.history: list[str] = []
         self.step = "regular"
         self._rebuild_items()
 
@@ -362,7 +364,7 @@ class NewPpeIterativeWizardView(discord.ui.View):
                 "How to find it: User Settings -> Advanced -> Developer Mode ON, then right click your partner and Copy User ID.\n"
                 f"{partner_line}"
             )
-        if self.step == "confirm":
+        if self.step == "summary":
             options = build_ppe_type_options(
                 regular=self.state.get("regular", True),
                 uses_pet=self.state.get("uses_pet", True),
@@ -373,19 +375,30 @@ class NewPpeIterativeWizardView(discord.ui.View):
                 duo_enabled=self.state.get("duo_enabled", False),
                 duo_partner_id=self.state.get("duo_partner_id"),
             )
-            signature = ppe_type_option_signature(options)
-            summary = ppe_type_compact_summary(options, ppe_settings=self.ppe_settings)
+            breakdown = iterative_multiplier_breakdown(options, self.ppe_settings.get("iterative_base_multipliers"))
+            component_lines = [
+                f"- {str(component.get('label', 'Component')).strip()}: x{float(component.get('multiplier', 1.0)):.2f}"
+                for component in breakdown.get("components", [])
+                if isinstance(component, dict)
+            ]
+            if not component_lines:
+                component_lines = ["- No extra combo multipliers apply."]
             partner_line = "None"
             if options.get("duo_enabled"):
                 partner_id = options.get("duo_partner_id")
                 partner_line = f"<@{partner_id}>" if partner_id else "Missing"
-            return (
-                f"Confirm new PPE setup for {self.class_name}.\n"
-                f"Summary: {summary}\n"
-                f"Signature: `{signature}`\n"
-                f"Duo Partner: {partner_line}\n"
-                "Click Confirm to create the PPE."
-            )
+            summary_lines = [
+                f"Review new PPE setup for {self.class_name}.",
+                f"Selected: {ppe_type_compact_summary(options, ppe_settings=self.ppe_settings)}",
+                f"Signature: `{breakdown.get('signature', ppe_type_option_signature(options))}`",
+                f"Duo Partner: {partner_line}",
+                "",
+                "Multipliers:",
+                *component_lines,
+                f"Final Multiplier: x{float(breakdown.get('multiplier', 1.0)):.2f}",
+                "Click Create PPE to finish.",
+            ]
+            return "\n".join(summary_lines)
         return "Continue setup."
 
     def _set_yes_no(self, value: bool) -> None:
@@ -418,13 +431,23 @@ class NewPpeIterativeWizardView(discord.ui.View):
         if self.step == "enforce_shiny":
             return "duo"
         if self.step == "duo":
-            return "duo_partner" if bool(self.state.get("duo_enabled")) else "confirm"
+            return "duo_partner" if bool(self.state.get("duo_enabled")) else "summary"
         if self.step == "duo_partner":
-            return "confirm"
-        return "confirm"
+            return "summary"
+        return "summary"
 
     async def advance(self, interaction: discord.Interaction) -> None:
+        self.history.append(self.step)
         self.step = self._next_step()
+        self._rebuild_items()
+        await interaction.response.edit_message(content=self.prompt_text(), view=self)
+
+    async def go_back(self, interaction: discord.Interaction) -> None:
+        if not self.history:
+            await interaction.response.send_message("Already at the first step.", ephemeral=True)
+            return
+
+        self.step = self.history.pop()
         self._rebuild_items()
         await interaction.response.edit_message(content=self.prompt_text(), view=self)
 
@@ -433,19 +456,23 @@ class NewPpeIterativeWizardView(discord.ui.View):
         if self.step in {"regular", "uses_pet", "allows_tiered", "shiny_only", "enforce_shiny", "duo"}:
             self.add_item(_WizardYesButton())
             self.add_item(_WizardNoButton())
+            self.add_item(_WizardBackButton(disabled=not bool(self.history)))
             self.add_item(_WizardCancelButton())
             return
         if self.step == "minimum_rarity":
             self.add_item(_RaritySelect(selected=str(self.state.get("minimum_rarity", "common"))))
+            self.add_item(_WizardBackButton(disabled=not bool(self.history)))
             self.add_item(_WizardCancelButton())
             return
         if self.step == "duo_partner":
             self.add_item(_WizardSetDuoIdButton())
+            self.add_item(_WizardBackButton(disabled=not bool(self.history)))
             self.add_item(_WizardContinueButton())
             self.add_item(_WizardCancelButton())
             return
-        if self.step == "confirm":
-            self.add_item(_WizardConfirmCreateButton())
+        if self.step == "summary":
+            self.add_item(_WizardCreatePpeButton())
+            self.add_item(_WizardBackButton(disabled=not bool(self.history)))
             self.add_item(_WizardCancelButton())
 
 
@@ -481,6 +508,21 @@ class _WizardNoButton(discord.ui.Button):
         await view.advance(interaction)
 
 
+class _WizardBackButton(discord.ui.Button):
+    def __init__(self, *, disabled: bool) -> None:
+        super().__init__(label="Back", style=discord.ButtonStyle.secondary, row=1, disabled=disabled)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, NewPpeIterativeWizardView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        await view.go_back(interaction)
+
+
 class _WizardSetDuoIdButton(discord.ui.Button):
     def __init__(self) -> None:
         super().__init__(label="Set Duo Partner ID", style=discord.ButtonStyle.primary, row=0)
@@ -514,9 +556,9 @@ class _WizardContinueButton(discord.ui.Button):
         await view.advance(interaction)
 
 
-class _WizardConfirmCreateButton(discord.ui.Button):
+class _WizardCreatePpeButton(discord.ui.Button):
     def __init__(self) -> None:
-        super().__init__(label="Confirm Create", style=discord.ButtonStyle.success, row=0)
+        super().__init__(label="Create PPE", style=discord.ButtonStyle.success, row=0)
 
     async def callback(self, interaction: discord.Interaction) -> None:
         view = self.view

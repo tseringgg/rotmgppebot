@@ -306,7 +306,7 @@ def create_loot_markdown_file(
     total_bonus_items = len(ppe_data.bonuses) if ppe_data.bonuses else 0
     summary_lines = [
         f"Loot entries: {total_loot_items}",
-        f"Bonus entries: {total_bonus_items}",
+        f"Bonus entries: {total_bonus_items}\n\n",
         "",
         f"Minimum total floor: {_format_points(minimum_total)}" if minimum_total is not None else "",
         "Loot Adjustments:",
