@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from utils.loot_constants import normalize_rarity, rarity_rank
+from utils.loot_constants import normalize_rarity
 
 PPE_TYPE_REGULAR = "regular"
 PPE_TYPE_DUO = "duo"
@@ -600,29 +600,37 @@ def iterative_multiplier_breakdown(
 
     minimum_rarity = normalize_minimum_rarity(options.get("minimum_rarity"))
     rarity_multiplier = float(multipliers["minimum_rarity"][minimum_rarity])
-    multiplier *= rarity_multiplier
-    if minimum_rarity != "common" or rarity_multiplier != 1.0:
-        components.append(
-            {
-                "key": "minimum_rarity",
-                "label": f"Minimum Rarity ({minimum_rarity.title()})",
-                "multiplier": rarity_multiplier,
-            }
-        )
-
     if options["shiny_only"]:
         shiny_multiplier = float(multipliers["shiny_only"])
-        multiplier *= shiny_multiplier
-        components.append({"key": "shiny_only", "label": "Shiny Only", "multiplier": shiny_multiplier})
-        if options["enforce_rarity_on_shiny"] and rarity_rank(minimum_rarity) > rarity_rank("rare"):
-            enforce_multiplier = float(multipliers["enforce_shiny_rarity"])
-            extra_pass_multiplier = rarity_multiplier * shiny_multiplier * enforce_multiplier
-            multiplier *= extra_pass_multiplier
+        enforce_multiplier = float(multipliers["enforce_shiny_rarity"])
+        if options["enforce_rarity_on_shiny"]:
+            combined_multiplier = rarity_multiplier * shiny_multiplier
+            multiplier *= combined_multiplier
             components.append(
                 {
-                    "key": "enforce_shiny_rarity",
-                    "label": "Shiny Rarity Enforcement",
-                    "multiplier": extra_pass_multiplier,
+                    "key": "shiny_rarity_combined",
+                    "label": f"Shiny + Minimum Rarity ({minimum_rarity.title()})",
+                    "multiplier": combined_multiplier,
+                }
+            )
+        else:
+            combined_multiplier = min(rarity_multiplier, shiny_multiplier) * enforce_multiplier
+            multiplier *= combined_multiplier
+            components.append(
+                {
+                    "key": "shiny_rarity_combined",
+                    "label": f"Shiny + Minimum Rarity Blend ({minimum_rarity.title()})",
+                    "multiplier": combined_multiplier,
+                }
+            )
+    else:
+        multiplier *= rarity_multiplier
+        if minimum_rarity != "common" or rarity_multiplier != 1.0:
+            components.append(
+                {
+                    "key": "minimum_rarity",
+                    "label": f"Minimum Rarity ({minimum_rarity.title()})",
+                    "multiplier": rarity_multiplier,
                 }
             )
 

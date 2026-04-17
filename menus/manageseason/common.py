@@ -7,6 +7,8 @@ import discord
 from menus.manageseason.services import SeasonResetSummary
 from utils.ppe_types import (
     all_ppe_types,
+    get_ppe_type_multiplier_details_from_options,
+    legacy_ppe_type_to_options,
     normalize_iterative_option_multipliers,
     ppe_type_label,
     ppe_type_short_label,
@@ -44,17 +46,22 @@ def _build_class_override_lines(class_overrides: dict) -> list[str]:
     return lines
 
 
-def _build_ppe_type_multiplier_lines(multipliers: dict, *, ppe_settings: dict | None = None) -> list[str]:
+def _build_ppe_type_multiplier_lines(*, ppe_settings: dict | None = None) -> list[str]:
     lines: list[str] = []
+    settings = ppe_settings if isinstance(ppe_settings, dict) else {}
     for ppe_type in all_ppe_types():
-        value = 1.0
         try:
-            value = float(multipliers.get(ppe_type, 1.0))
+            options = legacy_ppe_type_to_options(ppe_type)
+            details = get_ppe_type_multiplier_details_from_options(options, settings, current_type=ppe_type)
+            value = float(details.get("multiplier", 1.0))
+            source = str(details.get("source", "base")).strip().lower()
         except (TypeError, ValueError):
             value = 1.0
+            source = "base"
         full_label = ppe_type_label(ppe_type, ppe_settings=ppe_settings)
         short_label = ppe_type_short_label(ppe_type, ppe_settings=ppe_settings)
-        lines.append(f"• {full_label} [{short_label}]: {value:.2f}x")
+        source_suffix = " (combo override)" if source == "override" else ""
+        lines.append(f"• {full_label} [{short_label}]: {value:.2f}x{source_suffix}")
     return lines
 
 
@@ -755,12 +762,7 @@ def build_point_settings_embed(settings: dict) -> discord.Embed:
 
 
 def build_ppe_type_points_embed(character_settings: dict) -> discord.Embed:
-    multipliers = (
-        character_settings.get("ppe_type_multipliers", {})
-        if isinstance(character_settings.get("ppe_type_multipliers"), dict)
-        else {}
-    )
-    lines = _build_ppe_type_multiplier_lines(multipliers, ppe_settings=character_settings)
+    lines = _build_ppe_type_multiplier_lines(ppe_settings=character_settings)
     iterative_base_lines = _build_iterative_base_lines(character_settings)
     combo_multiplier_lines = _build_combo_multiplier_override_lines(character_settings)
     combo_lines = _build_combo_label_override_lines(character_settings)
