@@ -31,11 +31,10 @@ from menus.manageseason.services import update_duplicate_match_mode, update_top_
 from utils.ppe_types import (
     build_ppe_type_options,
     get_ppe_type_multiplier_details_from_options,
-    infer_legacy_ppe_type_from_options,
     options_from_signature,
-    ppe_type_label,
+    ppe_type_compact_summary,
+    ppe_type_display_from_options,
     ppe_type_option_signature,
-    ppe_type_short_label,
 )
 from utils.wizard_components import (
     MinimumRarityContinueButton,
@@ -603,9 +602,10 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
         breakdown = get_ppe_type_multiplier_details_from_options(options, self.character_settings)
         components = breakdown.get("components", []) if isinstance(breakdown.get("components", []), list) else []
         self.signature = str(breakdown.get("signature", self.signature or "")).strip().lower()
-        legacy_type = infer_legacy_ppe_type_from_options(options)
-        combo_name = self.combo_name or ppe_type_label(legacy_type, ppe_settings=self.character_settings)
-        combo_short = self.combo_short or ppe_type_short_label(legacy_type, ppe_settings=self.character_settings)
+        combo_name = self.combo_name or self.signature
+        combo_short = self.combo_short or ppe_type_compact_summary(options, ppe_settings=self.character_settings)
+        display_name = ppe_type_display_from_options(options, ppe_settings=self.character_settings, compact=False)
+        display_short = ppe_type_display_from_options(options, ppe_settings=self.character_settings, compact=True)
         source = str(breakdown.get("source", "base")).strip().lower()
         current_override_multiplier = float(breakdown.get("multiplier", 1.0))
         override_source = "Combo override" if source == "override" else "Iterative base"
@@ -647,6 +647,11 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
         embed.add_field(
             name="Current Label",
             value=f"Name: {combo_name}\nShort: {combo_short}",
+            inline=False,
+        )
+        embed.add_field(
+            name="Resolved Display",
+            value=f"Name: {display_name}\nShort: {display_short}",
             inline=False,
         )
         embed.add_field(

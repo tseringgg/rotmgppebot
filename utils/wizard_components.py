@@ -71,7 +71,11 @@ class MinimumRaritySelect(discord.ui.Select):
             await interaction.response.send_message(self._owner_error, ephemeral=True)
             return
 
-        await self._on_selected(interaction, self.values[0])
+        selected_value = str(self.values[0]).strip().lower()
+        for option in self.options:
+            option.default = option.value == selected_value
+
+        await self._on_selected(interaction, selected_value)
 
 
 class MinimumRarityContinueButton(discord.ui.Button):

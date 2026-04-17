@@ -9,14 +9,14 @@ from utils.ppe_types import (
     find_ppe_type_by_label,
     find_combo_label_override,
     get_ppe_type_multiplier_details_from_options,
-    infer_legacy_ppe_type_from_options,
     legacy_ppe_type_to_options,
     normalize_combo_signature,
     normalize_iterative_combo_overrides,
     normalize_ppe_combo_label_overrides,
     options_from_signature,
-    ppe_type_option_signature,
+    ppe_type_compact_summary,
     ppe_type_label,
+    ppe_type_option_signature,
     ppe_type_short_label,
 )
 from menus.manageseason.services import (
@@ -1174,9 +1174,8 @@ class ComboOverrideSettingsModal(discord.ui.Modal):
         fallback_short = ""
         computed_multiplier: float | None = None
         if isinstance(options, dict):
-            legacy_type = infer_legacy_ppe_type_from_options(options)
-            fallback_full = ppe_type_label(legacy_type, ppe_settings=settings)
-            fallback_short = ppe_type_short_label(legacy_type, ppe_settings=settings)
+            fallback_full = self.signature
+            fallback_short = ppe_type_compact_summary(options, ppe_settings=settings)
             details = get_ppe_type_multiplier_details_from_options(options, settings)
             computed_multiplier = float(details.get("multiplier", 1.0))
 
