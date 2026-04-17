@@ -686,7 +686,7 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
         if self.step == "enforce_shiny":
             return "Will the rarity requirement be enforced on shiny items?"
         if self.step == "duo":
-            return f"Does this combo allow duo? (Yes: {self._multiplier_hint('duo', 0.6)})"
+            return f"Is this combo a duo ppe? (Yes: {self._multiplier_hint('duo', 0.6)})"
         if self.step == "duo_partner":
             partner_id = self.state.get("duo_partner_id")
             partner_line = f"Current duo partner: <@{partner_id}>" if isinstance(partner_id, int) else "Current duo partner: not set"

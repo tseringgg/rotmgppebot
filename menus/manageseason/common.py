@@ -9,9 +9,14 @@ from utils.ppe_types import (
     all_ppe_types,
     get_ppe_type_multiplier_details_from_options,
     legacy_ppe_type_to_options,
+    normalize_iterative_combo_overrides,
     normalize_iterative_option_multipliers,
+    ppe_type_display_from_options,
     ppe_type_label,
+    ppe_type_option_signature,
     ppe_type_short_label,
+    resolve_legacy_ppe_type_from_options,
+    options_from_signature,
 )
 from utils.contest_leaderboards import CONTEST_LEADERBOARD_OPTIONS, contest_leaderboard_label
 
@@ -62,6 +67,23 @@ def _build_ppe_type_multiplier_lines(*, ppe_settings: dict | None = None) -> lis
         short_label = ppe_type_short_label(ppe_type, ppe_settings=ppe_settings)
         source_suffix = " (combo override)" if source == "override" else ""
         lines.append(f"• {full_label} [{short_label}]: {value:.2f}x{source_suffix}")
+
+    # Show custom (non-legacy) combo overrides inline with PPE types.
+    combo_overrides = normalize_iterative_combo_overrides(settings.get("iterative_combo_overrides"))
+    for signature in sorted(combo_overrides.keys()):
+        options = options_from_signature(signature)
+        if not isinstance(options, dict):
+            continue
+
+        legacy_type = resolve_legacy_ppe_type_from_options(options)
+        if legacy_type is not None:
+            legacy_signature = ppe_type_option_signature(legacy_ppe_type_to_options(legacy_type))
+            if signature == legacy_signature:
+                continue
+
+        full_label = ppe_type_display_from_options(options, ppe_settings=settings, compact=False)
+        short_label = ppe_type_display_from_options(options, ppe_settings=settings, compact=True)
+        lines.append(f"• {full_label} [{short_label}]: {float(combo_overrides[signature]):.2f}x")
     return lines
 
 
@@ -764,18 +786,12 @@ def build_point_settings_embed(settings: dict) -> discord.Embed:
 def build_ppe_type_points_embed(character_settings: dict) -> discord.Embed:
     lines = _build_ppe_type_multiplier_lines(ppe_settings=character_settings)
     iterative_base_lines = _build_iterative_base_lines(character_settings)
-    combo_multiplier_lines = _build_combo_multiplier_override_lines(character_settings)
     embed = discord.Embed(
         title="PPE Type Point Multipliers",
         description="Configure how PPE type rules translate into final point multipliers and labels.",
         color=discord.Color.dark_teal(),
     )
-    current_value = "\n".join(lines)
-    if combo_multiplier_lines:
-        current_value += "\n\nCombo Multiplier Overrides:\n" + "\n".join(combo_multiplier_lines[:10])
-        if len(combo_multiplier_lines) > 10:
-            current_value += f"\n... and {len(combo_multiplier_lines) - 10} more"
-    embed.add_field(name="Current PPE Types", value=current_value, inline=False)
+    embed.add_field(name="Current PPE Types", value="\n".join(lines), inline=False)
     embed.add_field(name="Iterative Base Multipliers", value="\n".join(iterative_base_lines), inline=False)
     embed.add_field(
         name="Button Guide",
