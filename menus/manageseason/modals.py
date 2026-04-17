@@ -1040,7 +1040,7 @@ class EditIterativeComboMultiplierModal(discord.ui.Modal, title="Edit Combo Mult
 class ComboShortcutModal(discord.ui.Modal, title="Edit Combo Multiplier"):
     shortcut = discord.ui.TextInput(
         label="Type Label, Short Label, or Signature",
-        placeholder="Enter a PPE type label, combo label, or signature. Type N/A to build a new combo.",
+        placeholder="Enter PPE label/combo label. Type N/A to label new combo.",
         required=True,
         max_length=220,
     )

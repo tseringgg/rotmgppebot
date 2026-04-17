@@ -340,6 +340,40 @@ class _ComboWizardNoButton(discord.ui.Button):
         await view.advance(interaction)
 
 
+class _RaritySelect(discord.ui.Select):
+    def __init__(self, *, selected: str) -> None:
+        valid_selected = str(selected or "common").strip().lower()
+        if valid_selected not in {"common", "uncommon", "rare", "legendary", "divine"}:
+            valid_selected = "common"
+
+        options = [
+            discord.SelectOption(label="Common", value="common", default=valid_selected == "common"),
+            discord.SelectOption(label="Uncommon", value="uncommon", default=valid_selected == "uncommon"),
+            discord.SelectOption(label="Rare", value="rare", default=valid_selected == "rare"),
+            discord.SelectOption(label="Legendary", value="legendary", default=valid_selected == "legendary"),
+            discord.SelectOption(label="Divine", value="divine", default=valid_selected == "divine"),
+        ]
+        super().__init__(
+            placeholder="Select minimum rarity",
+            min_values=1,
+            max_values=1,
+            options=options,
+            row=0,
+        )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManageComboMultiplierWizardView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        view.state["minimum_rarity"] = self.values[0]
+        await view.advance(interaction)
+
+
 class _ComboWizardBackButton(discord.ui.Button):
     def __init__(self, *, disabled: bool) -> None:
         super().__init__(label="Back", style=discord.ButtonStyle.secondary, row=1, disabled=disabled)
@@ -653,12 +687,11 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
             description=prompt,
             color=discord.Color.dark_teal(),
         )
-        embed.add_field(name="Shortcut", value="Type N/A to build a new combo from scratch.", inline=False)
         return embed
 
     def prompt_text(self) -> str:
         if self.step == "regular":
-            return "Are you going to make a regular combo type?"
+            return "Is this combo a regular/duo PPE without other modifications?"
         if self.step == "uses_pet":
             return f"Does this combo use a pet? (No pet: {self._multiplier_hint('no_pet', 1.3)})"
         if self.step == "allows_tiered":
