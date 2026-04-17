@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 import discord
 
 from dataclass import PPEData, PlayerData
@@ -21,6 +23,7 @@ from menus.myinfo.common import (
 )
 from menus.myinfo.entry import open_myinfo_home
 from menus.myinfo.submenus.character.modals import ManagePPEPenaltiesModal, launch_new_ppe_modal_flow
+from utils.bot_cost_tracking import capture_runtime_snapshot, log_cost_event
 from utils.guild_config import get_max_ppes, load_guild_config
 from utils.loot_helpers.shareloot_image import variant_image_label
 from utils.player_statistics import build_character_wrapped_embed
@@ -159,6 +162,8 @@ class CharacterLootVariantView(OwnerBoundView):
         return embed
 
     async def _share(self, interaction: discord.Interaction, *, include_skins: bool, include_limited: bool) -> None:
+        started_monotonic = time.monotonic()
+        snapshot_before = capture_runtime_snapshot()
         await temporarily_switch_active_ppe_and_share(
             interaction,
             self.ppe_id,
@@ -168,6 +173,24 @@ class CharacterLootVariantView(OwnerBoundView):
         await interaction.followup.send(
             f"Generated: **{variant_image_label(include_skins, include_limited)}**",
             ephemeral=True,
+        )
+
+        variant_name = "character loot image"
+        if include_skins and include_limited:
+            variant_name = "character loot image (all loot)"
+        elif include_skins:
+            variant_name = "character loot image (normal + skins)"
+        elif include_limited:
+            variant_name = "character loot image (normal + limited)"
+        else:
+            variant_name = "character loot image (normal only)"
+
+        await log_cost_event(
+            interaction,
+            command_name=f"/myinfo show image {variant_name}",
+            started_monotonic=started_monotonic,
+            snapshot_before=snapshot_before,
+            source="menu_action",
         )
 
     async def _close_and_share(
@@ -199,13 +222,24 @@ class CharacterLootVariantView(OwnerBoundView):
 
     @discord.ui.button(label="List Loot", style=discord.ButtonStyle.primary, row=1)
     async def list_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        started_monotonic = time.monotonic()
+        snapshot_before = capture_runtime_snapshot()
         await close_myinfo_menu(interaction)
         refreshed = await refresh_player_data(interaction, interaction.user.id)
         selected = find_ppe_or_raise(refreshed, self.ppe_id)
         await send_myloot_markdown_followup(interaction, selected)
+        await log_cost_event(
+            interaction,
+            command_name="/myinfo list loot",
+            started_monotonic=started_monotonic,
+            snapshot_before=snapshot_before,
+            source="menu_action",
+        )
 
     @discord.ui.button(label="Show Character Statistics", style=discord.ButtonStyle.success, row=2)
     async def show_character_statistics(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        started_monotonic = time.monotonic()
+        snapshot_before = capture_runtime_snapshot()
         refreshed = await refresh_player_data(interaction, interaction.user.id)
         selected = find_ppe_or_raise(refreshed, self.ppe_id)
         guild_config = await load_guild_config(interaction)
@@ -217,9 +251,18 @@ class CharacterLootVariantView(OwnerBoundView):
         )
         await close_myinfo_menu(interaction)
         await interaction.followup.send(embed=embed, ephemeral=False)
+        await log_cost_event(
+            interaction,
+            command_name="/myinfo statistics (character)",
+            started_monotonic=started_monotonic,
+            snapshot_before=snapshot_before,
+            source="menu_action",
+        )
 
     @discord.ui.button(label="Point Graph", style=discord.ButtonStyle.success, row=2)
     async def point_graph(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        started_monotonic = time.monotonic()
+        snapshot_before = capture_runtime_snapshot()
         refreshed = await refresh_player_data(interaction, interaction.user.id)
         selected = find_ppe_or_raise(refreshed, self.ppe_id)
         guild_config = await load_guild_config(interaction)
@@ -239,6 +282,13 @@ class CharacterLootVariantView(OwnerBoundView):
         await interaction.followup.send(
             file=discord.File(graph_image, filename=f"ppe_{selected.id}_point_graph.png"),
             ephemeral=False,
+        )
+        await log_cost_event(
+            interaction,
+            command_name="/myinfo character point graph",
+            started_monotonic=started_monotonic,
+            snapshot_before=snapshot_before,
+            source="menu_action",
         )
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=3)

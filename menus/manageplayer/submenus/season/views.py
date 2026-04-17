@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 import discord
 
 from menus.manageplayer.common import (
@@ -11,6 +13,7 @@ from menus.manageplayer.common import (
 from menus.manageplayer.services import load_target_player_data
 from menus.manageplayer.targets import ManagedPlayerTarget
 from menus.menu_utils.season_loot_variants import SeasonLootVariantActionsView
+from utils.bot_cost_tracking import capture_runtime_snapshot, log_cost_event
 from utils.guild_config import load_guild_config
 from utils.player_statistics import build_season_wrapped_embed
 from utils.time_graphs import build_item_graph
@@ -32,6 +35,8 @@ class ManagePlayerSeasonLootView(SeasonLootVariantActionsView):
         include_skins: bool,
         include_limited: bool,
     ) -> None:
+        started_monotonic = time.monotonic()
+        snapshot_before = capture_runtime_snapshot()
         await close_manageplayer_menu(interaction)
         await share_season_loot_image(
             interaction,
@@ -42,12 +47,41 @@ class ManagePlayerSeasonLootView(SeasonLootVariantActionsView):
             error_ephemeral=False,
         )
 
+        variant_name = "admin season loot image"
+        if include_skins and include_limited:
+            variant_name = "admin season loot image (all loot)"
+        elif include_skins:
+            variant_name = "admin season loot image (normal + skins)"
+        elif include_limited:
+            variant_name = "admin season loot image (normal + limited)"
+        else:
+            variant_name = "admin season loot image (normal only)"
+
+        await log_cost_event(
+            interaction,
+            command_name=f"/manageplayer show image {variant_name}",
+            started_monotonic=started_monotonic,
+            snapshot_before=snapshot_before,
+            source="menu_action",
+        )
+
     async def _list_season_loot(self, interaction: discord.Interaction) -> None:
+        started_monotonic = time.monotonic()
+        snapshot_before = capture_runtime_snapshot()
         await close_manageplayer_menu(interaction)
         player_data = await load_target_player_data(interaction, self.target.user_id)
         await send_target_season_loot_markdown_followup(interaction, target=self.target, player_data=player_data)
+        await log_cost_event(
+            interaction,
+            command_name="/manageplayer list season loot",
+            started_monotonic=started_monotonic,
+            snapshot_before=snapshot_before,
+            source="menu_action",
+        )
 
     async def _show_statistics(self, interaction: discord.Interaction) -> None:
+        started_monotonic = time.monotonic()
+        snapshot_before = capture_runtime_snapshot()
         player_data = await load_target_player_data(interaction, self.target.user_id)
         guild_config = await load_guild_config(interaction)
         embed = build_season_wrapped_embed(
@@ -57,8 +91,17 @@ class ManagePlayerSeasonLootView(SeasonLootVariantActionsView):
         )
         await close_manageplayer_menu(interaction)
         await interaction.followup.send(embed=embed, ephemeral=False)
+        await log_cost_event(
+            interaction,
+            command_name="/manageplayer statistics (season)",
+            started_monotonic=started_monotonic,
+            snapshot_before=snapshot_before,
+            source="menu_action",
+        )
 
     async def _show_item_graph(self, interaction: discord.Interaction) -> None:
+        started_monotonic = time.monotonic()
+        snapshot_before = capture_runtime_snapshot()
         player_data = await load_target_player_data(interaction, self.target.user_id)
 
         # Respond first so graph rendering does not time out on heavy season histories.
@@ -75,6 +118,13 @@ class ManagePlayerSeasonLootView(SeasonLootVariantActionsView):
         await interaction.followup.send(
             file=discord.File(graph_image, filename="season_item_graph.png"),
             ephemeral=False,
+        )
+        await log_cost_event(
+            interaction,
+            command_name="/manageplayer season item graph",
+            started_monotonic=started_monotonic,
+            snapshot_before=snapshot_before,
+            source="menu_action",
         )
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)

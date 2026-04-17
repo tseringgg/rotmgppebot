@@ -275,6 +275,8 @@ def build_manage_bot_cost_embed(summary: dict[str, object]) -> discord.Embed:
     total_duration_seconds = float(summary.get("total_duration_seconds", 0.0) or 0.0)
     total_gb_minutes = float(summary.get("total_estimated_gb_minutes", 0.0) or 0.0)
     total_cost = float(summary.get("total_estimated_cost_usd", 0.0) or 0.0)
+    total_rss_growth = float(summary.get("total_rss_growth_mb", 0.0) or 0.0)
+    total_rss_shrink = float(summary.get("total_rss_shrink_mb", 0.0) or 0.0)
     total_cache_growth = int(summary.get("total_cache_growth", 0) or 0)
     total_cache_shrink = int(summary.get("total_cache_shrink", 0) or 0)
     max_rss_after_mb = float(summary.get("max_rss_after_mb", 0.0) or 0.0)
@@ -291,11 +293,29 @@ def build_manage_bot_cost_embed(summary: dict[str, object]) -> discord.Embed:
         cost_share = float(row.get("cost_share_percent", 0.0) or 0.0)
         call_count = int(row.get("call_count", 0) or 0)
         cache_growth = int(row.get("total_cache_growth", 0) or 0)
+        tracking_source = str(row.get("tracking_source", "unknown")).strip() or "unknown"
         cost_lines.append(
-            f"{index}. {command} - ${command_cost:.6f} ({cost_share:.1f}%), calls={call_count}, cache+={cache_growth}"
+            f"{index}. {command} - ${command_cost:.6f} ({cost_share:.1f}%), calls={call_count}, cache+={cache_growth}, src={tracking_source}"
         )
     if not cost_lines:
         cost_lines = ["No command cost records in this window yet."]
+
+    top_by_rss = summary.get("top_by_rss_growth", []) if isinstance(summary.get("top_by_rss_growth", []), list) else []
+    rss_lines: list[str] = []
+    for index, row in enumerate(top_by_rss[:5], start=1):
+        if not isinstance(row, dict):
+            continue
+        command = str(row.get("command", "unknown"))
+        rss_growth = float(row.get("total_rss_growth_mb", 0.0) or 0.0)
+        rss_share = float(row.get("rss_growth_share_percent", 0.0) or 0.0)
+        call_count = int(row.get("call_count", 0) or 0)
+        command_cost = float(row.get("total_estimated_cost_usd", 0.0) or 0.0)
+        tracking_source = str(row.get("tracking_source", "unknown")).strip() or "unknown"
+        rss_lines.append(
+            f"{index}. {command} - rss+={rss_growth:.1f} MB ({rss_share:.1f}%), calls={call_count}, cost=${command_cost:.6f}, src={tracking_source}"
+        )
+    if not rss_lines:
+        rss_lines = ["No RSS growth records in this window yet."]
 
     top_by_cache = (
         summary.get("top_by_cache_growth", [])
@@ -311,8 +331,9 @@ def build_manage_bot_cost_embed(summary: dict[str, object]) -> discord.Embed:
         cache_share = float(row.get("cache_growth_share_percent", 0.0) or 0.0)
         call_count = int(row.get("call_count", 0) or 0)
         command_cost = float(row.get("total_estimated_cost_usd", 0.0) or 0.0)
+        tracking_source = str(row.get("tracking_source", "unknown")).strip() or "unknown"
         cache_lines.append(
-            f"{index}. {command} - cache+={cache_growth} ({cache_share:.1f}%), calls={call_count}, cost=${command_cost:.6f}"
+            f"{index}. {command} - cache+={cache_growth} ({cache_share:.1f}%), calls={call_count}, cost=${command_cost:.6f}, src={tracking_source}"
         )
     if not cache_lines:
         cache_lines = ["No cache growth records in this window yet."]
@@ -320,7 +341,7 @@ def build_manage_bot_cost_embed(summary: dict[str, object]) -> discord.Embed:
     embed = discord.Embed(
         title="Manage Bot Cost",
         description=(
-            "Per-guild command telemetry to estimate memory spend and cache growth by command.\n"
+            "Per-guild command telemetry to estimate memory spend, RSS growth, and cache growth by command.\n"
             f"Viewing last **{window_hours}h**."
         ),
         color=discord.Color.orange(),
@@ -333,6 +354,7 @@ def build_manage_bot_cost_embed(summary: dict[str, object]) -> discord.Embed:
             f"Total runtime: **{total_duration_seconds:.2f}s**\n"
             f"Estimated usage: **{total_gb_minutes:.6f} GB-min**\n"
             f"Estimated cost: **${total_cost:.6f}**\n"
+            f"RSS growth total: **+{total_rss_growth:.1f} MB** / shrink total: **-{total_rss_shrink:.1f} MB**\n"
             f"Cache growth total: **+{total_cache_growth}** / shrink total: **-{total_cache_shrink}**\n"
             f"Peak RSS observed after command: **{max_rss_after_mb:.1f} MB**"
         ),
@@ -341,6 +363,11 @@ def build_manage_bot_cost_embed(summary: dict[str, object]) -> discord.Embed:
     embed.add_field(
         name="Top Cost Contributors",
         value=_truncate_field_value("\n".join(cost_lines)),
+        inline=False,
+    )
+    embed.add_field(
+        name="Top RSS Growth Contributors",
+        value=_truncate_field_value("\n".join(rss_lines)),
         inline=False,
     )
     embed.add_field(

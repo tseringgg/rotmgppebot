@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 import discord
 
 from dataclass import PPEData, PlayerData
@@ -20,6 +22,7 @@ from menus.manageplayer.entry import open_manageplayer_home
 from menus.manageplayer.services import delete_single_ppe_for_target, find_ppe_or_raise, load_target_player_data
 from menus.manageplayer.targets import ManagedPlayerTarget
 from menus.menu_utils import OwnerBoundView
+from utils.bot_cost_tracking import capture_runtime_snapshot, log_cost_event
 from utils.guild_config import load_guild_config
 from utils.loot_helpers.shareloot_image import generate_loot_share_image, variant_image_label
 from utils.player_statistics import build_character_wrapped_embed
@@ -297,6 +300,8 @@ class ManagePlayerCharacterLootView(OwnerBoundView):
         return embed
 
     async def _share(self, interaction: discord.Interaction, *, include_skins: bool, include_limited: bool) -> None:
+        started_monotonic = time.monotonic()
+        snapshot_before = capture_runtime_snapshot()
         from menus.manageplayer.common import display_class_name, format_points
 
         refreshed = await load_target_player_data(interaction, self.target.user_id)
@@ -327,6 +332,24 @@ class ManagePlayerCharacterLootView(OwnerBoundView):
             ephemeral=False,
         )
 
+        variant_name = "admin character loot image"
+        if include_skins and include_limited:
+            variant_name = "admin character loot image (all loot)"
+        elif include_skins:
+            variant_name = "admin character loot image (normal + skins)"
+        elif include_limited:
+            variant_name = "admin character loot image (normal + limited)"
+        else:
+            variant_name = "admin character loot image (normal only)"
+
+        await log_cost_event(
+            interaction,
+            command_name=f"/manageplayer show image {variant_name}",
+            started_monotonic=started_monotonic,
+            snapshot_before=snapshot_before,
+            source="menu_action",
+        )
+
     async def _close_and_share(
         self,
         interaction: discord.Interaction,
@@ -355,13 +378,24 @@ class ManagePlayerCharacterLootView(OwnerBoundView):
 
     @discord.ui.button(label="List Loot", style=discord.ButtonStyle.primary, row=1)
     async def show_list(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        started_monotonic = time.monotonic()
+        snapshot_before = capture_runtime_snapshot()
         await close_manageplayer_menu(interaction)
         refreshed = await load_target_player_data(interaction, self.target.user_id)
         selected = find_ppe_or_raise(refreshed, self.ppe_id)
         await send_target_loot_markdown_followup(interaction, ppe=selected)
+        await log_cost_event(
+            interaction,
+            command_name="/manageplayer list loot",
+            started_monotonic=started_monotonic,
+            snapshot_before=snapshot_before,
+            source="menu_action",
+        )
 
     @discord.ui.button(label="Show Character Statistics", style=discord.ButtonStyle.success, row=2)
     async def show_character_statistics(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        started_monotonic = time.monotonic()
+        snapshot_before = capture_runtime_snapshot()
         refreshed = await load_target_player_data(interaction, self.target.user_id)
         selected = find_ppe_or_raise(refreshed, self.ppe_id)
         guild_config = await load_guild_config(interaction)
@@ -373,6 +407,13 @@ class ManagePlayerCharacterLootView(OwnerBoundView):
         )
         await close_manageplayer_menu(interaction)
         await interaction.followup.send(embed=embed, ephemeral=False)
+        await log_cost_event(
+            interaction,
+            command_name="/manageplayer statistics (character)",
+            started_monotonic=started_monotonic,
+            snapshot_before=snapshot_before,
+            source="menu_action",
+        )
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=3)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

@@ -10,6 +10,7 @@ import discord
 
 from utils.ppe_types import normalize_allowed_ppe_types, normalize_ppe_type_multipliers
 from utils.bot_cost_tracking import (
+    ensure_guild_cost_log_file,
     clear_guild_cost_log,
     get_cost_rate_per_gb_minute,
     get_guild_cost_log_path,
@@ -1517,6 +1518,7 @@ async def load_bot_cost_summary_for_menu(
         raise ValueError("This action can only be used in a server.")
 
     guild_id = int(interaction.guild.id)
+    await ensure_guild_cost_log_file(guild_id)
     summary = await summarize_guild_cost_log(guild_id, window_hours=window_hours, top_n=top_n)
     summary["log_path"] = get_guild_cost_log_path(guild_id)
     summary["cost_rate_per_gb_minute"] = get_cost_rate_per_gb_minute()
@@ -1538,9 +1540,10 @@ def _format_command_cost_row(index: int, row: dict[str, Any]) -> str:
     total_cost = float(row.get("total_estimated_cost_usd", 0.0) or 0.0)
     cost_share = float(row.get("cost_share_percent", 0.0) or 0.0)
     cache_growth = int(row.get("total_cache_growth", 0) or 0)
+    tracking_source = str(row.get("tracking_source", "unknown")).strip() or "unknown"
     return (
         f"{index}. {command} | cost=${total_cost:.6f} ({cost_share:.1f}%) | "
-        f"calls={calls} | errors={errors} | cache_growth={cache_growth}"
+        f"calls={calls} | errors={errors} | cache_growth={cache_growth} | src={tracking_source}"
     )
 
 
@@ -1550,9 +1553,23 @@ def _format_command_cache_row(index: int, row: dict[str, Any]) -> str:
     cache_growth = int(row.get("total_cache_growth", 0) or 0)
     cache_share = float(row.get("cache_growth_share_percent", 0.0) or 0.0)
     total_cost = float(row.get("total_estimated_cost_usd", 0.0) or 0.0)
+    tracking_source = str(row.get("tracking_source", "unknown")).strip() or "unknown"
     return (
         f"{index}. {command} | cache_growth={cache_growth} ({cache_share:.1f}%) | "
-        f"calls={calls} | cost=${total_cost:.6f}"
+        f"calls={calls} | cost=${total_cost:.6f} | src={tracking_source}"
+    )
+
+
+def _format_command_rss_row(index: int, row: dict[str, Any]) -> str:
+    command = str(row.get("command", "unknown"))
+    calls = int(row.get("call_count", 0) or 0)
+    rss_growth = float(row.get("total_rss_growth_mb", 0.0) or 0.0)
+    rss_share = float(row.get("rss_growth_share_percent", 0.0) or 0.0)
+    total_cost = float(row.get("total_estimated_cost_usd", 0.0) or 0.0)
+    tracking_source = str(row.get("tracking_source", "unknown")).strip() or "unknown"
+    return (
+        f"{index}. {command} | rss+={rss_growth:.1f} MB ({rss_share:.1f}%) | "
+        f"calls={calls} | cost=${total_cost:.6f} | src={tracking_source}"
     )
 
 
@@ -1576,6 +1593,8 @@ async def build_bot_cost_summary_markdown_for_menu(
     total_duration = float(summary.get("total_duration_seconds", 0.0) or 0.0)
     total_gb_minutes = float(summary.get("total_estimated_gb_minutes", 0.0) or 0.0)
     total_cost = float(summary.get("total_estimated_cost_usd", 0.0) or 0.0)
+    total_rss_growth = float(summary.get("total_rss_growth_mb", 0.0) or 0.0)
+    total_rss_shrink = float(summary.get("total_rss_shrink_mb", 0.0) or 0.0)
     total_cache_growth = int(summary.get("total_cache_growth", 0) or 0)
     total_cache_shrink = int(summary.get("total_cache_shrink", 0) or 0)
     cost_rate = float(summary.get("cost_rate_per_gb_minute", get_cost_rate_per_gb_minute()) or 0.0)
@@ -1596,6 +1615,8 @@ async def build_bot_cost_summary_markdown_for_menu(
         f"- Total command runtime: {total_duration:.2f}s",
         f"- Estimated GB-minutes: {total_gb_minutes:.6f}",
         f"- Estimated cost: ${total_cost:.6f}",
+        f"- RSS growth total: +{total_rss_growth:.1f} MB",
+        f"- RSS shrink total: -{total_rss_shrink:.1f} MB",
         f"- Cache growth events total: +{total_cache_growth}",
         f"- Cache shrink events total: -{total_cache_shrink}",
         "",
@@ -1610,6 +1631,20 @@ async def build_bot_cost_summary_markdown_for_menu(
             lines.append(_format_command_cost_row(index, row))
     else:
         lines.append("No command cost data in this window.")
+
+    lines.extend(["", "## Top Commands By RSS Growth"])
+    top_by_rss = (
+        summary.get("top_by_rss_growth", [])
+        if isinstance(summary.get("top_by_rss_growth", []), list)
+        else []
+    )
+    if top_by_rss:
+        for index, row in enumerate(top_by_rss, start=1):
+            if not isinstance(row, dict):
+                continue
+            lines.append(_format_command_rss_row(index, row))
+    else:
+        lines.append("No RSS growth records in this window.")
 
     lines.extend(["", "## Top Commands By Cache Growth"])
     top_by_cache = (

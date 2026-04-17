@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 import discord
 
 from menus.menu_utils.season_loot_variants import SeasonLootVariantActionsView
@@ -11,6 +13,7 @@ from menus.myinfo.common import (
     send_season_loot_markdown_followup,
 )
 from utils.guild_config import load_guild_config
+from utils.bot_cost_tracking import capture_runtime_snapshot, log_cost_event
 from utils.player_statistics import build_season_wrapped_embed
 from utils.time_graphs import build_item_graph
 from utils.loot_helpers.loot_share_commands import share_season_loot_image
@@ -26,6 +29,8 @@ class SeasonLootVariantView(SeasonLootVariantActionsView):
         self.max_ppes = max_ppes
 
     async def _share(self, interaction: discord.Interaction, *, include_skins: bool, include_limited: bool) -> None:
+        started_monotonic = time.monotonic()
+        snapshot_before = capture_runtime_snapshot()
         records = await load_player_records(interaction)
         key = ensure_player_exists(records, interaction.user.id)
         player_data = records[key]
@@ -43,6 +48,23 @@ class SeasonLootVariantView(SeasonLootVariantActionsView):
             return
 
         await share_season_loot_image(interaction, include_skins=include_skins, include_limited=include_limited)
+        variant_name = "season loot image"
+        if include_skins and include_limited:
+            variant_name = "season loot image (all loot)"
+        elif include_skins:
+            variant_name = "season loot image (normal + skins)"
+        elif include_limited:
+            variant_name = "season loot image (normal + limited)"
+        else:
+            variant_name = "season loot image (normal only)"
+
+        await log_cost_event(
+            interaction,
+            command_name=f"/myinfo show image {variant_name}",
+            started_monotonic=started_monotonic,
+            snapshot_before=snapshot_before,
+            source="menu_action",
+        )
 
     async def _close_and_share(
         self,
@@ -55,10 +77,21 @@ class SeasonLootVariantView(SeasonLootVariantActionsView):
         await self._share(interaction, include_skins=include_skins, include_limited=include_limited)
 
     async def _list_season_loot(self, interaction: discord.Interaction) -> None:
+        started_monotonic = time.monotonic()
+        snapshot_before = capture_runtime_snapshot()
         await close_myinfo_menu(interaction)
         await send_season_loot_markdown_followup(interaction)
+        await log_cost_event(
+            interaction,
+            command_name="/myinfo list season loot",
+            started_monotonic=started_monotonic,
+            snapshot_before=snapshot_before,
+            source="menu_action",
+        )
 
     async def _show_statistics(self, interaction: discord.Interaction) -> None:
+        started_monotonic = time.monotonic()
+        snapshot_before = capture_runtime_snapshot()
         records = await load_player_records(interaction)
         key = ensure_player_exists(records, interaction.user.id)
         player_data = records[key]
@@ -70,8 +103,17 @@ class SeasonLootVariantView(SeasonLootVariantActionsView):
         )
         await close_myinfo_menu(interaction)
         await interaction.followup.send(embed=embed, ephemeral=False)
+        await log_cost_event(
+            interaction,
+            command_name="/myinfo statistics (season)",
+            started_monotonic=started_monotonic,
+            snapshot_before=snapshot_before,
+            source="menu_action",
+        )
 
     async def _show_item_graph(self, interaction: discord.Interaction) -> None:
+        started_monotonic = time.monotonic()
+        snapshot_before = capture_runtime_snapshot()
         records = await load_player_records(interaction)
         key = ensure_player_exists(records, interaction.user.id)
         player_data = records[key]
@@ -90,6 +132,13 @@ class SeasonLootVariantView(SeasonLootVariantActionsView):
         await interaction.followup.send(
             file=discord.File(graph_image, filename="season_item_graph.png"),
             ephemeral=False,
+        )
+        await log_cost_event(
+            interaction,
+            command_name="/myinfo season item graph",
+            started_monotonic=started_monotonic,
+            snapshot_before=snapshot_before,
+            source="menu_action",
         )
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=3)

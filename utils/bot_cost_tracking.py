@@ -56,6 +56,26 @@ def get_guild_cost_log_path(guild_id: int) -> str:
     return os.path.join(_COST_LOG_DIR, f"{int(guild_id)}_command_cost.jsonl")
 
 
+def _touch_file(path: str) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "a", encoding="utf-8"):
+        pass
+
+
+def _normalize_command_name(command_name: str | None) -> str:
+    normalized = str(command_name or "unknown").strip() or "unknown"
+    if not normalized.startswith("/"):
+        normalized = "/" + normalized
+    return normalized
+
+
+async def ensure_guild_cost_log_file(guild_id: int) -> str:
+    path = get_guild_cost_log_path(guild_id)
+    async with get_lock(int(guild_id)):
+        await asyncio.to_thread(_touch_file, path)
+    return path
+
+
 async def clear_guild_tracking_state(guild_id: int) -> None:
     guild_key = int(guild_id)
     async with _ACTIVE_LOCK:
@@ -145,6 +165,10 @@ def _capture_runtime_snapshot() -> dict[str, Any]:
     }
 
 
+def capture_runtime_snapshot() -> dict[str, Any]:
+    return _capture_runtime_snapshot()
+
+
 def _cache_total(snapshot: dict[str, Any]) -> int:
     cache_entries = snapshot.get("cache_entries", {}) if isinstance(snapshot, dict) else {}
     if not isinstance(cache_entries, dict):
@@ -181,11 +205,125 @@ def _append_jsonl(path: str, payload: dict[str, Any]) -> None:
         handle.write(json.dumps(payload, ensure_ascii=True, separators=(",", ":")) + "\n")
 
 
+def _build_cost_payload(
+    *,
+    interaction_id: int,
+    guild_id: int,
+    user_id: int,
+    command_name: str,
+    status: str,
+    error_message: str | None,
+    started_monotonic: float,
+    started_unix: float,
+    snapshot_before: dict[str, Any],
+    source: str,
+) -> dict[str, Any]:
+    ended_monotonic = time.monotonic()
+    ended_unix = time.time()
+    snapshot_after = _capture_runtime_snapshot()
+
+    duration_seconds = max(0.0, ended_monotonic - started_monotonic)
+    rss_before_mb = float(snapshot_before.get("rss_mb", 0.0) or 0.0)
+    rss_after_mb = float(snapshot_after.get("rss_mb", 0.0) or 0.0)
+    avg_rss_mb = (rss_before_mb + rss_after_mb) / 2.0
+    gb_minutes, cost_usd = _estimate_cost_usd(avg_rss_mb=avg_rss_mb, duration_seconds=duration_seconds)
+
+    cache_before = snapshot_before.get("cache_entries", {}) if isinstance(snapshot_before, dict) else {}
+    cache_after = snapshot_after.get("cache_entries", {}) if isinstance(snapshot_after, dict) else {}
+    lock_before = snapshot_before.get("lock_entries", {}) if isinstance(snapshot_before, dict) else {}
+    lock_after = snapshot_after.get("lock_entries", {}) if isinstance(snapshot_after, dict) else {}
+
+    cache_keys = sorted(set(cache_before.keys()) | set(cache_after.keys()))
+    lock_keys = sorted(set(lock_before.keys()) | set(lock_after.keys()))
+
+    cache_delta = {
+        key: int(cache_after.get(key, 0)) - int(cache_before.get(key, 0))
+        for key in cache_keys
+    }
+    lock_delta = {
+        key: int(lock_after.get(key, 0)) - int(lock_before.get(key, 0))
+        for key in lock_keys
+    }
+
+    return {
+        "ts_utc": _utc_iso_now(),
+        "interaction_id": interaction_id,
+        "guild_id": guild_id,
+        "user_id": user_id,
+        "command": _normalize_command_name(command_name),
+        "status": str(status or "unknown").strip().lower() or "unknown",
+        "error": str(error_message).strip() if error_message else None,
+        "tracking_source": str(source or "unknown").strip() or "unknown",
+        "started_at_unix": float(started_unix),
+        "ended_at_unix": ended_unix,
+        "duration_seconds": duration_seconds,
+        "rss_before_mb": rss_before_mb,
+        "rss_after_mb": rss_after_mb,
+        "rss_delta_mb": rss_after_mb - rss_before_mb,
+        "avg_rss_mb": avg_rss_mb,
+        "estimated_gb_minutes": gb_minutes,
+        "estimated_cost_usd": cost_usd,
+        "cache_before": cache_before,
+        "cache_after": cache_after,
+        "cache_delta": cache_delta,
+        "cache_total_before": _cache_total(snapshot_before),
+        "cache_total_after": _cache_total(snapshot_after),
+        "cache_delta_total": _cache_total(snapshot_after) - _cache_total(snapshot_before),
+        "lock_before": lock_before,
+        "lock_after": lock_after,
+        "lock_delta": lock_delta,
+        "lock_total_before": _lock_total(snapshot_before),
+        "lock_total_after": _lock_total(snapshot_after),
+        "lock_delta_total": _lock_total(snapshot_after) - _lock_total(snapshot_before),
+    }
+
+
 async def _write_cost_entry(guild_id: int, payload: dict[str, Any]) -> None:
     path = get_guild_cost_log_path(guild_id)
 
     async with get_lock(int(guild_id)):
         await asyncio.to_thread(_append_jsonl, path, payload)
+
+
+async def log_cost_event(
+    interaction: discord.Interaction,
+    *,
+    command_name: str,
+    status: str = "ok",
+    error_message: str | None = None,
+    started_monotonic: float | None = None,
+    started_unix: float | None = None,
+    snapshot_before: dict[str, Any] | None = None,
+    source: str = "ui_action",
+) -> bool:
+    if not _COST_LOG_ENABLED:
+        return False
+
+    if interaction.guild_id is None:
+        return False
+
+    guild_id = int(interaction.guild_id)
+    user_id = int(interaction.user.id)
+    interaction_id = int(interaction.id)
+    started_monotonic = float(started_monotonic if started_monotonic is not None else time.monotonic())
+    started_unix = float(started_unix if started_unix is not None else time.time())
+    snapshot_before = dict(snapshot_before or _capture_runtime_snapshot())
+
+    await ensure_guild_cost_log_file(guild_id)
+    payload = _build_cost_payload(
+        interaction_id=interaction_id,
+        guild_id=guild_id,
+        user_id=user_id,
+        command_name=command_name,
+        status=status,
+        error_message=error_message,
+        started_monotonic=started_monotonic,
+        started_unix=started_unix,
+        snapshot_before=snapshot_before,
+        source=source,
+    )
+    await _write_cost_entry(guild_id, payload)
+    return True
 
 
 async def start_command_tracking(interaction: discord.Interaction) -> bool:
@@ -214,6 +352,8 @@ async def start_command_tracking(interaction: discord.Interaction) -> bool:
         _purge_stale_active(now_monotonic)
         _ACTIVE_COMMANDS[interaction_id] = payload
 
+    await ensure_guild_cost_log_file(int(interaction.guild_id))
+
     return True
 
 
@@ -241,69 +381,23 @@ async def finish_command_tracking(
     if context is None:
         return False
 
-    snapshot_before = context.get("snapshot_before", {}) if isinstance(context, dict) else {}
-    snapshot_after = _capture_runtime_snapshot()
-
     started_monotonic = float(context.get("started_monotonic", ended_monotonic))
-    duration_seconds = max(0.0, ended_monotonic - started_monotonic)
-
-    rss_before_mb = float(snapshot_before.get("rss_mb", 0.0) or 0.0)
-    rss_after_mb = float(snapshot_after.get("rss_mb", 0.0) or 0.0)
-    avg_rss_mb = (rss_before_mb + rss_after_mb) / 2.0
-    gb_minutes, cost_usd = _estimate_cost_usd(avg_rss_mb=avg_rss_mb, duration_seconds=duration_seconds)
-
-    cache_before = snapshot_before.get("cache_entries", {}) if isinstance(snapshot_before, dict) else {}
-    cache_after = snapshot_after.get("cache_entries", {}) if isinstance(snapshot_after, dict) else {}
-    lock_before = snapshot_before.get("lock_entries", {}) if isinstance(snapshot_before, dict) else {}
-    lock_after = snapshot_after.get("lock_entries", {}) if isinstance(snapshot_after, dict) else {}
-
-    cache_keys = sorted(set(cache_before.keys()) | set(cache_after.keys()))
-    lock_keys = sorted(set(lock_before.keys()) | set(lock_after.keys()))
-
-    cache_delta = {
-        key: int(cache_after.get(key, 0)) - int(cache_before.get(key, 0))
-        for key in cache_keys
-    }
-    lock_delta = {
-        key: int(lock_after.get(key, 0)) - int(lock_before.get(key, 0))
-        for key in lock_keys
-    }
-
+    snapshot_before = context.get("snapshot_before", {}) if isinstance(context, dict) else {}
     resolved_command_name = command_name or str(context.get("command", "")).strip() or _extract_command_name(interaction)
-    if resolved_command_name and not resolved_command_name.startswith("/"):
-        resolved_command_name = "/" + resolved_command_name
-    resolved_status = str(status or "unknown").strip().lower() or "unknown"
+    started_unix = float(context.get("started_unix", ended_unix))
 
-    payload = {
-        "ts_utc": _utc_iso_now(),
-        "interaction_id": interaction_id,
-        "guild_id": int(context.get("guild_id", int(interaction.guild_id))),
-        "user_id": int(context.get("user_id", int(interaction.user.id))),
-        "command": resolved_command_name,
-        "status": resolved_status,
-        "error": str(error_message).strip() if error_message else None,
-        "started_at_unix": float(context.get("started_unix", ended_unix)),
-        "ended_at_unix": ended_unix,
-        "duration_seconds": duration_seconds,
-        "rss_before_mb": rss_before_mb,
-        "rss_after_mb": rss_after_mb,
-        "rss_delta_mb": rss_after_mb - rss_before_mb,
-        "avg_rss_mb": avg_rss_mb,
-        "estimated_gb_minutes": gb_minutes,
-        "estimated_cost_usd": cost_usd,
-        "cache_before": cache_before,
-        "cache_after": cache_after,
-        "cache_delta": cache_delta,
-        "cache_total_before": _cache_total(snapshot_before),
-        "cache_total_after": _cache_total(snapshot_after),
-        "cache_delta_total": _cache_total(snapshot_after) - _cache_total(snapshot_before),
-        "lock_before": lock_before,
-        "lock_after": lock_after,
-        "lock_delta": lock_delta,
-        "lock_total_before": _lock_total(snapshot_before),
-        "lock_total_after": _lock_total(snapshot_after),
-        "lock_delta_total": _lock_total(snapshot_after) - _lock_total(snapshot_before),
-    }
+    payload = _build_cost_payload(
+        interaction_id=interaction_id,
+        guild_id=int(context.get("guild_id", int(interaction.guild_id))),
+        user_id=int(context.get("user_id", int(interaction.user.id))),
+        command_name=resolved_command_name,
+        status=status,
+        error_message=error_message,
+        started_monotonic=started_monotonic,
+        started_unix=started_unix,
+        snapshot_before=snapshot_before,
+        source="app_command",
+    )
 
     await _write_cost_entry(int(context.get("guild_id", int(interaction.guild_id))), payload)
     return True
@@ -346,10 +440,13 @@ def _summarize_log_sync(path: str, *, cutoff_unix: float, top_n: int) -> dict[st
         "total_duration_seconds": 0.0,
         "total_estimated_gb_minutes": 0.0,
         "total_estimated_cost_usd": 0.0,
+        "total_rss_growth_mb": 0.0,
+        "total_rss_shrink_mb": 0.0,
         "total_cache_growth": 0,
         "total_cache_shrink": 0,
         "max_rss_after_mb": 0.0,
         "top_by_cost": [],
+        "top_by_rss_growth": [],
         "top_by_cache_growth": [],
     }
 
@@ -374,11 +471,13 @@ def _summarize_log_sync(path: str, *, cutoff_unix: float, top_n: int) -> dict[st
 
             command_name = str(entry.get("command", "unknown")).strip() or "unknown"
             status = str(entry.get("status", "unknown")).strip().lower()
+            tracking_source = str(entry.get("tracking_source", "unknown")).strip() or "unknown"
             duration_seconds = _safe_float(entry.get("duration_seconds"), 0.0)
             estimated_gb_minutes = _safe_float(entry.get("estimated_gb_minutes"), 0.0)
             estimated_cost_usd = _safe_float(entry.get("estimated_cost_usd"), 0.0)
             cache_delta_total = _safe_int(entry.get("cache_delta_total"), 0)
             rss_after_mb = _safe_float(entry.get("rss_after_mb"), 0.0)
+            rss_delta_mb = _safe_float(entry.get("rss_delta_mb"), 0.0)
 
             stats = command_stats.setdefault(
                 command_name,
@@ -389,11 +488,18 @@ def _summarize_log_sync(path: str, *, cutoff_unix: float, top_n: int) -> dict[st
                     "total_duration_seconds": 0.0,
                     "total_estimated_gb_minutes": 0.0,
                     "total_estimated_cost_usd": 0.0,
+                    "total_rss_growth_mb": 0.0,
+                    "total_rss_shrink_mb": 0.0,
                     "total_cache_growth": 0,
                     "total_cache_shrink": 0,
                     "max_rss_after_mb": 0.0,
+                    "tracking_source": tracking_source,
                 },
             )
+
+            existing_source = str(stats.get("tracking_source", "unknown")).strip() or "unknown"
+            if existing_source != tracking_source:
+                stats["tracking_source"] = "mixed"
 
             stats["call_count"] += 1
             if status != "ok":
@@ -403,6 +509,14 @@ def _summarize_log_sync(path: str, *, cutoff_unix: float, top_n: int) -> dict[st
             stats["total_estimated_gb_minutes"] += estimated_gb_minutes
             stats["total_estimated_cost_usd"] += estimated_cost_usd
             stats["max_rss_after_mb"] = max(float(stats["max_rss_after_mb"]), rss_after_mb)
+
+            if rss_delta_mb > 0:
+                stats["total_rss_growth_mb"] += rss_delta_mb
+                summary["total_rss_growth_mb"] += rss_delta_mb
+            elif rss_delta_mb < 0:
+                shrink = abs(rss_delta_mb)
+                stats["total_rss_shrink_mb"] += shrink
+                summary["total_rss_shrink_mb"] += shrink
 
             if cache_delta_total > 0:
                 stats["total_cache_growth"] += cache_delta_total
@@ -439,6 +553,20 @@ def _summarize_log_sync(path: str, *, cutoff_unix: float, top_n: int) -> dict[st
             }
         )
 
+    rows.sort(key=lambda row: (-float(row["total_rss_growth_mb"]), -float(row["total_estimated_cost_usd"]), str(row["command"])))
+    top_rss_growth = [row for row in rows if float(row["total_rss_growth_mb"]) > 0][:top_n]
+
+    total_rss_growth = float(summary["total_rss_growth_mb"])
+    top_rss_rows: list[dict[str, Any]] = []
+    for row in top_rss_growth:
+        growth_value = float(row["total_rss_growth_mb"])
+        top_rss_rows.append(
+            {
+                **row,
+                "rss_growth_share_percent": (growth_value / total_rss_growth * 100.0) if total_rss_growth > 0 else 0.0,
+            }
+        )
+
     rows.sort(key=lambda row: (-int(row["total_cache_growth"]), -float(row["total_estimated_cost_usd"]), str(row["command"])))
     top_cache = [row for row in rows if int(row["total_cache_growth"]) > 0][:top_n]
 
@@ -453,6 +581,7 @@ def _summarize_log_sync(path: str, *, cutoff_unix: float, top_n: int) -> dict[st
         )
 
     summary["top_by_cost"] = top_cost_rows
+    summary["top_by_rss_growth"] = top_rss_rows
     summary["top_by_cache_growth"] = top_cache_rows
     return summary
 
@@ -467,6 +596,8 @@ async def summarize_guild_cost_log(
     safe_top_n = max(1, int(top_n))
     cutoff_unix = time.time() - (safe_hours * 3600)
     path = get_guild_cost_log_path(guild_id)
+
+    await ensure_guild_cost_log_file(guild_id)
 
     async with get_lock(int(guild_id)):
         summary = await asyncio.to_thread(_summarize_log_sync, path, cutoff_unix=cutoff_unix, top_n=safe_top_n)
