@@ -52,7 +52,11 @@ async def command(interaction: discord.Interaction):
                 continue
 
             player = member_display_name(guild, pid)
-            ppe_points = compute_ppe_points(data, aggregate=scoring.ppe_aggregate_points)
+            ppe_points = compute_ppe_points(
+                data,
+                aggregate=scoring.ppe_aggregate_points,
+                guild_config=guild_config,
+            )
             quest_points = 0.0
             if include_ppe_quest_points:
                 if require_active_ppe_items_for_quests:
@@ -76,7 +80,7 @@ async def command(interaction: discord.Interaction):
                     )
 
             points = ppe_points + quest_points
-            best_ppe = get_best_ppe(data)
+            best_ppe = get_best_ppe(data, guild_config=guild_config)
             leaderboard_data.append((player, best_ppe, ppe_points, quest_points, points, len(ppes), data.active_ppe))
 
         leaderboard_data.sort(key=lambda x: (x[4], x[2]), reverse=True)

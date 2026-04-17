@@ -1,5 +1,6 @@
 """Utilities for points service."""
 
+from copy import deepcopy
 import math
 from typing import Any, Dict, Iterable
 
@@ -730,6 +731,20 @@ def get_set_bonus_points_from_config(ppe: PPEData, guild_config: Dict[str, Any] 
                 total_set_bonus += set_bonuses[set_type][set_name]
     
     return total_set_bonus
+
+
+def compute_effective_ppe_points(
+    ppe: PPEData,
+    guild_config: Dict[str, Any] | None = None,
+) -> float:
+    """Compute points for a PPE using current config without mutating the original object."""
+    try:
+        ppe_copy = deepcopy(ppe)
+    except Exception:
+        return _as_float(getattr(ppe, "points", 0.0), 0.0)
+
+    breakdown = recompute_ppe_points(ppe_copy, guild_config)
+    return _as_float(breakdown.get("total", getattr(ppe_copy, "points", 0.0)), 0.0)
 
 
 def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = None) -> Dict[str, float]:

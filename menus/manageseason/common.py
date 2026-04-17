@@ -744,7 +744,6 @@ def build_ppe_type_points_embed(character_settings: dict) -> discord.Embed:
     )
     lines = _build_ppe_type_multiplier_lines(multipliers, ppe_settings=character_settings)
     iterative_base_lines = _build_iterative_base_lines(character_settings)
-    override_lines = _build_type_label_override_lines(character_settings)
     combo_lines = _build_combo_label_override_lines(character_settings)
     embed = discord.Embed(
         title="PPE Type Point Multipliers",
@@ -752,10 +751,6 @@ def build_ppe_type_points_embed(character_settings: dict) -> discord.Embed:
         color=discord.Color.dark_teal(),
     )
     current_value = "\n".join(lines)
-    if override_lines:
-        current_value += "\n\nLegacy Type Label Overrides:\n" + "\n".join(override_lines[:10])
-        if len(override_lines) > 10:
-            current_value += f"\n... and {len(override_lines) - 10} more"
     if combo_lines:
         current_value += "\n\nCombo Overrides:\n" + "\n".join(combo_lines[:10])
         if len(combo_lines) > 10:
@@ -768,7 +763,6 @@ def build_ppe_type_points_embed(character_settings: dict) -> discord.Embed:
             "• Edit Selected PPE Type Multiplier: updates the selected legacy type's fixed multiplier.\n"
             "• Edit Iterative Base Multipliers: edits per-rule factors (No Pet, No Tiered, rarity, shiny, duo).\n"
             "• Edit Combo Multiplier: sets the summary label and direct multiplier for one exact option signature.\n"
-            "• Edit Selected Legacy Type Label: renames the full/short label for one legacy PPE type.\n"
             "• Backfill Legacy Fields: migrates older data fields to newer type/option storage."
         ),
         inline=False,

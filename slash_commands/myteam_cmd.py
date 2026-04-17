@@ -4,6 +4,7 @@ from typing import Optional
 
 import discord
 
+from utils.guild_config import load_guild_config
 from utils.player_records import ensure_player_exists, load_player_records, load_teams
 from utils.team_contest_scoring import (
     TeamContestScoring,
@@ -46,6 +47,7 @@ def _build_members_with_scoring(
     members_info: list[tuple[int, str, float, str]],
     include_quest_points: bool,
     scoring: TeamContestScoring,
+    guild_config: dict,
 ) -> list[tuple[int, str, float, float, float, str]]:
     members_with_scoring: list[tuple[int, str, float, float, float, str]] = []
     for member_id, member_name, _legacy_ppe_points, _legacy_ppe_class in members_info:
@@ -54,13 +56,14 @@ def _build_members_with_scoring(
             player_data,
             scoring=scoring,
             aggregate=scoring.team_aggregate_points,
+            guild_config=guild_config,
         )
 
         if player_data and getattr(player_data, "ppes", None):
             if scoring.team_aggregate_points:
                 ppe_class = "All PPEs"
             else:
-                best_ppe = get_best_ppe(player_data)
+                best_ppe = get_best_ppe(player_data, guild_config=guild_config)
                 ppe_class = _format_class_name(getattr(best_ppe, "name", None))
         else:
             ppe_class = "No Character"
@@ -128,6 +131,7 @@ async def build_team_embeds(
 
     records = await load_player_records(interaction)
     scoring = await load_team_contest_scoring(interaction)
+    guild_config = await load_guild_config(interaction)
 
     team_info = await team_manager.get_team_members_info(interaction, target_team)
     if not team_info:
@@ -139,6 +143,7 @@ async def build_team_embeds(
         members_info=members_info,
         include_quest_points=scoring.include_quest_points,
         scoring=scoring,
+        guild_config=guild_config,
     )
 
     total_ppe = sum(x[2] for x in members_info_sorted)

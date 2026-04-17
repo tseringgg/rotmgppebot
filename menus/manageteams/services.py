@@ -4,6 +4,7 @@ import discord
 
 from dataclass import TeamData
 from menus.manageteams.common import TEAM_LIST_PAGE_SIZE, display_name, resolve_team_name
+from utils.guild_config import load_guild_config
 from utils.player_records import ensure_player_exists, load_player_records, load_teams
 from utils.team_manager import team_manager
 from utils.team_contest_scoring import compute_team_member_points, get_best_ppe, load_team_contest_scoring
@@ -94,6 +95,7 @@ async def build_team_summary_pages(interaction: discord.Interaction) -> list[dis
     teams = await load_teams(interaction)
     records = await load_player_records(interaction)
     scoring = await load_team_contest_scoring(interaction)
+    guild_config = await load_guild_config(interaction)
 
     if not teams:
         return [
@@ -127,6 +129,7 @@ async def build_team_summary_pages(interaction: discord.Interaction) -> list[dis
                 player_data,
                 scoring=scoring,
                 aggregate=scoring.team_aggregate_points,
+                guild_config=guild_config,
             )
             ppe_points += member_ppe_points
             quest_points += member_quest_points
@@ -177,6 +180,7 @@ async def build_team_detail(
     teams = await load_teams(interaction)
     records = await load_player_records(interaction)
     scoring = await load_team_contest_scoring(interaction)
+    guild_config = await load_guild_config(interaction)
 
     actual_name = resolve_team_name(teams, team_name)
     if not actual_name:
@@ -193,13 +197,14 @@ async def build_team_detail(
             if scoring.team_aggregate_points:
                 best_class = "All PPEs"
             else:
-                best_ppe = get_best_ppe(player)
+                best_ppe = get_best_ppe(player, guild_config=guild_config)
                 best_class = str(getattr(best_ppe, "name", "No PPE"))
 
         ppe_points, quest_points, contribution = compute_team_member_points(
             player,
             scoring=scoring,
             aggregate=scoring.team_aggregate_points,
+            guild_config=guild_config,
         )
         members.append((member_id, member_name, ppe_points, quest_points, contribution, best_class))
 

@@ -25,7 +25,6 @@ from menus.manageseason.modals import (
     EditDuplicateItemPointsModal,
     EditGlobalPointSettingsModal,
     EditPetModifierModal,
-    EditPpeTypeLabelModal,
     EditPpeTypeMultiplierModal,
     EditRarityModifiersModal,
 )
@@ -332,18 +331,6 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
                 owner_id=self.owner_id,
                 source_message=interaction.message,
                 character_settings=self.character_settings,
-            )
-        )
-
-    @discord.ui.button(label="Edit Selected Legacy Type Label", style=discord.ButtonStyle.primary, row=2)
-    async def edit_selected_type_label(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        self.character_settings = await load_character_settings_for_menu(interaction)
-        await interaction.response.send_modal(
-            EditPpeTypeLabelModal(
-                owner_id=self.owner_id,
-                ppe_type=self.selected_type,
-                character_settings=self.character_settings,
-                source_message=interaction.message,
             )
         )
 

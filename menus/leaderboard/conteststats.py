@@ -10,6 +10,7 @@ from menus.leaderboard.common import send_error_response
 from menus.leaderboard.services import member_display_name, require_guild
 from utils.calc_points import normalize_item_name
 from utils.guild_config import get_quest_points, load_guild_config
+from utils.points_service import compute_effective_ppe_points
 from utils.player_records import load_player_records
 from utils.ppe_types import normalize_ppe_type, ppe_type_compact_summary
 from utils.season_loot_history import season_unique_items
@@ -89,7 +90,7 @@ async def command(interaction: discord.Interaction) -> None:
             quest_data = getattr(data, "quests", None)
 
             display_name = member_display_name(guild, user_id)
-            player_points = sum(float(getattr(ppe, "points", 0.0) or 0.0) for ppe in ppes)
+            player_points = sum(compute_effective_ppe_points(ppe, guild_config=guild_config) for ppe in ppes)
             player_character_count = len(ppes)
             player_unique_season = len(season_unique_items(data))
 

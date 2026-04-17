@@ -9,6 +9,7 @@ import discord
 
 from utils.calc_points import normalize_item_name
 from utils.guild_config import get_contest_settings, get_quest_points
+from utils.points_service import compute_effective_ppe_points
 from utils.quest_modes import normalize_team_key
 
 
@@ -53,23 +54,28 @@ def _player_ppes(player_data: Any) -> list[Any]:
     return ppes if isinstance(ppes, list) else []
 
 
-def _ppe_points_value(ppe: Any) -> float:
+def _ppe_points_value(ppe: Any, *, guild_config: dict[str, Any] | None = None) -> float:
     try:
-        return float(getattr(ppe, "points", 0.0) or 0.0)
+        return float(compute_effective_ppe_points(ppe, guild_config=guild_config))
     except (TypeError, ValueError):
         return 0.0
 
 
-def get_best_ppe(player_data: Any) -> Any | None:
-    """Return the highest-scoring PPE for a player, if any."""
+def get_best_ppe(player_data: Any, *, guild_config: dict[str, Any] | None = None) -> Any | None:
+    """Return the highest-scoring PPE for a player using effective point totals."""
     ppes = _player_ppes(player_data)
     if not ppes:
         return None
-    return max(ppes, key=_ppe_points_value)
+    return max(ppes, key=lambda ppe: _ppe_points_value(ppe, guild_config=guild_config))
 
 
-def compute_ppe_points(player_data: Any, *, aggregate: bool = False) -> float:
-    """Compute a player's PPE points, optionally aggregating every character."""
+def compute_ppe_points(
+    player_data: Any,
+    *,
+    aggregate: bool = False,
+    guild_config: dict[str, Any] | None = None,
+) -> float:
+    """Compute a player's PPE points from effective totals, optionally aggregating all characters."""
     ppes = _player_ppes(player_data)
     if not ppes:
         return 0.0
@@ -77,13 +83,13 @@ def compute_ppe_points(player_data: Any, *, aggregate: bool = False) -> float:
     if aggregate:
         total_points = 0.0
         for ppe in ppes:
-            total_points += _ppe_points_value(ppe)
+            total_points += _ppe_points_value(ppe, guild_config=guild_config)
         return total_points
 
-    best_ppe = get_best_ppe(player_data)
+    best_ppe = get_best_ppe(player_data, guild_config=guild_config)
     if best_ppe is None:
         return 0.0
-    return _ppe_points_value(best_ppe)
+    return _ppe_points_value(best_ppe, guild_config=guild_config)
 
 
 def compute_team_member_points(
@@ -91,9 +97,10 @@ def compute_team_member_points(
     *,
     scoring: TeamContestScoring,
     aggregate: bool = False,
+    guild_config: dict[str, Any] | None = None,
 ) -> tuple[float, float, float]:
     """Compute PPE points, quest points, and total contribution for one player."""
-    ppe_points = compute_ppe_points(player_data, aggregate=aggregate)
+    ppe_points = compute_ppe_points(player_data, aggregate=aggregate, guild_config=guild_config)
 
     quest_points = 0.0
     if player_data and scoring.include_quest_points:
