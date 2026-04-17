@@ -393,6 +393,21 @@ def normalize_combo_signature(value: Any) -> str:
     return text
 
 
+def normalize_cleared_combo_signatures(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+
+    seen: set[str] = set()
+    normalized: list[str] = []
+    for raw_signature in value:
+        signature = normalize_combo_signature(raw_signature)
+        if not signature or signature in seen:
+            continue
+        seen.add(signature)
+        normalized.append(signature)
+    return sorted(normalized)
+
+
 def normalize_iterative_combo_overrides(value: Any) -> dict[str, float]:
     if not isinstance(value, dict):
         return {}
@@ -665,6 +680,7 @@ def get_ppe_type_multiplier_details_from_options(
     normalized_options = normalize_ppe_type_options(options_value, current_type=current_type)
     signature = ppe_type_option_signature(normalized_options)
     legacy_type = resolve_legacy_ppe_type_from_options(normalized_options, current_type=current_type)
+    cleared_signatures = set(normalize_cleared_combo_signatures(settings.get("iterative_cleared_signatures")))
 
     normalized_overrides = normalize_iterative_combo_overrides(settings.get("iterative_combo_overrides"))
     override_multiplier = normalized_overrides.get(signature)
@@ -679,6 +695,21 @@ def get_ppe_type_multiplier_details_from_options(
             "component_lines": [
                 "Combo Override Applied (replaces iterative stack).",
                 f"Override Multiplier: {_format_multiplier(float(override_multiplier))}",
+            ],
+        }
+
+    if legacy_type is not None and signature not in cleared_signatures:
+        legacy_multipliers = normalize_ppe_type_multipliers(settings.get("ppe_type_multipliers"))
+        multiplier = float(legacy_multipliers.get(legacy_type, DEFAULT_PPE_TYPE_MULTIPLIERS[DEFAULT_PPE_TYPE]))
+        return {
+            "multiplier": multiplier,
+            "source": "preset",
+            "signature": signature,
+            "legacy_type": legacy_type,
+            "components": [],
+            "component_lines": [
+                "Legacy PPE type preset applied.",
+                f"Preset Multiplier: {_format_multiplier(multiplier)}",
             ],
         }
 

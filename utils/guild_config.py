@@ -9,6 +9,7 @@ import discord
 
 from utils.ppe_types import (
     all_ppe_types,
+    normalize_cleared_combo_signatures,
     normalize_allowed_ppe_types,
     normalize_combo_signature,
     normalize_iterative_combo_overrides,
@@ -32,6 +33,7 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
         "ppe_type_multipliers": normalize_ppe_type_multipliers({}),
         "iterative_base_multipliers": normalize_iterative_option_multipliers({}),
         "iterative_combo_overrides": normalize_iterative_combo_overrides({}),
+        "iterative_cleared_signatures": normalize_cleared_combo_signatures([]),
         "type_label_overrides": normalize_ppe_type_label_overrides({}),
         "type_short_label_overrides": normalize_ppe_type_short_label_overrides({}),
         "combo_label_overrides": normalize_ppe_combo_label_overrides({}),
@@ -204,6 +206,7 @@ def _normalized_ppe_settings(config: Dict[str, Any]) -> Dict[str, Any]:
     multipliers = normalize_ppe_type_multipliers(settings.get("ppe_type_multipliers"))
     iterative_base_multipliers = normalize_iterative_option_multipliers(settings.get("iterative_base_multipliers"))
     iterative_combo_overrides = normalize_iterative_combo_overrides(settings.get("iterative_combo_overrides"))
+    iterative_cleared_signatures = normalize_cleared_combo_signatures(settings.get("iterative_cleared_signatures"))
     type_label_overrides = normalize_ppe_type_label_overrides(settings.get("type_label_overrides"))
     type_short_label_overrides = normalize_ppe_type_short_label_overrides(settings.get("type_short_label_overrides"))
     combo_label_overrides = normalize_ppe_combo_label_overrides(settings.get("combo_label_overrides"))
@@ -215,6 +218,7 @@ def _normalized_ppe_settings(config: Dict[str, Any]) -> Dict[str, Any]:
         "ppe_type_multipliers": multipliers,
         "iterative_base_multipliers": iterative_base_multipliers,
         "iterative_combo_overrides": iterative_combo_overrides,
+        "iterative_cleared_signatures": iterative_cleared_signatures,
         "type_label_overrides": type_label_overrides,
         "type_short_label_overrides": type_short_label_overrides,
         "combo_label_overrides": combo_label_overrides,
@@ -711,13 +715,17 @@ async def set_iterative_ppe_combo_override(
 ) -> Dict[str, Any]:
     settings = await get_ppe_settings(interaction)
     current = normalize_iterative_combo_overrides(settings.get("iterative_combo_overrides"))
+    cleared_signatures = set(normalize_cleared_combo_signatures(settings.get("iterative_cleared_signatures")))
     normalized_signature = normalize_combo_signature(signature)
     if normalized_signature:
         if multiplier is None:
             current.pop(normalized_signature, None)
+            cleared_signatures.add(normalized_signature)
         elif float(multiplier) > 0:
             current[normalized_signature] = float(multiplier)
+            cleared_signatures.discard(normalized_signature)
     settings["iterative_combo_overrides"] = current
+    settings["iterative_cleared_signatures"] = sorted(cleared_signatures)
     return await set_ppe_settings(interaction, settings)
 
 

@@ -9,6 +9,7 @@ from typing import Any
 import discord
 
 from utils.ppe_types import (
+    normalize_cleared_combo_signatures,
     normalize_combo_signature,
     normalize_iterative_combo_overrides,
     normalize_allowed_ppe_types,
@@ -653,6 +654,7 @@ async def update_combo_multiplier_details(
     settings = await get_ppe_settings(interaction)
 
     combo_overrides = normalize_iterative_combo_overrides(settings.get("iterative_combo_overrides"))
+    cleared_signatures = set(normalize_cleared_combo_signatures(settings.get("iterative_cleared_signatures")))
     label_overrides = normalize_ppe_combo_label_overrides(settings.get("combo_label_overrides"))
 
     normalized_signature = normalize_combo_signature(signature)
@@ -661,8 +663,10 @@ async def update_combo_multiplier_details(
 
     if multiplier is None:
         combo_overrides.pop(normalized_signature, None)
+        cleared_signatures.add(normalized_signature)
     else:
         combo_overrides[normalized_signature] = float(multiplier)
+        cleared_signatures.discard(normalized_signature)
 
     clean_name = str(name or "").strip()
     clean_short = str(short or "").strip()
@@ -672,6 +676,7 @@ async def update_combo_multiplier_details(
         label_overrides[normalized_signature] = {"name": clean_name, "short": clean_short}
 
     settings["iterative_combo_overrides"] = combo_overrides
+    settings["iterative_cleared_signatures"] = sorted(cleared_signatures)
     settings["combo_label_overrides"] = label_overrides
     saved = await set_ppe_settings(interaction, settings)
 
@@ -691,6 +696,7 @@ async def clear_all_ppe_type_overrides(
 ) -> tuple[dict[str, Any], PointsRefreshSummary]:
     settings = await get_ppe_settings(interaction)
     settings["iterative_combo_overrides"] = normalize_iterative_combo_overrides({})
+    settings["iterative_cleared_signatures"] = normalize_cleared_combo_signatures([])
     settings["combo_label_overrides"] = normalize_ppe_combo_label_overrides({})
     if clear_type_labels:
         settings["type_label_overrides"] = normalize_ppe_type_label_overrides({})
