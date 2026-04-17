@@ -68,6 +68,7 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
             "rare": 1.0,
             "legendary": 1.0,
             "divine": 2.0,
+            "shiny": 2.0,
         },
         "starting_penalty_modifiers": {
             "pet_level_percent_reduction": 0.0,
@@ -76,6 +77,7 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
             "incombat_percent_reduction": 0.0,
         },
         "duplicate_point_reduction": 0.5,
+        "duplicate_match_mode": "separate_rarity",
         "penalty_weights": {
             "pet_level_per_point": 4.0,
             "exalts_per_point": 2.0,
@@ -397,7 +399,13 @@ def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
         "rare": max(0.0, _as_float(raw_rarity_multipliers.get("rare"), _DEFAULT_CONFIG["points_settings"]["rarity_multipliers"]["rare"])),
         "legendary": max(0.0, _as_float(raw_rarity_multipliers.get("legendary"), _DEFAULT_CONFIG["points_settings"]["rarity_multipliers"]["legendary"])),
         "divine": max(0.0, _as_float(raw_rarity_multipliers.get("divine"), _DEFAULT_CONFIG["points_settings"]["rarity_multipliers"]["divine"])),
+        "shiny": max(0.0, _as_float(raw_rarity_multipliers.get("shiny"), _DEFAULT_CONFIG["points_settings"]["rarity_multipliers"]["shiny"])),
     }
+
+    duplicate_match_mode = str(raw.get("duplicate_match_mode", _DEFAULT_CONFIG["points_settings"]["duplicate_match_mode"]))
+    duplicate_match_mode = duplicate_match_mode.strip().lower()
+    if duplicate_match_mode not in {"separate_rarity", "any_rarity", "non_divine_any_rarity", "all_including_shiny"}:
+        duplicate_match_mode = _DEFAULT_CONFIG["points_settings"]["duplicate_match_mode"]
 
     normalized_starting_penalty_modifiers = {
         "pet_level_percent_reduction": max(0.0, _as_float(raw_starting_penalty_modifiers.get("pet_level_percent_reduction"), 0.0)),
@@ -488,6 +496,7 @@ def _normalized_points_settings(config: Dict[str, Any]) -> Dict[str, Any]:
         "rarity_multipliers": normalized_rarity_multipliers,
         "starting_penalty_modifiers": normalized_starting_penalty_modifiers,
         "duplicate_point_reduction": duplicate_point_reduction,
+        "duplicate_match_mode": duplicate_match_mode,
         "penalty_weights": normalized_penalty_weights,
         "class_overrides": normalized_overrides,
         "set_overrides": normalized_set_overrides,
@@ -507,6 +516,10 @@ def get_rarity_multipliers(guild_config: Dict[str, Any] | None) -> Dict[str, flo
         except (TypeError, ValueError):
             parsed = float(fallback)
         result[rarity] = parsed if parsed >= 0 else float(fallback)
+
+    if "shiny" not in result:
+        result["shiny"] = float(defaults.get("shiny", 2.0))
+
     return result
 
 

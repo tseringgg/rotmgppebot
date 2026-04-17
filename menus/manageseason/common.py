@@ -62,14 +62,108 @@ def _build_starting_penalty_modifier_lines(modifiers: dict) -> list[str]:
 
 def _build_rarity_multiplier_lines(rarity_multipliers: dict) -> list[str]:
     lines: list[str] = []
-    for rarity in ("common", "uncommon", "rare", "legendary", "divine"):
+    for rarity in ("common", "uncommon", "rare", "legendary", "divine", "shiny"):
         value = 1.0
+        default = 2.0 if rarity in {"divine", "shiny"} else 1.0
         try:
-            value = float(rarity_multipliers.get(rarity, 1.0))
+            value = float(rarity_multipliers.get(rarity, default))
         except (TypeError, ValueError):
-            value = 1.0
+            value = default
         lines.append(f"• {rarity.title()}: **{value:.2f}x**")
     return lines
+
+
+def _duplicate_mode_label(mode: str) -> str:
+    normalized = str(mode or "").strip().lower()
+    mapping = {
+        "separate_rarity": "Different rarities are separate",
+        "any_rarity": "Any rarity of same item is duplicate",
+        "non_divine_any_rarity": "Divines are exempt; others group",
+        "all_including_shiny": "All variants including shinies group",
+    }
+    return mapping.get(normalized, mapping["separate_rarity"])
+
+
+def _duplicate_mode_description_lines(mode: str) -> list[str]:
+    normalized = str(mode or "").strip().lower()
+    if normalized == "any_rarity":
+        return [
+            "• Same item + shiny state counts as one duplicate bucket.",
+            "• Different rarities are treated as duplicate copies.",
+        ]
+    if normalized == "non_divine_any_rarity":
+        return [
+            "• Divine drops never lose points to duplicate reduction.",
+            "• Non-divine rarities of the same item + shiny state share one bucket.",
+        ]
+    if normalized == "all_including_shiny":
+        return [
+            "• Same item name always shares one duplicate bucket.",
+            "• Rarity and shiny are ignored for duplicate matching.",
+        ]
+    return [
+        "• Current default behavior.",
+        "• Duplicate matching requires same item + rarity + shiny state.",
+    ]
+
+
+def build_manage_duplicate_items_embed(settings: dict) -> discord.Embed:
+    """Build duplicate-settings overview embed."""
+    try:
+        duplicate_reduction = float(settings.get("duplicate_point_reduction", 0.5))
+    except (TypeError, ValueError):
+        duplicate_reduction = 0.5
+    if duplicate_reduction < 0:
+        duplicate_reduction = 0.5
+
+    duplicate_mode = str(settings.get("duplicate_match_mode", "separate_rarity")).strip().lower()
+
+    embed = discord.Embed(
+        title="Manage Duplicate Items",
+        description="Control duplicate-copy point reduction and what counts as a duplicate copy.",
+        color=discord.Color.dark_teal(),
+    )
+    embed.add_field(
+        name="Duplicate Point Reduction",
+        value=(
+            f"• Current value: **{duplicate_reduction:.2f}x**\n"
+            "• Applied to each duplicate copy after the first in a duplicate bucket.\n"
+            "• Set to `0` to disable duplicate points."
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="What Is Duplicate",
+        value=(
+            f"• Current mode: **{_duplicate_mode_label(duplicate_mode)}**\n"
+            + "\n".join(_duplicate_mode_description_lines(duplicate_mode))
+        ),
+        inline=False,
+    )
+    embed.set_footer(text="Any duplicate-setting change triggers a full PPE points recalculation.")
+    return embed
+
+
+def build_manage_duplicate_mode_embed(settings: dict) -> discord.Embed:
+    """Build duplicate-mode selection embed."""
+    duplicate_mode = str(settings.get("duplicate_match_mode", "separate_rarity")).strip().lower()
+    embed = discord.Embed(
+        title="Manage What Is Duplicate",
+        description="Choose how duplicate buckets are grouped before reduction is applied.",
+        color=discord.Color.dark_teal(),
+    )
+    embed.add_field(name="Current Mode", value=f"**{_duplicate_mode_label(duplicate_mode)}**", inline=False)
+    embed.add_field(
+        name="Mode Meanings",
+        value=(
+            "• Different rarities are separate: item + rarity + shiny must match (default).\n"
+            "• Any rarity of same item is duplicate: item + shiny must match.\n"
+            "• Divines are exempt; others group: divine drops are always full points, others use item + shiny.\n"
+            "• All variants including shinies group: only item name matters."
+        ),
+        inline=False,
+    )
+    return embed
 
 
 def _safe_positive_float(value: object, fallback: float) -> float:
@@ -534,6 +628,7 @@ def build_point_settings_embed(settings: dict) -> discord.Embed:
         name="Duplicate Item Points",
         value=(
             f"• Point Reduction: **{duplicate_reduction:.2f}x**\n"
+            f"• Duplicate Mode: **{_duplicate_mode_label(str(settings.get('duplicate_match_mode', 'separate_rarity')))}**\n"
             "• Applies to every duplicate copy after the first.\n"
             "• Set `0` to disable duplicate points"
         ),

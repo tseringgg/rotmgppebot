@@ -9,6 +9,8 @@ from menus.manageseason.common import (
     build_ppe_type_points_embed,
     build_class_modifier_settings_embed,
     build_global_modifier_settings_embed,
+    build_manage_duplicate_items_embed,
+    build_manage_duplicate_mode_embed,
     build_point_settings_embed,
 )
 from menus.manageseason.modals import (
@@ -21,7 +23,7 @@ from menus.manageseason.modals import (
     EditRarityModifiersModal,
 )
 from menus.manageseason.services import load_character_settings_for_menu, load_points_settings_for_menu
-from menus.manageseason.services import update_top_point_mode
+from menus.manageseason.services import update_duplicate_match_mode, update_top_point_mode
 from utils.ppe_types import all_ppe_types, ppe_type_label
 from menus.menu_utils import OwnerBoundView
 
@@ -83,16 +85,11 @@ class ManagePointSettingsView(OwnerBoundView):
             )
         )
 
-    @discord.ui.button(label="Edit Duplicate Item Points", style=discord.ButtonStyle.success, row=1)
-    async def edit_duplicate_item_points(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+    @discord.ui.button(label="Manage Duplicate Items", style=discord.ButtonStyle.success, row=1)
+    async def manage_duplicate_items(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.settings = await load_points_settings_for_menu(interaction)
-        await interaction.response.send_modal(
-            EditDuplicateItemPointsModal(
-                owner_id=self.owner_id,
-                settings=self.settings,
-                source_message=interaction.message,
-            )
-        )
+        view = ManageDuplicateItemsView(owner_id=self.owner_id, settings=self.settings)
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
     @discord.ui.button(label="Edit Rarity Modifiers", style=discord.ButtonStyle.success, row=1)
     async def edit_rarity_modifiers(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -301,6 +298,134 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
 
+class ManageDuplicateItemsView(OwnerBoundView):
+    """Subview for duplicate-point settings and duplicate matching definitions."""
+
+    def __init__(self, *, owner_id: int, settings: dict) -> None:
+        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
+        self.owner_id = owner_id
+        self.settings = settings
+
+    def current_embed(self) -> discord.Embed:
+        return build_manage_duplicate_items_embed(self.settings)
+
+    @discord.ui.button(label="Edit Duplicate Item Points", style=discord.ButtonStyle.success, row=0)
+    async def edit_duplicate_item_points(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.settings = await load_points_settings_for_menu(interaction)
+        await interaction.response.send_modal(
+            EditDuplicateItemPointsModal(
+                owner_id=self.owner_id,
+                settings=self.settings,
+                source_message=interaction.message,
+                source_screen="duplicate_items",
+            )
+        )
+
+    @discord.ui.button(label="Manage What Is Duplicate", style=discord.ButtonStyle.success, row=0)
+    async def manage_what_is_duplicate(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.settings = await load_points_settings_for_menu(interaction)
+        view = ManageDuplicateModeView(owner_id=self.owner_id, settings=self.settings)
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
+    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        settings = await load_points_settings_for_menu(interaction)
+        view = ManagePointSettingsView(owner_id=self.owner_id, settings=settings)
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+
+class _DuplicateModeSelect(discord.ui.Select):
+    def __init__(self, *, owner_id: int, selected_mode: str) -> None:
+        options = [
+            discord.SelectOption(
+                label="Different rarities are separate",
+                value="separate_rarity",
+                description="Default: item + rarity + shiny must match to be duplicate.",
+                default=selected_mode == "separate_rarity",
+            ),
+            discord.SelectOption(
+                label="Any rarity of same item is duplicate",
+                value="any_rarity",
+                description="Item + shiny match counts as duplicate across rarities.",
+                default=selected_mode == "any_rarity",
+            ),
+            discord.SelectOption(
+                label="Divines are exempt; others group",
+                value="non_divine_any_rarity",
+                description="Divines never count as duplicate copies.",
+                default=selected_mode == "non_divine_any_rarity",
+            ),
+            discord.SelectOption(
+                label="All variants including shinies group",
+                value="all_including_shiny",
+                description="Only item name matters for duplicate matching.",
+                default=selected_mode == "all_including_shiny",
+            ),
+        ]
+        super().__init__(
+            placeholder="Choose duplicate matching mode",
+            min_values=1,
+            max_values=1,
+            options=options,
+            row=0,
+        )
+        self.owner_id = owner_id
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManageDuplicateModeView):
+            await interaction.response.send_message("Invalid selector state.", ephemeral=True)
+            return
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This selector belongs to another user.", ephemeral=True)
+            return
+
+        view.selected_mode = self.values[0]
+        for option in self.options:
+            option.default = option.value == view.selected_mode
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+
+class ManageDuplicateModeView(OwnerBoundView):
+    """Subview for selecting how duplicate matching groups item copies."""
+
+    def __init__(self, *, owner_id: int, settings: dict, selected_mode: str | None = None) -> None:
+        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
+        self.owner_id = owner_id
+        self.settings = settings
+        mode = str(settings.get("duplicate_match_mode", "separate_rarity")).strip().lower()
+        if selected_mode in {"separate_rarity", "any_rarity", "non_divine_any_rarity", "all_including_shiny"}:
+            mode = selected_mode
+        self.selected_mode = mode if mode in {"separate_rarity", "any_rarity", "non_divine_any_rarity", "all_including_shiny"} else "separate_rarity"
+        self.add_item(_DuplicateModeSelect(owner_id=self.owner_id, selected_mode=self.selected_mode))
+
+    def current_embed(self) -> discord.Embed:
+        return build_manage_duplicate_mode_embed(self.settings)
+
+    @discord.ui.button(label="Apply Selected Mode", style=discord.ButtonStyle.success, row=1)
+    async def apply_selected_mode(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        settings, refresh_summary = await update_duplicate_match_mode(
+            interaction,
+            duplicate_match_mode=self.selected_mode,
+        )
+
+        self.settings = settings
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+        await interaction.followup.send(
+            "Updated duplicate matching mode.\n"
+            f"Mode: {str(settings.get('duplicate_match_mode', self.selected_mode)).replace('_', ' ').title()}\n"
+            f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
+            f"PPE totals changed: {refresh_summary.ppes_updated}",
+            ephemeral=True,
+        )
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
+    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        settings = await load_points_settings_for_menu(interaction)
+        view = ManageDuplicateItemsView(owner_id=self.owner_id, settings=settings)
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+
 class _TopPointModeSelect(discord.ui.Select):
     def __init__(self, *, owner_id: int, selected_mode: str) -> None:
         options = [
@@ -393,6 +518,8 @@ __all__ = [
     "ManagePointSettingsView",
     "ManageGlobalPointSettingsView",
     "ManageClassPointSettingsView",
+    "ManageDuplicateItemsView",
+    "ManageDuplicateModeView",
     "ManagePpeTypePointSettingsView",
     "ManageTopPointSettingsView",
     "_ClassModifierSelect",

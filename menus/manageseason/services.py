@@ -644,6 +644,28 @@ async def update_duplicate_item_point_reduction(
     return dict(settings), refresh_summary
 
 
+async def update_duplicate_match_mode(
+    interaction: discord.Interaction,
+    *,
+    duplicate_match_mode: str,
+) -> tuple[dict[str, Any], PointsRefreshSummary]:
+    """Update duplicate matching mode and refresh all PPE totals."""
+    allowed_modes = {"separate_rarity", "any_rarity", "non_divine_any_rarity", "all_including_shiny"}
+    normalized_mode = str(duplicate_match_mode).strip().lower()
+    if normalized_mode not in allowed_modes:
+        raise ValueError("Invalid duplicate match mode.")
+
+    settings = await get_points_settings(interaction)
+    settings["duplicate_match_mode"] = normalized_mode
+    settings = await set_points_settings(interaction, settings)
+
+    refresh_summary = await refresh_all_character_points(
+        interaction,
+        guild_config={"points_settings": settings},
+    )
+    return dict(settings), refresh_summary
+
+
 async def update_top_point_mode(
     interaction: discord.Interaction,
     *,
@@ -673,6 +695,7 @@ async def update_rarity_multipliers(
     rare: float | None = None,
     legendary: float | None = None,
     divine: float | None = None,
+    shiny: float | None = None,
 ) -> tuple[dict[str, Any], PointsRefreshSummary]:
     """Update rarity multipliers and refresh all PPE totals."""
     settings = await get_points_settings(interaction)
@@ -688,6 +711,7 @@ async def update_rarity_multipliers(
         "rare": rare,
         "legendary": legendary,
         "divine": divine,
+        "shiny": shiny,
     }
     for rarity, value in updates.items():
         if value is None:

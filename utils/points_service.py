@@ -74,6 +74,17 @@ def _rarity_multiplier_for(value: Any, guild_config: Dict[str, Any] | None = Non
     return float(multipliers.get(rarity, 1.0))
 
 
+def _shiny_multiplier_for(shiny: bool, guild_config: Dict[str, Any] | None = None) -> float:
+    if not shiny:
+        return 1.0
+    multipliers = get_rarity_multipliers(guild_config or {})
+    return float(multipliers.get("shiny", 2.0))
+
+
+def _item_multiplier_for(rarity: str, shiny: bool, guild_config: Dict[str, Any] | None = None) -> float:
+    return _rarity_multiplier_for(rarity, guild_config) * _shiny_multiplier_for(shiny, guild_config)
+
+
 def _get_points_settings(guild_config: Dict[str, Any] | None) -> Dict[str, Any]:
     if not isinstance(guild_config, dict):
         return {}
@@ -86,6 +97,14 @@ def _get_duplicate_point_reduction(guild_config: Dict[str, Any] | None) -> float
     raw_value = points_settings.get("duplicate_point_reduction", 0.5)
     parsed = _as_float(raw_value, 0.5)
     return parsed if parsed >= 0 else 0.5
+
+
+def _get_duplicate_match_mode(guild_config: Dict[str, Any] | None) -> str:
+    points_settings = _get_points_settings(guild_config)
+    mode = str(points_settings.get("duplicate_match_mode", "separate_rarity")).strip().lower()
+    if mode in {"separate_rarity", "any_rarity", "non_divine_any_rarity", "all_including_shiny"}:
+        return mode
+    return "separate_rarity"
 
 
 def _get_ppe_settings(guild_config: Dict[str, Any] | None) -> Dict[str, Any]:
@@ -148,6 +167,21 @@ def _get_tops_point_mode(guild_config: Dict[str, Any] | None) -> str:
 def _normalize_item_key(item_name: str, shiny: bool) -> str:
     normalized_item = normalize_item_name(item_name)
     return f"{normalized_item} (shiny)" if shiny else normalized_item
+
+
+def _duplicate_bucket_key(item_name: str, shiny: bool, rarity: str, mode: str) -> tuple[Any, ...] | None:
+    normalized_item = normalize_item_name(item_name).lower()
+    normalized_rarity = normalize_rarity(rarity)
+
+    if mode == "all_including_shiny":
+        return (normalized_item,)
+    if mode == "any_rarity":
+        return (normalized_item, bool(shiny))
+    if mode == "non_divine_any_rarity":
+        if normalized_rarity == "divine":
+            return None
+        return (normalized_item, bool(shiny))
+    return (normalized_item, bool(shiny), normalized_rarity)
 
 
 def _is_tops_item(item_name: str, shiny: bool = False) -> bool:
@@ -491,7 +525,7 @@ def calculate_drop_points(
         return 0.0
 
     effective_rarity = normalize_rarity(rarity)
-    value = base_points * _rarity_multiplier_for(effective_rarity, guild_config)
+    value = base_points * _item_multiplier_for(effective_rarity, shiny, guild_config)
     return math.floor(value * 2) / 2
 
 
@@ -512,7 +546,7 @@ def calculate_item_points(
         return 0.0
 
     effective_rarity = normalize_rarity(rarity)
-    final_points = base_points * _rarity_multiplier_for(effective_rarity, guild_config)
+    final_points = base_points * _item_multiplier_for(effective_rarity, shiny, guild_config)
 
     if _is_tops_item(item_name, shiny):
         tops_mode = _get_tops_point_mode(guild_config)
@@ -597,15 +631,77 @@ def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = Non
     loot_points = load_loot_points()
     loot_total = 0.0
 
-    for loot in ppe.loot:
-        loot_total += calculate_item_points(
-            item_name=loot.item_name,
-            shiny=loot.shiny,
-            quantity=loot.quantity,
-            rarity=getattr(loot, "rarity", "common"),
-            loot_points=loot_points,
-            guild_config=guild_config,
-        )
+    duplicate_reduction = _get_duplicate_point_reduction(guild_config)
+    duplicate_mode = _get_duplicate_match_mode(guild_config)
+    tops_mode = _get_tops_point_mode(guild_config)
+
+    drop_events: list[tuple[int, int, int, Loot]] = []
+    fallback_sequence = 0
+
+    for entry_index, loot in enumerate(ppe.loot):
+        try:
+            quantity = max(0, int(getattr(loot, "quantity", 0)))
+        except (TypeError, ValueError):
+            quantity = 0
+        if quantity <= 0:
+            continue
+
+        parsed_times: list[int] = []
+        for raw_ts in getattr(loot, "logged_times", []):
+            try:
+                parsed = int(raw_ts)
+            except (TypeError, ValueError):
+                continue
+            if parsed > 0:
+                parsed_times.append(parsed)
+        parsed_times.sort()
+
+        for event_index in range(quantity):
+            if event_index < len(parsed_times):
+                timestamp = parsed_times[event_index]
+                sort_group = 0
+            else:
+                fallback_sequence += 1
+                timestamp = fallback_sequence
+                sort_group = 1
+            drop_events.append((sort_group, timestamp, entry_index, loot))
+
+    drop_events.sort(key=lambda row: (row[0], row[1], row[2]))
+
+    duplicate_counts: dict[tuple[Any, ...], int] = {}
+    tops_seen: set[tuple[str, bool, str]] = set()
+
+    for _sort_group, _timestamp, _entry_index, loot in drop_events:
+        item_name = str(getattr(loot, "item_name", ""))
+        shiny = bool(getattr(loot, "shiny", False))
+        rarity = normalize_rarity(getattr(loot, "rarity", "common"))
+
+        base_points = get_item_base_points(item_name, shiny, loot_points=loot_points)
+        if base_points <= 0:
+            continue
+
+        final_points = base_points * _item_multiplier_for(rarity, shiny, guild_config)
+
+        if _is_tops_item(item_name, shiny):
+            tops_key = (normalize_item_name(item_name).lower(), shiny, rarity)
+            if tops_mode == "none":
+                continue
+            if tops_mode == "once":
+                if tops_key in tops_seen:
+                    continue
+                tops_seen.add(tops_key)
+
+        duplicate_key = _duplicate_bucket_key(item_name, shiny, rarity, duplicate_mode)
+        if duplicate_key is None:
+            loot_total += final_points
+            continue
+
+        seen_count = duplicate_counts.get(duplicate_key, 0)
+        if seen_count <= 0:
+            loot_total += final_points
+        else:
+            loot_total += final_points * duplicate_reduction
+        duplicate_counts[duplicate_key] = seen_count + 1
 
     bonus_total, penalty_total = split_bonus_points(ppe.bonuses)
     set_bonus_points = get_set_bonus_points_from_config(ppe, guild_config)

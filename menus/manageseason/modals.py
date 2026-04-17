@@ -9,6 +9,7 @@ from menus.manageseason.services import (
     load_character_settings_for_menu,
     load_points_settings_for_menu,
     update_class_point_override,
+    update_duplicate_match_mode,
     update_duplicate_item_point_reduction,
     update_global_point_modifiers,
     update_penalty_base_rates,
@@ -92,6 +93,8 @@ async def _refresh_point_settings_message(
 
     from menus.manageseason.submenus.points.views import (
         ManageClassPointSettingsView,
+        ManageDuplicateItemsView,
+        ManageDuplicateModeView,
         ManageGlobalPointSettingsView,
         ManagePpeTypePointSettingsView,
         ManagePointSettingsView,
@@ -102,6 +105,10 @@ async def _refresh_point_settings_message(
         view = ManageGlobalPointSettingsView(owner_id=owner_id, settings=refreshed)
     elif source_screen == "class":
         view = ManageClassPointSettingsView(owner_id=owner_id, settings=refreshed, selected_class=selected_class)
+    elif source_screen == "duplicate_items":
+        view = ManageDuplicateItemsView(owner_id=owner_id, settings=refreshed)
+    elif source_screen == "duplicate_mode":
+        view = ManageDuplicateModeView(owner_id=owner_id, settings=refreshed)
     elif source_screen == "ppe_type":
         character_settings = await load_character_settings_for_menu(interaction)
         view = ManagePpeTypePointSettingsView(owner_id=owner_id, character_settings=character_settings)
@@ -757,10 +764,12 @@ class EditDuplicateItemPointsModal(discord.ui.Modal, title="Edit Duplicate Item 
         owner_id: int,
         settings: dict,
         source_message: discord.Message | None,
+        source_screen: str = "landing",
     ) -> None:
         super().__init__(timeout=300)
         self.owner_id = owner_id
         self.source_message = source_message
+        self.source_screen = source_screen
 
         raw_reduction = settings.get("duplicate_point_reduction", 0.5)
         try:
@@ -818,7 +827,7 @@ class EditDuplicateItemPointsModal(discord.ui.Modal, title="Edit Duplicate Item 
             owner_id=self.owner_id,
             source_message=self.source_message,
             settings=settings,
-            source_screen="landing",
+            source_screen=self.source_screen,
         )
 
 
@@ -853,6 +862,12 @@ class EditRarityModifiersModal(discord.ui.Modal, title="Edit Rarity Modifiers"):
         required=False,
         max_length=20,
     )
+    shiny = discord.ui.TextInput(
+        label="Shiny Multiplier",
+        placeholder="Example: 2.0",
+        required=False,
+        max_length=20,
+    )
 
     def __init__(
         self,
@@ -875,6 +890,7 @@ class EditRarityModifiersModal(discord.ui.Modal, title="Edit Rarity Modifiers"):
         self.rare.default = f"{float(rarity_multipliers.get('rare', 1.0)):.2f}"
         self.legendary.default = f"{float(rarity_multipliers.get('legendary', 1.0)):.2f}"
         self.divine.default = f"{float(rarity_multipliers.get('divine', 2.0)):.2f}"
+        self.shiny.default = f"{float(rarity_multipliers.get('shiny', 2.0)):.2f}"
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         if interaction.user.id != self.owner_id:
@@ -887,15 +903,16 @@ class EditRarityModifiersModal(discord.ui.Modal, title="Edit Rarity Modifiers"):
             rare = _parse_optional_float(self.rare.value, field_name="rare")
             legendary = _parse_optional_float(self.legendary.value, field_name="legendary")
             divine = _parse_optional_float(self.divine.value, field_name="divine")
+            shiny = _parse_optional_float(self.shiny.value, field_name="shiny")
         except ValueError as exc:
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
 
-        if all(value is None for value in (common, uncommon, rare, legendary, divine)):
+        if all(value is None for value in (common, uncommon, rare, legendary, divine, shiny)):
             await interaction.response.send_message("ERROR: Provide at least one rarity multiplier to update.", ephemeral=True)
             return
 
-        for value in (common, uncommon, rare, legendary, divine):
+        for value in (common, uncommon, rare, legendary, divine, shiny):
             if value is not None and value < 0:
                 await interaction.response.send_message("ERROR: Rarity multipliers must be 0 or greater.", ephemeral=True)
                 return
@@ -907,7 +924,8 @@ class EditRarityModifiersModal(discord.ui.Modal, title="Edit Rarity Modifiers"):
             f"Uncommon: `{self.uncommon.value or '(unchanged)'}`\n"
             f"Rare: `{self.rare.value or '(unchanged)'}`\n"
             f"Legendary: `{self.legendary.value or '(unchanged)'}`\n"
-            f"Divine: `{self.divine.value or '(unchanged)'}`"
+            f"Divine: `{self.divine.value or '(unchanged)'}`\n"
+            f"Shiny: `{self.shiny.value or '(unchanged)'}`"
         )
         confirmed = await _confirm_points_update(
             interaction=interaction,
@@ -924,6 +942,7 @@ class EditRarityModifiersModal(discord.ui.Modal, title="Edit Rarity Modifiers"):
             rare=rare,
             legendary=legendary,
             divine=divine,
+            shiny=shiny,
         )
         multipliers = settings.get("rarity_multipliers", {}) if isinstance(settings.get("rarity_multipliers"), dict) else {}
 
@@ -934,6 +953,7 @@ class EditRarityModifiersModal(discord.ui.Modal, title="Edit Rarity Modifiers"):
             f"Rare: {float(multipliers.get('rare', 1.0)):.2f}x\n"
             f"Legendary: {float(multipliers.get('legendary', 1.0)):.2f}x\n"
             f"Divine: {float(multipliers.get('divine', 2.0)):.2f}x\n"
+            f"Shiny: {float(multipliers.get('shiny', 2.0)):.2f}x\n"
             f"PPEs recalculated: {refresh_summary.ppes_processed}\n"
             f"PPE totals changed: {refresh_summary.ppes_updated}",
             ephemeral=True,
