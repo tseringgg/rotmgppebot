@@ -25,7 +25,11 @@ from utils.points_service import (
     recompute_ppe_points,
 )
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
-from utils.wizard_components import MinimumRarityContinueButton, MinimumRaritySelect
+from utils.wizard_components import (
+    MinimumRarityContinueButton,
+    MinimumRaritySelect,
+    build_minimum_rarity_handlers,
+)
 
 
 async def create_new_ppe_for_user(
@@ -456,6 +460,19 @@ class NewPpeIterativeWizardView(discord.ui.View):
         }
         self.history: list[str] = []
         self.step = "regular"
+
+        async def _refresh_minimum_rarity(interaction: discord.Interaction) -> None:
+            await interaction.response.edit_message(content=self.prompt_text(), view=self)
+
+        (
+            self._minimum_rarity_on_selected,
+            self._minimum_rarity_on_continue,
+        ) = build_minimum_rarity_handlers(
+            state=self.state,
+            refresh=_refresh_minimum_rarity,
+            advance=self.advance,
+        )
+
         self._rebuild_items()
 
     def _multiplier_hint(self, key: str, fallback: float) -> str:
@@ -557,13 +574,6 @@ class NewPpeIterativeWizardView(discord.ui.View):
             if not value:
                 self.state["duo_partner_id"] = None
 
-    async def _on_minimum_rarity_selected(self, interaction: discord.Interaction, rarity: str) -> None:
-        self.state["minimum_rarity"] = rarity
-        await interaction.response.edit_message(content=self.prompt_text(), view=self)
-
-    async def _on_minimum_rarity_continue(self, interaction: discord.Interaction) -> None:
-        await self.advance(interaction)
-
     def _next_step(self) -> str:
         if self.step == "regular":
             return "duo" if bool(self.state.get("regular")) else "uses_pet"
@@ -612,14 +622,15 @@ class NewPpeIterativeWizardView(discord.ui.View):
                     selected=str(self.state.get("minimum_rarity", "common")),
                     owner_id=self.owner_id,
                     view_type=NewPpeIterativeWizardView,
-                    on_selected=self._on_minimum_rarity_selected,
+                    on_selected=self._minimum_rarity_on_selected,
                 )
             )
             self.add_item(
                 MinimumRarityContinueButton(
                     owner_id=self.owner_id,
                     view_type=NewPpeIterativeWizardView,
-                    on_continue=self._on_minimum_rarity_continue,
+                    on_continue=self._minimum_rarity_on_continue,
+                    row=1,
                 )
             )
             self.add_item(_WizardBackButton(disabled=not bool(self.history)))

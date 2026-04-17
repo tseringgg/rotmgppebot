@@ -38,7 +38,11 @@ from utils.player_statistics import build_character_wrapped_embed
 from utils.penalty_embed import build_penalty_infographic_embed
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.points_service import apply_penalties_to_ppe, parse_penalty_inputs, recompute_ppe_points
-from utils.wizard_components import MinimumRarityContinueButton, MinimumRaritySelect
+from utils.wizard_components import (
+    MinimumRarityContinueButton,
+    MinimumRaritySelect,
+    build_minimum_rarity_handlers,
+)
 
 
 class ManagePlayerPenaltiesModal(discord.ui.Modal, title="Set PPE Penalties"):
@@ -560,6 +564,19 @@ class ManagePlayerPpeTypeWizardView(discord.ui.View):
         self.base_multipliers = self.ppe_settings.get("iterative_base_multipliers", {}) if isinstance(self.ppe_settings.get("iterative_base_multipliers", {}), dict) else {}
         self.state: dict[str, object] = dict(initial_options)
         self.step = "regular"
+
+        async def _refresh_minimum_rarity(interaction: discord.Interaction) -> None:
+            await interaction.response.edit_message(content=self.prompt_text(), view=self)
+
+        (
+            self._minimum_rarity_on_selected,
+            self._minimum_rarity_on_continue,
+        ) = build_minimum_rarity_handlers(
+            state=self.state,
+            refresh=_refresh_minimum_rarity,
+            advance=self.advance,
+        )
+
         self._rebuild_items()
 
     def _multiplier_hint(self, key: str, fallback: float) -> str:
@@ -652,13 +669,6 @@ class ManagePlayerPpeTypeWizardView(discord.ui.View):
             if not value:
                 self.state["duo_partner_id"] = None
 
-    async def _on_minimum_rarity_selected(self, interaction: discord.Interaction, rarity: str) -> None:
-        self.state["minimum_rarity"] = rarity
-        await interaction.response.edit_message(content=self.prompt_text(), view=self)
-
-    async def _on_minimum_rarity_continue(self, interaction: discord.Interaction) -> None:
-        await self.advance(interaction)
-
     def _next_step(self) -> str:
         if self.step == "regular":
             return "duo" if bool(self.state.get("regular")) else "uses_pet"
@@ -696,14 +706,15 @@ class ManagePlayerPpeTypeWizardView(discord.ui.View):
                     selected=str(self.state.get("minimum_rarity", "common")),
                     owner_id=self.owner_id,
                     view_type=ManagePlayerPpeTypeWizardView,
-                    on_selected=self._on_minimum_rarity_selected,
+                    on_selected=self._minimum_rarity_on_selected,
                 )
             )
             self.add_item(
                 MinimumRarityContinueButton(
                     owner_id=self.owner_id,
                     view_type=ManagePlayerPpeTypeWizardView,
-                    on_continue=self._on_minimum_rarity_continue,
+                    on_continue=self._minimum_rarity_on_continue,
+                    row=1,
                 )
             )
             self.add_item(_ManagePlayerWizardCancelButton())

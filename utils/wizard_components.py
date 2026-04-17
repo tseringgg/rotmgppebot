@@ -8,6 +8,25 @@ import discord
 MINIMUM_RARITY_VALUES = ("common", "uncommon", "rare", "legendary", "divine")
 
 
+def build_minimum_rarity_handlers(
+    *,
+    state: dict[str, object],
+    refresh: Callable[[discord.Interaction], Awaitable[None]],
+    advance: Callable[[discord.Interaction], Awaitable[None]],
+) -> tuple[
+    Callable[[discord.Interaction, str], Awaitable[None]],
+    Callable[[discord.Interaction], Awaitable[None]],
+]:
+    async def _on_selected(interaction: discord.Interaction, rarity: str) -> None:
+        state["minimum_rarity"] = str(rarity).strip().lower() or "common"
+        await refresh(interaction)
+
+    async def _on_continue(interaction: discord.Interaction) -> None:
+        await advance(interaction)
+
+    return _on_selected, _on_continue
+
+
 class MinimumRaritySelect(discord.ui.Select):
     def __init__(
         self,

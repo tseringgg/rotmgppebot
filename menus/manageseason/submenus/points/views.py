@@ -37,7 +37,11 @@ from utils.ppe_types import (
     ppe_type_option_signature,
     ppe_type_short_label,
 )
-from utils.wizard_components import MinimumRarityContinueButton, MinimumRaritySelect
+from utils.wizard_components import (
+    MinimumRarityContinueButton,
+    MinimumRaritySelect,
+    build_minimum_rarity_handlers,
+)
 from menus.menu_utils import OwnerBoundView
 
 
@@ -519,6 +523,18 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
         else:
             self.step = "regular"
 
+        async def _refresh_minimum_rarity(interaction: discord.Interaction) -> None:
+            await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+        (
+            self._minimum_rarity_on_selected,
+            self._minimum_rarity_on_continue,
+        ) = build_minimum_rarity_handlers(
+            state=self.state,
+            refresh=_refresh_minimum_rarity,
+            advance=self.advance,
+        )
+
         self._rebuild_items()
 
     def duo_partner_modal(self) -> discord.ui.Modal:
@@ -697,13 +713,6 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
             if not value:
                 self.state["duo_partner_id"] = None
 
-    async def _on_minimum_rarity_selected(self, interaction: discord.Interaction, rarity: str) -> None:
-        self.state["minimum_rarity"] = rarity
-        await interaction.response.edit_message(embed=self.current_embed(), view=self)
-
-    async def _on_minimum_rarity_continue(self, interaction: discord.Interaction) -> None:
-        await self.advance(interaction)
-
     def _next_step(self) -> str:
         if self.step == "regular":
             return "duo" if bool(self.state.get("regular")) else "uses_pet"
@@ -752,14 +761,15 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
                     selected=str(self.state.get("minimum_rarity", "common")),
                     owner_id=self.owner_id,
                     view_type=ManageComboMultiplierWizardView,
-                    on_selected=self._on_minimum_rarity_selected,
+                    on_selected=self._minimum_rarity_on_selected,
                 )
             )
             self.add_item(
                 MinimumRarityContinueButton(
                     owner_id=self.owner_id,
                     view_type=ManageComboMultiplierWizardView,
-                    on_continue=self._on_minimum_rarity_continue,
+                    on_continue=self._minimum_rarity_on_continue,
+                    row=1,
                 )
             )
             self.add_item(_ComboWizardBackButton(disabled=not bool(self.history)))
