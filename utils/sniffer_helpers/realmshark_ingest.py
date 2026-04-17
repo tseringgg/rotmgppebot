@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import glob
 import json
 import os
 import re
@@ -13,6 +12,7 @@ from typing import Any, Awaitable, Callable, Dict
 from dataclass import PlayerData
 from utils.calc_points import load_loot_points, normalize_item_name
 from utils.guild_config import get_realmshark_settings_by_id, set_realmshark_settings_by_id
+from utils.item_image_index import get_item_image_index
 from utils.loot_data import LOOT
 from utils.loot_ops import add_ppe_loot, add_season_loot
 from utils.player_records import ensure_player_exists, load_player_records, highest_rarity
@@ -46,10 +46,9 @@ class _SyntheticInteraction:
 
 
 _DEBUG = os.getenv("REALMSHARK_DEBUG", "false").strip().lower() in {"1", "true", "yes", "on"}
+_INFO_LOGGING = os.getenv("REALMSHARK_INFO_LOGS", "false").strip().lower() in {"1", "true", "yes", "on"}
 _MISSING_ITEMS_LOG_PATH = "/data/realmshark_not_logged_items.jsonl"
 _DUNGEONS_PATH = os.getenv("REALMSHARK_DUNGEONS_PATH", "helper_pics/dungeon_pics")
-_ITEM_IMAGE_INDEX: Dict[str, str] = {}
-_ITEM_IMAGE_INDEX_READY = False
 Notifier = Callable[
     [
         int,
@@ -73,8 +72,23 @@ def _debug_log(message: str) -> None:
         print(f"[REALMSHARK_DEBUG] {message}")
 
 
+def _is_high_priority_log(message: str) -> bool:
+    lowered = message.lower()
+    keywords = (
+        "error",
+        "failed",
+        "failure",
+        "invalid",
+        "missing",
+        "not found",
+        "rejected",
+    )
+    return any(keyword in lowered for keyword in keywords)
+
+
 def _info_log(message: str) -> None:
-    print(f"[REALMSHARK] {message}")
+    if _INFO_LOGGING or _is_high_priority_log(message):
+        print(f"[REALMSHARK] {message}")
 
 
 def _token_preview(token: str) -> str:
@@ -90,32 +104,8 @@ def _strip_shiny_suffix(raw_item_name: str) -> tuple[str, bool]:
     return trimmed, False
 
 
-def _build_item_image_index_if_needed() -> None:
-    global _ITEM_IMAGE_INDEX_READY
-    if _ITEM_IMAGE_INDEX_READY:
-        return
-
-    _ITEM_IMAGE_INDEX.clear()
-    pattern = os.path.join(_DUNGEONS_PATH, "**", "*.png")
-    png_files = glob.glob(pattern, recursive=True)
-
-    for png_file in png_files:
-        base_name = os.path.splitext(os.path.basename(png_file))[0]
-        normalized = normalize_item_name(base_name).lower()
-        if not normalized:
-            continue
-        # Keep first occurrence to preserve deterministic routing.
-        if normalized not in _ITEM_IMAGE_INDEX:
-            _ITEM_IMAGE_INDEX[normalized] = png_file
-
-    _ITEM_IMAGE_INDEX_READY = True
-    _info_log(
-        f"Built item image index: entries={len(_ITEM_IMAGE_INDEX)} source={_DUNGEONS_PATH}"
-    )
-
-
 def _resolve_item_image_path(item_name: str, shiny: bool) -> str | None:
-    _build_item_image_index_if_needed()
+    item_image_index = get_item_image_index(_DUNGEONS_PATH)
 
     candidates = []
     base = item_name.strip()
@@ -133,7 +123,7 @@ def _resolve_item_image_path(item_name: str, shiny: bool) -> str | None:
 
     for candidate in candidates:
         key = normalize_item_name(candidate).lower()
-        path = _ITEM_IMAGE_INDEX.get(key)
+        path = item_image_index.get(key)
         if path:
             return path
 

@@ -11,9 +11,47 @@ from utils.guild_config import load_guild_config_by_id
 
 _CONTEST_SETTINGS_CACHE_TTL_SECONDS = 15.0
 _CONTEST_SETTINGS_CACHE: dict[int, tuple[dict, float]] = {}
+_CONTEST_SETTINGS_CACHE_MAX_ENTRIES = 5000
+_CONTEST_SETTINGS_CACHE_PRUNE_EVERY = 64
+_contest_cache_op_count = 0
+
+
+def _prune_contest_settings_cache(now: float | None = None) -> None:
+    now_monotonic = time.monotonic() if now is None else now
+    expired_keys = [
+        guild_id
+        for guild_id, (_settings, expires_at) in _CONTEST_SETTINGS_CACHE.items()
+        if now_monotonic > expires_at
+    ]
+    for guild_id in expired_keys:
+        _CONTEST_SETTINGS_CACHE.pop(guild_id, None)
+
+    overflow = len(_CONTEST_SETTINGS_CACHE) - _CONTEST_SETTINGS_CACHE_MAX_ENTRIES
+    if overflow > 0:
+        # Drop oldest-to-expire entries first when above cap.
+        entries_by_expiry = sorted(_CONTEST_SETTINGS_CACHE.items(), key=lambda entry: entry[1][1])
+        for guild_id, _value in entries_by_expiry[:overflow]:
+            _CONTEST_SETTINGS_CACHE.pop(guild_id, None)
+
+
+def _maybe_prune_contest_settings_cache() -> None:
+    global _contest_cache_op_count
+    _contest_cache_op_count += 1
+    if _contest_cache_op_count % _CONTEST_SETTINGS_CACHE_PRUNE_EVERY == 0:
+        _prune_contest_settings_cache()
+
+
+def clear_contest_settings_cache(guild_id: int) -> None:
+    _CONTEST_SETTINGS_CACHE.pop(int(guild_id), None)
+
+
+def get_cache_size() -> int:
+    return len(_CONTEST_SETTINGS_CACHE)
 
 
 async def _get_contest_settings(guild_id: int) -> dict:
+    _maybe_prune_contest_settings_cache()
+
     cached = _CONTEST_SETTINGS_CACHE.get(guild_id)
     now = time.monotonic()
     if cached is not None:

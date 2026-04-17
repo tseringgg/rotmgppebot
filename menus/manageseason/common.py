@@ -155,6 +155,13 @@ def build_manageseason_home_embed() -> discord.Embed:
         inline=False,
     )
     embed.add_field(
+        name="Manage Bot Cost",
+        value=(
+            "Review per-command memory/cache cost logs, identify expensive commands, and export cost summaries."
+        ),
+        inline=False,
+    )
+    embed.add_field(
         name="Factory Reset Settings",
         value=(
             "Quick reset for admin-tunable settings only. Preserves sniffer endpoint and join embed references."
@@ -162,6 +169,100 @@ def build_manageseason_home_embed() -> discord.Embed:
         inline=False,
     )
     embed.set_footer(text="This menu is owner-bound: only the admin who opened it can use the controls.")
+    return embed
+
+
+def build_manage_bot_cost_embed(summary: dict[str, object]) -> discord.Embed:
+    """Build the bot-cost management embed for /manageseason."""
+    window_hours = int(summary.get("window_hours", 24) or 24)
+    entry_count = int(summary.get("entry_count", 0) or 0)
+    command_count = int(summary.get("command_count", 0) or 0)
+    error_count = int(summary.get("error_count", 0) or 0)
+    total_duration_seconds = float(summary.get("total_duration_seconds", 0.0) or 0.0)
+    total_gb_minutes = float(summary.get("total_estimated_gb_minutes", 0.0) or 0.0)
+    total_cost = float(summary.get("total_estimated_cost_usd", 0.0) or 0.0)
+    total_cache_growth = int(summary.get("total_cache_growth", 0) or 0)
+    total_cache_shrink = int(summary.get("total_cache_shrink", 0) or 0)
+    max_rss_after_mb = float(summary.get("max_rss_after_mb", 0.0) or 0.0)
+    cost_rate = float(summary.get("cost_rate_per_gb_minute", 0.0) or 0.0)
+    log_path = str(summary.get("log_path", "N/A") or "N/A")
+
+    top_by_cost = summary.get("top_by_cost", []) if isinstance(summary.get("top_by_cost", []), list) else []
+    cost_lines: list[str] = []
+    for index, row in enumerate(top_by_cost[:5], start=1):
+        if not isinstance(row, dict):
+            continue
+        command = str(row.get("command", "unknown"))
+        command_cost = float(row.get("total_estimated_cost_usd", 0.0) or 0.0)
+        cost_share = float(row.get("cost_share_percent", 0.0) or 0.0)
+        call_count = int(row.get("call_count", 0) or 0)
+        cache_growth = int(row.get("total_cache_growth", 0) or 0)
+        cost_lines.append(
+            f"{index}. {command} - ${command_cost:.6f} ({cost_share:.1f}%), calls={call_count}, cache+={cache_growth}"
+        )
+    if not cost_lines:
+        cost_lines = ["No command cost records in this window yet."]
+
+    top_by_cache = (
+        summary.get("top_by_cache_growth", [])
+        if isinstance(summary.get("top_by_cache_growth", []), list)
+        else []
+    )
+    cache_lines: list[str] = []
+    for index, row in enumerate(top_by_cache[:5], start=1):
+        if not isinstance(row, dict):
+            continue
+        command = str(row.get("command", "unknown"))
+        cache_growth = int(row.get("total_cache_growth", 0) or 0)
+        cache_share = float(row.get("cache_growth_share_percent", 0.0) or 0.0)
+        call_count = int(row.get("call_count", 0) or 0)
+        command_cost = float(row.get("total_estimated_cost_usd", 0.0) or 0.0)
+        cache_lines.append(
+            f"{index}. {command} - cache+={cache_growth} ({cache_share:.1f}%), calls={call_count}, cost=${command_cost:.6f}"
+        )
+    if not cache_lines:
+        cache_lines = ["No cache growth records in this window yet."]
+
+    embed = discord.Embed(
+        title="Manage Bot Cost",
+        description=(
+            "Per-guild command telemetry to estimate memory spend and cache growth by command.\n"
+            f"Viewing last **{window_hours}h**."
+        ),
+        color=discord.Color.orange(),
+    )
+    embed.add_field(
+        name="Window Summary",
+        value=(
+            f"Commands logged: **{entry_count}** across **{command_count}** command names\n"
+            f"Errors: **{error_count}**\n"
+            f"Total runtime: **{total_duration_seconds:.2f}s**\n"
+            f"Estimated usage: **{total_gb_minutes:.6f} GB-min**\n"
+            f"Estimated cost: **${total_cost:.6f}**\n"
+            f"Cache growth total: **+{total_cache_growth}** / shrink total: **-{total_cache_shrink}**\n"
+            f"Peak RSS observed after command: **{max_rss_after_mb:.1f} MB**"
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="Top Cost Contributors",
+        value=_truncate_field_value("\n".join(cost_lines)),
+        inline=False,
+    )
+    embed.add_field(
+        name="Top Cache Growth Contributors",
+        value=_truncate_field_value("\n".join(cache_lines)),
+        inline=False,
+    )
+    embed.add_field(
+        name="Telemetry",
+        value=(
+            f"Cost rate: **${cost_rate:.6f} / GB-minute**\n"
+            f"Log file: `{log_path}`"
+        ),
+        inline=False,
+    )
+    embed.set_footer(text="Use this panel to refresh windows, export summary/raw logs, or clear guild cost logs.")
     return embed
 
 

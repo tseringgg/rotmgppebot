@@ -22,6 +22,13 @@ class TeamManager:
             self._locks[guild_id] = asyncio.Lock()
         return self._locks[guild_id]
 
+    def clear_guild_state(self, guild_id: int) -> None:
+        """Release lock state for a guild when the bot leaves it."""
+        self._locks.pop(int(guild_id), None)
+
+    def get_lock_count(self) -> int:
+        return len(self._locks)
+
     async def _rename_team_quest_state(self, interaction: discord.Interaction, *, old_name: str, new_name: str) -> None:
         config = await load_guild_config(interaction)
         quest_settings = config.get("quest_settings", {}) if isinstance(config.get("quest_settings", {}), dict) else {}
@@ -329,3 +336,11 @@ class TeamManager:
 
 # Global instance
 team_manager = TeamManager()
+
+
+def clear_guild_state(guild_id: int) -> None:
+    team_manager.clear_guild_state(guild_id)
+
+
+def get_lock_count() -> int:
+    return team_manager.get_lock_count()

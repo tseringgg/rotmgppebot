@@ -10,7 +10,6 @@ import asyncio
 import os
 import tempfile
 from typing import Optional
-from urllib import response
 
 import discord
 
@@ -64,6 +63,20 @@ _DESCRIPTIONS_CSV = os.path.join(_DETECTOR_DIR, "descriptions", "rotmg_item_desc
 # Tesseract: use the Windows default when running locally, fall back to PATH on Linux/Railway
 _TESSERACT_WIN = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 _TESSERACT_CMD: Optional[str] = _TESSERACT_WIN if os.path.exists(_TESSERACT_WIN) else None
+_ITEM_SUGGESTION_DEBUG = os.getenv("ITEM_SUGGESTION_DEBUG", "false").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _debug_log(message: str) -> None:
+    if _ITEM_SUGGESTION_DEBUG:
+        print(f"[item_suggestion][debug] {message}")
+
+
+def _warn_log(message: str) -> None:
+    print(f"[item_suggestion][warn] {message}")
+
+
+def _error_log(message: str) -> None:
+    print(f"[item_suggestion][error] {message}")
 
 
 # ---------------------------------------------------------------------------
@@ -91,9 +104,9 @@ async def detect_item_from_attachment(attachment: discord.Attachment) -> Optiona
             _TESSERACT_CMD,
         )
         if result:
-            print(f"[detector] matched item={result['item_name']} score={result['score']:.1f}")
+            _debug_log(f"detector matched item={result['item_name']} score={result['score']:.1f}")
             return result["item_name"]
-        print("[detector] no item detected")
+        _debug_log("detector no item detected")
         return None
     finally:
         try:
@@ -125,9 +138,9 @@ class ItemSuggestionView(discord.ui.View):
     async def _check_authorized(self, interaction: discord.Interaction) -> bool:
         """Return True if the responder is the original uploader, else deny."""
         if interaction.user.id != self.target_user_id:
-            print(
-                f"[item_suggestion] unauthorized button click "
-                f"by user={interaction.user.id} (expected {self.target_user_id})"
+            _warn_log(
+                f"unauthorized button click by user={interaction.user.id} "
+                f"(expected {self.target_user_id})"
             )
             await interaction.response.send_message(
                 "Only the original uploader can respond to this suggestion.",
@@ -161,9 +174,8 @@ class ItemSuggestionView(discord.ui.View):
             return
 
         guild_id = interaction.guild.id if interaction.guild else "?"
-        print(
-            f"[item_suggestion] ADD clicked "
-            f"guild={guild_id} user={interaction.user.id} item={self.suggested_item}"
+        _debug_log(
+            f"ADD clicked guild={guild_id} user={interaction.user.id} item={self.suggested_item}"
         )
 
         member = interaction.user
@@ -189,9 +201,8 @@ class ItemSuggestionView(discord.ui.View):
                 shiny=self.is_shiny,
                 rarity=self.rarity,
             )
-            print(
-                f"[item_suggestion] add succeeded "
-                f"guild={guild_id} user={member.id} item={self.suggested_item}"
+            _debug_log(
+                f"add succeeded guild={guild_id} user={member.id} item={self.suggested_item}"
             )
             tags = ""
             if self.is_shiny:
@@ -213,19 +224,13 @@ class ItemSuggestionView(discord.ui.View):
             await loot_message.send_player_loot(result.ppe, user_id=member.id, recently_added=result.item_name)
 
         except LookupError:
-            print(
-                f"[item_suggestion] no active PPE "
-                f"guild={guild_id} user={member.id}"
-            )
+            _warn_log(f"no active PPE guild={guild_id} user={member.id}")
             await self._finish(
                 interaction,
                 f"You do not have an active PPE set, so **{self.suggested_item}** was not added.",
             )
         except Exception as e:
-            print(
-                f"[item_suggestion] add failed "
-                f"guild={guild_id} user={member.id} error={e}"
-            )
+            _error_log(f"add failed guild={guild_id} user={member.id} error={e}")
             await self._finish(
                 interaction,
                 f"Could not add **{self.suggested_item}** to your active PPE.",
@@ -237,9 +242,8 @@ class ItemSuggestionView(discord.ui.View):
             return
 
         guild_id = interaction.guild.id if interaction.guild else "?"
-        print(
-            f"[item_suggestion] CANCEL clicked "
-            f"guild={guild_id} user={interaction.user.id} item={self.suggested_item}"
+        _debug_log(
+            f"CANCEL clicked guild={guild_id} user={interaction.user.id} item={self.suggested_item}"
         )
         await self._finish(
             interaction,
@@ -251,7 +255,7 @@ class ItemSuggestionView(discord.ui.View):
     # ------------------------------------------------------------------
 
     async def on_timeout(self):
-        print(f"[item_suggestion] suggestion timed out for item={self.suggested_item}")
+        _debug_log(f"suggestion timed out for item={self.suggested_item}")
         # `self.message` is set automatically by discord.py when the view is
         # attached via `reply(..., view=self)`.
         if hasattr(self, "message") and self.message:
@@ -281,9 +285,8 @@ async def handle_item_suggestion(
     channel_id = message.channel.id
     user_id = message.author.id
 
-    print(
-        f"[item_suggestion] detection started "
-        f"guild={guild_id} channel={channel_id} user={user_id} "
+    _debug_log(
+        f"detection started guild={guild_id} channel={channel_id} user={user_id} "
         f"files={[a.filename for a in attachments]}"
     )
 
@@ -291,15 +294,15 @@ async def handle_item_suggestion(
         suggested_item = await detect_item_from_attachment(attachment)
 
         if suggested_item is None:
-            print(
-                f"[item_suggestion] no item detected — skipping suggestion "
-                f"guild={guild_id} channel={channel_id} user={user_id} file={attachment.filename}"
+            _debug_log(
+                f"no item detected; skipping suggestion guild={guild_id} "
+                f"channel={channel_id} user={user_id} file={attachment.filename}"
             )
             return
 
-        print(
-            f"[item_suggestion] suggestion triggered "
-            f"guild={guild_id} channel={channel_id} user={user_id} item={suggested_item}"
+        _debug_log(
+            f"suggestion triggered guild={guild_id} channel={channel_id} "
+            f"user={user_id} item={suggested_item}"
         )
 
         view = ItemSuggestionView(target_user_id=user_id, suggested_item=suggested_item)

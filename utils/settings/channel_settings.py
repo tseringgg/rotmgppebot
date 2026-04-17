@@ -12,9 +12,66 @@ from utils.player_records import DATA_DIR, _read_json_file, _write_atomic_json, 
 _SETTINGS_CACHE_TTL_SECONDS = 30.0
 _CHANNEL_ENABLED_CACHE: dict[tuple[str, str], tuple[bool, float]] = {}
 _MODE_ENABLED_CACHE: dict[str, tuple[bool, float]] = {}
+_CHANNEL_CACHE_MAX_ENTRIES = 20000
+_MODE_CACHE_MAX_ENTRIES = 5000
+_CHANNEL_CACHE_PRUNE_EVERY = 128
+_MODE_CACHE_PRUNE_EVERY = 64
+_channel_cache_op_count = 0
+_mode_cache_op_count = 0
+
+
+def _prune_channel_enabled_cache(now: float | None = None) -> None:
+    now_monotonic = time.monotonic() if now is None else now
+    expired_keys = [
+        key
+        for key, (_enabled, expires_at) in _CHANNEL_ENABLED_CACHE.items()
+        if now_monotonic > expires_at
+    ]
+    for key in expired_keys:
+        _CHANNEL_ENABLED_CACHE.pop(key, None)
+
+    overflow = len(_CHANNEL_ENABLED_CACHE) - _CHANNEL_CACHE_MAX_ENTRIES
+    if overflow > 0:
+        # Drop oldest-to-expire entries first when above cap.
+        keys_by_expiry = sorted(_CHANNEL_ENABLED_CACHE.items(), key=lambda entry: entry[1][1])
+        for key, _value in keys_by_expiry[:overflow]:
+            _CHANNEL_ENABLED_CACHE.pop(key, None)
+
+
+def _maybe_prune_channel_enabled_cache() -> None:
+    global _channel_cache_op_count
+    _channel_cache_op_count += 1
+    if _channel_cache_op_count % _CHANNEL_CACHE_PRUNE_EVERY == 0:
+        _prune_channel_enabled_cache()
+
+
+def _prune_mode_enabled_cache(now: float | None = None) -> None:
+    now_monotonic = time.monotonic() if now is None else now
+    expired_keys = [
+        key
+        for key, (_enabled, expires_at) in _MODE_ENABLED_CACHE.items()
+        if now_monotonic > expires_at
+    ]
+    for key in expired_keys:
+        _MODE_ENABLED_CACHE.pop(key, None)
+
+    overflow = len(_MODE_ENABLED_CACHE) - _MODE_CACHE_MAX_ENTRIES
+    if overflow > 0:
+        keys_by_expiry = sorted(_MODE_ENABLED_CACHE.items(), key=lambda entry: entry[1][1])
+        for key, _value in keys_by_expiry[:overflow]:
+            _MODE_ENABLED_CACHE.pop(key, None)
+
+
+def _maybe_prune_mode_enabled_cache() -> None:
+    global _mode_cache_op_count
+    _mode_cache_op_count += 1
+    if _mode_cache_op_count % _MODE_CACHE_PRUNE_EVERY == 0:
+        _prune_mode_enabled_cache()
 
 
 def _read_cached_channel_enabled(guild_id: str, channel_id: str) -> bool | None:
+    _maybe_prune_channel_enabled_cache()
+
     cached = _CHANNEL_ENABLED_CACHE.get((guild_id, channel_id))
     if cached is None:
         return None
@@ -27,6 +84,7 @@ def _read_cached_channel_enabled(guild_id: str, channel_id: str) -> bool | None:
 
 
 def _write_cached_channel_enabled(guild_id: str, channel_id: str, enabled: bool) -> None:
+    _maybe_prune_channel_enabled_cache()
     _CHANNEL_ENABLED_CACHE[(guild_id, channel_id)] = (
         bool(enabled),
         time.monotonic() + _SETTINGS_CACHE_TTL_SECONDS,
@@ -40,6 +98,8 @@ def _clear_cached_channels_for_guild(guild_id: str) -> None:
 
 
 def _read_cached_mode_enabled(guild_id: str) -> bool | None:
+    _maybe_prune_mode_enabled_cache()
+
     cached = _MODE_ENABLED_CACHE.get(guild_id)
     if cached is None:
         return None
@@ -52,10 +112,24 @@ def _read_cached_mode_enabled(guild_id: str) -> bool | None:
 
 
 def _write_cached_mode_enabled(guild_id: str, enabled: bool) -> None:
+    _maybe_prune_mode_enabled_cache()
     _MODE_ENABLED_CACHE[guild_id] = (
         bool(enabled),
         time.monotonic() + _SETTINGS_CACHE_TTL_SECONDS,
     )
+
+
+def clear_guild_cache(guild_id: int | str) -> None:
+    guild_key = str(guild_id)
+    _clear_cached_channels_for_guild(guild_key)
+    _MODE_ENABLED_CACHE.pop(guild_key, None)
+
+
+def get_cache_sizes() -> dict[str, int]:
+    return {
+        "channel_enabled": len(_CHANNEL_ENABLED_CACHE),
+        "mode_enabled": len(_MODE_ENABLED_CACHE),
+    }
 
 
 def get_guild_settings_path(guild_id: int | str) -> str:
@@ -84,7 +158,6 @@ async def get_item_suggestions_enabled(guild_id: str, channel_id: str) -> bool:
         .get("item_suggestions_enabled", False)
     )
     _write_cached_channel_enabled(guild_id, channel_id, bool(enabled))
-    print(f"[settings] get_item_suggestions_enabled guild={guild_id} channel={channel_id} -> {enabled}")
     return bool(enabled)
 
 
@@ -101,8 +174,6 @@ async def set_item_suggestions_enabled(guild_id: str, channel_id: str, enabled: 
         channels = data.setdefault("channels", {})
         channel_entry = channels.setdefault(channel_id, {})
         channel_entry["item_suggestions_enabled"] = enabled
-
-        print(f"[settings] set_item_suggestions_enabled guild={guild_id} channel={channel_id} -> {enabled}")
         await asyncio.to_thread(_write_atomic_json, path, temp_path, data)
 
     _write_cached_channel_enabled(guild_id, channel_id, bool(enabled))
@@ -124,8 +195,6 @@ async def toggle_item_suggestions(guild_id: str, channel_id: str) -> bool:
         current = bool(channel_entry.get("item_suggestions_enabled", False))
         new_value = not current
         channel_entry["item_suggestions_enabled"] = new_value
-
-        print(f"[settings] toggle_item_suggestions guild={guild_id} channel={channel_id} -> {new_value}")
         await asyncio.to_thread(_write_atomic_json, path, temp_path, data)
 
     _write_cached_channel_enabled(guild_id, channel_id, bool(new_value))
@@ -148,7 +217,6 @@ async def get_item_suggestions_mode_enabled(guild_id: str) -> bool:
 
     enabled = bool(data.get("item_suggestions_enabled", False))
     _write_cached_mode_enabled(guild_id, enabled)
-    print(f"[settings] get_item_suggestions_mode_enabled guild={guild_id} -> {enabled}")
     return enabled
 
 
@@ -161,8 +229,6 @@ async def set_item_suggestions_mode_enabled(guild_id: str, enabled: bool):
     async with get_lock(int(guild_id)):
         data = await asyncio.to_thread(_read_json_file, path)
         data["item_suggestions_enabled"] = bool(enabled)
-
-        print(f"[settings] set_item_suggestions_mode_enabled guild={guild_id} -> {bool(enabled)}")
         await asyncio.to_thread(_write_atomic_json, path, temp_path, data)
 
     _write_cached_mode_enabled(guild_id, bool(enabled))
@@ -215,11 +281,6 @@ async def set_item_suggestions_enabled_for_channels(
 
         if enabled:
             data["item_suggestions_enabled"] = True
-
-        print(
-            f"[settings] set_item_suggestions_enabled_for_channels guild={guild_id} "
-            f"count={len(normalized_ids)} -> {bool(enabled)}"
-        )
         await asyncio.to_thread(_write_atomic_json, path, temp_path, data)
 
     for channel_id in normalized_ids:
@@ -248,7 +309,6 @@ async def clear_item_suggestions_enabled_channels(guild_id: str) -> int:
                 channel_entry["item_suggestions_enabled"] = False
 
         data["item_suggestions_enabled"] = False
-        print(f"[settings] clear_item_suggestions_enabled_channels guild={guild_id} cleared={cleared}")
         await asyncio.to_thread(_write_atomic_json, path, temp_path, data)
 
     _clear_cached_channels_for_guild(guild_id)

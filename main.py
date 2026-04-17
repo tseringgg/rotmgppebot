@@ -49,14 +49,25 @@ import json
 import time
 from utils.role_checks import require_ppe_roles, require_server_owner
 from utils.loot_data import init_loot_data
+from utils.settings.channel_settings import clear_guild_cache as clear_item_suggestion_cache
+from utils.settings.channel_settings import get_cache_sizes as get_item_suggestion_cache_sizes
 from utils.settings.channel_settings import get_item_suggestions_enabled
 from utils.item_suggestion import handle_item_suggestion
+from utils.contest_join_embed import clear_contest_settings_cache
+from utils.contest_join_embed import get_cache_size as get_contest_cache_size
 from utils.contest_join_embed import handle_join_contest_reaction, handle_leave_contest_reaction
-from create_loot_table import create_loot_background_and_mapping
+from utils.player_manager import clear_guild_state as clear_player_manager_state
+from utils.player_manager import get_lock_count as get_player_manager_lock_count
+from utils.player_records import clear_guild_lock as clear_player_records_lock
+from utils.player_records import get_lock_count as get_player_records_lock_count
 from utils.ppe_types import DEFAULT_PPE_TYPE, normalize_allowed_ppe_types, ppe_type_label
+from utils.team_manager import clear_guild_state as clear_team_manager_state
+from utils.team_manager import get_lock_count as get_team_manager_lock_count
+from utils.bot_cost_tracking import clear_guild_tracking_state, finish_command_tracking, start_command_tracking
 from utils.guild_config import load_guild_config
 from utils.sniffer_helpers.realmshark_ingest_server import start_realmshark_ingest_server
-from utils.sniffer_helpers.realmshark_notifier import build_realmshark_notifier
+from utils.sniffer_helpers.realmshark_notifier import build_realmshark_notifier, clear_cached_announce_channel
+from utils.sniffer_helpers.realmshark_notifier import get_channel_cache_size as get_realmshark_channel_cache_size
 
 from utils.autocomplete import class_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, team_name_autocomplete, rarity_autocomplete
 
@@ -94,12 +105,54 @@ SYNC_COMMANDS_ON_STARTUP = _env_flag("PPE_SYNC_COMMANDS_ON_STARTUP", default=Tru
 SYNC_MAX_RETRIES = _env_int("PPE_SYNC_MAX_RETRIES", default=2, minimum=1)
 SYNC_COOLDOWN_SECONDS = _env_int("PPE_SYNC_COOLDOWN_SECONDS", default=300, minimum=0)
 SYNC_STATE_PATH = os.getenv("PPE_SYNC_STATE_PATH", "/data/ppe_command_sync_state.json")
+MEMORY_LOG_ENABLED = _env_flag("PPE_MEMORY_LOG_ENABLED", default=True)
+MEMORY_LOG_INTERVAL_SECONDS = _env_int("PPE_MEMORY_LOG_INTERVAL_SECONDS", default=900, minimum=60)
+
+
+def _read_process_rss_mb() -> float | None:
+    """Best-effort Linux RSS read without extra dependencies."""
+    try:
+        with open("/proc/self/status", "r", encoding="utf-8") as handle:
+            for line in handle:
+                if not line.startswith("VmRSS:"):
+                    continue
+                parts = line.split()
+                if len(parts) < 2:
+                    return None
+                return int(parts[1]) / 1024.0
+    except Exception:
+        return None
+
+    return None
 
 class PPEBot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._startup_sync_attempted = False
         self.realmshark_ingest_runner = None
+        self._memory_log_task: asyncio.Task | None = None
+
+    def _log_memory_snapshot(self, reason: str) -> None:
+        rss_mb = _read_process_rss_mb()
+        if rss_mb is None:
+            return
+
+        channel_cache_sizes = get_item_suggestion_cache_sizes()
+        print(
+            f"[MEMORY] reason={reason} rss_mb={rss_mb:.1f} "
+            f"locks(player_records={get_player_records_lock_count()}, "
+            f"player_manager={get_player_manager_lock_count()}, "
+            f"team_manager={get_team_manager_lock_count()}) "
+            f"caches(channel_enabled={channel_cache_sizes['channel_enabled']}, "
+            f"mode_enabled={channel_cache_sizes['mode_enabled']}, "
+            f"contest_settings={get_contest_cache_size()}, "
+            f"realmshark_channel={get_realmshark_channel_cache_size()})"
+        )
+
+    async def _memory_log_loop(self) -> None:
+        while True:
+            await asyncio.sleep(MEMORY_LOG_INTERVAL_SECONDS)
+            self._log_memory_snapshot("periodic")
 
     async def _sync_app_commands_to_guilds(self) -> None:
         if self._startup_sync_attempted:
@@ -203,14 +256,10 @@ class PPEBot(commands.Bot):
 
         # Initialize global loot data for autocomplete
         init_loot_data()
-        
-        # Generate 4 background images and sprite mappings for shareloot system
-        try:
-            print("Generating 4 loot background variants and sprite mappings...")
-            create_loot_background_and_mapping()
-            print("✅ All loot backgrounds and mappings generated successfully!")
-        except Exception as e:
-            print(f"[ERROR] Failed to generate loot backgrounds: {e}")
+
+        if MEMORY_LOG_ENABLED and self._memory_log_task is None:
+            self._memory_log_task = asyncio.create_task(self._memory_log_loop())
+            self._log_memory_snapshot("startup")
 
         await self._sync_app_commands_to_guilds()
 
@@ -220,6 +269,15 @@ class PPEBot(commands.Bot):
             )
 
     async def close(self):
+        memory_log_task = getattr(self, "_memory_log_task", None)
+        if memory_log_task is not None:
+            memory_log_task.cancel()
+            self._memory_log_task = None
+            try:
+                await memory_log_task
+            except asyncio.CancelledError:
+                pass
+
         runner = getattr(self, "realmshark_ingest_runner", None)
         if runner is not None:
             await runner.cleanup()
@@ -317,6 +375,24 @@ async def on_guild_join(
 
 
 @bot.event
+async def on_guild_remove(guild: discord.Guild):
+    if guild is None:
+        return
+
+    guild_id = int(guild.id)
+    clear_player_records_lock(guild_id)
+    clear_player_manager_state(guild_id)
+    clear_team_manager_state(guild_id)
+    clear_item_suggestion_cache(guild_id)
+    clear_contest_settings_cache(guild_id)
+    clear_cached_announce_channel(guild_id)
+    try:
+        await clear_guild_tracking_state(guild_id)
+    except Exception as exc:
+        print(f"[WARN] Failed to clear bot cost tracking state for guild {guild_id}: {exc}")
+
+
+@bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}")
 
@@ -331,8 +407,48 @@ async def on_raw_reaction_remove(payload: discord.RawReactionActionEvent):
     await handle_leave_contest_reaction(bot, payload)
 
 
+@bot.tree.interaction_check
+async def track_app_command_cost_start(interaction: discord.Interaction) -> bool:
+    try:
+        await start_command_tracking(interaction)
+    except Exception as exc:
+        print(f"[WARN] Failed to start command cost tracking: {exc}")
+    return True
+
+
+@bot.event
+async def on_app_command_completion(
+    interaction: discord.Interaction,
+    command: app_commands.Command | app_commands.ContextMenu,
+) -> None:
+    command_name = getattr(command, "qualified_name", None) or getattr(command, "name", None)
+    try:
+        await finish_command_tracking(
+            interaction,
+            status="ok",
+            command_name=str(command_name).strip() if command_name else None,
+        )
+    except Exception as exc:
+        print(f"[WARN] Failed to finalize command cost tracking: {exc}")
+
+
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    interaction_command = getattr(interaction, "command", None)
+    command_name = None
+    if interaction_command is not None:
+        command_name = getattr(interaction_command, "qualified_name", None) or getattr(interaction_command, "name", None)
+
+    try:
+        await finish_command_tracking(
+            interaction,
+            status="error",
+            command_name=str(command_name).strip() if command_name else None,
+            error_message=f"{type(error).__name__}: {error}",
+        )
+    except Exception as exc:
+        print(f"[WARN] Failed to finalize errored command cost tracking: {exc}")
+
     # Role/permission checks already provide user-facing feedback in the predicate.
     if isinstance(error, app_commands.CheckFailure):
         if not interaction.response.is_done():
@@ -359,17 +475,9 @@ async def on_message(message: discord.Message):
         return
 
     channel_id = message.channel.id
-    print(
-        f"[listener] received message with {len(attachments)} image attachment(s) "
-        f"guild={guild_id} channel={channel_id}"
-    )
 
     # Check whether item suggestions are enabled for this channel
     enabled = await get_item_suggestions_enabled(str(guild_id), str(channel_id))
-    print(
-        f"[listener] item_suggestions_enabled={enabled} "
-        f"guild={guild_id} channel={channel_id}"
-    )
     if not enabled:
         return
 

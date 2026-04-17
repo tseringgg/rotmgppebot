@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import glob
 import csv
 import os
 from typing import Dict, Sequence
@@ -12,6 +11,7 @@ import discord
 from utils.calc_points import normalize_item_name
 from utils.gen_graphic_board.generate_board import generate_quest_board
 from utils.guild_config import get_quest_points, get_quest_targets, load_guild_config, save_guild_config
+from utils.item_image_index import get_item_image_index
 from utils.player_records import ensure_player_exists, load_player_records, load_teams, save_player_records
 from utils.quest_modes import build_global_quests_payload, build_team_quests_context
 from utils.quest_manager import refresh_player_quests
@@ -23,8 +23,6 @@ _DUNGEONS_DIR = os.path.join(_BASE_DIR, "helper_pics", "dungeon_pics")
 _LOOT_CSV_PATH = os.path.join(_BASE_DIR, "rotmg_loot_drops_updated.csv")
 _MISSING_IMAGE_PATH = os.path.join(_BASE_DIR, "helper_pics", "image_missing.png")
 
-_ITEM_IMAGE_INDEX: Dict[str, str] = {}
-_ITEM_IMAGE_INDEX_READY = False
 _ITEM_DUNGEON_INDEX: Dict[str, str] = {}
 _ITEM_DUNGEON_INDEX_READY = False
 
@@ -51,26 +49,9 @@ def strip_shiny_suffix(item_name: str) -> str:
     return normalized
 
 
-def build_item_image_index_if_needed() -> None:
-    global _ITEM_IMAGE_INDEX_READY
-    if _ITEM_IMAGE_INDEX_READY:
-        return
-
-    _ITEM_IMAGE_INDEX.clear()
-    # Build once and cache by normalized item name for faster board rendering.
-    for png_file in glob.glob(os.path.join(_DUNGEONS_DIR, "**", "*.png"), recursive=True):
-        base_name = os.path.splitext(os.path.basename(png_file))[0]
-        normalized = normalize_item_name(base_name).lower()
-        if normalized and normalized not in _ITEM_IMAGE_INDEX:
-            _ITEM_IMAGE_INDEX[normalized] = png_file
-
-    _ITEM_IMAGE_INDEX_READY = True
-
-
 def resolve_item_image_path(item_name: str) -> str | None:
     """Resolve best-fit item icon path, including shiny/base fallback matching."""
-
-    build_item_image_index_if_needed()
+    image_index = get_item_image_index(_DUNGEONS_DIR)
 
     full_name = normalize_item_name(item_name)
     base_name = strip_shiny_suffix(item_name)
@@ -81,7 +62,7 @@ def resolve_item_image_path(item_name: str) -> str | None:
 
     for candidate in candidates:
         key = normalize_item_name(candidate).lower()
-        path = _ITEM_IMAGE_INDEX.get(key)
+        path = image_index.get(key)
         if path:
             return path
 

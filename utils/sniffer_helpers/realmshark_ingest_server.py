@@ -11,6 +11,7 @@ from utils.sniffer_helpers.realmshark_ingest import IngestValidationError, inges
 
 
 _DEBUG = os.getenv("REALMSHARK_DEBUG", "false").strip().lower() in {"1", "true", "yes", "on"}
+_INFO_LOGGING = os.getenv("REALMSHARK_INFO_LOGS", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _debug_log(message: str) -> None:
@@ -18,8 +19,23 @@ def _debug_log(message: str) -> None:
         print(f"[REALMSHARK_DEBUG] {message}")
 
 
+def _is_high_priority_log(message: str) -> bool:
+    lowered = message.lower()
+    keywords = (
+        "error",
+        "failed",
+        "failure",
+        "invalid",
+        "missing",
+        "not found",
+        "rejected",
+    )
+    return any(keyword in lowered for keyword in keywords)
+
+
 def _info_log(message: str) -> None:
-    print(f"[REALMSHARK] {message}")
+    if _INFO_LOGGING or _is_high_priority_log(message):
+        print(f"[REALMSHARK] {message}")
 
 
 def _token_preview(token: str) -> str:

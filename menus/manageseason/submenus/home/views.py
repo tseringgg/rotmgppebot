@@ -81,6 +81,12 @@ class ManageSeasonHomeView(OwnerBoundView):
         )
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
+    @discord.ui.button(label="Manage Bot Cost", style=discord.ButtonStyle.primary, row=2)
+    async def manage_bot_cost(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        from menus.manageseason.submenus.cost.entry import open_manage_bot_cost_menu
+
+        await open_manage_bot_cost_menu(interaction, owner_id=self.owner_id)
+
     @discord.ui.button(label="Factory Reset Settings", style=discord.ButtonStyle.danger, row=1)
     async def factory_reset_settings(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         if not _has_discord_administrator_permission(interaction):

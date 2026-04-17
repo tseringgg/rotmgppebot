@@ -27,9 +27,25 @@ def _env_float(name: str, default: float, minimum: float = 0.0) -> float:
     return max(minimum, parsed)
 
 
+def _env_int(name: str, default: int, minimum: int = 1) -> int:
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return max(minimum, default)
+
+    try:
+        parsed = int(raw_value)
+    except ValueError:
+        return max(minimum, default)
+
+    return max(minimum, parsed)
+
+
 _CHANNEL_CACHE_TTL_SECONDS = _env_float("REALMSHARK_CHANNEL_CACHE_TTL_SECONDS", default=300.0, minimum=5.0)
 _MIN_SEND_INTERVAL_SECONDS = _env_float("REALMSHARK_MIN_SEND_INTERVAL_SECONDS", default=0.35, minimum=0.0)
+_CHANNEL_CACHE_MAX_ENTRIES = _env_int("REALMSHARK_CHANNEL_CACHE_MAX_ENTRIES", default=5000, minimum=100)
+_CHANNEL_CACHE_PRUNE_EVERY = _env_int("REALMSHARK_CHANNEL_CACHE_PRUNE_EVERY", default=128, minimum=1)
 _CHANNEL_CACHE: dict[int, tuple[int, float]] = {}
+_channel_cache_op_count = 0
 _SEND_LOCK = asyncio.Lock()
 _NEXT_ALLOWED_SEND_MONOTONIC = 0.0
 _GuildMessageChannel = discord.TextChannel | discord.Thread
@@ -63,7 +79,44 @@ def _is_writable_message_channel(
     return bool(perms.send_messages)
 
 
+def _prune_announce_channel_cache(now: float | None = None) -> None:
+    now_monotonic = time.monotonic() if now is None else now
+
+    expired_keys = [
+        guild_id
+        for guild_id, (_channel_id, cached_at) in _CHANNEL_CACHE.items()
+        if (now_monotonic - cached_at) > _CHANNEL_CACHE_TTL_SECONDS
+    ]
+    for guild_id in expired_keys:
+        _CHANNEL_CACHE.pop(guild_id, None)
+
+    overflow = len(_CHANNEL_CACHE) - _CHANNEL_CACHE_MAX_ENTRIES
+    if overflow > 0:
+        # Keep the most recent channel resolutions when above cap.
+        entries_by_recency = sorted(_CHANNEL_CACHE.items(), key=lambda entry: entry[1][1], reverse=True)
+        _CHANNEL_CACHE.clear()
+        for guild_id, value in entries_by_recency[:_CHANNEL_CACHE_MAX_ENTRIES]:
+            _CHANNEL_CACHE[guild_id] = value
+
+
+def _maybe_prune_announce_channel_cache() -> None:
+    global _channel_cache_op_count
+    _channel_cache_op_count += 1
+    if _channel_cache_op_count % _CHANNEL_CACHE_PRUNE_EVERY == 0:
+        _prune_announce_channel_cache()
+
+
+def clear_cached_announce_channel(guild_id: int) -> None:
+    _CHANNEL_CACHE.pop(int(guild_id), None)
+
+
+def get_channel_cache_size() -> int:
+    return len(_CHANNEL_CACHE)
+
+
 def _get_cached_announce_channel(guild: discord.Guild, me: discord.Member | None) -> _GuildMessageChannel | None:
+    _maybe_prune_announce_channel_cache()
+
     cached = _CHANNEL_CACHE.get(guild.id)
     if cached is None:
         return None
@@ -83,6 +136,7 @@ def _get_cached_announce_channel(guild: discord.Guild, me: discord.Member | None
 
 
 def _cache_announce_channel(guild_id: int, channel_id: int) -> None:
+    _maybe_prune_announce_channel_cache()
     _CHANNEL_CACHE[guild_id] = (channel_id, time.monotonic())
 
 

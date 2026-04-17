@@ -9,6 +9,12 @@ from typing import Any
 import discord
 
 from utils.ppe_types import normalize_allowed_ppe_types, normalize_ppe_type_multipliers
+from utils.bot_cost_tracking import (
+    clear_guild_cost_log,
+    get_cost_rate_per_gb_minute,
+    get_guild_cost_log_path,
+    summarize_guild_cost_log,
+)
 from utils.guild_config import (
     get_contest_settings,
     get_max_ppes,
@@ -1474,3 +1480,125 @@ async def _delete_team_roles(guild: discord.Guild, team_names: set[str]) -> int:
             continue
 
     return deleted
+
+
+async def load_bot_cost_summary_for_menu(
+    interaction: discord.Interaction,
+    *,
+    window_hours: int = 24,
+    top_n: int = 10,
+) -> dict[str, Any]:
+    """Load per-guild command-cost summary for /manageseason bot-cost panel."""
+    if interaction.guild is None:
+        raise ValueError("This action can only be used in a server.")
+
+    guild_id = int(interaction.guild.id)
+    summary = await summarize_guild_cost_log(guild_id, window_hours=window_hours, top_n=top_n)
+    summary["log_path"] = get_guild_cost_log_path(guild_id)
+    summary["cost_rate_per_gb_minute"] = get_cost_rate_per_gb_minute()
+    return summary
+
+
+async def clear_bot_cost_log_for_menu(interaction: discord.Interaction) -> bool:
+    """Delete the guild's command-cost log file."""
+    if interaction.guild is None:
+        raise ValueError("This action can only be used in a server.")
+
+    return await clear_guild_cost_log(int(interaction.guild.id))
+
+
+def _format_command_cost_row(index: int, row: dict[str, Any]) -> str:
+    command = str(row.get("command", "unknown"))
+    calls = int(row.get("call_count", 0) or 0)
+    errors = int(row.get("error_count", 0) or 0)
+    total_cost = float(row.get("total_estimated_cost_usd", 0.0) or 0.0)
+    cost_share = float(row.get("cost_share_percent", 0.0) or 0.0)
+    cache_growth = int(row.get("total_cache_growth", 0) or 0)
+    return (
+        f"{index}. {command} | cost=${total_cost:.6f} ({cost_share:.1f}%) | "
+        f"calls={calls} | errors={errors} | cache_growth={cache_growth}"
+    )
+
+
+def _format_command_cache_row(index: int, row: dict[str, Any]) -> str:
+    command = str(row.get("command", "unknown"))
+    calls = int(row.get("call_count", 0) or 0)
+    cache_growth = int(row.get("total_cache_growth", 0) or 0)
+    cache_share = float(row.get("cache_growth_share_percent", 0.0) or 0.0)
+    total_cost = float(row.get("total_estimated_cost_usd", 0.0) or 0.0)
+    return (
+        f"{index}. {command} | cache_growth={cache_growth} ({cache_share:.1f}%) | "
+        f"calls={calls} | cost=${total_cost:.6f}"
+    )
+
+
+async def build_bot_cost_summary_markdown_for_menu(
+    interaction: discord.Interaction,
+    *,
+    window_hours: int = 24,
+    top_n: int = 15,
+) -> str:
+    """Build markdown report for per-guild command-cost analysis."""
+    summary = await load_bot_cost_summary_for_menu(
+        interaction,
+        window_hours=window_hours,
+        top_n=top_n,
+    )
+
+    guild_name = interaction.guild.name if interaction.guild is not None else "Unknown Guild"
+    entry_count = int(summary.get("entry_count", 0) or 0)
+    command_count = int(summary.get("command_count", 0) or 0)
+    error_count = int(summary.get("error_count", 0) or 0)
+    total_duration = float(summary.get("total_duration_seconds", 0.0) or 0.0)
+    total_gb_minutes = float(summary.get("total_estimated_gb_minutes", 0.0) or 0.0)
+    total_cost = float(summary.get("total_estimated_cost_usd", 0.0) or 0.0)
+    total_cache_growth = int(summary.get("total_cache_growth", 0) or 0)
+    total_cache_shrink = int(summary.get("total_cache_shrink", 0) or 0)
+    cost_rate = float(summary.get("cost_rate_per_gb_minute", get_cost_rate_per_gb_minute()) or 0.0)
+    log_path = str(summary.get("log_path", ""))
+
+    lines: list[str] = [
+        "# Bot Cost Summary",
+        "",
+        f"Guild: {guild_name} ({interaction.guild.id if interaction.guild else 'N/A'})",
+        f"Window: last {int(summary.get('window_hours', window_hours) or window_hours)}h",
+        f"Cost rate: ${cost_rate:.6f} per GB-minute",
+        f"Log file: {log_path}",
+        "",
+        "## Totals",
+        f"- Commands logged: {entry_count}",
+        f"- Unique commands: {command_count}",
+        f"- Command errors: {error_count}",
+        f"- Total command runtime: {total_duration:.2f}s",
+        f"- Estimated GB-minutes: {total_gb_minutes:.6f}",
+        f"- Estimated cost: ${total_cost:.6f}",
+        f"- Cache growth events total: +{total_cache_growth}",
+        f"- Cache shrink events total: -{total_cache_shrink}",
+        "",
+        "## Top Commands By Estimated Cost",
+    ]
+
+    top_by_cost = summary.get("top_by_cost", []) if isinstance(summary.get("top_by_cost", []), list) else []
+    if top_by_cost:
+        for index, row in enumerate(top_by_cost, start=1):
+            if not isinstance(row, dict):
+                continue
+            lines.append(_format_command_cost_row(index, row))
+    else:
+        lines.append("No command cost data in this window.")
+
+    lines.extend(["", "## Top Commands By Cache Growth"])
+    top_by_cache = (
+        summary.get("top_by_cache_growth", [])
+        if isinstance(summary.get("top_by_cache_growth", []), list)
+        else []
+    )
+    if top_by_cache:
+        for index, row in enumerate(top_by_cache, start=1):
+            if not isinstance(row, dict):
+                continue
+            lines.append(_format_command_cache_row(index, row))
+    else:
+        lines.append("No cache growth data in this window.")
+
+    return "\n".join(lines).rstrip() + "\n"

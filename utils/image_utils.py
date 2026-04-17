@@ -2,30 +2,19 @@
 
 import os
 import tempfile
-from functools import lru_cache
 
 from PIL import Image
 
 from utils.calc_points import normalize_item_name
+from utils.item_image_index import get_item_image_index
 
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _RARITY_PICS_DIR = os.path.join(_PROJECT_ROOT, "helper_pics", "rarity_pics")
 _DUNGEONS_PATH = os.path.join(_PROJECT_ROOT, "helper_pics", "dungeon_pics")
 
 
-@lru_cache(maxsize=1)
 def _item_image_index() -> dict[str, str]:
-    index: dict[str, str] = {}
-    for root, _dirs, files in os.walk(_DUNGEONS_PATH):
-        for file_name in files:
-            if not file_name.lower().endswith(".png"):
-                continue
-            path = os.path.join(root, file_name)
-            base_name = os.path.splitext(file_name)[0]
-            normalized = normalize_item_name(base_name).lower()
-            if normalized and normalized not in index:
-                index[normalized] = path
-    return index
+    return get_item_image_index(_DUNGEONS_PATH)
 
 
 def resolve_item_image_path(item_name: str, shiny: bool = False) -> str | None:

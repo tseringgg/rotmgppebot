@@ -1,5 +1,6 @@
 """Utilities for shareloot image."""
 
+import asyncio
 import csv
 import glob
 import os
@@ -8,6 +9,7 @@ from collections.abc import Sequence
 import discord
 from PIL import Image
 
+from create_loot_table import create_loot_background_and_mapping
 from utils.calc_points import normalize_item_name
 from utils.image_utils import overlay_rarity_badge_on_image
 from utils.loot_constants import rarity_rank
@@ -37,6 +39,52 @@ VARIANT_IMAGE_LABELS = {
     "normal_limited": "Normal + Limited Loot Image",
     "all": "All Loot Image",
 }
+
+_REQUIRED_ASSET_VARIANTS = ("normal", "normal_skins", "normal_limited", "all")
+_ASSET_BUILD_LOCK = asyncio.Lock()
+_ASSETS_READY = False
+
+
+def _variant_asset_paths(variant: str) -> tuple[str, str]:
+    sprite_csv = os.path.join(_LOOTSUMMARY_DIR, f"sprite_positions_{variant}.csv")
+    background_file = os.path.join(_LOOTSUMMARY_DIR, f"loot_background_{variant}.png")
+    return sprite_csv, background_file
+
+
+def _all_loot_assets_present() -> bool:
+    for variant in _REQUIRED_ASSET_VARIANTS:
+        sprite_csv, background_file = _variant_asset_paths(variant)
+        if not os.path.exists(sprite_csv) or not os.path.exists(background_file):
+            return False
+    return True
+
+
+async def _ensure_loot_assets_ready() -> bool:
+    global _ASSETS_READY
+
+    if _ASSETS_READY:
+        return True
+
+    if _all_loot_assets_present():
+        _ASSETS_READY = True
+        return True
+
+    async with _ASSET_BUILD_LOCK:
+        if _ASSETS_READY:
+            return True
+
+        if _all_loot_assets_present():
+            _ASSETS_READY = True
+            return True
+
+        print("[shareloot] Missing loot summary assets; generating variants on demand.")
+        try:
+            await asyncio.to_thread(create_loot_background_and_mapping)
+        except Exception as exc:
+            print(f"[shareloot] Failed to generate loot summary assets: {exc}")
+
+        _ASSETS_READY = _all_loot_assets_present()
+        return _ASSETS_READY
 
 
 def variant_from_flags(include_skins: bool, include_limited: bool) -> str:
@@ -177,9 +225,17 @@ async def generate_loot_share_image(
     total_items_label: str,
     all_variant_extra_lines: Sequence[str] | None = None,
 ) -> None:
+    assets_ready = await _ensure_loot_assets_ready()
+    if not assets_ready:
+        await _send_interaction_text(
+            interaction,
+            "❌ Loot summary assets are unavailable right now. Please try again shortly.",
+            ephemeral=True,
+        )
+        return
+
     variant = variant_from_flags(include_skins, include_limited)
-    sprite_csv = os.path.join(_LOOTSUMMARY_DIR, f"sprite_positions_{variant}.csv")
-    background_file = os.path.join(_LOOTSUMMARY_DIR, f"loot_background_{variant}.png")
+    sprite_csv, background_file = _variant_asset_paths(variant)
 
     if not os.path.exists(sprite_csv):
         await _send_interaction_text(interaction, f"❌ Sprite mapping not found! ({sprite_csv})", ephemeral=True)

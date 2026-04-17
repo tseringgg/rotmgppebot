@@ -35,6 +35,13 @@ class PlayerManager:
         if guild_id not in self._locks:
             self._locks[guild_id] = asyncio.Lock()
         return self._locks[guild_id]
+
+    def clear_guild_state(self, guild_id: int) -> None:
+        """Release lock state for a guild when the bot leaves it."""
+        self._locks.pop(int(guild_id), None)
+
+    def get_lock_count(self) -> int:
+        return len(self._locks)
     
     async def execute_transaction(self, interaction: discord.Interaction, operation):
         """Execute a data operation atomically with proper locking."""
@@ -424,3 +431,11 @@ class PlayerManager:
 
 # Global instance
 player_manager = PlayerManager()
+
+
+def clear_guild_state(guild_id: int) -> None:
+    player_manager.clear_guild_state(guild_id)
+
+
+def get_lock_count() -> int:
+    return player_manager.get_lock_count()

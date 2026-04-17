@@ -54,6 +54,15 @@ def get_lock(guild_id: int) -> asyncio.Lock:
     return _locks[guild_id]
 
 
+def clear_guild_lock(guild_id: int) -> None:
+    """Drop the per-guild lock when guild-scoped state can be released."""
+    _locks.pop(int(guild_id), None)
+
+
+def get_lock_count() -> int:
+    return len(_locks)
+
+
 def get_player_data_path(guild_id: int, user_id: int) -> str:
     """Return the file path for one player's data file."""
     return os.path.join(DATA_DIR, f"{guild_id}_{user_id}_loot_records.json")
