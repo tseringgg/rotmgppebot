@@ -577,7 +577,7 @@ def _combo_display_override(signature: str, ppe_settings: Any, *, compact: bool)
 
 
 def ppe_type_compact_summary(options_value: Any, *, fallback_type: Any = None, ppe_settings: Any = None) -> str:
-    options = _disable_unpaired_duo(normalize_ppe_type_options(options_value, current_type=fallback_type))
+    options = normalize_ppe_type_options(options_value, current_type=fallback_type)
     if options["duo_enabled"]:
         options_without_duo = dict(options)
         options_without_duo["duo_enabled"] = False
@@ -589,8 +589,8 @@ def ppe_type_compact_summary(options_value: Any, *, fallback_type: Any = None, p
         if custom_combo_short:
             return f"Duo {custom_combo_short}"
 
-        base_legacy_type = infer_legacy_ppe_type_from_options(options_without_duo)
-        return f"Duo {ppe_type_short_label(base_legacy_type, ppe_settings=ppe_settings)}"
+        base_short = ppe_type_compact_summary(options_without_duo, ppe_settings=ppe_settings)
+        return f"Duo {base_short}"
 
     signature = ppe_type_option_signature(options)
     custom_combo_short = _combo_display_override(signature, ppe_settings, compact=True)

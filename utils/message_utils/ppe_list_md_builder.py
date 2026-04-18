@@ -17,7 +17,7 @@ def _format_points(value: float) -> str:
 
 
 def _display_class_name(ppe) -> str:
-    return _escape_markdown_inline(str(getattr(ppe.name, "value", ppe.name)))
+    return _inline_code(str(getattr(ppe.name, "value", ppe.name)))
 
 
 def _display_ppe_type(ppe, *, guild_config: dict | None = None) -> str:
@@ -29,15 +29,12 @@ def _display_ppe_type(ppe, *, guild_config: dict | None = None) -> str:
         if isinstance(raw_settings, dict):
             ppe_settings = raw_settings
     summary = ppe_type_compact_summary(options, fallback_type=normalized, ppe_settings=ppe_settings)
-    return _escape_markdown_inline(summary)
+    return _inline_code(summary)
 
 
-def _escape_markdown_inline(text: str) -> str:
-    escaped = str(text)
-    escaped = escaped.replace("\\", "\\\\")
-    for char in ("*", "_", "~", "`"):
-        escaped = escaped.replace(char, f"\\{char}")
-    return escaped
+def _inline_code(text: str) -> str:
+    value = str(text).replace("`", "\\`")
+    return f"`{value}`"
 
 
 def _effective_points(ppe, *, guild_config: dict | None = None) -> float:
