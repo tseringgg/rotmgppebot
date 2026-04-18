@@ -5,6 +5,7 @@ from __future__ import annotations
 import discord
 
 from menus.manageseason.services import SeasonResetSummary
+from utils.pagination import chunk_lines_to_pages
 from utils.ppe_types import (
     all_ppe_types,
     get_ppe_type_multiplier_details_from_options,
@@ -109,6 +110,16 @@ def _build_ppe_type_multiplier_lines(*, ppe_settings: dict | None = None) -> lis
         short_label = ppe_type_display_from_options(options, ppe_settings=settings, compact=True)
         lines.append(f"• {full_label} [{short_label}]: {value:.2f}x{source_suffix}")
     return lines
+
+
+def _paginate_ppe_type_multiplier_lines(*, ppe_settings: dict | None = None) -> list[list[str]]:
+    lines = _build_ppe_type_multiplier_lines(ppe_settings=ppe_settings)
+    pages = chunk_lines_to_pages(lines, 950)
+    return pages if pages else [["• No PPE types configured."]]
+
+
+def get_ppe_type_multiplier_page_count(character_settings: dict) -> int:
+    return len(_paginate_ppe_type_multiplier_lines(ppe_settings=character_settings))
 
 
 def _build_iterative_base_lines(character_settings: dict) -> list[str]:
@@ -807,15 +818,19 @@ def build_point_settings_embed(settings: dict) -> discord.Embed:
     return embed
 
 
-def build_ppe_type_points_embed(character_settings: dict) -> discord.Embed:
-    lines = _build_ppe_type_multiplier_lines(ppe_settings=character_settings)
+def build_ppe_type_points_embed(character_settings: dict, *, types_page_index: int = 0) -> discord.Embed:
+    pages = _paginate_ppe_type_multiplier_lines(ppe_settings=character_settings)
+    total_pages = len(pages)
+    page_index = max(0, min(int(types_page_index), total_pages - 1)) if total_pages > 0 else 0
+    lines = pages[page_index] if total_pages > 0 else ["• No PPE types configured."]
     iterative_base_lines = _build_iterative_base_lines(character_settings)
     embed = discord.Embed(
         title="PPE Type Point Multipliers",
         description="Configure how PPE type rules translate into final point multipliers and labels.",
         color=discord.Color.dark_teal(),
     )
-    embed.add_field(name="Current PPE Types", value="\n".join(lines), inline=False)
+    page_suffix = f" (Page {page_index + 1}/{total_pages})" if total_pages > 1 else ""
+    embed.add_field(name=f"Current PPE Types{page_suffix}", value="\n".join(lines), inline=False)
     embed.add_field(name="Iterative Base Multipliers", value="\n".join(iterative_base_lines), inline=False)
     embed.add_field(
         name="Button Guide",

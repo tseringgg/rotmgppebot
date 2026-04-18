@@ -4,6 +4,7 @@ import discord
 
 from menus.menu_utils.base_views import OwnerBoundView
 from utils.guild_config import load_guild_config
+from utils.pagination import chunk_lines_to_pages
 from utils.ppe_types import (
     all_ppe_types,
     get_ppe_type_multiplier_details_from_options,
@@ -78,6 +79,7 @@ class PPEHelpView(OwnerBoundView):
     def __init__(self, owner_id: int, *, ppe_settings: dict | None = None):
         super().__init__(owner_id=owner_id, timeout=600)
         self.current_section = "home"
+        self.types_overrides_page_index = 0
         self.ppe_settings = ppe_settings if isinstance(ppe_settings, dict) else {}
 
         for index, section_key in enumerate(SECTIONS):
@@ -93,6 +95,7 @@ class PPEHelpView(OwnerBoundView):
             )
         )
         self._sync_button_styles()
+        self._sync_types_pagination_buttons()
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if not await super().interaction_check(interaction):
@@ -116,11 +119,97 @@ class PPEHelpView(OwnerBoundView):
                 else discord.ButtonStyle.primary
             )
 
+    def _sync_types_pagination_buttons(self) -> None:
+        total_pages = get_types_override_page_count(self.ppe_settings)
+        is_types_section = self.current_section == "types"
+        controls_disabled = (not is_types_section) or total_pages <= 1
+        self.prev_types_overrides_page.disabled = controls_disabled
+        self.next_types_overrides_page.disabled = controls_disabled
+        if total_pages > 0 and self.types_overrides_page_index >= total_pages:
+            self.types_overrides_page_index = total_pages - 1
+
     async def show_section(self, interaction: discord.Interaction, section_key: str) -> None:
         self.current_section = section_key
+        if section_key != "types":
+            self.types_overrides_page_index = 0
         self._sync_button_styles()
-        embed = build_help_embed(section_key, ppe_settings=self.ppe_settings)
+        self._sync_types_pagination_buttons()
+        embed = build_help_embed(
+            section_key,
+            ppe_settings=self.ppe_settings,
+            types_overrides_page_index=self.types_overrides_page_index,
+        )
         await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="Prev Overrides", style=discord.ButtonStyle.secondary, row=2)
+    async def prev_types_overrides_page(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        if self.current_section != "types":
+            await interaction.response.edit_message(
+                embed=build_help_embed(
+                    self.current_section,
+                    ppe_settings=self.ppe_settings,
+                    types_overrides_page_index=self.types_overrides_page_index,
+                ),
+                view=self,
+            )
+            return
+        total_pages = get_types_override_page_count(self.ppe_settings)
+        if total_pages <= 1:
+            self._sync_types_pagination_buttons()
+            await interaction.response.edit_message(
+                embed=build_help_embed(
+                    self.current_section,
+                    ppe_settings=self.ppe_settings,
+                    types_overrides_page_index=self.types_overrides_page_index,
+                ),
+                view=self,
+            )
+            return
+        self.types_overrides_page_index = (self.types_overrides_page_index - 1) % total_pages
+        self._sync_types_pagination_buttons()
+        await interaction.response.edit_message(
+            embed=build_help_embed(
+                self.current_section,
+                ppe_settings=self.ppe_settings,
+                types_overrides_page_index=self.types_overrides_page_index,
+            ),
+            view=self,
+        )
+
+    @discord.ui.button(label="Next Overrides", style=discord.ButtonStyle.secondary, row=2)
+    async def next_types_overrides_page(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        if self.current_section != "types":
+            await interaction.response.edit_message(
+                embed=build_help_embed(
+                    self.current_section,
+                    ppe_settings=self.ppe_settings,
+                    types_overrides_page_index=self.types_overrides_page_index,
+                ),
+                view=self,
+            )
+            return
+        total_pages = get_types_override_page_count(self.ppe_settings)
+        if total_pages <= 1:
+            self._sync_types_pagination_buttons()
+            await interaction.response.edit_message(
+                embed=build_help_embed(
+                    self.current_section,
+                    ppe_settings=self.ppe_settings,
+                    types_overrides_page_index=self.types_overrides_page_index,
+                ),
+                view=self,
+            )
+            return
+        self.types_overrides_page_index = (self.types_overrides_page_index + 1) % total_pages
+        self._sync_types_pagination_buttons()
+        await interaction.response.edit_message(
+            embed=build_help_embed(
+                self.current_section,
+                ppe_settings=self.ppe_settings,
+                types_overrides_page_index=self.types_overrides_page_index,
+            ),
+            view=self,
+        )
 
 
 def _divider() -> str:
@@ -201,7 +290,22 @@ def _build_types_override_lines(ppe_settings: dict | None) -> list[str]:
     return lines
 
 
-def build_help_embed(section_key: str, *, ppe_settings: dict | None = None) -> discord.Embed:
+def _types_override_pages(ppe_settings: dict | None) -> list[list[str]]:
+    lines = _build_types_override_lines(ppe_settings)
+    pages = chunk_lines_to_pages(lines, 950)
+    return pages if pages else [["- No overrides configured."]]
+
+
+def get_types_override_page_count(ppe_settings: dict | None) -> int:
+    return len(_types_override_pages(ppe_settings))
+
+
+def build_help_embed(
+    section_key: str,
+    *,
+    ppe_settings: dict | None = None,
+    types_overrides_page_index: int = 0,
+) -> discord.Embed:
     if section_key == "home":
         embed = discord.Embed(
             title="PPE Bot Help - Home",
@@ -282,10 +386,14 @@ def build_help_embed(section_key: str, *, ppe_settings: dict | None = None) -> d
             ),
             inline=False,
         )
-        override_lines = _build_types_override_lines(ppe_settings)
+        override_pages = _types_override_pages(ppe_settings)
+        total_pages = len(override_pages)
+        page_index = max(0, min(int(types_overrides_page_index), total_pages - 1)) if total_pages > 0 else 0
+        override_lines = override_pages[page_index] if total_pages > 0 else ["- No overrides configured."]
+        page_suffix = f" (Page {page_index + 1}/{total_pages})" if total_pages > 1 else ""
         embed.add_field(
-            name="Current Type/Combo Overrides",
-            value="\n".join(override_lines[:20]) if override_lines else "- No overrides configured.",
+            name=f"Current Type/Combo Overrides{page_suffix}",
+            value="\n".join(override_lines) if override_lines else "- No overrides configured.",
             inline=False,
         )
         embed.set_footer(text=_common_footer())
@@ -500,5 +608,5 @@ async def command(interaction: discord.Interaction):
     guild_config = await load_guild_config(interaction)
     ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config.get("ppe_settings"), dict) else {}
     view = PPEHelpView(owner_id=interaction.user.id, ppe_settings=ppe_settings)
-    embed = build_help_embed("home", ppe_settings=ppe_settings)
+    embed = build_help_embed("home", ppe_settings=ppe_settings, types_overrides_page_index=0)
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)

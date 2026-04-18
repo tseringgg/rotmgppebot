@@ -7,6 +7,7 @@ import discord
 from dataclass import ROTMG_CLASSES
 from menus.manageseason.common import (
     build_ppe_type_points_embed,
+    get_ppe_type_multiplier_page_count,
     build_class_modifier_settings_embed,
     build_global_modifier_settings_embed,
     build_manage_duplicate_items_embed,
@@ -256,9 +257,38 @@ class ManagePpeTypePointSettingsView(OwnerBoundView):
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.owner_id = owner_id
         self.character_settings = character_settings
+        self.types_page_index = 0
+        self._sync_types_pagination_buttons()
+
+    def _sync_types_pagination_buttons(self) -> None:
+        total_pages = get_ppe_type_multiplier_page_count(self.character_settings)
+        disabled = total_pages <= 1
+        self.prev_types_page.disabled = disabled
+        self.next_types_page.disabled = disabled
+        if total_pages > 0 and self.types_page_index >= total_pages:
+            self.types_page_index = total_pages - 1
 
     def current_embed(self) -> discord.Embed:
-        return build_ppe_type_points_embed(self.character_settings)
+        self._sync_types_pagination_buttons()
+        return build_ppe_type_points_embed(self.character_settings, types_page_index=self.types_page_index)
+
+    @discord.ui.button(label="Prev Types", style=discord.ButtonStyle.secondary, row=0)
+    async def prev_types_page(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        total_pages = get_ppe_type_multiplier_page_count(self.character_settings)
+        if total_pages <= 1:
+            await interaction.response.edit_message(embed=self.current_embed(), view=self)
+            return
+        self.types_page_index = (self.types_page_index - 1) % total_pages
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+    @discord.ui.button(label="Next Types", style=discord.ButtonStyle.secondary, row=0)
+    async def next_types_page(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        total_pages = get_ppe_type_multiplier_page_count(self.character_settings)
+        if total_pages <= 1:
+            await interaction.response.edit_message(embed=self.current_embed(), view=self)
+            return
+        self.types_page_index = (self.types_page_index + 1) % total_pages
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
 
     @discord.ui.button(label="Edit Combo Multiplier", style=discord.ButtonStyle.success, row=1)
     async def edit_combo_override(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
