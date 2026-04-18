@@ -173,15 +173,15 @@ class ManageCharacterDuoPartnerModal(discord.ui.Modal, title="Set Duo Partner Di
         owner_id: int,
         ppe_id: int,
         class_name: str,
-        source_message: discord.Message | None,
-        connected_ppe_ids: set[int],
+        source_message: discord.Message | None = None,
+        connected_ppe_ids: set[int] | None = None,
     ) -> None:
         super().__init__(timeout=180)
         self.owner_id = int(owner_id)
         self.ppe_id = int(ppe_id)
         self.class_name = str(class_name)
         self.source_message = source_message
-        self.connected_ppe_ids = connected_ppe_ids
+        self.connected_ppe_ids = connected_ppe_ids or set()
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         if interaction.user.id != self.owner_id:
