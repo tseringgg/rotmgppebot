@@ -140,6 +140,13 @@ def _normalize_discord_id(value: Any) -> int | None:
     return parsed if parsed > 0 else None
 
 
+def _normalize_duo_link_id(value: Any) -> str | None:
+    raw = str(value or "").strip()
+    if not raw or raw.lower() == "none":
+        return None
+    return raw
+
+
 def _disable_unpaired_duo(options: dict[str, Any]) -> dict[str, Any]:
     if not bool(options.get("duo_enabled", False)):
         return options
@@ -177,7 +184,7 @@ def build_ppe_type_options(
     duo_partner_id: Any,
     duo_link_id: Any = None,
 ) -> dict[str, Any]:
-    normalized_duo_link_id = str(duo_link_id or "").strip() or None
+    normalized_duo_link_id = _normalize_duo_link_id(duo_link_id)
     options = {
         "regular": parse_yes_no(regular, default=True),
         "uses_pet": parse_yes_no(uses_pet, default=True),
@@ -293,7 +300,7 @@ def normalize_ppe_type_options(value: Any, *, current_type: Any = None) -> dict[
         options["enforce_rarity_on_shiny"] = bool(raw.get("enforce_rarity_on_shiny", options["enforce_rarity_on_shiny"]))
         options["duo_enabled"] = bool(raw.get("duo_enabled", options["duo_enabled"]))
         options["duo_partner_id"] = _normalize_discord_id(raw.get("duo_partner_id"))
-        options["duo_link_id"] = str(raw.get("duo_link_id", "")).strip() or None
+        options["duo_link_id"] = _normalize_duo_link_id(raw.get("duo_link_id"))
     else:
         options = legacy_ppe_type_to_options(current_type)
 

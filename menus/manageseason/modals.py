@@ -1598,7 +1598,7 @@ class EditRarityModifiersModal(discord.ui.Modal, title="Edit Rarity Modifiers"):
         confirm_text = (
             "⚠️ **Apply rarity modifier changes and recalculate all PPE characters?**\n"
             "These multipliers affect item points by rarity.\n\n"
-            f"Common,Uncommon,Rare,Legendary,Divine: `{self.rarity_set.value or '(unchanged)'}`\n"
+            f"Common, Unc, Rare, Leg, Divine: `{self.rarity_set.value or '(unchanged)'}`\n"
             f"Shiny: `{self.shiny.value or '(unchanged)'}`"
         )
         confirmed = await _confirm_points_update(

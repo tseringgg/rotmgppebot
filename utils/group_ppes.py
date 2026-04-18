@@ -333,7 +333,9 @@ def duo_link_id_from_options(options: Any) -> str | None:
         return None
 
     raw = str(options.get("duo_link_id", "")).strip()
-    return raw or None
+    if not raw or raw.lower() == "none":
+        return None
+    return raw
 
 
 async def get_duo_link_id_for_user(interaction: discord.Interaction, user_id: int) -> str | None:

@@ -9,7 +9,7 @@ import discord
 from dataclass import PPEData, PlayerData
 from menus.menu_utils import SafeResponse
 from utils.group_ppes import duo_partner_id_from_options, duo_link_id_from_options
-from utils.ppe_types import normalize_ppe_type, ppe_type_compact_summary, ppe_type_display_from_options
+from utils.ppe_types import is_duo_ppe_type, normalize_ppe_type, ppe_type_compact_summary, ppe_type_display_from_options
 from utils.guild_config import get_realmshark_settings, load_guild_config
 from utils.loot_helpers.loot_share_commands import share_active_ppe_loot_image
 from utils.message_utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
@@ -216,6 +216,8 @@ def build_character_embed(
     duo_partner_label = duo_partner_label_for_ppe(ppe, guild)
     if duo_partner_label is not None:
         embed.add_field(name="Duo Partner", value=duo_partner_label, inline=True)
+    elif is_duo_ppe_type(normalize_ppe_type(getattr(ppe, "ppe_type", None))):
+        embed.add_field(name="Duo Partner", value="Not set yet. Use Set Duo Partner to link this legacy duo PPE.", inline=True)
     embed.add_field(name="Active Status", value="⭐ Active PPE" if is_active else "Not Active", inline=True)
 
     embed.set_footer(text="Click Manage PPE to edit starting penalties. Set As Active will cause addloot to add items to this PPE.")
