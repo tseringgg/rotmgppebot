@@ -15,6 +15,7 @@ from utils.ppe_types import (
     normalize_ppe_combo_label_overrides,
     options_from_signature,
     ppe_type_compact_summary,
+    ppe_type_display_from_options,
     ppe_type_label,
     ppe_type_option_signature,
     ppe_type_short_label,
@@ -1096,7 +1097,39 @@ class ComboShortcutModal(discord.ui.Modal, title="Edit Combo Multiplier"):
             resolved = find_combo_label_override(raw_value, self.character_settings)
             resolved_type = find_ppe_type_by_label(raw_value, self.character_settings)
             options = options_from_signature(raw_value)
-            if resolved is None and resolved_type is None and options is None:
+
+            settings = self.character_settings if isinstance(self.character_settings, dict) else {}
+            candidate_signatures: set[str] = set()
+            combo_overrides = normalize_iterative_combo_overrides(settings.get("iterative_combo_overrides"))
+            combo_labels = normalize_ppe_combo_label_overrides(settings.get("combo_label_overrides"))
+            observed_raw = settings.get("observed_combo_signatures")
+            observed_signatures = observed_raw if isinstance(observed_raw, list) else []
+            for raw_signature in list(combo_overrides.keys()) + list(combo_labels.keys()) + observed_signatures:
+                normalized_signature = normalize_combo_signature(raw_signature)
+                if normalized_signature and normalized_signature != "regular":
+                    candidate_signatures.add(normalized_signature)
+
+            resolved_signature_by_display: str | None = None
+            needle = raw_value.strip().casefold()
+            for signature in sorted(candidate_signatures):
+                signature_options = options_from_signature(signature)
+                if not isinstance(signature_options, dict):
+                    continue
+                display_name = ppe_type_display_from_options(
+                    signature_options,
+                    ppe_settings=settings,
+                    compact=False,
+                ).strip().casefold()
+                display_short = ppe_type_display_from_options(
+                    signature_options,
+                    ppe_settings=settings,
+                    compact=True,
+                ).strip().casefold()
+                if needle in {display_name, display_short}:
+                    resolved_signature_by_display = signature
+                    break
+
+            if resolved is None and resolved_type is None and options is None and resolved_signature_by_display is None:
                 await interaction.response.send_message(
                     "No matching combo, PPE type label, short label, or signature was found. Use N/A to build a new combo from scratch.",
                     ephemeral=True,
@@ -1114,6 +1147,25 @@ class ComboShortcutModal(discord.ui.Modal, title="Edit Combo Multiplier"):
                 signature = ppe_type_option_signature(preset_options)
                 display_name = ppe_type_label(resolved_type, ppe_settings=self.character_settings)
                 short_name = ppe_type_short_label(resolved_type, ppe_settings=self.character_settings)
+            elif resolved_signature_by_display is not None:
+                signature = resolved_signature_by_display
+                preset_options = options_from_signature(signature)
+                if not isinstance(preset_options, dict):
+                    await interaction.response.send_message(
+                        "The matched combo signature could not be parsed. Try using N/A to rebuild it.",
+                        ephemeral=True,
+                    )
+                    return
+                display_name = ppe_type_display_from_options(
+                    preset_options,
+                    ppe_settings=self.character_settings,
+                    compact=False,
+                )
+                short_name = ppe_type_display_from_options(
+                    preset_options,
+                    ppe_settings=self.character_settings,
+                    compact=True,
+                )
             else:
                 preset_options = options
                 signature = ppe_type_option_signature(options)

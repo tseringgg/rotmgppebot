@@ -19,6 +19,7 @@ from utils.ppe_types import (
     normalize_ppe_type_multipliers,
     normalize_ppe_type_options,
     normalize_ppe_type_short_label_overrides,
+    ppe_type_option_signature,
     DEFAULT_PPE_TYPE_MULTIPLIERS,
     DEFAULT_ITERATIVE_OPTION_MULTIPLIERS,
 )
@@ -219,7 +220,26 @@ async def load_points_settings_for_menu(interaction: discord.Interaction) -> dic
 async def load_character_settings_for_menu(interaction: discord.Interaction) -> dict[str, Any]:
     """Load character settings for character-settings embeds/views."""
     settings = await get_ppe_settings(interaction)
-    return dict(settings)
+    hydrated = dict(settings)
+
+    observed_signatures: set[str] = set()
+    try:
+        records = await load_player_records(interaction)
+    except Exception:
+        records = {}
+
+    for player_data in records.values():
+        for ppe in getattr(player_data, "ppes", []):
+            options = normalize_ppe_type_options(
+                getattr(ppe, "ppe_type_options", None),
+                current_type=getattr(ppe, "ppe_type", None),
+            )
+            signature = normalize_combo_signature(ppe_type_option_signature(options))
+            if signature and signature != "regular":
+                observed_signatures.add(signature)
+
+    hydrated["observed_combo_signatures"] = sorted(observed_signatures)
+    return hydrated
 
 
 async def load_contest_settings_for_menu(interaction: discord.Interaction) -> dict[str, Any]:

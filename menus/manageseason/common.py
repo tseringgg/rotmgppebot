@@ -9,8 +9,10 @@ from utils.ppe_types import (
     all_ppe_types,
     get_ppe_type_multiplier_details_from_options,
     legacy_ppe_type_to_options,
+    normalize_combo_signature,
     normalize_iterative_combo_overrides,
     normalize_iterative_option_multipliers,
+    normalize_ppe_combo_label_overrides,
     ppe_type_display_from_options,
     ppe_type_label,
     ppe_type_option_signature,
@@ -68,9 +70,19 @@ def _build_ppe_type_multiplier_lines(*, ppe_settings: dict | None = None) -> lis
         source_suffix = " (combo override)" if source == "override" else ""
         lines.append(f"• {full_label} [{short_label}]: {value:.2f}x{source_suffix}")
 
-    # Show custom (non-legacy) combo overrides inline with PPE types.
+    # Show all known custom (non-legacy) combo signatures inline with PPE types.
     combo_overrides = normalize_iterative_combo_overrides(settings.get("iterative_combo_overrides"))
-    for signature in sorted(combo_overrides.keys()):
+    combo_labels = normalize_ppe_combo_label_overrides(settings.get("combo_label_overrides"))
+    observed_raw = settings.get("observed_combo_signatures")
+    observed_signatures = observed_raw if isinstance(observed_raw, list) else []
+
+    candidate_signatures: set[str] = set()
+    for raw_signature in list(combo_overrides.keys()) + list(combo_labels.keys()) + observed_signatures:
+        normalized_signature = normalize_combo_signature(raw_signature)
+        if normalized_signature and normalized_signature != "regular":
+            candidate_signatures.add(normalized_signature)
+
+    for signature in sorted(candidate_signatures):
         options = options_from_signature(signature)
         if not isinstance(options, dict):
             continue
@@ -81,9 +93,13 @@ def _build_ppe_type_multiplier_lines(*, ppe_settings: dict | None = None) -> lis
             if signature == legacy_signature:
                 continue
 
+        details = get_ppe_type_multiplier_details_from_options(options, settings)
+        value = float(details.get("multiplier", 1.0))
+        source = str(details.get("source", "base")).strip().lower()
+        source_suffix = " (combo override)" if source == "override" else ""
         full_label = ppe_type_display_from_options(options, ppe_settings=settings, compact=False)
         short_label = ppe_type_display_from_options(options, ppe_settings=settings, compact=True)
-        lines.append(f"• {full_label} [{short_label}]: {float(combo_overrides[signature]):.2f}x")
+        lines.append(f"• {full_label} [{short_label}]: {value:.2f}x{source_suffix}")
     return lines
 
 
