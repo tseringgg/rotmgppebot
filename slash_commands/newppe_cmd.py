@@ -17,7 +17,15 @@ from utils.ppe_types import (
 )
 from utils.penalty_embed import build_penalty_infographic_embed
 from utils.guild_config import get_max_ppes, load_guild_config, load_guild_config_by_id
-from utils.group_ppes import clear_duo_partner, get_duo_link_id_for_user, get_duo_partner, set_duo_partner
+from utils.group_ppes import (
+    clear_duo_partner,
+    clear_duo_request,
+    duo_request_is_current,
+    get_duo_link_id_for_user,
+    get_duo_partner,
+    set_duo_partner,
+    set_duo_request,
+)
 from utils.points_service import (
     apply_penalties_to_ppe,
     loot_adjustment_detail_lines,
@@ -187,6 +195,28 @@ async def create_new_ppe_for_user(
     }
 
 
+async def _send_duo_creation_post(
+    interaction: discord.Interaction,
+    *,
+    channel_id: int | None,
+    content: str,
+    embed: discord.Embed,
+) -> None:
+    """Post the partner's completion message into the original guild channel when possible."""
+    if channel_id is not None and interaction.client is not None:
+        channel = interaction.client.get_channel(int(channel_id))
+        if channel is None:
+            try:
+                channel = await interaction.client.fetch_channel(int(channel_id))
+            except discord.HTTPException:
+                channel = None
+        if channel is not None:
+            await channel.send(content=content, embed=embed)
+            return
+
+    await interaction.followup.send(content, embed=embed, ephemeral=False)
+
+
 def _duo_partner_id_from_options(options: dict | None) -> int | None:
     if not isinstance(options, dict):
         return None
@@ -222,6 +252,7 @@ class DuoPpeConfirmationView(discord.ui.View):
         percent_loot: float,
         incombat_reduction: float,
         duo_link_id: str,
+        request_token: str,
         requester_options: dict,
         timeout_seconds: int = 86400,
     ) -> None:
@@ -238,8 +269,12 @@ class DuoPpeConfirmationView(discord.ui.View):
         self.percent_loot = float(percent_loot)
         self.incombat_reduction = float(incombat_reduction)
         self.duo_link_id = str(duo_link_id)
+        self.request_token = str(request_token)
         self.requester_options = dict(requester_options)
         self.completed = False
+
+    async def _ensure_request_is_current(self, interaction: discord.Interaction) -> bool:
+        return await duo_request_is_current(interaction, self.requester_user_id, self.partner_user_id, self.request_token)
 
     async def _notify_requester(self, interaction: discord.Interaction, message: str) -> None:
         requester = interaction.client.get_user(self.requester_user_id)
@@ -307,6 +342,13 @@ class DuoPpeConfirmationView(discord.ui.View):
             await interaction.response.send_message("This confirmation request is for a different user.", ephemeral=True)
             return
 
+        if not await self._ensure_request_is_current(interaction):
+            await self._finalize(
+                interaction,
+                "This duo request is no longer current. Please use the latest invite or create a new request.",
+            )
+            return
+
         guild = await self._resolve_guild(interaction)
         if guild is None:
             await interaction.response.send_message("Unable to access the original server for this request.", ephemeral=True)
@@ -315,6 +357,7 @@ class DuoPpeConfirmationView(discord.ui.View):
         proxy_interaction = SimpleNamespace(guild=guild, user=interaction.user)
         try:
             await set_duo_partner(proxy_interaction, self.requester_user_id, self.partner_user_id)
+            await clear_duo_request(proxy_interaction, self.requester_user_id)
         except ValueError as exc:
             await interaction.response.send_message(f"Could not confirm your duo partner: {exc}", ephemeral=True)
             return
@@ -343,7 +386,21 @@ class DuoPpeConfirmationView(discord.ui.View):
             await interaction.response.send_message("This confirmation request is for a different user.", ephemeral=True)
             return
 
+        if not await self._ensure_request_is_current(interaction):
+            await self._finalize(
+                interaction,
+                "This duo request is no longer current. Please use the latest invite or create a new request.",
+            )
+            return
+
         converted = await self._convert_requester_to_regular(interaction)
+        try:
+            guild = await self._resolve_guild(interaction)
+            if guild is not None:
+                proxy_interaction = SimpleNamespace(guild=guild, user=interaction.user)
+                await clear_duo_request(proxy_interaction, self.requester_user_id)
+        except Exception:
+            pass
         await self._finalize(interaction, "Declined duo request. No paired PPE was created.")
         await self._notify_requester(
             interaction,
@@ -368,6 +425,8 @@ class DuoSetupInviteView(discord.ui.View):
         requester_user_id: int,
         partner_user_id: int,
         class_name: str,
+        request_token: str,
+        request_channel_id: int | None,
         timeout_seconds: int = 86400,
     ) -> None:
         super().__init__(timeout=timeout_seconds)
@@ -376,6 +435,8 @@ class DuoSetupInviteView(discord.ui.View):
         self.requester_user_id = int(requester_user_id)
         self.partner_user_id = int(partner_user_id)
         self.class_name = str(class_name)
+        self.request_token = str(request_token)
+        self.request_channel_id = int(request_channel_id) if isinstance(request_channel_id, int) and request_channel_id > 0 else None
         self.completed = False
 
     async def _resolve_guild(self, interaction: discord.Interaction) -> discord.Guild | None:
@@ -418,6 +479,13 @@ class DuoSetupInviteView(discord.ui.View):
             await interaction.response.send_message("This duo invite is for a different user.", ephemeral=True)
             return
 
+        if not await duo_request_is_current(interaction, self.requester_user_id, self.partner_user_id, self.request_token):
+            await self._finalize(
+                interaction,
+                "This duo invite is no longer current. Please ask the requester for the latest invite.",
+            )
+            return
+
         guild = await self._resolve_guild(interaction)
         if guild is None:
             await interaction.response.send_message("Unable to access the original server for this request.", ephemeral=True)
@@ -426,6 +494,7 @@ class DuoSetupInviteView(discord.ui.View):
         proxy_interaction = SimpleNamespace(guild=guild, user=interaction.user)
         try:
             await set_duo_partner(proxy_interaction, self.requester_user_id, self.partner_user_id)
+            await clear_duo_request(proxy_interaction, self.requester_user_id)
         except ValueError as exc:
             await interaction.response.send_message(f"Could not accept duo request: {exc}", ephemeral=True)
             return
@@ -435,7 +504,6 @@ class DuoSetupInviteView(discord.ui.View):
             (
                 f"✅ Accepted duo request for **{self.guild_name}** ({self.class_name}).\n"
                 "The requester can now finish creating their PPE.\n"
-                "After they do, run `/newppe` in that server to create your linked duo PPE."
             ),
         )
         await self._notify_requester(
@@ -451,6 +519,7 @@ class DuoSetupInviteView(discord.ui.View):
             guild_name=self.guild_name,
             partner_user_id=self.requester_user_id,
             default_class_name=self.class_name,
+            request_channel_id=self.request_channel_id,
         )
         launcher_embed = discord.Embed(
             title="Create Linked Duo PPE",
@@ -475,11 +544,19 @@ class DuoSetupInviteView(discord.ui.View):
             await interaction.response.send_message("This duo invite is for a different user.", ephemeral=True)
             return
 
+        if not await duo_request_is_current(interaction, self.requester_user_id, self.partner_user_id, self.request_token):
+            await self._finalize(
+                interaction,
+                "This duo invite is no longer current. Please ask the requester for the latest invite.",
+            )
+            return
+
         guild = await self._resolve_guild(interaction)
         if guild is not None:
             proxy_interaction = SimpleNamespace(guild=guild, user=interaction.user)
             try:
                 await clear_duo_partner(proxy_interaction, self.partner_user_id)
+                await clear_duo_request(proxy_interaction, self.requester_user_id)
             except Exception:
                 pass
 
@@ -508,6 +585,7 @@ class DuoPartnerCreateLauncherView(discord.ui.View):
         guild_name: str,
         partner_user_id: int,
         default_class_name: str,
+        request_channel_id: int | None,
         timeout_seconds: int = 86400,
     ) -> None:
         super().__init__(timeout=timeout_seconds)
@@ -516,6 +594,7 @@ class DuoPartnerCreateLauncherView(discord.ui.View):
         self.guild_name = str(guild_name)
         self.partner_user_id = int(partner_user_id)
         self.default_class_name = str(default_class_name)
+        self.request_channel_id = int(request_channel_id) if isinstance(request_channel_id, int) and request_channel_id > 0 else None
 
     @discord.ui.button(label="Create Partner PPE", style=discord.ButtonStyle.success, row=0)
     async def create_partner_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -530,6 +609,7 @@ class DuoPartnerCreateLauncherView(discord.ui.View):
                 guild_name=self.guild_name,
                 partner_user_id=self.partner_user_id,
                 default_class_name=self.default_class_name,
+                request_channel_id=self.request_channel_id,
             )
         )
 
@@ -559,6 +639,7 @@ class DuoPartnerCreateStartModal(discord.ui.Modal, title="Create Partner PPE"):
         guild_name: str,
         partner_user_id: int,
         default_class_name: str,
+        request_channel_id: int | None,
     ) -> None:
         super().__init__(timeout=600)
         self.owner_id = int(owner_id)
@@ -566,6 +647,7 @@ class DuoPartnerCreateStartModal(discord.ui.Modal, title="Create Partner PPE"):
         self.guild_name = str(guild_name)
         self.partner_user_id = int(partner_user_id)
         self.class_name.default = str(default_class_name or "")
+        self.request_channel_id = int(request_channel_id) if isinstance(request_channel_id, int) and request_channel_id > 0 else None
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         if interaction.user.id != self.owner_id:
@@ -621,6 +703,7 @@ class DuoPartnerCreateStartModal(discord.ui.Modal, title="Create Partner PPE"):
             duo_link_id=duo_link_id,
             skip_duo_selection=True,
             guild_override=guild,
+            post_to_channel_id=self.request_channel_id,
         )
 
         await interaction.response.send_message(
@@ -783,6 +866,7 @@ class DuoPpeTypePartnerModal(discord.ui.Modal, title="Set Duo Partner Discord ID
         options["duo_partner_id"] = partner_id
         duo_link_id = uuid4().hex
         options["duo_link_id"] = duo_link_id
+        request_channel_id = interaction.channel.id if interaction.channel is not None else None
 
         try:
             result = await create_new_ppe_for_user(
@@ -799,6 +883,13 @@ class DuoPpeTypePartnerModal(discord.ui.Modal, title="Set Duo Partner Discord ID
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
 
+        request_token = await set_duo_request(
+            interaction,
+            interaction.user.id,
+            partner_id,
+            channel_id=request_channel_id,
+        )
+
         confirmation_view = DuoPpeConfirmationView(
             guild_id=interaction.guild.id,
             guild_name=interaction.guild.name,
@@ -812,6 +903,7 @@ class DuoPpeTypePartnerModal(discord.ui.Modal, title="Set Duo Partner Discord ID
             percent_loot=self.percent_loot,
             incombat_reduction=self.incombat_reduction,
             duo_link_id=duo_link_id,
+            request_token=request_token,
             requester_options=options,
         )
 
@@ -886,18 +978,45 @@ class DuoPartnerIdModal(discord.ui.Modal, title="Set Duo Partner Discord ID"):
             )
             return
 
+        previous_partner_value = self.wizard.state.get("duo_partner_id")
+        previous_partner_id = int(previous_partner_value) if isinstance(previous_partner_value, int) and previous_partner_value > 0 else None
+
         try:
             await clear_duo_partner(interaction, interaction.user.id)
         except Exception:
             pass
-        
+
+        request_channel_id = interaction.channel.id if interaction.channel is not None else None
+        request_token = await set_duo_request(
+            interaction,
+            interaction.user.id,
+            partner_id,
+            channel_id=request_channel_id,
+        )
+
+        if previous_partner_id is not None and previous_partner_id != partner_id:
+            previous_member = interaction.guild.get_member(previous_partner_id)
+            if previous_member is not None:
+                try:
+                    await previous_member.send(
+                        (
+                            f"Your Duo PPE request from **{interaction.guild.name}** was updated to a different partner. "
+                            f"Please ignore the previous invite from <@{interaction.user.id}>."
+                        )
+                    )
+                except discord.HTTPException:
+                    pass
+
         self.wizard.state["duo_partner_id"] = partner_id
+        self.wizard.state["duo_request_token"] = request_token
         invite_view = DuoSetupInviteView(
             guild_id=interaction.guild.id,
             guild_name=interaction.guild.name,
             requester_user_id=interaction.user.id,
             partner_user_id=partner_id,
             class_name=self.wizard.class_name,
+            request_token=request_token,
+            request_channel_id=request_channel_id,
         )
         try:
             await guild_member.send(
@@ -936,6 +1055,7 @@ class NewPpeIterativeWizardView(discord.ui.View):
         duo_link_id: str | None = None,
         skip_duo_selection: bool = False,
         guild_override: discord.Guild | None = None,
+        post_to_channel_id: int | None = None,
     ) -> None:
         super().__init__(timeout=600)
         self.owner_id = owner_id
@@ -946,6 +1066,7 @@ class NewPpeIterativeWizardView(discord.ui.View):
         self.incombat_reduction = incombat_reduction
         self.ppe_settings = ppe_settings
         self.guild_override = guild_override
+        self.post_to_channel_id = int(post_to_channel_id) if isinstance(post_to_channel_id, int) and post_to_channel_id > 0 else None
         self.skip_duo_selection = bool(skip_duo_selection or duo_partner_id is not None)
         self.base_multipliers = ppe_settings.get("iterative_base_multipliers", {}) if isinstance(ppe_settings.get("iterative_base_multipliers", {}), dict) else {}
         self.state: dict[str, object] = {
@@ -1346,6 +1467,19 @@ class _WizardCreatePpeButton(discord.ui.Button):
 
         if not duo_enabled or duo_partner_id is None or duo_link_id is None or interaction.guild is None:
             await interaction.followup.send(base_message, embed=result["embed"], ephemeral=False)
+            return
+
+        if view.post_to_channel_id is not None:
+            await _send_duo_creation_post(
+                interaction,
+                channel_id=view.post_to_channel_id,
+                content=(
+                    base_message
+                    + f"\n\n🤝 Duo link confirmed with <@{duo_partner_id}>. "
+                    "Their completed partner PPE has been posted in the original channel."
+                ),
+                embed=result["embed"],
+            )
             return
 
         await interaction.followup.send(

@@ -153,111 +153,136 @@ async def command(interaction: discord.Interaction):
         leaderboard_data.sort(key=lambda x: (x[5], x[3]), reverse=True)
 
         ranked_rows: list[tuple[float, str]] = []
-        selected_duo_rows: dict[int, tuple[int, Any, tuple[Any, ...]]] = {}
-        paired_member_ids: set[int] = set()
-        seen_duo_pairs: set[tuple[Any, ...]] = set()
 
-        for pid, _player, best_ppe, _ppe_points, _quest_points, _points, _ppe_count, _active_ppe_id in leaderboard_data:
-            if scoring.ppe_aggregate_points or best_ppe is None:
-                continue
-            if int(pid) in paired_member_ids:
-                continue
-
-            duo_pair = _find_confirmed_duo_pair(records, int(pid), best_ppe)
-            if duo_pair is None:
-                continue
-
-            partner_id, partner_ppe, pair_key = duo_pair
-            if pair_key in seen_duo_pairs or int(partner_id) in paired_member_ids:
-                continue
-
-            selected_duo_rows[int(pid)] = (int(partner_id), partner_ppe, pair_key)
-            paired_member_ids.add(int(pid))
-            paired_member_ids.add(int(partner_id))
-            seen_duo_pairs.add(pair_key)
-
-        for pid, player, best_ppe, ppe_points, quest_points, points, ppe_count, active_ppe_id in leaderboard_data:
-            if scoring.ppe_aggregate_points:
+        if scoring.ppe_aggregate_points:
+            for pid, player, best_ppe, ppe_points, quest_points, points, ppe_count, active_ppe_id in leaderboard_data:
                 count_label = "character" if ppe_count == 1 else "characters"
                 if include_ppe_quest_points:
-                    ranked_rows.append((
-                        float(points),
-                        f"**{player.title()}** — All PPEs ({ppe_count} {count_label}) + Quest: "
-                        f"{ppe_points:.1f} + {quest_points:.1f} = **{points:.1f}** pts"
-                    ))
+                    ranked_rows.append(
+                        (
+                            float(points),
+                            f"**{player.title()}** — All PPEs ({ppe_count} {count_label}) + Quest: "
+                            f"{ppe_points:.1f} + {quest_points:.1f} = **{points:.1f}** pts",
+                        )
+                    )
                 else:
-                    ranked_rows.append((
-                        float(points),
-                        f"**{player.title()}** — All PPEs ({ppe_count} {count_label}): **{points:.1f}** pts",
-                    ))
-                continue
+                    ranked_rows.append(
+                        (
+                            float(points),
+                            f"**{player.title()}** — All PPEs ({ppe_count} {count_label}): **{points:.1f}** pts",
+                        )
+                    )
+        else:
+            mutual_duo_pairs: dict[tuple[Any, ...], tuple[int, int, Any, Any]] = {}
+            paired_member_ids: set[int] = set()
 
-            if best_ppe is None:
-                continue
+            for pid, summary in player_totals.items():
+                best_ppe = summary.get("best_ppe")
+                if best_ppe is None:
+                    continue
 
-            if int(pid) in paired_member_ids and int(pid) not in selected_duo_rows:
-                continue
+                duo_pair = _find_confirmed_duo_pair(records, int(pid), best_ppe)
+                if duo_pair is None:
+                    continue
 
-            duo_pair = selected_duo_rows.get(int(pid))
-            if duo_pair is not None:
-                partner_id, partner_ppe, _pair_key = duo_pair
+                partner_id, partner_ppe, pair_key = duo_pair
+                if int(pid) > int(partner_id) or pair_key in mutual_duo_pairs:
+                    continue
 
                 partner_summary = player_totals.get(int(partner_id))
-                partner_name = member_display_name(guild, int(partner_id))
-                owner_ppe_points = float(compute_effective_ppe_points(best_ppe, guild_config=guild_config))
-                partner_ppe_points = float(compute_effective_ppe_points(partner_ppe, guild_config=guild_config))
-                owner_quest_points = float(quest_points)
+                if not isinstance(partner_summary, dict):
+                    continue
+
+                partner_best_ppe = partner_summary.get("best_ppe")
+                if partner_best_ppe is None:
+                    continue
+
+                reverse_pair = _find_confirmed_duo_pair(records, int(partner_id), partner_best_ppe)
+                if reverse_pair is None:
+                    continue
+
+                reverse_partner_id, _reverse_partner_ppe, reverse_pair_key = reverse_pair
+                if int(reverse_partner_id) != int(pid) or reverse_pair_key != pair_key:
+                    continue
+
+                mutual_duo_pairs[pair_key] = (int(pid), int(partner_id), best_ppe, partner_best_ppe)
+                paired_member_ids.add(int(pid))
+                paired_member_ids.add(int(partner_id))
+
+            for pid, partner_id, owner_best_ppe, partner_best_ppe in mutual_duo_pairs.values():
+                owner_summary = player_totals.get(int(pid), {})
+                partner_summary = player_totals.get(int(partner_id), {})
+                owner_name = str(owner_summary.get("player", member_display_name(guild, int(pid))))
+                partner_name = str(partner_summary.get("player", member_display_name(guild, int(partner_id))))
+
+                owner_ppe_points = float(compute_effective_ppe_points(owner_best_ppe, guild_config=guild_config))
+                partner_ppe_points = float(compute_effective_ppe_points(partner_best_ppe, guild_config=guild_config))
+                owner_quest_points = float(owner_summary.get("quest_points", 0.0)) if isinstance(owner_summary, dict) else 0.0
                 partner_quest_points = float(partner_summary.get("quest_points", 0.0)) if isinstance(partner_summary, dict) else 0.0
                 total_ppe_points = owner_ppe_points + partner_ppe_points
                 total_quest_points = owner_quest_points + partner_quest_points
                 duo_total = total_ppe_points + total_quest_points
 
-                owner_inactive = active_ppe_id != getattr(best_ppe, "id", None)
-                partner_active = partner_summary.get("active_ppe_id") if isinstance(partner_summary, dict) else None
-                partner_inactive = partner_active != getattr(partner_ppe, "id", None)
+                owner_active_ppe_id = owner_summary.get("active_ppe_id") if isinstance(owner_summary, dict) else None
+                partner_active_ppe_id = partner_summary.get("active_ppe_id") if isinstance(partner_summary, dict) else None
+                owner_inactive = owner_active_ppe_id != getattr(owner_best_ppe, "id", None)
+                partner_inactive = partner_active_ppe_id != getattr(partner_best_ppe, "id", None)
                 inactive_marker = " • (inactive)" if owner_inactive or partner_inactive else ""
 
                 duo_type_left = ppe_type_compact_summary(
+                    getattr(owner_best_ppe, "ppe_type_options", None),
+                    fallback_type=normalize_ppe_type(getattr(owner_best_ppe, "ppe_type", None)),
+                    ppe_settings=ppe_settings,
+                )
+                duo_type_right = ppe_type_compact_summary(
+                    getattr(partner_best_ppe, "ppe_type_options", None),
+                    fallback_type=normalize_ppe_type(getattr(partner_best_ppe, "ppe_type", None)),
+                    ppe_settings=ppe_settings,
+                )
+                class_label = f"{owner_best_ppe.name} [{duo_type_left}] + {partner_best_ppe.name} [{duo_type_right}]"
+
+                if include_ppe_quest_points:
+                    ranked_rows.append(
+                        (
+                            float(duo_total),
+                            f"**{owner_name.title()} + {partner_name.title()}** — {class_label}: "
+                            f"{total_ppe_points:.1f} + {total_quest_points:.1f} = **{duo_total:.1f}** pts{inactive_marker}",
+                        )
+                    )
+                else:
+                    ranked_rows.append(
+                        (
+                            float(total_ppe_points),
+                            f"**{owner_name.title()} + {partner_name.title()}** — {class_label}: **{total_ppe_points:.1f}** pts{inactive_marker}",
+                        )
+                    )
+
+            for pid, player, best_ppe, ppe_points, quest_points, points, ppe_count, active_ppe_id in leaderboard_data:
+                if best_ppe is None:
+                    continue
+                if int(pid) in paired_member_ids:
+                    continue
+
+                is_inactive = active_ppe_id != best_ppe.id
+                marker = " • (inactive)" if is_inactive else ""
+                ppe_type = ppe_type_compact_summary(
                     getattr(best_ppe, "ppe_type_options", None),
                     fallback_type=normalize_ppe_type(getattr(best_ppe, "ppe_type", None)),
                     ppe_settings=ppe_settings,
                 )
-                duo_type_right = ppe_type_compact_summary(
-                    getattr(partner_ppe, "ppe_type_options", None),
-                    fallback_type=normalize_ppe_type(getattr(partner_ppe, "ppe_type", None)),
-                    ppe_settings=ppe_settings,
-                )
-                class_label = f"{best_ppe.name} [{duo_type_left}] + {partner_ppe.name} [{duo_type_right}]"
-
+                class_label = f"{best_ppe.name} [{ppe_type}]"
                 if include_ppe_quest_points:
-                    ranked_rows.append((
-                        float(duo_total),
-                        f"**{player.title()} + {partner_name.title()}** — {class_label}: "
-                        f"{total_ppe_points:.1f} + {total_quest_points:.1f} = **{duo_total:.1f}** pts{inactive_marker}"
-                    ))
+                    ranked_rows.append(
+                        (
+                            float(points),
+                            f"**{player.title()}** — {class_label}: "
+                            f"{ppe_points:.1f} + {quest_points:.1f} = **{points:.1f}** pts{marker}",
+                        )
+                    )
                 else:
-                    ranked_rows.append((
-                        float(total_ppe_points),
-                        f"**{player.title()} + {partner_name.title()}** — {class_label}: **{total_ppe_points:.1f}** pts{inactive_marker}"
-                    ))
-                continue
-
-            is_inactive = active_ppe_id != best_ppe.id
-            marker = " • (inactive)" if is_inactive else ""
-            ppe_type = ppe_type_compact_summary(
-                getattr(best_ppe, "ppe_type_options", None),
-                fallback_type=normalize_ppe_type(getattr(best_ppe, "ppe_type", None)),
-                ppe_settings=ppe_settings,
-            )
-            class_label = f"{best_ppe.name} [{ppe_type}]"
-            if include_ppe_quest_points:
-                ranked_rows.append((
-                    float(points),
-                    f"**{player.title()}** — {class_label}: "
-                    f"{ppe_points:.1f} + {quest_points:.1f} = **{points:.1f}** pts{marker}"
-                ))
-            else:
-                ranked_rows.append((float(points), f"**{player.title()}** — {class_label}: **{points:.1f}** pts{marker}"))
+                    ranked_rows.append(
+                        (float(points), f"**{player.title()}** — {class_label}: **{points:.1f}** pts{marker}")
+                    )
 
         ranked_rows.sort(key=lambda item: item[0], reverse=True)
         rows = [item[1] for item in ranked_rows]

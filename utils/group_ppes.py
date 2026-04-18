@@ -4,6 +4,7 @@ import asyncio
 import json
 import os
 from typing import Any, Dict
+from uuid import uuid4
 
 import discord
 
@@ -13,6 +14,11 @@ from utils.player_records import DATA_DIR, get_lock, load_player_records
 def _group_ppes_path(guild_id: int) -> str:
     """Get the path to the group PPEs file for a guild."""
     return os.path.join(DATA_DIR, f"{guild_id}_group_ppes.json")
+
+
+def _duo_requests_path(guild_id: int) -> str:
+    """Get the path to the pending duo request file for a guild."""
+    return os.path.join(DATA_DIR, f"{guild_id}_duo_requests.json")
 
 
 def _read_json(path: str) -> Dict[str, Any]:
@@ -72,6 +78,84 @@ async def _save_group_ppes(guild_id: int, mappings: Dict[int, int]) -> None:
         await loop.run_in_executor(None, _write_json_atomic, path, string_mappings)
 
 
+async def _load_duo_requests(guild_id: int) -> Dict[int, Dict[str, Any]]:
+    """Load pending duo request metadata for a guild."""
+    lock = get_lock(guild_id)
+    async with lock:
+        loop = asyncio.get_event_loop()
+        path = _duo_requests_path(guild_id)
+        data = await loop.run_in_executor(None, _read_json, path)
+
+        result: Dict[int, Dict[str, Any]] = {}
+        for key_str, value in data.items():
+            try:
+                requester_id = int(key_str)
+            except (TypeError, ValueError):
+                continue
+            if requester_id <= 0 or not isinstance(value, dict):
+                continue
+
+            partner_id = value.get("partner_id")
+            token = str(value.get("token", "")).strip()
+            channel_id = value.get("channel_id")
+            try:
+                partner_id_int = int(partner_id)
+            except (TypeError, ValueError):
+                continue
+            if partner_id_int <= 0 or not token:
+                continue
+
+            normalized_request: Dict[str, Any] = {
+                "partner_id": partner_id_int,
+                "token": token,
+            }
+            try:
+                channel_id_int = int(channel_id)
+            except (TypeError, ValueError):
+                channel_id_int = None
+            if channel_id_int is not None and channel_id_int > 0:
+                normalized_request["channel_id"] = channel_id_int
+            result[requester_id] = normalized_request
+        return result
+
+
+async def _save_duo_requests(guild_id: int, requests: Dict[int, Dict[str, Any]]) -> None:
+    """Save pending duo request metadata for a guild."""
+    lock = get_lock(guild_id)
+    async with lock:
+        loop = asyncio.get_event_loop()
+        path = _duo_requests_path(guild_id)
+        payload: Dict[str, Any] = {}
+        for requester_id, data in requests.items():
+            if requester_id <= 0 or not isinstance(data, dict):
+                continue
+            partner_id = data.get("partner_id")
+            token = str(data.get("token", "")).strip()
+            if not token:
+                continue
+            try:
+                partner_id_int = int(partner_id)
+            except (TypeError, ValueError):
+                continue
+            if partner_id_int <= 0:
+                continue
+
+            normalized_request: Dict[str, Any] = {
+                "partner_id": partner_id_int,
+                "token": token,
+            }
+            channel_id = data.get("channel_id")
+            try:
+                channel_id_int = int(channel_id)
+            except (TypeError, ValueError):
+                channel_id_int = None
+            if channel_id_int is not None and channel_id_int > 0:
+                normalized_request["channel_id"] = channel_id_int
+            payload[str(requester_id)] = normalized_request
+
+        await loop.run_in_executor(None, _write_json_atomic, path, payload)
+
+
 async def set_duo_partner(interaction: discord.Interaction, user_id: int, partner_id: int) -> None:
     """Set a duo partnership between two users.
     
@@ -96,6 +180,73 @@ async def set_duo_partner(interaction: discord.Interaction, user_id: int, partne
     mappings[partner_id] = user_id
     
     await _save_group_ppes(guild_id, mappings)
+
+
+async def set_duo_request(
+    interaction: discord.Interaction,
+    requester_id: int,
+    partner_id: int,
+    *,
+    channel_id: int | None = None,
+) -> str:
+    """Record the current pending duo request for a requester.
+
+    Returns a new request token that must match when the invite is accepted.
+    """
+    if interaction.guild is None:
+        raise ValueError("This action can only be used in a server.")
+
+    if requester_id <= 0 or partner_id <= 0:
+        raise ValueError("User IDs must be positive integers.")
+
+    guild_id = interaction.guild.id
+    requests = await _load_duo_requests(guild_id)
+    token = uuid4().hex
+    request_payload: Dict[str, Any] = {
+        "partner_id": int(partner_id),
+        "token": token,
+    }
+    if isinstance(channel_id, int) and channel_id > 0:
+        request_payload["channel_id"] = int(channel_id)
+    requests[int(requester_id)] = request_payload
+    await _save_duo_requests(guild_id, requests)
+    return token
+
+
+async def get_duo_request(interaction: discord.Interaction, requester_id: int) -> Dict[str, Any] | None:
+    """Return the active pending duo request for a requester, if any."""
+    if interaction.guild is None:
+        raise ValueError("This action can only be used in a server.")
+
+    guild_id = interaction.guild.id
+    requests = await _load_duo_requests(guild_id)
+    request = requests.get(int(requester_id))
+    return dict(request) if isinstance(request, dict) else None
+
+
+async def clear_duo_request(interaction: discord.Interaction, requester_id: int) -> None:
+    """Clear the active pending duo request for a requester, if any."""
+    if interaction.guild is None:
+        raise ValueError("This action can only be used in a server.")
+
+    guild_id = interaction.guild.id
+    requests = await _load_duo_requests(guild_id)
+    if int(requester_id) in requests:
+        requests.pop(int(requester_id), None)
+        await _save_duo_requests(guild_id, requests)
+
+
+async def duo_request_is_current(
+    interaction: discord.Interaction,
+    requester_id: int,
+    partner_id: int,
+    token: str,
+) -> bool:
+    """Check whether a DM invite still matches the latest pending duo request."""
+    request = await get_duo_request(interaction, requester_id)
+    if request is None:
+        return False
+    return int(request.get("partner_id", 0) or 0) == int(partner_id) and str(request.get("token", "")).strip() == str(token).strip()
 
 
 async def get_duo_partner(interaction: discord.Interaction, user_id: int) -> int | None:
@@ -207,6 +358,10 @@ __all__ = [
     "get_duo_partner",
     "clear_duo_partner",
     "clear_all_group_ppes",
+    "set_duo_request",
+    "get_duo_request",
+    "clear_duo_request",
+    "duo_request_is_current",
     "duo_partner_id_from_options",
     "duo_link_id_from_options",
     "get_duo_link_id_for_user",
