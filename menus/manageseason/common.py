@@ -136,6 +136,8 @@ def _build_iterative_base_lines(character_settings: dict) -> list[str]:
         f"• Minimum Rarity: Common {float(rarity.get('common', 1.0)):.2f}x, Uncommon {float(rarity.get('uncommon', 1.1)):.2f}x, Rare {float(rarity.get('rare', 1.2)):.2f}x, Legendary {float(rarity.get('legendary', 1.4)):.2f}x, Divine {float(rarity.get('divine', 1.5)):.2f}x",
         f"• Shiny Only: {float(multipliers.get('shiny_only', 1.5)):.2f}x",
         f"• Enforce Shiny Rarity: {float(multipliers.get('enforce_shiny_rarity', 0.9)):.2f}x",
+        "• Enforce applies only when minimum rarity is Legendary or Divine.",
+        "• If Enforce is No: Legendary applies once; Divine applies twice.",
         f"• Duo: {float(multipliers.get('duo', 0.6)):.2f}x",
     ]
 

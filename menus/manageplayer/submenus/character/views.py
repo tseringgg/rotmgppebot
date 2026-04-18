@@ -46,7 +46,9 @@ from utils.wizard_components import (
     MinimumRarityContinueButton,
     MinimumRaritySelect,
     build_minimum_rarity_handlers,
+    enforce_shiny_rarity_prompt,
     get_minimum_rarity_options,
+    requires_enforce_shiny_rarity_choice,
 )
 
 
@@ -758,7 +760,11 @@ class ManagePlayerPpeTypeWizardView(discord.ui.View):
         if self.step == "minimum_rarity":
             return f"What is the minimum rarity for this character? ({self._rarity_hint()})"
         if self.step == "enforce_shiny":
-            return "Will your rarity requirement be enforced on shiny items?"
+            try:
+                enforce_value = float(self.base_multipliers.get("enforce_shiny_rarity", 0.9))
+            except (TypeError, ValueError):
+                enforce_value = 0.9
+            return enforce_shiny_rarity_prompt(self.state.get("minimum_rarity", "common"), enforce_value)
         if self.step == "duo":
             return f"Would you like to do a duo PPE? (Yes: {self._multiplier_hint('duo', 0.6)})"
         if self.step == "duo_partner":
@@ -825,7 +831,10 @@ class ManagePlayerPpeTypeWizardView(discord.ui.View):
         if self.step == "shiny_only":
             return "minimum_rarity"
         if self.step == "minimum_rarity":
-            return "enforce_shiny" if bool(self.state.get("shiny_only")) else "duo"
+            if requires_enforce_shiny_rarity_choice(self.state.get("minimum_rarity", "common")):
+                return "enforce_shiny"
+            self.state["enforce_rarity_on_shiny"] = True
+            return "duo"
         if self.step == "enforce_shiny":
             return "duo"
         if self.step == "duo":

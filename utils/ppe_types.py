@@ -256,6 +256,10 @@ def minimum_rarity_effective(value: Any) -> str:
     return normalized
 
 
+def requires_enforce_shiny_rarity_choice(minimum_rarity: Any) -> bool:
+    return minimum_rarity_effective(minimum_rarity) in {"legendary", "divine"}
+
+
 def legacy_ppe_type_to_options(value: Any) -> dict[str, Any]:
     ppe_type = normalize_ppe_type(value)
     options = default_ppe_type_options()
@@ -311,10 +315,11 @@ def normalize_ppe_type_options(value: Any, *, current_type: Any = None) -> dict[
         options["shiny_only"] = False
         options["enforce_rarity_on_shiny"] = False
 
-    if not options["shiny_only"]:
-        options["enforce_rarity_on_shiny"] = False
-        if options["minimum_rarity"] == "all_shinies_allowed":
-            options["minimum_rarity"] = "common"
+    if not options["shiny_only"] and options["minimum_rarity"] == "all_shinies_allowed":
+        options["minimum_rarity"] = "common"
+
+    if not requires_enforce_shiny_rarity_choice(options["minimum_rarity"]):
+        options["enforce_rarity_on_shiny"] = True
 
     if not options["duo_enabled"]:
         options["duo_partner_id"] = None
@@ -667,39 +672,46 @@ def iterative_multiplier_breakdown(
     minimum_rarity_effective_value = minimum_rarity_effective(minimum_rarity)
     rarity_multiplier = float(multipliers["minimum_rarity"][minimum_rarity_effective_value])
     minimum_rarity_label = "All Shinies Allowed" if minimum_rarity == "all_shinies_allowed" else minimum_rarity.title()
+    multiplier *= rarity_multiplier
+    if minimum_rarity_effective_value != "common" or rarity_multiplier != 1.0:
+        components.append(
+            {
+                "key": "minimum_rarity",
+                "label": f"Minimum Rarity ({minimum_rarity_label})",
+                "multiplier": rarity_multiplier,
+            }
+        )
+
     if options["shiny_only"]:
         shiny_multiplier = float(multipliers["shiny_only"])
-        enforce_multiplier = float(multipliers["enforce_shiny_rarity"])
-        if options["enforce_rarity_on_shiny"]:
-            combined_multiplier = rarity_multiplier * shiny_multiplier
-            multiplier *= combined_multiplier
-            components.append(
-                {
-                    "key": "shiny_rarity_combined",
-                    "label": f"Shiny + Minimum Rarity ({minimum_rarity_label})",
-                    "multiplier": combined_multiplier,
-                }
-            )
-        else:
-            combined_multiplier = min(rarity_multiplier, shiny_multiplier) * enforce_multiplier
-            multiplier *= combined_multiplier
-            components.append(
-                {
-                    "key": "shiny_rarity_combined",
-                    "label": f"Shiny + Minimum Rarity Blend ({minimum_rarity_label})",
-                    "multiplier": combined_multiplier,
-                }
-            )
-    else:
-        multiplier *= rarity_multiplier
-        if minimum_rarity_effective_value != "common" or rarity_multiplier != 1.0:
-            components.append(
-                {
-                    "key": "minimum_rarity",
-                    "label": f"Minimum Rarity ({minimum_rarity_label})",
-                    "multiplier": rarity_multiplier,
-                }
-            )
+        multiplier *= shiny_multiplier
+        components.append(
+            {
+                "key": "shiny_only",
+                "label": "Shiny Only",
+                "multiplier": shiny_multiplier,
+            }
+        )
+
+    enforce_power = 0
+    if not options["enforce_rarity_on_shiny"]:
+        if minimum_rarity_effective_value == "legendary":
+            enforce_power = 1
+        elif minimum_rarity_effective_value == "divine":
+            enforce_power = 2
+
+    if enforce_power > 0:
+        enforce_base = float(multipliers["enforce_shiny_rarity"])
+        enforce_multiplier = float(enforce_base ** enforce_power)
+        multiplier *= enforce_multiplier
+        apply_label = "once" if enforce_power == 1 else "twice"
+        components.append(
+            {
+                "key": "enforce_shiny_rarity",
+                "label": f"Enforce Shiny Rarity Off ({minimum_rarity_label}, {apply_label})",
+                "multiplier": enforce_multiplier,
+            }
+        )
 
     if options["duo_enabled"]:
         value = float(multipliers["duo"])

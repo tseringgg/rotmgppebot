@@ -44,7 +44,9 @@ from utils.wizard_components import (
     MinimumRarityContinueButton,
     MinimumRaritySelect,
     build_minimum_rarity_handlers,
+    enforce_shiny_rarity_prompt,
     get_minimum_rarity_options,
+    requires_enforce_shiny_rarity_choice,
 )
 from menus.menu_utils import OwnerBoundView
 
@@ -754,7 +756,17 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
         if self.step == "minimum_rarity":
             return f"What is the minimum rarity for this combo? ({self._rarity_hint()})"
         if self.step == "enforce_shiny":
-            return "Will the rarity requirement be enforced on shiny items?"
+            enforce_value = 0.9
+            base = (
+                self.character_settings.get("iterative_base_multipliers", {})
+                if isinstance(self.character_settings.get("iterative_base_multipliers"), dict)
+                else {}
+            )
+            try:
+                enforce_value = float(base.get("enforce_shiny_rarity", 0.9))
+            except (TypeError, ValueError):
+                enforce_value = 0.9
+            return enforce_shiny_rarity_prompt(self.state.get("minimum_rarity", "common"), enforce_value)
         if self.step == "duo":
             return f"Is this combo a duo ppe? (Yes: {self._multiplier_hint('duo', 0.6)})"
         if self.step == "duo_partner":
@@ -793,7 +805,10 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
         if self.step == "shiny_only":
             return "minimum_rarity"
         if self.step == "minimum_rarity":
-            return "enforce_shiny" if bool(self.state.get("shiny_only")) else "duo"
+            if requires_enforce_shiny_rarity_choice(self.state.get("minimum_rarity", "common")):
+                return "enforce_shiny"
+            self.state["enforce_rarity_on_shiny"] = True
+            return "duo"
         if self.step == "enforce_shiny":
             return "duo"
         if self.step == "duo":

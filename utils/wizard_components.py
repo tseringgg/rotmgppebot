@@ -4,9 +4,38 @@ from typing import Any, Awaitable, Callable
 
 import discord
 
+from utils.ppe_types import minimum_rarity_effective, requires_enforce_shiny_rarity_choice
+
 
 MINIMUM_RARITY_VALUES = ("common", "uncommon", "rare", "legendary", "divine")
 SHINY_ONLY_MINIMUM_RARITY_VALUES = ("all_shinies_allowed", "legendary", "divine")
+
+
+def enforce_shiny_rarity_prompt(minimum_rarity: Any, enforce_multiplier: float = 0.9) -> str:
+    effective_rarity = minimum_rarity_effective(minimum_rarity)
+    if effective_rarity not in {"legendary", "divine"}:
+        return "Enforce shiny rarity is auto-set to Yes because shiny items already meet this minimum rarity."
+
+    threshold_text = "Legendary+" if effective_rarity == "legendary" else "Divine"
+    penalty_power = 2 if effective_rarity == "divine" else 1
+    penalty_multiplier = float(enforce_multiplier) ** penalty_power
+
+    if penalty_power == 1:
+        no_line = (
+            f"No: shiny drops can ignore that minimum and apply the enforce modifier once "
+            f"(x{penalty_multiplier:.2f} with default x{float(enforce_multiplier):.2f})."
+        )
+    else:
+        no_line = (
+            f"No: shiny drops can ignore that minimum and apply the enforce modifier twice "
+            f"(x{penalty_multiplier:.2f} with default x{float(enforce_multiplier):.2f})."
+        )
+
+    return (
+        f"Enforce shiny rarity is available because minimum rarity is {effective_rarity.title()}.\n"
+        f"Yes: minimum rarity also applies to shiny drops, so shiny items must be {threshold_text}.\n"
+        f"{no_line}"
+    )
 
 
 def build_minimum_rarity_handlers(
@@ -20,6 +49,8 @@ def build_minimum_rarity_handlers(
 ]:
     async def _on_selected(interaction: discord.Interaction, rarity: str) -> None:
         state["minimum_rarity"] = str(rarity).strip().lower() or "common"
+        if not requires_enforce_shiny_rarity_choice(state["minimum_rarity"]):
+            state["enforce_rarity_on_shiny"] = True
         await refresh(interaction)
 
     async def _on_continue(interaction: discord.Interaction) -> None:

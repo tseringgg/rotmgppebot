@@ -41,7 +41,9 @@ from utils.wizard_components import (
     MinimumRarityContinueButton,
     MinimumRaritySelect,
     build_minimum_rarity_handlers,
+    enforce_shiny_rarity_prompt,
     get_minimum_rarity_options,
+    requires_enforce_shiny_rarity_choice,
 )
 
 
@@ -1606,7 +1608,11 @@ class NewPpeIterativeWizardView(discord.ui.View):
         if self.step == "minimum_rarity":
             return f"What is the minimum rarity for this character? ({self._rarity_hint()})"
         if self.step == "enforce_shiny":
-            return "Will your rarity requirement be enforced on shiny items?"
+            try:
+                enforce_value = float(self.base_multipliers.get("enforce_shiny_rarity", 0.9))
+            except (TypeError, ValueError):
+                enforce_value = 0.9
+            return enforce_shiny_rarity_prompt(self.state.get("minimum_rarity", "common"), enforce_value)
         if self.step == "duo":
             if self.skip_duo_selection:
                 return "Continue setup."
@@ -1688,8 +1694,9 @@ class NewPpeIterativeWizardView(discord.ui.View):
         if self.step == "shiny_only":
             return "minimum_rarity"
         if self.step == "minimum_rarity":
-            if bool(self.state.get("shiny_only")):
+            if requires_enforce_shiny_rarity_choice(self.state.get("minimum_rarity", "common")):
                 return "enforce_shiny"
+            self.state["enforce_rarity_on_shiny"] = True
             return "summary" if self.skip_duo_selection else "duo"
         if self.step == "enforce_shiny":
             return "summary" if self.skip_duo_selection else "duo"
