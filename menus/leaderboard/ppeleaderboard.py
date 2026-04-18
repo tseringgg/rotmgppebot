@@ -46,6 +46,7 @@ def _duo_player_label(guild: discord.Guild, player_name: str, ppe: Any) -> str:
 
 def _duo_player_label_with_types(
     guild: discord.Guild,
+    player_id: int,
     player_name: str,
     player_ppe: Any,
     partner_data: Any,
@@ -71,7 +72,7 @@ def _duo_player_label_with_types(
         from menus.myinfo.common import duo_link_id_for_ppe, duo_partner_id_from_options
         player_link_id = duo_link_id_for_ppe(player_ppe)
         for ppe in getattr(partner_data, "ppes", []):
-            if duo_partner_id_from_options(getattr(ppe, "ppe_type_options", None)) != partner_id:
+            if duo_partner_id_from_options(getattr(ppe, "ppe_type_options", None)) != int(player_id):
                 continue
             if player_link_id and duo_link_id_for_ppe(ppe) != player_link_id:
                 continue
@@ -207,7 +208,7 @@ async def command(interaction: discord.Interaction):
                     # Get partner data for duo display
                     partner_id = _duo_partner_id(best_ppe)
                     partner_data = records.get(int(partner_id)) if partner_id else None
-                    display_player = _duo_player_label_with_types(guild, player, best_ppe, partner_data, ppe_settings)
+                    display_player = _duo_player_label_with_types(guild, int(pid), player, best_ppe, partner_data, ppe_settings)
                 else:
                     display_player = player.title()
                 if include_ppe_quest_points:
