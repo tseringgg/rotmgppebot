@@ -54,6 +54,29 @@ def _parse_optional_float(raw_value: str, *, field_name: str) -> float | None:
         raise ValueError(f"ERROR: `{field_name}` must be a number (for example: `5`, `-2.5`, `0`).") from exc
 
 
+def _parse_optional_rarity_multiplier_set(raw_value: str) -> dict[str, float] | None:
+    text = str(raw_value or "").strip()
+    if not text:
+        return None
+
+    values = [segment.strip() for segment in text.split(",") if segment.strip()]
+    if len(values) != 5:
+        raise ValueError(
+            "ERROR: `rarity_multipliers` must contain 5 comma-separated numbers in this order: common, uncommon, rare, legendary, divine."
+        )
+
+    keys = ("common", "uncommon", "rare", "legendary", "divine")
+    parsed_values: dict[str, float] = {}
+    for key, value_text in zip(keys, values):
+        try:
+            parsed_values[key] = float(value_text)
+        except ValueError as exc:
+            raise ValueError(
+                "ERROR: `rarity_multipliers` must contain only numbers separated by commas."
+            ) from exc
+    return parsed_values
+
+
 def _parse_minimum_total(raw_value: str) -> tuple[float | None, bool]:
     """Parse minimum_total input and detect explicit clear intent."""
     text = str(raw_value or "").strip()
@@ -1505,39 +1528,15 @@ class EditDuplicateItemPointsModal(discord.ui.Modal, title="Edit Duplicate Item 
 
 
 class EditRarityModifiersModal(discord.ui.Modal, title="Edit Rarity Modifiers"):
-    common = discord.ui.TextInput(
-        label="Common Multiplier",
-        placeholder="Example: 1.0",
+    rarity_set = discord.ui.TextInput(
+        label="Multipliers (C,U,R,L,D)",
+        placeholder="Example: 1.00, 1.10, 1.25, 1.50, 2.00",
         required=False,
-        max_length=20,
-    )
-    uncommon = discord.ui.TextInput(
-        label="Uncommon Multiplier",
-        placeholder="Example: 1.0",
-        required=False,
-        max_length=20,
-    )
-    rare = discord.ui.TextInput(
-        label="Rare Multiplier",
-        placeholder="Example: 1.0",
-        required=False,
-        max_length=20,
-    )
-    legendary = discord.ui.TextInput(
-        label="Legendary Multiplier",
-        placeholder="Example: 1.0",
-        required=False,
-        max_length=20,
-    )
-    divine = discord.ui.TextInput(
-        label="Divine Multiplier",
-        placeholder="Example: 2.0",
-        required=False,
-        max_length=20,
+        max_length=80,
     )
     shiny = discord.ui.TextInput(
         label="Shiny Multiplier",
-        placeholder="Example: 2.0",
+        placeholder="Example: 2.00",
         required=False,
         max_length=20,
     )
@@ -1558,11 +1557,15 @@ class EditRarityModifiersModal(discord.ui.Modal, title="Edit Rarity Modifiers"):
             if isinstance(settings.get("rarity_multipliers"), dict)
             else {}
         )
-        self.common.default = f"{float(rarity_multipliers.get('common', 1.0)):.2f}"
-        self.uncommon.default = f"{float(rarity_multipliers.get('uncommon', 1.0)):.2f}"
-        self.rare.default = f"{float(rarity_multipliers.get('rare', 1.0)):.2f}"
-        self.legendary.default = f"{float(rarity_multipliers.get('legendary', 1.0)):.2f}"
-        self.divine.default = f"{float(rarity_multipliers.get('divine', 2.0)):.2f}"
+        self.rarity_set.default = ", ".join(
+            (
+                f"{float(rarity_multipliers.get('common', 1.0)):.2f}",
+                f"{float(rarity_multipliers.get('uncommon', 1.0)):.2f}",
+                f"{float(rarity_multipliers.get('rare', 1.0)):.2f}",
+                f"{float(rarity_multipliers.get('legendary', 1.0)):.2f}",
+                f"{float(rarity_multipliers.get('divine', 2.0)):.2f}",
+            )
+        )
         self.shiny.default = f"{float(rarity_multipliers.get('shiny', 2.0)):.2f}"
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
@@ -1571,33 +1574,31 @@ class EditRarityModifiersModal(discord.ui.Modal, title="Edit Rarity Modifiers"):
             return
 
         try:
-            common = _parse_optional_float(self.common.value, field_name="common")
-            uncommon = _parse_optional_float(self.uncommon.value, field_name="uncommon")
-            rare = _parse_optional_float(self.rare.value, field_name="rare")
-            legendary = _parse_optional_float(self.legendary.value, field_name="legendary")
-            divine = _parse_optional_float(self.divine.value, field_name="divine")
+            rarity_set = _parse_optional_rarity_multiplier_set(self.rarity_set.value)
             shiny = _parse_optional_float(self.shiny.value, field_name="shiny")
         except ValueError as exc:
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
 
-        if all(value is None for value in (common, uncommon, rare, legendary, divine, shiny)):
+        if rarity_set is None and shiny is None:
             await interaction.response.send_message("ERROR: Provide at least one rarity multiplier to update.", ephemeral=True)
             return
 
-        for value in (common, uncommon, rare, legendary, divine, shiny):
-            if value is not None and value < 0:
+        for value in ((list(rarity_set.values()) if rarity_set is not None else []) + ([shiny] if shiny is not None else [])):
+            if value < 0:
                 await interaction.response.send_message("ERROR: Rarity multipliers must be 0 or greater.", ephemeral=True)
                 return
+
+        common = rarity_set.get("common") if rarity_set is not None else None
+        uncommon = rarity_set.get("uncommon") if rarity_set is not None else None
+        rare = rarity_set.get("rare") if rarity_set is not None else None
+        legendary = rarity_set.get("legendary") if rarity_set is not None else None
+        divine = rarity_set.get("divine") if rarity_set is not None else None
 
         confirm_text = (
             "⚠️ **Apply rarity modifier changes and recalculate all PPE characters?**\n"
             "These multipliers affect item points by rarity.\n\n"
-            f"Common: `{self.common.value or '(unchanged)'}`\n"
-            f"Uncommon: `{self.uncommon.value or '(unchanged)'}`\n"
-            f"Rare: `{self.rare.value or '(unchanged)'}`\n"
-            f"Legendary: `{self.legendary.value or '(unchanged)'}`\n"
-            f"Divine: `{self.divine.value or '(unchanged)'}`\n"
+            f"Common,Uncommon,Rare,Legendary,Divine: `{self.rarity_set.value or '(unchanged)'}`\n"
             f"Shiny: `{self.shiny.value or '(unchanged)'}`"
         )
         confirmed = await _confirm_points_update(
