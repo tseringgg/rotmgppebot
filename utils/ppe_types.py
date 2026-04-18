@@ -72,6 +72,10 @@ PPE_TYPE_SHORT_LABELS = {
 
 DEFAULT_PPE_TYPE = PPE_TYPE_REGULAR
 
+
+def is_duo_ppe_type(value: Any) -> bool:
+    return normalize_ppe_type(value) in {PPE_TYPE_DUO, PPE_TYPE_DUO_NO_PET}
+
 DEFAULT_PPE_TYPE_MULTIPLIERS = {
     PPE_TYPE_REGULAR: 1.0,
     PPE_TYPE_DUO: 0.7,
@@ -134,6 +138,18 @@ def _normalize_discord_id(value: Any) -> int | None:
         return None
     parsed = int(raw)
     return parsed if parsed > 0 else None
+
+
+def _disable_unpaired_duo(options: dict[str, Any]) -> dict[str, Any]:
+    if not bool(options.get("duo_enabled", False)):
+        return options
+    if _normalize_discord_id(options.get("duo_partner_id")) is not None:
+        return options
+    normalized = dict(options)
+    normalized["duo_enabled"] = False
+    normalized["duo_partner_id"] = None
+    normalized["duo_link_id"] = None
+    return normalized
 
 
 def parse_yes_no(value: Any, *, default: bool = False) -> bool:
@@ -301,7 +317,7 @@ def normalize_ppe_type_options(value: Any, *, current_type: Any = None) -> dict[
 
 
 def infer_legacy_ppe_type_from_options(options_value: Any) -> str:
-    options = normalize_ppe_type_options(options_value)
+    options = _disable_unpaired_duo(normalize_ppe_type_options(options_value))
     effective_minimum = minimum_rarity_effective(options["minimum_rarity"])
     if options["regular"] and not options["duo_enabled"]:
         return PPE_TYPE_REGULAR
@@ -335,7 +351,7 @@ def infer_legacy_ppe_type_from_options(options_value: Any) -> str:
 
 
 def ppe_type_option_signature(options_value: Any, *, include_regular: bool = False) -> str:
-    options = normalize_ppe_type_options(options_value)
+    options = _disable_unpaired_duo(normalize_ppe_type_options(options_value))
     if options["regular"] and not options["duo_enabled"]:
         return "regular"
 
@@ -549,7 +565,7 @@ def _combo_display_override(signature: str, ppe_settings: Any, *, compact: bool)
 
 
 def ppe_type_compact_summary(options_value: Any, *, fallback_type: Any = None, ppe_settings: Any = None) -> str:
-    options = normalize_ppe_type_options(options_value, current_type=fallback_type)
+    options = _disable_unpaired_duo(normalize_ppe_type_options(options_value, current_type=fallback_type))
     signature = ppe_type_option_signature(options)
     custom_combo_short = _combo_display_override(signature, ppe_settings, compact=True)
     if custom_combo_short:
@@ -612,7 +628,7 @@ def iterative_multiplier_breakdown(
     options_value: Any,
     multipliers_value: Any,
 ) -> dict[str, Any]:
-    options = normalize_ppe_type_options(options_value)
+    options = _disable_unpaired_duo(normalize_ppe_type_options(options_value))
     signature = ppe_type_option_signature(options)
     multipliers = normalize_iterative_option_multipliers(multipliers_value)
 
@@ -680,7 +696,7 @@ def iterative_multiplier_breakdown(
 
 
 def resolve_legacy_ppe_type_from_options(options_value: Any, *, current_type: Any = None) -> str | None:
-    options = normalize_ppe_type_options(options_value, current_type=current_type)
+    options = _disable_unpaired_duo(normalize_ppe_type_options(options_value, current_type=current_type))
 
     # For shiny-only presets at common/all-shinies, enforcing rarity on shinies is
     # a wizard-side toggle that should not block legacy preset resolution.
@@ -703,7 +719,7 @@ def get_ppe_type_multiplier_details_from_options(
     current_type: Any = None,
 ) -> dict[str, Any]:
     settings = ppe_settings if isinstance(ppe_settings, dict) else {}
-    normalized_options = normalize_ppe_type_options(options_value, current_type=current_type)
+    normalized_options = _disable_unpaired_duo(normalize_ppe_type_options(options_value, current_type=current_type))
     signature = ppe_type_option_signature(normalized_options)
     legacy_type = resolve_legacy_ppe_type_from_options(normalized_options, current_type=current_type)
     cleared_signatures = set(normalize_cleared_combo_signatures(settings.get("iterative_cleared_signatures")))

@@ -25,8 +25,10 @@ from menus.myinfo.common import (
 )
 from menus.myinfo.entry import open_myinfo_home
 from menus.myinfo.submenus.character.modals import ManagePPEPenaltiesModal, launch_new_ppe_modal_flow
+from slash_commands.newppe_cmd import send_duo_handshake_invite
 from utils.bot_cost_tracking import capture_runtime_snapshot, log_cost_event
 from utils.guild_config import get_max_ppes, load_guild_config
+from utils.ppe_types import is_duo_ppe_type, normalize_ppe_type
 from utils.loot_helpers.shareloot_image import variant_image_label
 from utils.player_statistics import build_character_wrapped_embed
 from utils.time_graphs import build_character_point_graph
@@ -165,6 +167,26 @@ class ManageCharactersView(OwnerBoundView):
             preferred_ppe_id=int(partner_ppe.id),
         )
         await interaction.response.edit_message(embed=view.current_embed(partner_ppe), view=view)
+
+    @discord.ui.button(label="Set Duo Partner", style=discord.ButtonStyle.primary, row=2)
+    async def set_duo_partner(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        selected = self.current_ppe()
+        selected_type = normalize_ppe_type(getattr(selected, "ppe_type", None))
+        if not is_duo_ppe_type(selected_type):
+            await interaction.response.send_message(
+                "This character is not a Duo PPE type."
+                " Use Manage PPE if you want to change its type first.",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.send_modal(
+            ManageCharacterDuoPartnerModal(
+                owner_id=interaction.user.id,
+                ppe_id=int(selected.id),
+                class_name=display_class_name(selected),
+            )
+        )
 
     @discord.ui.button(label="New PPE", style=discord.ButtonStyle.success, row=1)
     async def new_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -335,3 +357,62 @@ class CharacterLootVariantView(OwnerBoundView):
 
 
 __all__ = ["CharacterLootVariantView", "ManageCharactersView"]
+
+
+class ManageCharacterDuoPartnerModal(discord.ui.Modal, title="Set Duo Partner Discord ID"):
+    partner_id = discord.ui.TextInput(
+        label="Discord User ID",
+        placeholder="Example: 123456789012345678",
+        required=True,
+        max_length=24,
+    )
+
+    def __init__(self, *, owner_id: int, ppe_id: int, class_name: str) -> None:
+        super().__init__(timeout=180)
+        self.owner_id = int(owner_id)
+        self.ppe_id = int(ppe_id)
+        self.class_name = str(class_name)
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        if interaction.guild is None:
+            await interaction.response.send_message("❌ This command can only be used in a server.", ephemeral=True)
+            return
+
+        partner_text = str(self.partner_id.value or "").strip()
+        if not partner_text.isdigit() or int(partner_text) <= 0:
+            await interaction.response.send_message("Please enter a valid numeric Discord ID.", ephemeral=True)
+            return
+
+        partner_user_id = int(partner_text)
+        context = {
+            "requester_ppe_id": int(self.ppe_id),
+            "duo_link_id": f"legacy-duo-{self.owner_id}-{self.ppe_id}",
+        }
+
+        try:
+            _, dm_sent = await send_duo_handshake_invite(
+                interaction,
+                requester_user_id=self.owner_id,
+                partner_user_id=partner_user_id,
+                class_name=self.class_name,
+                request_channel_id=interaction.channel.id if interaction.channel is not None else None,
+                context=context,
+            )
+        except ValueError as exc:
+            await interaction.response.send_message(str(exc), ephemeral=True)
+            return
+
+        await interaction.response.send_message(
+            (
+                f"Duo partner handshake sent for PPE #{self.ppe_id} to <@{partner_user_id}>. "
+                + (
+                    "Once accepted, this legacy character will be linked automatically."
+                    if dm_sent
+                    else "Could not DM that user. Ask them to enable DMs and try again."
+                )
+            ),
+            ephemeral=True,
+        )

@@ -115,6 +115,9 @@ async def _load_duo_requests(guild_id: int) -> Dict[int, Dict[str, Any]]:
                 channel_id_int = None
             if channel_id_int is not None and channel_id_int > 0:
                 normalized_request["channel_id"] = channel_id_int
+            context = value.get("context")
+            if isinstance(context, dict):
+                normalized_request["context"] = dict(context)
             result[requester_id] = normalized_request
         return result
 
@@ -151,6 +154,9 @@ async def _save_duo_requests(guild_id: int, requests: Dict[int, Dict[str, Any]])
                 channel_id_int = None
             if channel_id_int is not None and channel_id_int > 0:
                 normalized_request["channel_id"] = channel_id_int
+            context = data.get("context")
+            if isinstance(context, dict):
+                normalized_request["context"] = dict(context)
             payload[str(requester_id)] = normalized_request
 
         await loop.run_in_executor(None, _write_json_atomic, path, payload)
@@ -188,6 +194,7 @@ async def set_duo_request(
     partner_id: int,
     *,
     channel_id: int | None = None,
+    context: Dict[str, Any] | None = None,
 ) -> str:
     """Record the current pending duo request for a requester.
 
@@ -208,6 +215,8 @@ async def set_duo_request(
     }
     if isinstance(channel_id, int) and channel_id > 0:
         request_payload["channel_id"] = int(channel_id)
+    if isinstance(context, dict):
+        request_payload["context"] = dict(context)
     requests[int(requester_id)] = request_payload
     await _save_duo_requests(guild_id, requests)
     return token
