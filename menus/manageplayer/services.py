@@ -23,6 +23,63 @@ from utils.quest_manager import refresh_player_quests
 from utils.team_manager import team_manager
 
 
+def _legacyize_unbound_duo_ppe(ppe: PPEData) -> bool:
+    """Convert a linked duo PPE into an unbound legacy duo PPE."""
+    options = normalize_ppe_type_options(
+        getattr(ppe, "ppe_type_options", None),
+        current_type=getattr(ppe, "ppe_type", None),
+    )
+    uses_pet = bool(options.get("uses_pet", True))
+    options["duo_enabled"] = True
+    options["duo_partner_id"] = None
+    options["duo_link_id"] = None
+
+    ppe.ppe_type_options = normalize_ppe_type_options(options, current_type=getattr(ppe, "ppe_type", None))
+    ppe.ppe_type = PPE_TYPE_DUO if uses_pet else PPE_TYPE_DUO_NO_PET
+    inferred_type = infer_legacy_ppe_type_from_options(ppe.ppe_type_options)
+    if inferred_type in {PPE_TYPE_DUO, PPE_TYPE_DUO_NO_PET}:
+        ppe.ppe_type = inferred_type
+    return True
+
+
+def _transition_duo_links_to_removed_user(
+    records: dict[int, PlayerData],
+    *,
+    removed_user_id: int,
+    link_ids: set[str] | None = None,
+) -> int:
+    """Transition partner PPEs linked to removed user into unbound legacy duo PPEs.
+
+    If link_ids is provided, only PPEs with matching duo_link_id are transitioned.
+    """
+    transitioned_ppes = 0
+    for user_id, player_data in records.items():
+        if int(user_id) == int(removed_user_id):
+            continue
+
+        for ppe in getattr(player_data, "ppes", []):
+            options = normalize_ppe_type_options(
+                getattr(ppe, "ppe_type_options", None),
+                current_type=getattr(ppe, "ppe_type", None),
+            )
+            try:
+                partner_id = int(options.get("duo_partner_id") or 0)
+            except (TypeError, ValueError):
+                partner_id = 0
+            if partner_id != int(removed_user_id):
+                continue
+
+            if link_ids is not None:
+                current_link_id = str(options.get("duo_link_id") or "").strip()
+                if current_link_id not in link_ids:
+                    continue
+
+            _legacyize_unbound_duo_ppe(ppe)
+            transitioned_ppes += 1
+
+    return transitioned_ppes
+
+
 async def load_target_player_data(interaction: discord.Interaction, target_user_id: int) -> PlayerData:
     records = await load_player_records(interaction)
     key = ensure_player_exists(records, target_user_id)
@@ -129,7 +186,30 @@ async def send_target_quests_followup(interaction: discord.Interaction, target: 
 
 
 async def delete_all_ppes_for_target(interaction: discord.Interaction, target: ManagedPlayerTarget) -> str:
-    await player_manager.delete_all_ppes(interaction, target.user_id)
+    records_before = await load_player_records(interaction)
+    target_before = records_before.get(int(target.user_id))
+    had_ppes = bool(getattr(target_before, "ppes", [])) if target_before is not None else False
+
+    if had_ppes:
+        await player_manager.delete_all_ppes(interaction, target.user_id)
+
+    records = await load_player_records(interaction)
+    transitioned_ppes = _transition_duo_links_to_removed_user(
+        records,
+        removed_user_id=int(target.user_id),
+    )
+    if transitioned_ppes > 0:
+        await save_player_records(interaction, records)
+
+    try:
+        await clear_duo_partner(interaction, int(target.user_id))
+    except Exception:
+        pass
+    try:
+        await clear_duo_request(interaction, int(target.user_id))
+    except Exception:
+        pass
+
     cleanup = await clear_member_character_links(interaction, target.user_id)
 
     cleanup_note = ""
@@ -142,11 +222,50 @@ async def delete_all_ppes_for_target(interaction: discord.Interaction, target: M
             f" pending_file_removed={cleanup.pending_file_removed}."
         )
 
-    return f"✅ Deleted all PPEs for {target.mention_text}.{cleanup_note}"
+    legacy_note = (
+        f" {transitioned_ppes} linked duo PPE(s) were converted to unbound legacy duo PPEs for remaining players."
+        if transitioned_ppes > 0
+        else ""
+    )
+    if had_ppes:
+        return f"✅ Deleted all PPEs for {target.mention_text}.{legacy_note}{cleanup_note}"
+
+    if transitioned_ppes > 0:
+        return f"✅ {target.mention_text} had no PPEs to delete, but stale duo links were repaired.{legacy_note}{cleanup_note}"
+
+    return f"⚠️ {target.mention_text} has no PPEs to delete.{cleanup_note}"
 
 
 async def delete_single_ppe_for_target(interaction: discord.Interaction, target: ManagedPlayerTarget, ppe_id: int) -> str:
+    records_before = await load_player_records(interaction)
+    target_before = records_before.get(int(target.user_id))
+    removed_link_ids: set[str] = set()
+    if target_before is not None:
+        for ppe in getattr(target_before, "ppes", []):
+            if int(getattr(ppe, "id", 0) or 0) != int(ppe_id):
+                continue
+            options = normalize_ppe_type_options(
+                getattr(ppe, "ppe_type_options", None),
+                current_type=getattr(ppe, "ppe_type", None),
+            )
+            link_id = str(options.get("duo_link_id") or "").strip()
+            if link_id:
+                removed_link_ids.add(link_id)
+            break
+
     await player_manager.delete_ppe(interaction, target.user_id, ppe_id)
+
+    transitioned_ppes = 0
+    if removed_link_ids:
+        records = await load_player_records(interaction)
+        transitioned_ppes = _transition_duo_links_to_removed_user(
+            records,
+            removed_user_id=int(target.user_id),
+            link_ids=removed_link_ids,
+        )
+        if transitioned_ppes > 0:
+            await save_player_records(interaction, records)
+
     cleanup = await clear_ppe_character_links(interaction, target.user_id, ppe_id)
 
     cleanup_note = ""
@@ -157,7 +276,12 @@ async def delete_single_ppe_for_target(interaction: discord.Interaction, target:
             f" pending_entries_removed={cleanup.pending_entries_removed}."
         )
 
-    return f"✅ Deleted PPE #{ppe_id} for {target.mention_text}.{cleanup_note}"
+    legacy_note = (
+        f" {transitioned_ppes} linked duo PPE(s) were converted to unbound legacy duo PPEs for remaining players."
+        if transitioned_ppes > 0
+        else ""
+    )
+    return f"✅ Deleted PPE #{ppe_id} for {target.mention_text}.{legacy_note}{cleanup_note}"
 
 
 async def remove_target_from_contest(interaction: discord.Interaction, target: ManagedPlayerTarget) -> str:
@@ -165,33 +289,10 @@ async def remove_target_from_contest(interaction: discord.Interaction, target: M
     removed_user_id = int(target.user_id)
     removed_record = int(target.user_id) in records
 
-    transitioned_ppes = 0
-    for user_id, player_data in records.items():
-        if int(user_id) == removed_user_id:
-            continue
-
-        for ppe in getattr(player_data, "ppes", []):
-            options = normalize_ppe_type_options(
-                getattr(ppe, "ppe_type_options", None),
-                current_type=getattr(ppe, "ppe_type", None),
-            )
-            try:
-                partner_id = int(options.get("duo_partner_id") or 0)
-            except (TypeError, ValueError):
-                partner_id = 0
-            if partner_id != removed_user_id:
-                continue
-
-            uses_pet = bool(options.get("uses_pet", True))
-            options["duo_enabled"] = True
-            options["duo_partner_id"] = None
-            options["duo_link_id"] = None
-            ppe.ppe_type_options = normalize_ppe_type_options(options, current_type=getattr(ppe, "ppe_type", None))
-            ppe.ppe_type = PPE_TYPE_DUO if uses_pet else PPE_TYPE_DUO_NO_PET
-            inferred_type = infer_legacy_ppe_type_from_options(ppe.ppe_type_options)
-            if inferred_type in {PPE_TYPE_DUO, PPE_TYPE_DUO_NO_PET}:
-                ppe.ppe_type = inferred_type
-            transitioned_ppes += 1
+    transitioned_ppes = _transition_duo_links_to_removed_user(
+        records,
+        removed_user_id=removed_user_id,
+    )
 
     team_name = await team_manager.force_remove_player_from_teams(interaction, target.user_id)
 
