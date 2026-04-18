@@ -13,6 +13,8 @@ from menus.myinfo.common import (
     build_character_embed,
     close_myinfo_menu,
     display_class_name,
+    duo_link_id_for_ppe,
+    duo_partner_id_from_options,
     find_ppe_or_raise,
     format_points,
     penalty_input_defaults,
@@ -63,7 +65,7 @@ class ManageCharactersView(OwnerBoundView):
     def current_ppe(self) -> PPEData:
         return self.ppes[self.index]
 
-    def current_embed(self, user: discord.abc.User) -> discord.Embed:
+    def current_embed(self, user: discord.abc.User, guild: discord.Guild | None = None) -> discord.Embed:
         ppe = self.current_ppe()
         return build_character_embed(
             user=user,
@@ -75,17 +77,18 @@ class ManageCharactersView(OwnerBoundView):
             is_best=(self.best_ppe_id is not None and int(ppe.id) == self.best_ppe_id),
             is_realmshark_connected=(int(ppe.id) in self.connected_ppe_ids),
             guild_config=self.guild_config,
+            guild=guild,
         )
 
     @discord.ui.button(label="Prev Char", style=discord.ButtonStyle.secondary, row=0)
     async def prev(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.index = self.carousel_policy.next_index(self.index, total=len(self.ppes), step=-1)
-        await interaction.response.edit_message(embed=self.current_embed(interaction.user), view=self)
+        await interaction.response.edit_message(embed=self.current_embed(interaction.user, interaction.guild), view=self)
 
     @discord.ui.button(label="Next Char", style=discord.ButtonStyle.secondary, row=0)
     async def next(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.index = self.carousel_policy.next_index(self.index, total=len(self.ppes), step=1)
-        await interaction.response.edit_message(embed=self.current_embed(interaction.user), view=self)
+        await interaction.response.edit_message(embed=self.current_embed(interaction.user, interaction.guild), view=self)
 
     @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary, row=0)
     async def home(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -111,7 +114,7 @@ class ManageCharactersView(OwnerBoundView):
         await save_player_records(interaction, records)
 
         self.player_data.active_ppe = int(selected.id)
-        await interaction.response.edit_message(embed=self.current_embed(interaction.user), view=self)
+        await interaction.response.edit_message(embed=self.current_embed(interaction.user, interaction.guild), view=self)
 
     @discord.ui.button(label="Manage PPE", style=discord.ButtonStyle.success, row=1)
     async def modify_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -127,6 +130,41 @@ class ManageCharactersView(OwnerBoundView):
             connected_ppe_ids=self.connected_ppe_ids,
         )
         await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Duos Stats", style=discord.ButtonStyle.primary, row=2)
+    async def duos_stats(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        selected = self.current_ppe()
+        partner_id = duo_partner_id_from_options(getattr(selected, "ppe_type_options", None))
+        if partner_id is None:
+            await interaction.response.send_message("This PPE is not part of a confirmed duo.", ephemeral=True)
+            return
+
+        records = await load_player_records(interaction)
+        partner_data = records.get(int(partner_id))
+        if partner_data is None:
+            await interaction.response.send_message("Could not find your duo partner's player record.", ephemeral=True)
+            return
+
+        partner_link_id = duo_link_id_for_ppe(selected)
+        partner_ppe = None
+        for ppe in getattr(partner_data, "ppes", []):
+            if duo_partner_id_from_options(getattr(ppe, "ppe_type_options", None)) != interaction.user.id:
+                continue
+            if partner_link_id and duo_link_id_for_ppe(ppe) != partner_link_id:
+                continue
+            partner_ppe = ppe
+            break
+
+        if partner_ppe is None:
+            await interaction.response.send_message("Could not find the paired duo PPE for your partner.", ephemeral=True)
+            return
+
+        view = CharacterLootVariantView(
+            owner_id=interaction.user.id,
+            ppe_id=int(partner_ppe.id),
+            preferred_ppe_id=int(partner_ppe.id),
+        )
+        await interaction.response.edit_message(embed=view.current_embed(partner_ppe), view=view)
 
     @discord.ui.button(label="New PPE", style=discord.ButtonStyle.success, row=1)
     async def new_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

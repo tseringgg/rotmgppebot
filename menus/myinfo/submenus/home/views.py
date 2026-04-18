@@ -80,7 +80,7 @@ class MyInfoHomeView(OwnerBoundView):
             connected_ppe_ids=connected_ids,
             guild_config=guild_config,
         )
-        await interaction.response.edit_message(embed=view.current_embed(interaction.user), view=view)
+        await interaction.response.edit_message(embed=view.current_embed(interaction.user, interaction.guild), view=view)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=1)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

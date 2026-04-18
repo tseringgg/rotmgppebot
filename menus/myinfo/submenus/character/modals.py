@@ -124,7 +124,7 @@ class ManagePPEPenaltiesModal(discord.ui.Modal, title="Manage PPE Penalties"):
                 guild_config=guild_config,
             )
             try:
-                await self.source_message.edit(embed=refreshed_view.current_embed(interaction.user), view=refreshed_view)
+                await self.source_message.edit(embed=refreshed_view.current_embed(interaction.user, interaction.guild), view=refreshed_view)
             except discord.HTTPException:
                 pass
 
@@ -204,7 +204,7 @@ class NewPPEFromMyInfoModal(discord.ui.Modal, title="Create New PPE"):
                 guild_config=guild_config,
             )
             try:
-                await self.source_message.edit(embed=refreshed_view.current_embed(interaction.user), view=refreshed_view)
+                await self.source_message.edit(embed=refreshed_view.current_embed(interaction.user, interaction.guild), view=refreshed_view)
             except discord.HTTPException:
                 pass
 

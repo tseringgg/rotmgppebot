@@ -648,9 +648,9 @@ class ManagePlayerPpeTypeWizardView(discord.ui.View):
         if self.step == "allows_tiered":
             return f"Do you allow yourself to use tiered items? (No tiered: {self._multiplier_hint('no_tiered', 1.3)})"
         if self.step == "shiny_only":
-            return f"Is this combo shiny only? (Yes: {self._multiplier_hint('shiny_only', 1.5)})"
+            return f"Is this character shiny only? (Yes: {self._multiplier_hint('shiny_only', 1.5)})"
         if self.step == "minimum_rarity":
-            return f"What is the minimum rarity for this combo? ({self._rarity_hint()})"
+            return f"What is the minimum rarity for this character? ({self._rarity_hint()})"
         if self.step == "enforce_shiny":
             return "Will your rarity requirement be enforced on shiny items?"
         if self.step == "duo":

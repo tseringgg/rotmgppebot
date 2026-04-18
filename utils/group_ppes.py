@@ -7,7 +7,7 @@ from typing import Any, Dict
 
 import discord
 
-from utils.player_records import DATA_DIR, get_lock
+from utils.player_records import DATA_DIR, get_lock, load_player_records
 
 
 def _group_ppes_path(guild_id: int) -> str:
@@ -156,9 +156,58 @@ async def clear_all_group_ppes(guild_id: int) -> None:
         await loop.run_in_executor(None, _write_json_atomic, path, {})
 
 
+def duo_partner_id_from_options(options: Any) -> int | None:
+    if not isinstance(options, dict) or not bool(options.get("duo_enabled", False)):
+        return None
+
+    raw_partner = options.get("duo_partner_id")
+    try:
+        partner_id = int(raw_partner)
+    except (TypeError, ValueError):
+        return None
+    return partner_id if partner_id > 0 else None
+
+
+def duo_link_id_from_options(options: Any) -> str | None:
+    if not isinstance(options, dict):
+        return None
+
+    raw = str(options.get("duo_link_id", "")).strip()
+    return raw or None
+
+
+async def get_duo_link_id_for_user(interaction: discord.Interaction, user_id: int) -> str | None:
+    partner_id = await get_duo_partner(interaction, user_id)
+    if partner_id is None:
+        return None
+
+    records = await load_player_records(interaction)
+    partner_data = records.get(int(partner_id))
+    if partner_data is None:
+        return None
+
+    partner_ppes = getattr(partner_data, "ppes", None)
+    if not isinstance(partner_ppes, list):
+        return None
+
+    for ppe in partner_ppes:
+        options = getattr(ppe, "ppe_type_options", None)
+        if duo_partner_id_from_options(options) != int(user_id):
+            continue
+
+        link_id = duo_link_id_from_options(options)
+        if link_id is not None:
+            return link_id
+
+    return None
+
+
 __all__ = [
     "set_duo_partner",
     "get_duo_partner",
     "clear_duo_partner",
     "clear_all_group_ppes",
+    "duo_partner_id_from_options",
+    "duo_link_id_from_options",
+    "get_duo_link_id_for_user",
 ]

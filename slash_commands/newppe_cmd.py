@@ -17,6 +17,7 @@ from utils.ppe_types import (
 )
 from utils.penalty_embed import build_penalty_infographic_embed
 from utils.guild_config import get_max_ppes, load_guild_config
+from utils.group_ppes import get_duo_link_id_for_user, get_duo_partner, set_duo_partner
 from utils.points_service import (
     apply_penalties_to_ppe,
     loot_adjustment_detail_lines,
@@ -46,6 +47,7 @@ async def create_new_ppe_for_user(
     target_user_id: int | None = None,
     set_active: bool = True,
     force_ppe_id: int | None = None,
+    guild_override: discord.Guild | None = None,
 ) -> dict:
     """Create a new PPE for a user.
 
@@ -58,7 +60,8 @@ async def create_new_ppe_for_user(
         incombat_reduction: In-combat reduction value.
         target_user_id: Optional. The user ID to create the PPE for. Defaults to interaction.user.id.
     """
-    if not interaction.guild:
+    guild = interaction.guild if interaction.guild is not None else guild_override
+    if guild is None:
         raise ValueError("❌ This command can only be used in a server.")
 
     # --- Validate class name ---
@@ -79,13 +82,15 @@ async def create_new_ppe_for_user(
     percent_loot = float(parsed_inputs["percent_loot"])
     incombat_reduction = float(parsed_inputs["incombat_reduction"])
 
-    records = await load_player_records(interaction)
+    proxy_interaction = SimpleNamespace(guild=guild, user=interaction.user)
+
+    records = await load_player_records(proxy_interaction)
     user_id = target_user_id if target_user_id is not None else interaction.user.id
     key = ensure_player_exists(records, user_id)
 
     player_data = records[key]
 
-    max_ppes = await get_max_ppes(interaction)
+    max_ppes = await get_max_ppes(proxy_interaction)
 
     # --- PPE limit check ---
     ppe_count = len(player_data.ppes)
@@ -112,7 +117,7 @@ async def create_new_ppe_for_user(
         bonuses=[],
     )
 
-    guild_config = await load_guild_config(interaction)
+    guild_config = await load_guild_config(proxy_interaction)
     ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config.get("ppe_settings", {}), dict) else {}
     resolved_type, type_error = resolve_creation_ppe_type(
         ppe_type,
@@ -150,7 +155,7 @@ async def create_new_ppe_for_user(
     if set_active:
         player_data.active_ppe = next_id
 
-    await save_player_records(interaction=interaction, records=records)
+    await save_player_records(interaction=proxy_interaction, records=records)
 
     embed = build_penalty_infographic_embed(
         pet_level=pet_level,
@@ -201,18 +206,12 @@ def _is_duo_enabled(options: dict | None) -> bool:
     return bool(options.get("duo_enabled", False))
 
 
-def _is_existing_ppe_player(records: dict[int, object], user_id: int) -> bool:
-    player = records.get(int(user_id))
-    if player is None:
-        return False
-    return bool(getattr(player, "ppes", []))
-
-
 class DuoPpeConfirmationView(discord.ui.View):
     def __init__(
         self,
         *,
         guild_id: int,
+        guild_name: str,
         requester_user_id: int,
         partner_user_id: int,
         requester_display: str,
@@ -228,6 +227,7 @@ class DuoPpeConfirmationView(discord.ui.View):
     ) -> None:
         super().__init__(timeout=timeout_seconds)
         self.guild_id = int(guild_id)
+        self.guild_name = str(guild_name)
         self.requester_user_id = int(requester_user_id)
         self.partner_user_id = int(partner_user_id)
         self.requester_display = str(requester_display)
@@ -312,51 +312,26 @@ class DuoPpeConfirmationView(discord.ui.View):
             await interaction.response.send_message("Unable to access the original server for this request.", ephemeral=True)
             return
 
-        partner_options = dict(self.requester_options)
-        partner_options["duo_enabled"] = True
-        partner_options["duo_partner_id"] = self.requester_user_id
-        partner_options["duo_link_id"] = self.duo_link_id
-        partner_options = build_ppe_type_options(
-            regular=partner_options.get("regular", False),
-            uses_pet=partner_options.get("uses_pet", True),
-            allows_tiered=partner_options.get("allows_tiered", True),
-            minimum_rarity=partner_options.get("minimum_rarity", "common"),
-            shiny_only=partner_options.get("shiny_only", False),
-            enforce_rarity_on_shiny=partner_options.get("enforce_rarity_on_shiny", False),
-            duo_enabled=partner_options.get("duo_enabled", True),
-            duo_partner_id=partner_options.get("duo_partner_id"),
-            duo_link_id=partner_options.get("duo_link_id"),
-        )
-
         proxy_interaction = SimpleNamespace(guild=guild, user=interaction.user)
         try:
-            result = await create_new_ppe_for_user(
-                proxy_interaction,
-                class_name=self.class_name,
-                pet_level=self.pet_level,
-                num_exalts=self.num_exalts,
-                percent_loot=self.percent_loot,
-                incombat_reduction=self.incombat_reduction,
-                ppe_type_options=partner_options,
-                target_user_id=self.partner_user_id,
-                set_active=False,
-                force_ppe_id=self.requester_ppe_id,
-            )
+            await set_duo_partner(proxy_interaction, self.requester_user_id, self.partner_user_id)
         except ValueError as exc:
-            await interaction.response.send_message(f"Could not create your duo PPE: {exc}", ephemeral=True)
+            await interaction.response.send_message(f"Could not confirm your duo partner: {exc}", ephemeral=True)
             return
 
         await self._finalize(
             interaction,
             (
-                f"✅ Duo request accepted. Created your paired PPE #{result['next_id']} ({result['class_name']}) "
-                f"for guild `{guild.name}`."
+                f"✅ Duo request accepted for **{self.guild_name}**. "
+                "You can now create your own PPE with `/newppe` in that server and it will auto-bind as duo."
             ),
         )
         await self._notify_requester(
             interaction,
-            f"✅ <@{self.partner_user_id}> accepted your duo request in **{guild.name}**. "
-            f"Their paired PPE #{result['next_id']} has been created and linked.",
+            (
+                f"✅ <@{self.partner_user_id}> confirmed your duo request in **{self.guild_name}**. "
+                "Their next `/newppe` in that server will automatically create a duo PPE and link to yours."
+            ),
         )
 
     @discord.ui.button(label="Decline", style=discord.ButtonStyle.danger)
@@ -399,6 +374,17 @@ async def command(
     if ppe_type is None:
         guild_config = await load_guild_config(interaction)
         ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config.get("ppe_settings", {}), dict) else {}
+        duo_partner_id = None
+        duo_link_id = None
+        try:
+            duo_partner_id = await get_duo_partner(interaction, interaction.user.id)
+        except ValueError:
+            duo_partner_id = None
+        if duo_partner_id is not None:
+            try:
+                duo_link_id = await get_duo_link_id_for_user(interaction, interaction.user.id)
+            except ValueError:
+                duo_link_id = None
         wizard = NewPpeIterativeWizardView(
             owner_id=interaction.user.id,
             class_name=class_name,
@@ -407,6 +393,9 @@ async def command(
             percent_loot=percent_loot,
             incombat_reduction=incombat_reduction,
             ppe_settings=ppe_settings,
+            duo_partner_id=duo_partner_id,
+            duo_link_id=duo_link_id,
+            skip_duo_selection=duo_partner_id is not None,
         )
         await interaction.response.send_message(
             wizard.prompt_text(),
@@ -513,14 +502,6 @@ class DuoPpeTypePartnerModal(discord.ui.Modal, title="Set Duo Partner Discord ID
             await interaction.response.send_message("❌ That user is not in this server.", ephemeral=True)
             return
 
-        records = await load_player_records(interaction)
-        if not _is_existing_ppe_player(records, partner_id):
-            await interaction.response.send_message(
-                f"❌ <@{partner_id}> is not a PPE player yet. They need to create their first PPE before you can pair with them.",
-                ephemeral=True,
-            )
-            return
-
         options = normalize_ppe_type_options(None, current_type=self.resolved_ppe_type)
         options["duo_enabled"] = True
         options["duo_partner_id"] = partner_id
@@ -544,6 +525,7 @@ class DuoPpeTypePartnerModal(discord.ui.Modal, title="Set Duo Partner Discord ID
 
         confirmation_view = DuoPpeConfirmationView(
             guild_id=interaction.guild.id,
+            guild_name=interaction.guild.name,
             requester_user_id=interaction.user.id,
             partner_user_id=partner_id,
             requester_display=interaction.user.display_name,
@@ -562,9 +544,10 @@ class DuoPpeTypePartnerModal(discord.ui.Modal, title="Set Duo Partner Discord ID
             await guild_member.send(
                 (
                     f"{interaction.user.mention} requested a Duo PPE with you in **{interaction.guild.name}**.\n"
+                    f"Confirm that this is the server you want to use: **{interaction.guild.name}**.\n"
                     f"Character: **{self.class_name}**\n"
                     f"Their PPE ID: **#{int(result['next_id'])}**\n"
-                    "If you confirm, a linked duo PPE will be created for you automatically."
+                    "If you confirm, you can create your own PPE there and it will auto-link as a duo."
                 ),
                 view=confirmation_view,
             )
@@ -627,15 +610,6 @@ class DuoPartnerIdModal(discord.ui.Modal, title="Set Duo Partner Discord ID"):
             )
             return
         
-        # Validate that partner is already a PPE player
-        records = await load_player_records(interaction)
-        if not _is_existing_ppe_player(records, partner_id):
-            await interaction.response.send_message(
-                f"❌ <@{partner_id}> is not a PPE player yet. They need to create their first PPE before you can pair with them.",
-                ephemeral=True,
-            )
-            return
-
         self.wizard.state["duo_partner_id"] = partner_id
         try:
             await guild_member.send(
@@ -666,6 +640,9 @@ class NewPpeIterativeWizardView(discord.ui.View):
         percent_loot: float,
         incombat_reduction: float,
         ppe_settings: dict,
+        duo_partner_id: int | None = None,
+        duo_link_id: str | None = None,
+        skip_duo_selection: bool = False,
     ) -> None:
         super().__init__(timeout=600)
         self.owner_id = owner_id
@@ -675,6 +652,7 @@ class NewPpeIterativeWizardView(discord.ui.View):
         self.percent_loot = percent_loot
         self.incombat_reduction = incombat_reduction
         self.ppe_settings = ppe_settings
+        self.skip_duo_selection = bool(skip_duo_selection or duo_partner_id is not None)
         self.base_multipliers = ppe_settings.get("iterative_base_multipliers", {}) if isinstance(ppe_settings.get("iterative_base_multipliers", {}), dict) else {}
         self.state: dict[str, object] = {
             "regular": None,
@@ -683,8 +661,9 @@ class NewPpeIterativeWizardView(discord.ui.View):
             "minimum_rarity": "common",
             "shiny_only": False,
             "enforce_rarity_on_shiny": False,
-            "duo_enabled": False,
-            "duo_partner_id": None,
+            "duo_enabled": bool(duo_partner_id is not None),
+            "duo_partner_id": duo_partner_id,
+            "duo_link_id": duo_link_id,
         }
         self.history: list[str] = []
         self.step = "regular"
@@ -745,12 +724,14 @@ class NewPpeIterativeWizardView(discord.ui.View):
         if self.step == "allows_tiered":
             return f"Do you allow yourself to use tiered items? (No tiered: {self._multiplier_hint('no_tiered', 1.3)})"
         if self.step == "shiny_only":
-            return f"Is this combo shiny only? (Yes: {self._multiplier_hint('shiny_only', 1.5)})"
+            return f"Is this character shiny only? (Yes: {self._multiplier_hint('shiny_only', 1.5)})"
         if self.step == "minimum_rarity":
-            return f"What is the minimum rarity for this combo? ({self._rarity_hint()})"
+            return f"What is the minimum rarity for this character? ({self._rarity_hint()})"
         if self.step == "enforce_shiny":
             return "Will your rarity requirement be enforced on shiny items?"
         if self.step == "duo":
+            if self.skip_duo_selection:
+                return "Continue setup."
             return f"Would you like to do a duo PPE? (Yes: {self._multiplier_hint('duo', 0.6)})"
         if self.step == "duo_partner":
             partner_id = self.state.get("duo_partner_id")
@@ -815,7 +796,9 @@ class NewPpeIterativeWizardView(discord.ui.View):
 
     def _next_step(self) -> str:
         if self.step == "regular":
-            return "duo" if bool(self.state.get("regular")) else "uses_pet"
+            if bool(self.state.get("regular")):
+                return "summary" if self.skip_duo_selection else "duo"
+            return "uses_pet"
         if self.step == "uses_pet":
             return "allows_tiered"
         if self.step == "allows_tiered":
@@ -823,9 +806,11 @@ class NewPpeIterativeWizardView(discord.ui.View):
         if self.step == "shiny_only":
             return "minimum_rarity"
         if self.step == "minimum_rarity":
-            return "enforce_shiny" if bool(self.state.get("shiny_only")) else "duo"
+            if bool(self.state.get("shiny_only")):
+                return "enforce_shiny"
+            return "summary" if self.skip_duo_selection else "duo"
         if self.step == "enforce_shiny":
-            return "duo"
+            return "summary" if self.skip_duo_selection else "duo"
         if self.step == "duo":
             return "duo_partner" if bool(self.state.get("duo_enabled")) else "summary"
         if self.step == "duo_partner":
@@ -857,6 +842,10 @@ class NewPpeIterativeWizardView(discord.ui.View):
     def _rebuild_items(self) -> None:
         self.clear_items()
         if self.step in {"regular", "uses_pet", "allows_tiered", "shiny_only", "enforce_shiny", "duo"}:
+            if self.step == "duo" and self.skip_duo_selection:
+                self.step = "summary"
+                self._rebuild_items()
+                return
             self.add_item(_WizardYesButton())
             self.add_item(_WizardNoButton())
             self.add_item(_WizardBackButton(disabled=not bool(self.history)))
@@ -1010,7 +999,15 @@ class _WizardCreatePpeButton(discord.ui.Button):
 
         duo_link_id: str | None = None
         if duo_enabled:
-            duo_link_id = uuid4().hex
+            duo_link_id = str(view.state.get("duo_link_id") or "").strip() or None
+            if duo_link_id is None:
+                duo_link_id = await get_duo_link_id_for_user(interaction, interaction.user.id)
+            if duo_link_id is None:
+                await interaction.response.send_message(
+                    "Could not resolve the duo link for this pair yet. Ask your duo partner to finish their setup first.",
+                    ephemeral=True,
+                )
+                return
             options["duo_link_id"] = duo_link_id
 
         try:
@@ -1056,6 +1053,7 @@ class _WizardCreatePpeButton(discord.ui.Button):
 
         confirmation_view = DuoPpeConfirmationView(
             guild_id=interaction.guild.id,
+            guild_name=interaction.guild.name,
             requester_user_id=interaction.user.id,
             partner_user_id=duo_partner_id,
             requester_display=interaction.user.display_name,
@@ -1073,9 +1071,10 @@ class _WizardCreatePpeButton(discord.ui.Button):
             await guild_member.send(
                 (
                     f"{interaction.user.mention} requested a Duo PPE with you in **{interaction.guild.name}**.\n"
+                    f"Confirm that this is the server you want to use: **{interaction.guild.name}**.\n"
                     f"Character: **{view.class_name}**\n"
                     f"Their PPE ID: **#{int(result['next_id'])}**\n"
-                    "If you confirm, a linked duo PPE will be created for you automatically."
+                    "If you confirm, you can create your own PPE there and it will auto-link as a duo."
                 ),
                 view=confirmation_view,
             )

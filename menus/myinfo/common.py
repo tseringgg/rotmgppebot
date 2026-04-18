@@ -8,6 +8,7 @@ import discord
 
 from dataclass import PPEData, PlayerData
 from menus.menu_utils import SafeResponse
+from utils.group_ppes import duo_partner_id_from_options, duo_link_id_from_options
 from utils.ppe_types import normalize_ppe_type, ppe_type_compact_summary, ppe_type_display_from_options
 from utils.guild_config import get_realmshark_settings, load_guild_config
 from utils.loot_helpers.loot_share_commands import share_active_ppe_loot_image
@@ -62,6 +63,24 @@ def ppe_type_text(ppe: PPEData, *, compact: bool = False, guild_config: dict | N
         ppe_settings=ppe_settings,
         compact=False,
     )
+
+
+def duo_partner_label_for_ppe(ppe: PPEData, guild: discord.Guild | None = None) -> str | None:
+    options = getattr(ppe, "ppe_type_options", None)
+    partner_id = duo_partner_id_from_options(options)
+    if partner_id is None:
+        return None
+
+    if guild is not None:
+        member = guild.get_member(partner_id)
+        if member is not None:
+            return member.display_name
+
+    return f"<@{partner_id}>"
+
+
+def duo_link_id_for_ppe(ppe: PPEData) -> str | None:
+    return duo_link_id_from_options(getattr(ppe, "ppe_type_options", None))
 
 
 def penalty_stats_text(ppe: PPEData, guild_config: dict | None = None) -> str:
@@ -164,6 +183,7 @@ def build_character_embed(
     is_best: bool,
     is_realmshark_connected: bool,
     guild_config: dict | None = None,
+    guild: discord.Guild | None = None,
 ) -> discord.Embed:
     character_type = ppe_type_text(ppe, guild_config=guild_config)
     compact_type = ppe_type_text(ppe, compact=True, guild_config=guild_config)
@@ -193,6 +213,9 @@ def build_character_embed(
     embed.add_field(name="Starting Penalty Stats", value=penalty_stats_text(ppe, guild_config), inline=False)
     embed.add_field(name="Loot Adjustments", value=loot_adjustments_text(ppe, guild_config), inline=False)
     embed.add_field(name="Character Type", value=character_type, inline=True)
+    duo_partner_label = duo_partner_label_for_ppe(ppe, guild)
+    if duo_partner_label is not None:
+        embed.add_field(name="Duo Partner", value=duo_partner_label, inline=True)
     embed.add_field(name="Active Status", value="⭐ Active PPE" if is_active else "Not Active", inline=True)
 
     embed.set_footer(text="Click Manage PPE to edit starting penalties. Set As Active will cause addloot to add items to this PPE.")
