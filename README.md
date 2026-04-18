@@ -407,6 +407,61 @@ Teams enable collaborative PPE competition where multiple players combine their 
 - **Admin Only**: Create teams, delete teams, set leaders, rename teams, force remove players from teams
 - **All Players**: View team leaderboard, view own team with `/myteam`
 
+
+### Option Signature Format
+
+Most non-regular PPEs are represented as a normalized signature like:
+
+`pet:yes|tiered:yes|minimum:legendary|shiny:no|enforce_shiny_rarity:no|duo:no`
+
+Fields:
+- `pet`: `yes` means pets allowed, `no` means no-pet rules.
+- `tiered`: `yes` means tiered items allowed, `no` means UT-only style rules.
+- `minimum`: minimum rarity floor (`common`, `uncommon`, `rare`, `legendary`, `divine`, plus internal `all_shinies_allowed`).
+- `shiny`: `yes` means shiny-only mode.
+- `enforce_shiny_rarity`: whether the minimum rarity also applies to shiny items.
+- `duo`: `yes` for duo mode, `no` for solo.
+
+### Full Label vs Compact Label
+
+The bot may show:
+- A full label (for example `Legendary or Shiny PPE`).
+- A compact label (for example `All_SH|LPE`, `DPE`, `Duo NPE`) used in summaries and `Type Multiplier (...)` text.
+
+Compact labels are generated from options, not only from static preset names, so custom combos can still produce meaningful shorthand.
+
+### All_SH Prefix Rules
+
+`All_SH|...` means: minimum rarity applies to non-shiny items, while shiny items are still all allowed.
+
+This prefix appears only when all of the following are true:
+- `shiny:no`
+- `minimum` is `legendary` or `divine`
+- `enforce_shiny_rarity:no`
+
+Examples:
+- `minimum:legendary`, `enforce_shiny_rarity:no` -> `All_SH|LPE`
+- `minimum:legendary`, `enforce_shiny_rarity:yes` -> `LPE`
+- `minimum:divine`, `enforce_shiny_rarity:no` -> `All_SH|DPE`
+- `minimum:divine`, `enforce_shiny_rarity:yes` -> `DPE`
+
+For `minimum:rare` (or lower), enforce behavior does not change label style. Internally, low minimum rarities normalize to `enforce_shiny_rarity:yes`.
+
+### Duo PPE Labels
+
+Duo mode is a modifier on top of a base PPE ruleset.
+
+How duo labels are shown:
+- The bot first computes the non-duo compact label.
+- Then it prefixes with `Duo `.
+
+Examples:
+- Base `PPE` + duo -> `Duo PPE`
+- Base `NPE` + duo -> `Duo NPE`
+- Base `All_SH|LPE` + duo -> `Duo All_SH|LPE`
+
+Multiplier behavior mirrors this model: base rules are resolved first, then duo multiplier is applied on top.
+
 ## �🛠️ Development
 
 ### Project Structure
