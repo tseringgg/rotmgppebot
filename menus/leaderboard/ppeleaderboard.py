@@ -1,4 +1,5 @@
 import discord
+import traceback
 from typing import Any
 
 from menus.leaderboard.common import build_ranked_entry_lines, send_error_response, send_leaderboard
@@ -44,52 +45,21 @@ def _duo_player_label(guild: discord.Guild, player_name: str, ppe: Any) -> str:
     return f"{player_name.title()} + {partner_name}"
 
 
-def _duo_player_label_with_types(
-    guild: discord.Guild,
-    player_id: int,
-    player_name: str,
-    player_ppe: Any,
-    partner_data: Any,
-    ppe_settings: dict[str, Any],
-) -> str:
-    """Get duo player label with both players' character types."""
-    partner_id = _duo_partner_id(player_ppe)
-    if partner_id is None:
-        return player_name.title()
+def _find_matching_duo_partner_ppe(player_id: int, player_ppe: Any, partner_data: Any) -> Any | None:
+    """Resolve the partner PPE linked to a specific duo PPE pairing."""
+    if partner_data is None:
+        return None
 
-    partner_name = member_display_name(guild, partner_id).title()
+    from menus.myinfo.common import duo_link_id_for_ppe, duo_partner_id_from_options
 
-    # Get player's character type
-    player_type = ppe_type_compact_summary(
-        getattr(player_ppe, "ppe_type_options", None),
-        fallback_type=normalize_ppe_type(getattr(player_ppe, "ppe_type", None)),
-        ppe_settings=ppe_settings,
-    )
-
-    # Find partner's matching PPE
-    partner_ppe = None
-    if partner_data is not None:
-        from menus.myinfo.common import duo_link_id_for_ppe, duo_partner_id_from_options
-        player_link_id = duo_link_id_for_ppe(player_ppe)
-        for ppe in getattr(partner_data, "ppes", []):
-            if duo_partner_id_from_options(getattr(ppe, "ppe_type_options", None)) != int(player_id):
-                continue
-            if player_link_id and duo_link_id_for_ppe(ppe) != player_link_id:
-                continue
-            partner_ppe = ppe
-            break
-
-    # Get partner's character type
-    if partner_ppe is not None:
-        partner_type = ppe_type_compact_summary(
-            getattr(partner_ppe, "ppe_type_options", None),
-            fallback_type=normalize_ppe_type(getattr(partner_ppe, "ppe_type", None)),
-            ppe_settings=ppe_settings,
-        )
-    else:
-        partner_type = "?"
-
-    return f"{player_name.title()} [{player_type}] + {partner_name} [{partner_type}]"
+    player_link_id = duo_link_id_for_ppe(player_ppe)
+    for ppe in getattr(partner_data, "ppes", []):
+        if duo_partner_id_from_options(getattr(ppe, "ppe_type_options", None)) != int(player_id):
+            continue
+        if player_link_id and duo_link_id_for_ppe(ppe) != player_link_id:
+            continue
+        return ppe
+    return None
 
 
 async def command(interaction: discord.Interaction):
@@ -191,6 +161,7 @@ async def command(interaction: discord.Interaction):
                         )
                     )
         else:
+            processed_duo_keys: set[str] = set()
             for pid, player, best_ppe, ppe_points, quest_points, points, ppe_count, active_ppe_id in leaderboard_data:
                 if best_ppe is None:
                     continue
@@ -205,10 +176,50 @@ async def command(interaction: discord.Interaction):
                 class_label = f"{best_ppe.name} [{ppe_type}]"
                 options = _duo_options(best_ppe)
                 if bool(options.get("duo_enabled", False)):
-                    # Get partner data for duo display
                     partner_id = _duo_partner_id(best_ppe)
-                    partner_data = records.get(int(partner_id)) if partner_id else None
-                    display_player = _duo_player_label_with_types(guild, int(pid), player, best_ppe, partner_data, ppe_settings)
+                    if partner_id is None:
+                        print(
+                            "[WARN][ppeleaderboard] duo_enabled PPE has no valid partner_id "
+                            f"guild_id={guild.id} player_id={pid} ppe_id={getattr(best_ppe, 'id', '?')} options={options}"
+                        )
+                        display_player = player.title()
+                    else:
+                        pair_ids = sorted((int(pid), int(partner_id)))
+                        duo_link_key = str(options.get("duo_link_id", "")).strip() or "none"
+                        pair_key = f"{pair_ids[0]}:{pair_ids[1]}:{duo_link_key}"
+                        if pair_key in processed_duo_keys:
+                            continue
+
+                        processed_duo_keys.add(pair_key)
+                        partner_name = member_display_name(guild, int(partner_id)).title()
+                        display_player = f"{player.title()} + {partner_name}"
+
+                        partner_total = player_totals.get(int(partner_id))
+                        partner_data = records.get(int(partner_id))
+                        partner_ppe = _find_matching_duo_partner_ppe(int(pid), best_ppe, partner_data)
+                        if partner_ppe is None and partner_data is not None:
+                            partner_ppe = partner_total.get("best_ppe") if isinstance(partner_total, dict) else None
+
+                        partner_class_name = getattr(partner_ppe, "name", "?") if partner_ppe is not None else "?"
+                        class_label = f"{best_ppe.name} + {partner_class_name} [{ppe_type}]"
+
+                        if isinstance(partner_total, dict):
+                            ppe_points += float(partner_total.get("ppe_points", 0.0))
+                            quest_points += float(partner_total.get("quest_points", 0.0))
+                            points += float(partner_total.get("points", 0.0))
+                            marker = ""
+                        else:
+                            print(
+                                "[WARN][ppeleaderboard] missing partner totals while building duo leaderboard row "
+                                f"guild_id={guild.id} player_id={pid} partner_id={partner_id} pair_key={pair_key}"
+                            )
+
+                        if partner_ppe is None:
+                            print(
+                                "[WARN][ppeleaderboard] could not resolve matching partner PPE for duo row "
+                                f"guild_id={guild.id} player_id={pid} partner_id={partner_id} "
+                                f"ppe_id={getattr(best_ppe, 'id', '?')}"
+                            )
                 else:
                     display_player = player.title()
                 if include_ppe_quest_points:
@@ -235,4 +246,10 @@ async def command(interaction: discord.Interaction):
             empty_message="No PPE data available yet.\nPlayers can use `/newppe` to start competing.",
         )
     except Exception as e:
+        guild_id = interaction.guild.id if interaction.guild is not None else "dm"
+        print(
+            "[ERROR][ppeleaderboard] command failed "
+            f"guild_id={guild_id} user_id={interaction.user.id} error={type(e).__name__}: {e}"
+        )
+        print(traceback.format_exc())
         await send_error_response(interaction, str(e))
