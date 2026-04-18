@@ -566,6 +566,20 @@ def _combo_display_override(signature: str, ppe_settings: Any, *, compact: bool)
 
 def ppe_type_compact_summary(options_value: Any, *, fallback_type: Any = None, ppe_settings: Any = None) -> str:
     options = _disable_unpaired_duo(normalize_ppe_type_options(options_value, current_type=fallback_type))
+    if options["duo_enabled"]:
+        options_without_duo = dict(options)
+        options_without_duo["duo_enabled"] = False
+        options_without_duo["duo_partner_id"] = None
+        options_without_duo["duo_link_id"] = None
+
+        base_signature = ppe_type_option_signature(options_without_duo)
+        custom_combo_short = _combo_display_override(base_signature, ppe_settings, compact=True)
+        if custom_combo_short:
+            return f"Duo {custom_combo_short}"
+
+        base_legacy_type = infer_legacy_ppe_type_from_options(options_without_duo)
+        return f"Duo {ppe_type_short_label(base_legacy_type, ppe_settings=ppe_settings)}"
+
     signature = ppe_type_option_signature(options)
     custom_combo_short = _combo_display_override(signature, ppe_settings, compact=True)
     if custom_combo_short:
@@ -608,9 +622,6 @@ def ppe_type_compact_summary(options_value: Any, *, fallback_type: Any = None, p
                     "divine": "DivOnly",
                 }.get(rarity, rarity[:1].upper())
                 tokens.append(f"{rarity_token}")
-    if options["duo_enabled"]:
-        tokens.append("DUO")
-
     if not tokens:
         return base
     return f"{base}|{'|'.join(tokens)}"
@@ -721,8 +732,69 @@ def get_ppe_type_multiplier_details_from_options(
     settings = ppe_settings if isinstance(ppe_settings, dict) else {}
     normalized_options = _disable_unpaired_duo(normalize_ppe_type_options(options_value, current_type=current_type))
     signature = ppe_type_option_signature(normalized_options)
-    legacy_type = resolve_legacy_ppe_type_from_options(normalized_options, current_type=current_type)
     cleared_signatures = set(normalize_cleared_combo_signatures(settings.get("iterative_cleared_signatures")))
+
+    if normalized_options["duo_enabled"]:
+        options_without_duo = dict(normalized_options)
+        options_without_duo["duo_enabled"] = False
+        options_without_duo["duo_partner_id"] = None
+        options_without_duo["duo_link_id"] = None
+        base_signature = ppe_type_option_signature(options_without_duo)
+        base_legacy_type = resolve_legacy_ppe_type_from_options(options_without_duo, current_type=current_type)
+
+        base_source = "base"
+        base_components: list[dict[str, Any]] = []
+        base_component_lines: list[str] = []
+        normalized_overrides = normalize_iterative_combo_overrides(settings.get("iterative_combo_overrides"))
+        override_multiplier = normalized_overrides.get(base_signature)
+        if override_multiplier is not None:
+            base_source = "override"
+            base_breakdown = iterative_multiplier_breakdown(options_without_duo, settings.get("iterative_base_multipliers"))
+            base_multiplier = float(override_multiplier)
+            base_components = list(base_breakdown.get("components", []))
+            base_component_lines = [
+                "Base Combo Override Applied (duo flag ignored for override lookup).",
+                f"Base Override Multiplier: {_format_multiplier(base_multiplier)}",
+            ]
+        elif base_legacy_type is not None and base_signature not in cleared_signatures:
+            base_source = "preset"
+            legacy_multipliers = normalize_ppe_type_multipliers(settings.get("ppe_type_multipliers"))
+            base_multiplier = float(legacy_multipliers.get(base_legacy_type, DEFAULT_PPE_TYPE_MULTIPLIERS[DEFAULT_PPE_TYPE]))
+            base_component_lines = [
+                "Base legacy PPE preset applied (duo flag ignored for preset lookup).",
+                f"Base Preset Multiplier: {_format_multiplier(base_multiplier)}",
+            ]
+        else:
+            base_breakdown = iterative_multiplier_breakdown(options_without_duo, settings.get("iterative_base_multipliers"))
+            base_multiplier = float(base_breakdown["multiplier"])
+            base_components = list(base_breakdown.get("components", []))
+            base_component_lines = [
+                f"Base {str(component.get('label', 'Component')).strip()}: {_format_multiplier(_as_float(component.get('multiplier'), 1.0))}"
+                for component in base_components
+                if isinstance(component, dict)
+            ]
+
+        duo_multiplier = float(normalize_iterative_option_multipliers(settings.get("iterative_base_multipliers"))["duo"])
+        final_multiplier = float(base_multiplier * duo_multiplier)
+        components = [
+            *base_components,
+            {"key": "duo", "label": "Duo", "multiplier": duo_multiplier},
+        ]
+        component_lines = [
+            *base_component_lines,
+            f"Duo: {_format_multiplier(duo_multiplier)}",
+            f"Final Type Multiplier: {_format_multiplier(base_multiplier)} × {_format_multiplier(duo_multiplier)} = {_format_multiplier(final_multiplier)}",
+        ]
+        return {
+            "multiplier": final_multiplier,
+            "source": base_source,
+            "signature": signature,
+            "legacy_type": base_legacy_type,
+            "components": components,
+            "component_lines": component_lines,
+        }
+
+    legacy_type = resolve_legacy_ppe_type_from_options(normalized_options, current_type=current_type)
 
     normalized_overrides = normalize_iterative_combo_overrides(settings.get("iterative_combo_overrides"))
     override_multiplier = normalized_overrides.get(signature)

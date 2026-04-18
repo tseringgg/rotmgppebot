@@ -3,7 +3,7 @@
 import csv
 
 from dataclass import Loot, PPEData
-from utils.ppe_types import normalize_ppe_type, ppe_type_short_label
+from utils.ppe_types import normalize_ppe_type, ppe_type_compact_summary
 from utils.message_utils.markdown_message_builder import MarkdownMessageBuilder
 from utils.item_log_timestamps import format_unix_utc
 from utils.loot_constants import rarity_rank
@@ -142,7 +142,12 @@ def create_loot_markdown_file(
     total_item_multiplier = float(loot_adjustments["combined_item_multiplier"])
     minimum_total_raw = modifier_bucket.get("minimum_total")
     minimum_total = _as_float(minimum_total_raw, 0.0) if minimum_total_raw is not None else None
-    ppe_type = ppe_type_short_label(normalize_ppe_type(getattr(ppe_data, "ppe_type", None)))
+    ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config, dict) and isinstance(guild_config.get("ppe_settings", {}), dict) else {}
+    ppe_type = ppe_type_compact_summary(
+        getattr(ppe_data, "ppe_type_options", None),
+        fallback_type=normalize_ppe_type(getattr(ppe_data, "ppe_type", None)),
+        ppe_settings=ppe_settings,
+    )
 
     builder = MarkdownMessageBuilder(f"Loot Table: {class_name} (PPE #{ppe_data.id}, {ppe_type})")
     builder.add_section(
