@@ -899,7 +899,8 @@ def ppe_type_display_from_options(
     if compact:
         return ppe_type_compact_summary(options, fallback_type=legacy_type, ppe_settings=ppe_settings)
 
-    full = ppe_type_label_with_overrides(legacy_type, ppe_settings)
+    resolved_legacy = resolve_legacy_ppe_type_from_options(options, current_type=fallback_type)
+    full = "Custom PPE" if resolved_legacy is None else ppe_type_label_with_overrides(resolved_legacy, ppe_settings)
     short = ppe_type_compact_summary(options, fallback_type=legacy_type, ppe_settings=ppe_settings)
     if full == short:
         return full

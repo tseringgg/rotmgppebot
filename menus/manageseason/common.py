@@ -67,7 +67,11 @@ def _build_ppe_type_multiplier_lines(*, ppe_settings: dict | None = None) -> lis
             source = "base"
         full_label = ppe_type_label(ppe_type, ppe_settings=ppe_settings)
         short_label = ppe_type_short_label(ppe_type, ppe_settings=ppe_settings)
-        source_suffix = " (combo override)" if source == "override" else ""
+        source_suffix = ""
+        if source == "override":
+            source_suffix = " (combo override)"
+        elif source == "preset":
+            source_suffix = " (default override)"
         lines.append(f"• {full_label} [{short_label}]: {value:.2f}x{source_suffix}")
 
     # Show all known custom (non-legacy) combo signatures inline with PPE types.
@@ -96,7 +100,11 @@ def _build_ppe_type_multiplier_lines(*, ppe_settings: dict | None = None) -> lis
         details = get_ppe_type_multiplier_details_from_options(options, settings)
         value = float(details.get("multiplier", 1.0))
         source = str(details.get("source", "base")).strip().lower()
-        source_suffix = " (combo override)" if source == "override" else ""
+        source_suffix = ""
+        if source == "override":
+            source_suffix = " (combo override)"
+        elif source == "preset":
+            source_suffix = " (default override)"
         full_label = ppe_type_display_from_options(options, ppe_settings=settings, compact=False)
         short_label = ppe_type_display_from_options(options, ppe_settings=settings, compact=True)
         lines.append(f"• {full_label} [{short_label}]: {value:.2f}x{source_suffix}")

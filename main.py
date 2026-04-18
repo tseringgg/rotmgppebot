@@ -500,7 +500,7 @@ async def setup_roles(interaction: discord.Interaction):
 @app_commands.describe(num_exalts="Number of exalts (0-40)")
 @app_commands.describe(percent_loot="Percent loot boost from exalts (0-25%)")
 @app_commands.describe(incombat_reduction="In-combat damage reduction seconds (0, 0.2, 0.4, 0.6, 0.8, 1.0)")
-@app_commands.describe(ppe_type="Optional PPE type (defaults to Regular PPE)")
+@app_commands.describe(ppe_type="Optional PPE type")
 @app_commands.autocomplete(class_name=class_autocomplete)
 @app_commands.autocomplete(ppe_type=ppe_type_autocomplete)
 @require_ppe_roles(player_required=True)

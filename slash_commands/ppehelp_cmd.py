@@ -5,6 +5,13 @@ import discord
 from menus.menu_utils.base_views import OwnerBoundView
 from utils.guild_config import load_guild_config
 from utils.ppe_types import (
+    all_ppe_types,
+    get_ppe_type_multiplier_details_from_options,
+    legacy_ppe_type_to_options,
+    normalize_combo_signature,
+    normalize_iterative_combo_overrides,
+    normalize_ppe_combo_label_overrides,
+    options_from_signature,
     PPE_TYPE_DIVINE_ONLY,
     PPE_TYPE_DIVINE_SHINY,
     PPE_TYPE_DIVINE_NO_PET,
@@ -20,7 +27,11 @@ from utils.ppe_types import (
     PPE_TYPE_UT_ONLY,
     PPE_TYPE_UT_NO_PET,
     normalize_iterative_option_multipliers,
+    ppe_type_display_from_options,
+    ppe_type_label,
+    ppe_type_option_signature,
     ppe_type_short_label,
+    resolve_legacy_ppe_type_from_options,
 )
 
 
@@ -138,6 +149,58 @@ def _build_iterative_defaults_lines(ppe_settings: dict | None) -> list[str]:
     ]
 
 
+def _build_types_override_lines(ppe_settings: dict | None) -> list[str]:
+    settings = ppe_settings if isinstance(ppe_settings, dict) else {}
+    lines: list[str] = []
+
+    for ppe_type in all_ppe_types():
+        options = legacy_ppe_type_to_options(ppe_type)
+        details = get_ppe_type_multiplier_details_from_options(options, settings, current_type=ppe_type)
+        value = float(details.get("multiplier", 1.0))
+        source = str(details.get("source", "base")).strip().lower()
+        source_suffix = ""
+        if source == "override":
+            source_suffix = " (combo override)"
+        elif source == "preset":
+            source_suffix = " (default override)"
+        lines.append(
+            f"- {ppe_type_label(ppe_type, ppe_settings=settings)} [{ppe_type_short_label(ppe_type, ppe_settings=settings)}]: x{value:.2f}{source_suffix}"
+        )
+
+    combo_overrides = normalize_iterative_combo_overrides(settings.get("iterative_combo_overrides"))
+    combo_labels = normalize_ppe_combo_label_overrides(settings.get("combo_label_overrides"))
+    candidate_signatures: set[str] = set()
+    for raw_signature in list(combo_overrides.keys()) + list(combo_labels.keys()):
+        signature = normalize_combo_signature(raw_signature)
+        if signature and signature != "regular":
+            candidate_signatures.add(signature)
+
+    for signature in sorted(candidate_signatures):
+        options = options_from_signature(signature)
+        if not isinstance(options, dict):
+            continue
+
+        legacy_type = resolve_legacy_ppe_type_from_options(options)
+        if legacy_type is not None:
+            legacy_signature = ppe_type_option_signature(legacy_ppe_type_to_options(legacy_type))
+            if signature == legacy_signature:
+                continue
+
+        details = get_ppe_type_multiplier_details_from_options(options, settings)
+        value = float(details.get("multiplier", 1.0))
+        source = str(details.get("source", "base")).strip().lower()
+        source_suffix = ""
+        if source == "override":
+            source_suffix = " (combo override)"
+        elif source == "preset":
+            source_suffix = " (default override)"
+        lines.append(
+            f"- {ppe_type_display_from_options(options, ppe_settings=settings, compact=False)} [{ppe_type_display_from_options(options, ppe_settings=settings, compact=True)}]: x{value:.2f}{source_suffix}"
+        )
+
+    return lines
+
+
 def build_help_embed(section_key: str, *, ppe_settings: dict | None = None) -> discord.Embed:
     if section_key == "home":
         embed = discord.Embed(
@@ -192,6 +255,8 @@ def build_help_embed(section_key: str, *, ppe_settings: dict | None = None) -> d
         )
         lines = [
             "- Regular PPE: skips most option questions and keeps baseline type rules.",
+            "- Duo PPE: applies the Duo factor and needs a duo partner ID to stay duo-enabled.",
+            "- Custom PPE: any option combination that does not match a legacy preset type is shown as Custom PPE.",
         ]
         lines.extend(_build_iterative_defaults_lines(ppe_settings))
         lines.append("- Enforce rarity on shiny: if enabled with high rarity, extra stacking can apply.")
@@ -215,6 +280,12 @@ def build_help_embed(section_key: str, *, ppe_settings: dict | None = None) -> d
                 "Admins can customize labels in `/manageseason -> Manage Point Settings -> Edit PPE Type`.\n"
                 "Use combo overrides to set custom names/shorthands for specific option-combination signatures."
             ),
+            inline=False,
+        )
+        override_lines = _build_types_override_lines(ppe_settings)
+        embed.add_field(
+            name="Current Type/Combo Overrides",
+            value="\n".join(override_lines[:20]) if override_lines else "- No overrides configured.",
             inline=False,
         )
         embed.set_footer(text=_common_footer())
