@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import traceback
+
 import discord
 
 
@@ -28,3 +30,26 @@ class OwnerBoundView(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return await self.ensure_owner(interaction)
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item) -> None:
+        item_label = getattr(item, "label", None) or getattr(item, "placeholder", None) or item.__class__.__name__
+        print(
+            f"[VIEW_ERROR] view={self.__class__.__name__} item={item_label} "
+            f"owner_id={self.owner_id} user_id={getattr(interaction.user, 'id', None)} error={error}"
+        )
+        print(traceback.format_exc())
+
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(
+                    "This interaction failed due to an internal error. The traceback was logged.",
+                    ephemeral=True,
+                )
+            else:
+                await interaction.followup.send(
+                    "This interaction failed due to an internal error. The traceback was logged.",
+                    ephemeral=True,
+                )
+        except Exception:
+            # Avoid raising from on_error and masking the original exception.
+            pass
