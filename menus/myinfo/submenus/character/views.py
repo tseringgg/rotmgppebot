@@ -419,7 +419,7 @@ class _SetDuoPartnerButton(discord.ui.Button):
                     ppe_id=int(selected.id),
                     class_name=display_class_name(selected),
                     source_message=interaction.message,
-                    connected_ppe_ids=self.connected_ppe_ids,
+                    connected_ppe_ids=view.connected_ppe_ids,
                 )
             )
         except Exception:
