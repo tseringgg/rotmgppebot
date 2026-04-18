@@ -681,6 +681,14 @@ def iterative_multiplier_breakdown(
 
 def resolve_legacy_ppe_type_from_options(options_value: Any, *, current_type: Any = None) -> str | None:
     options = normalize_ppe_type_options(options_value, current_type=current_type)
+
+    # For shiny-only presets at common/all-shinies, enforcing rarity on shinies is
+    # a wizard-side toggle that should not block legacy preset resolution.
+    effective_minimum = minimum_rarity_effective(options.get("minimum_rarity"))
+    if options.get("shiny_only") and effective_minimum == "common":
+        options = dict(options)
+        options["enforce_rarity_on_shiny"] = False
+
     legacy_type = infer_legacy_ppe_type_from_options(options)
     canonical_options = legacy_ppe_type_to_options(legacy_type)
     if ppe_type_option_signature(options) == ppe_type_option_signature(canonical_options):
