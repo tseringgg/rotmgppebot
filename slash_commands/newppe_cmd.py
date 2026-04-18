@@ -800,8 +800,6 @@ class DuoSetupInviteView(discord.ui.View):
                     )
                 ),
             )
-            if linked_existing:
-                return
 
             legacy_entries: list[dict[str, object]] = []
             if context_ppe_id is not None and context_ppe_id > 0:
