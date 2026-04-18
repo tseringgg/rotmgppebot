@@ -59,6 +59,7 @@ class ManageCharactersView(OwnerBoundView):
             active_ppe_id=self.player_data.active_ppe,
         )
         self.index = self.carousel_policy.initial_index(self.ppes)
+        self._update_duo_button_visibility()
 
     def _initial_index(self, preferred_ppe_id: int | None) -> int:
         """Select starting carousel index using preferred ID or active PPE."""
@@ -66,6 +67,30 @@ class ManageCharactersView(OwnerBoundView):
 
     def current_ppe(self) -> PPEData:
         return self.ppes[self.index]
+
+    def _update_duo_button_visibility(self) -> None:
+        """Update duo-related button visibility based on current PPE."""
+        ppe = self.current_ppe()
+        ppe_type_options = getattr(ppe, "ppe_type_options", None)
+        is_duo = is_duo_ppe_type(normalize_ppe_type(getattr(ppe, "ppe_type", None)))
+        has_partner = duo_partner_id_from_options(ppe_type_options) is not None
+
+        # Remove existing duo buttons if they exist
+        for item in list(self.children):
+            if hasattr(item, 'label') and item.label in ("Duos Stats", "Set Duo Partner"):
+                self.remove_item(item)
+
+        # Add buttons based on conditions
+        if is_duo:
+            # Add "Duos Stats" button only if partner is configured
+            if has_partner:
+                duos_stats_btn = _DuosStatsButton()
+                self.add_item(duos_stats_btn)
+
+            # Add "Set Duo Partner" button only if partner is NOT configured
+            if not has_partner:
+                set_duo_btn = _SetDuoPartnerButton()
+                self.add_item(set_duo_btn)
 
     def current_embed(self, user: discord.abc.User, guild: discord.Guild | None = None) -> discord.Embed:
         ppe = self.current_ppe()
@@ -85,11 +110,13 @@ class ManageCharactersView(OwnerBoundView):
     @discord.ui.button(label="Prev Char", style=discord.ButtonStyle.secondary, row=0)
     async def prev(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.index = self.carousel_policy.next_index(self.index, total=len(self.ppes), step=-1)
+        self._update_duo_button_visibility()
         await interaction.response.edit_message(embed=self.current_embed(interaction.user, interaction.guild), view=self)
 
     @discord.ui.button(label="Next Char", style=discord.ButtonStyle.secondary, row=0)
     async def next(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         self.index = self.carousel_policy.next_index(self.index, total=len(self.ppes), step=1)
+        self._update_duo_button_visibility()
         await interaction.response.edit_message(embed=self.current_embed(interaction.user, interaction.guild), view=self)
 
     @discord.ui.button(label="Home", style=discord.ButtonStyle.secondary, row=0)
@@ -132,61 +159,6 @@ class ManageCharactersView(OwnerBoundView):
             connected_ppe_ids=self.connected_ppe_ids,
         )
         await interaction.response.send_modal(modal)
-
-    @discord.ui.button(label="Duos Stats", style=discord.ButtonStyle.primary, row=2)
-    async def duos_stats(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        selected = self.current_ppe()
-        partner_id = duo_partner_id_from_options(getattr(selected, "ppe_type_options", None))
-        if partner_id is None:
-            await interaction.response.send_message("This PPE is not part of a confirmed duo.", ephemeral=True)
-            return
-
-        records = await load_player_records(interaction)
-        partner_data = records.get(int(partner_id))
-        if partner_data is None:
-            await interaction.response.send_message("Could not find your duo partner's player record.", ephemeral=True)
-            return
-
-        partner_link_id = duo_link_id_for_ppe(selected)
-        partner_ppe = None
-        for ppe in getattr(partner_data, "ppes", []):
-            if duo_partner_id_from_options(getattr(ppe, "ppe_type_options", None)) != interaction.user.id:
-                continue
-            if partner_link_id and duo_link_id_for_ppe(ppe) != partner_link_id:
-                continue
-            partner_ppe = ppe
-            break
-
-        if partner_ppe is None:
-            await interaction.response.send_message("Could not find the paired duo PPE for your partner.", ephemeral=True)
-            return
-
-        view = CharacterLootVariantView(
-            owner_id=interaction.user.id,
-            ppe_id=int(partner_ppe.id),
-            preferred_ppe_id=int(partner_ppe.id),
-        )
-        await interaction.response.edit_message(embed=view.current_embed(partner_ppe), view=view)
-
-    @discord.ui.button(label="Set Duo Partner", style=discord.ButtonStyle.primary, row=2)
-    async def set_duo_partner(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        selected = self.current_ppe()
-        selected_type = normalize_ppe_type(getattr(selected, "ppe_type", None))
-        if not is_duo_ppe_type(selected_type):
-            await interaction.response.send_message(
-                "This character is not a Duo PPE type."
-                " Use Manage PPE if you want to change its type first.",
-                ephemeral=True,
-            )
-            return
-
-        await interaction.response.send_modal(
-            ManageCharacterDuoPartnerModal(
-                owner_id=interaction.user.id,
-                ppe_id=int(selected.id),
-                class_name=display_class_name(selected),
-            )
-        )
 
     @discord.ui.button(label="New PPE", style=discord.ButtonStyle.success, row=1)
     async def new_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -359,7 +331,90 @@ class CharacterLootVariantView(OwnerBoundView):
 __all__ = ["CharacterLootVariantView", "ManageCharactersView"]
 
 
-class ManageCharacterDuoPartnerModal(discord.ui.Modal, title="Set Duo Partner Discord ID"):
+class _DuosStatsButton(discord.ui.Button):
+    """Button to view duo partner's stats."""
+
+    def __init__(self) -> None:
+        super().__init__(label="Duos Stats", style=discord.ButtonStyle.primary, row=2)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManageCharactersView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        selected = view.current_ppe()
+        partner_id = duo_partner_id_from_options(getattr(selected, "ppe_type_options", None))
+        if partner_id is None:
+            await interaction.response.send_message("This PPE is not part of a confirmed duo.", ephemeral=True)
+            return
+
+        records = await load_player_records(interaction)
+        partner_data = records.get(int(partner_id))
+        if partner_data is None:
+            await interaction.response.send_message("Could not find your duo partner's player record.", ephemeral=True)
+            return
+
+        partner_link_id = duo_link_id_for_ppe(selected)
+        partner_ppe = None
+        for ppe in getattr(partner_data, "ppes", []):
+            if duo_partner_id_from_options(getattr(ppe, "ppe_type_options", None)) != interaction.user.id:
+                continue
+            if partner_link_id and duo_link_id_for_ppe(ppe) != partner_link_id:
+                continue
+            partner_ppe = ppe
+            break
+
+        if partner_ppe is None:
+            await interaction.response.send_message("Could not find the paired duo PPE for your partner.", ephemeral=True)
+            return
+
+        ppe_view = CharacterLootVariantView(
+            owner_id=interaction.user.id,
+            ppe_id=int(partner_ppe.id),
+            preferred_ppe_id=int(partner_ppe.id),
+        )
+        await interaction.response.edit_message(embed=ppe_view.current_embed(partner_ppe), view=ppe_view)
+
+
+class _SetDuoPartnerButton(discord.ui.Button):
+    """Button to set a duo partner for a duo PPE without one configured."""
+
+    def __init__(self) -> None:
+        super().__init__(label="Set Duo Partner", style=discord.ButtonStyle.primary, row=2)
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, ManageCharactersView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        selected = view.current_ppe()
+        selected_type = normalize_ppe_type(getattr(selected, "ppe_type", None))
+        if not is_duo_ppe_type(selected_type):
+            await interaction.response.send_message(
+                "This character is not a Duo PPE type."
+                " Use Manage PPE if you want to change its type first.",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.send_modal(
+            ManageCharacterDuoPartnerModal(
+                owner_id=interaction.user.id,
+                ppe_id=int(selected.id),
+                class_name=display_class_name(selected),
+            )
+        )
+
+
+
     partner_id = discord.ui.TextInput(
         label="Discord User ID",
         placeholder="Example: 123456789012345678",

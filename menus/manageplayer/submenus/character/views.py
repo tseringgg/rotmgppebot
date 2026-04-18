@@ -11,6 +11,8 @@ from menus.menu_utils.character_carousel import CharacterCarouselPolicy
 from utils.ppe_types import (
     build_ppe_type_options,
     infer_legacy_ppe_type_from_options,
+    is_duo_ppe_type,
+    normalize_ppe_type,
     normalize_ppe_type_options,
     options_from_signature,
     ppe_type_compact_summary,
@@ -310,6 +312,29 @@ class ManagePlayerCharactersView(OwnerBoundView):
             wizard.prompt_text(),
             view=wizard,
             ephemeral=True,
+        )
+
+    @discord.ui.button(label="Set Duo Partner", style=discord.ButtonStyle.primary, row=2)
+    async def set_duo_partner(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        from menus.myinfo.submenus.character.modals import ManageCharacterDuoPartnerModal
+        from menus.myinfo.common import display_class_name
+
+        selected = self.current_ppe()
+        selected_type = normalize_ppe_type(getattr(selected, "ppe_type", None))
+        if not is_duo_ppe_type(selected_type):
+            await interaction.response.send_message(
+                "This character is not a Duo PPE type."
+                " Use Manage PPE Type if you want to change its type first.",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.send_modal(
+            ManageCharacterDuoPartnerModal(
+                owner_id=interaction.user.id,
+                ppe_id=int(selected.id),
+                class_name=display_class_name(selected),
+            )
         )
 
     @discord.ui.button(label="Delete PPE", style=discord.ButtonStyle.danger, row=1)
