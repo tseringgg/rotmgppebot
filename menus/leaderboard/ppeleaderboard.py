@@ -16,6 +16,7 @@ from utils.team_contest_scoring import (
 )
 from utils.guild_config import get_contest_settings, get_quest_points
 from utils.guild_config import load_guild_config
+from utils.points_service import compute_effective_ppe_points
 from utils.player_records import load_player_records
 
 
@@ -189,37 +190,46 @@ async def command(interaction: discord.Interaction):
                         pair_key = f"{pair_ids[0]}:{pair_ids[1]}:{duo_link_key}"
                         if pair_key in processed_duo_keys:
                             continue
-
-                        processed_duo_keys.add(pair_key)
                         partner_name = member_display_name(guild, int(partner_id)).title()
-                        display_player = f"{player.title()} + {partner_name}"
-
                         partner_total = player_totals.get(int(partner_id))
                         partner_data = records.get(int(partner_id))
                         partner_ppe = _find_matching_duo_partner_ppe(int(pid), best_ppe, partner_data)
-                        if partner_ppe is None and partner_data is not None:
-                            partner_ppe = partner_total.get("best_ppe") if isinstance(partner_total, dict) else None
-
-                        partner_class_name = getattr(partner_ppe, "name", "?") if partner_ppe is not None else "?"
-                        class_label = f"{best_ppe.name} + {partner_class_name} [{ppe_type}]"
-
-                        if isinstance(partner_total, dict):
-                            ppe_points += float(partner_total.get("ppe_points", 0.0))
-                            quest_points += float(partner_total.get("quest_points", 0.0))
-                            points += float(partner_total.get("points", 0.0))
-                            marker = ""
-                        else:
-                            print(
-                                "[WARN][ppeleaderboard] missing partner totals while building duo leaderboard row "
-                                f"guild_id={guild.id} player_id={pid} partner_id={partner_id} pair_key={pair_key}"
-                            )
 
                         if partner_ppe is None:
                             print(
-                                "[WARN][ppeleaderboard] could not resolve matching partner PPE for duo row "
+                                "[WARN][ppeleaderboard] skipping duo aggregation due to missing linked partner PPE "
                                 f"guild_id={guild.id} player_id={pid} partner_id={partner_id} "
-                                f"ppe_id={getattr(best_ppe, 'id', '?')}"
+                                f"ppe_id={getattr(best_ppe, 'id', '?')} pair_key={pair_key}"
                             )
+                            display_player = player.title()
+                        elif not isinstance(partner_total, dict):
+                            print(
+                                "[WARN][ppeleaderboard] skipping duo aggregation due to missing partner totals "
+                                f"guild_id={guild.id} player_id={pid} partner_id={partner_id} pair_key={pair_key}"
+                            )
+                            display_player = player.title()
+                        else:
+                            processed_duo_keys.add(pair_key)
+                            display_player = f"{player.title()} + {partner_name}"
+                            partner_ppe_type = ppe_type_compact_summary(
+                                getattr(partner_ppe, "ppe_type_options", None),
+                                fallback_type=normalize_ppe_type(getattr(partner_ppe, "ppe_type", None)),
+                                ppe_settings=ppe_settings,
+                            )
+                            partner_class_name = getattr(partner_ppe, "name", "?")
+                            if partner_ppe_type == ppe_type:
+                                class_label = f"{best_ppe.name} + {partner_class_name} [{ppe_type}]"
+                            else:
+                                class_label = (
+                                    f"{best_ppe.name} [{ppe_type}] + {partner_class_name} [{partner_ppe_type}]"
+                                )
+
+                            player_duo_ppe_points = float(compute_effective_ppe_points(best_ppe, guild_config=guild_config))
+                            partner_duo_ppe_points = float(compute_effective_ppe_points(partner_ppe, guild_config=guild_config))
+                            ppe_points = player_duo_ppe_points + partner_duo_ppe_points
+                            quest_points += float(partner_total.get("quest_points", 0.0))
+                            points = ppe_points + quest_points
+                            marker = ""
                 else:
                     display_player = player.title()
                 if include_ppe_quest_points:
