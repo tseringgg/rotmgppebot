@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import traceback
 import time
 
 import discord
@@ -404,12 +405,28 @@ class _SetDuoPartnerButton(discord.ui.Button):
             )
             return
 
-        await interaction.response.send_modal(
-            ManageCharacterDuoPartnerModal(
-                owner_id=interaction.user.id,
-                ppe_id=int(selected.id),
-                class_name=display_class_name(selected),
-                source_message=interaction.message,
-                connected_ppe_ids=self.connected_ppe_ids,
+        try:
+            print(
+                "[MYINFO_DUO] open modal "
+                f"owner_id={interaction.user.id} ppe_id={int(selected.id)} "
+                f"ppe_type={getattr(selected, 'ppe_type', None)!r} "
+                f"partner_id={duo_partner_id_from_options(getattr(selected, 'ppe_type_options', None))!r} "
+                f"link_id={duo_link_id_for_ppe(selected)!r}"
             )
-        )
+            await interaction.response.send_modal(
+                ManageCharacterDuoPartnerModal(
+                    owner_id=interaction.user.id,
+                    ppe_id=int(selected.id),
+                    class_name=display_class_name(selected),
+                    source_message=interaction.message,
+                    connected_ppe_ids=self.connected_ppe_ids,
+                )
+            )
+        except Exception:
+            print("[MYINFO_DUO][ERROR] failed to open modal")
+            print(traceback.format_exc())
+            if not interaction.response.is_done():
+                await interaction.response.send_message(
+                    "Failed to open the duo partner prompt. Check the Railway logs.",
+                    ephemeral=True,
+                )

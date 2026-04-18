@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import traceback
 from uuid import uuid4
 
 import discord
@@ -20,7 +21,16 @@ from utils.guild_config import load_guild_config
 from utils.penalty_embed import build_penalty_infographic_embed
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.points_service import apply_penalties_to_ppe, loot_adjustment_detail_lines, parse_penalty_inputs, recompute_ppe_points
-from slash_commands.newppe_cmd import create_new_ppe_for_user
+from slash_commands.newppe_cmd import create_new_ppe_for_user, send_duo_handshake_invite
+
+
+def _log_legacy_duo_debug(message: str) -> None:
+    print(f"[MYINFO_DUO] {message}")
+
+
+def _log_legacy_duo_exception(message: str) -> None:
+    print(f"[MYINFO_DUO][ERROR] {message}")
+    print(traceback.format_exc())
 
 
 class ManagePPEPenaltiesModal(discord.ui.Modal, title="Manage PPE Penalties"):
@@ -184,102 +194,141 @@ class ManageCharacterDuoPartnerModal(discord.ui.Modal, title="Set Duo Partner Di
         self.connected_ppe_ids = connected_ppe_ids or set()
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
-        if interaction.user.id != self.owner_id:
-            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
-            return
-        if interaction.guild is None:
-            await interaction.response.send_message("This action can only be used in a server.", ephemeral=True)
-            return
-
-        partner_text = str(self.partner_id.value or "").strip()
-        if not partner_text.isdigit() or int(partner_text) <= 0:
-            await interaction.response.send_message("Please enter a valid numeric Discord ID.", ephemeral=True)
-            return
-
-        partner_user_id = int(partner_text)
-        if partner_user_id == self.owner_id:
-            await interaction.response.send_message("You cannot set yourself as your duo partner.", ephemeral=True)
-            return
-
-        if interaction.guild.get_member(partner_user_id) is None:
-            await interaction.response.send_message(f"❌ User <@{partner_user_id}> is not in this server.", ephemeral=True)
-            return
-
-        records = await load_player_records(interaction)
-        key = ensure_player_exists(records, self.owner_id)
-        player_data = records[key]
-        ppe = find_ppe_or_raise(player_data, self.ppe_id)
-        current_options = normalize_ppe_type_options(
-            getattr(ppe, "ppe_type_options", None),
-            current_type=getattr(ppe, "ppe_type", None),
-        )
-
-        partner_player = records.get(partner_user_id)
-        partner_ppe = None
-        if partner_player is not None:
-            partner_ppe = _matching_partner_duo_ppe(
-                partner_ppes=getattr(partner_player, "ppes", []),
-                owner_user_id=self.owner_id,
-                expected_link_id=str(current_options.get("duo_link_id") or "").strip() or None,
+        try:
+            _log_legacy_duo_debug(
+                f"submit owner_id={self.owner_id} ppe_id={self.ppe_id} guild_id={getattr(interaction.guild, 'id', None)} channel_id={getattr(interaction.channel, 'id', None)}"
             )
 
-        duo_link_id = str(current_options.get("duo_link_id") or "").strip() or None
-        if duo_link_id is None and partner_ppe is not None:
-            partner_options = normalize_ppe_type_options(
-                getattr(partner_ppe, "ppe_type_options", None),
-                current_type=getattr(partner_ppe, "ppe_type", None),
+            if interaction.user.id != self.owner_id:
+                await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+                return
+            if interaction.guild is None:
+                await interaction.response.send_message("This action can only be used in a server.", ephemeral=True)
+                return
+
+            partner_text = str(self.partner_id.value or "").strip()
+            _log_legacy_duo_debug(f"raw partner_text={partner_text!r}")
+            if not partner_text.isdigit() or int(partner_text) <= 0:
+                await interaction.response.send_message("Please enter a valid numeric Discord ID.", ephemeral=True)
+                return
+
+            partner_user_id = int(partner_text)
+            if partner_user_id == self.owner_id:
+                await interaction.response.send_message("You cannot set yourself as your duo partner.", ephemeral=True)
+                return
+
+            if interaction.guild.get_member(partner_user_id) is None:
+                await interaction.response.send_message(f"❌ User <@{partner_user_id}> is not in this server.", ephemeral=True)
+                return
+
+            records = await load_player_records(interaction)
+            key = ensure_player_exists(records, self.owner_id)
+            player_data = records[key]
+            ppe = find_ppe_or_raise(player_data, self.ppe_id)
+            current_options = normalize_ppe_type_options(
+                getattr(ppe, "ppe_type_options", None),
+                current_type=getattr(ppe, "ppe_type", None),
             )
-            duo_link_id = str(partner_options.get("duo_link_id") or "").strip() or None
-        if duo_link_id is None:
-            duo_link_id = f"legacy-duo-{self.owner_id}-{self.ppe_id}-{uuid4().hex}"
 
-        current_options["duo_enabled"] = True
-        current_options["duo_partner_id"] = partner_user_id
-        current_options["duo_link_id"] = duo_link_id
-        ppe.ppe_type_options = normalize_ppe_type_options(current_options, current_type=getattr(ppe, "ppe_type", None))
-        ppe.ppe_type = infer_legacy_ppe_type_from_options(ppe.ppe_type_options)
-
-        if partner_ppe is not None:
-            partner_options = normalize_ppe_type_options(
-                getattr(partner_ppe, "ppe_type_options", None),
-                current_type=getattr(partner_ppe, "ppe_type", None),
-            )
-            partner_options["duo_enabled"] = True
-            partner_options["duo_partner_id"] = self.owner_id
-            partner_options["duo_link_id"] = duo_link_id
-            partner_ppe.ppe_type_options = normalize_ppe_type_options(partner_options, current_type=getattr(partner_ppe, "ppe_type", None))
-            partner_ppe.ppe_type = infer_legacy_ppe_type_from_options(partner_ppe.ppe_type_options)
-
-        await set_duo_partner(interaction, self.owner_id, partner_user_id)
-        await save_player_records(interaction, records)
-
-        message = f"✅ Set <@{partner_user_id}> as the duo partner for PPE #{self.ppe_id}."
-        if partner_ppe is not None:
-            message += f" Linked partner PPE #{partner_ppe.id} to the same duo pair."
-        else:
-            message += " Your duo partner mapping is saved, and the link can be reused by the new duo flow later."
-
-        await interaction.response.send_message(message, ephemeral=True)
-
-        if self.source_message is not None:
-            from menus.myinfo.submenus.character.views import ManageCharactersView
-
-            refreshed = await refresh_player_data(interaction, self.owner_id)
-            guild_config = await load_guild_config(interaction)
-            refreshed_view = ManageCharactersView(
-                owner_id=self.owner_id,
-                player_data=refreshed,
-                connected_ppe_ids=self.connected_ppe_ids,
-                preferred_ppe_id=self.ppe_id,
-                guild_config=guild_config,
-            )
-            try:
-                await self.source_message.edit(
-                    embed=refreshed_view.current_embed(interaction.user, interaction.guild),
-                    view=refreshed_view,
+            partner_player = records.get(partner_user_id)
+            partner_ppe = None
+            if partner_player is not None:
+                partner_ppe = _matching_partner_duo_ppe(
+                    partner_ppes=getattr(partner_player, "ppes", []),
+                    owner_user_id=self.owner_id,
+                    expected_link_id=str(current_options.get("duo_link_id") or "").strip() or None,
                 )
-            except discord.HTTPException:
-                pass
+            _log_legacy_duo_debug(
+                f"existing partner_ppe={'yes' if partner_ppe is not None else 'no'} current_duo_link_id={str(current_options.get('duo_link_id') or '').strip() or None}"
+            )
+
+            duo_link_id = str(current_options.get("duo_link_id") or "").strip() or None
+            if duo_link_id is None and partner_ppe is not None:
+                partner_options = normalize_ppe_type_options(
+                    getattr(partner_ppe, "ppe_type_options", None),
+                    current_type=getattr(partner_ppe, "ppe_type", None),
+                )
+                duo_link_id = str(partner_options.get("duo_link_id") or "").strip() or None
+            if duo_link_id is None:
+                duo_link_id = f"legacy-duo-{self.owner_id}-{self.ppe_id}-{uuid4().hex}"
+
+            context = {
+                "requester_ppe_id": int(self.ppe_id),
+                "duo_link_id": duo_link_id,
+            }
+            _log_legacy_duo_debug(
+                f"sending handshake partner_user_id={partner_user_id} duo_link_id={duo_link_id} context={context}"
+            )
+            await send_duo_handshake_invite(
+                interaction,
+                requester_user_id=self.owner_id,
+                partner_user_id=partner_user_id,
+                class_name=self.class_name,
+                request_channel_id=interaction.channel.id if interaction.channel is not None else None,
+                context=context,
+            )
+
+            current_options["duo_enabled"] = True
+            current_options["duo_partner_id"] = partner_user_id
+            current_options["duo_link_id"] = duo_link_id
+            ppe.ppe_type_options = normalize_ppe_type_options(current_options, current_type=getattr(ppe, "ppe_type", None))
+            ppe.ppe_type = infer_legacy_ppe_type_from_options(ppe.ppe_type_options)
+
+            if partner_ppe is not None:
+                partner_options = normalize_ppe_type_options(
+                    getattr(partner_ppe, "ppe_type_options", None),
+                    current_type=getattr(partner_ppe, "ppe_type", None),
+                )
+                partner_options["duo_enabled"] = True
+                partner_options["duo_partner_id"] = self.owner_id
+                partner_options["duo_link_id"] = duo_link_id
+                partner_ppe.ppe_type_options = normalize_ppe_type_options(partner_options, current_type=getattr(partner_ppe, "ppe_type", None))
+                partner_ppe.ppe_type = infer_legacy_ppe_type_from_options(partner_ppe.ppe_type_options)
+
+            await set_duo_partner(interaction, self.owner_id, partner_user_id)
+            await save_player_records(interaction, records)
+
+            message = f"✅ Sent a duo link request for PPE #{self.ppe_id} to <@{partner_user_id}>."
+            if partner_ppe is not None:
+                message += f" Found a matching partner PPE #{partner_ppe.id}; it can be linked when they accept."
+            else:
+                message += " If they do not already have a duo PPE, they will be prompted to create one when they accept."
+
+            await interaction.response.send_message(message, ephemeral=True)
+
+            if self.source_message is not None:
+                from menus.myinfo.submenus.character.views import ManageCharactersView
+
+                refreshed = await refresh_player_data(interaction, self.owner_id)
+                guild_config = await load_guild_config(interaction)
+                refreshed_view = ManageCharactersView(
+                    owner_id=self.owner_id,
+                    player_data=refreshed,
+                    connected_ppe_ids=self.connected_ppe_ids,
+                    preferred_ppe_id=self.ppe_id,
+                    guild_config=guild_config,
+                )
+                try:
+                    await self.source_message.edit(
+                        embed=refreshed_view.current_embed(interaction.user, interaction.guild),
+                        view=refreshed_view,
+                    )
+                except discord.HTTPException as exc:
+                    _log_legacy_duo_debug(f"source_message refresh failed: {exc}")
+        except Exception:
+            _log_legacy_duo_exception(
+                f"submit failed owner_id={self.owner_id} ppe_id={self.ppe_id} partner_field={getattr(self, 'partner_id', None)!r}"
+            )
+            if not interaction.response.is_done():
+                await interaction.response.send_message(
+                    "Failed to set the duo partner. Check the Railway logs for the traceback.",
+                    ephemeral=True,
+                )
+            else:
+                await interaction.followup.send(
+                    "Failed to set the duo partner. Check the Railway logs for the traceback.",
+                    ephemeral=True,
+                )
 
 
 class NewPPEFromMyInfoModal(discord.ui.Modal, title="Create New PPE"):
