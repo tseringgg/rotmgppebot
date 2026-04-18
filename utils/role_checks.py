@@ -3,6 +3,21 @@
 import discord
 from discord import Member, User, app_commands
 
+
+def ppe_player_role(guild: discord.Guild | None) -> discord.Role | None:
+    """Return the configured PPE Player role when present."""
+    if guild is None:
+        return None
+    return discord.utils.get(guild.roles, name="PPE Player")
+
+
+def has_ppe_player_role(member: Member | User | None, guild: discord.Guild | None) -> bool:
+    """Check whether a guild member currently has the PPE Player role."""
+    if not isinstance(member, Member):
+        return False
+    role = ppe_player_role(guild)
+    return role is not None and role in member.roles
+
 def require_ppe_roles(admin_required: bool = False, player_required: bool = False):
     async def predicate(inter: discord.Interaction):
 

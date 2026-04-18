@@ -33,11 +33,13 @@ from menus.manageplayer.targets import ManagedPlayerTarget
 from menus.menu_utils import OwnerBoundView
 from utils.bot_cost_tracking import capture_runtime_snapshot, log_cost_event
 from utils.guild_config import load_guild_config
+from utils.group_ppes import clear_duo_partner
 from utils.loot_helpers.shareloot_image import generate_loot_share_image, variant_image_label
 from utils.player_statistics import build_character_wrapped_embed
 from utils.penalty_embed import build_penalty_infographic_embed
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
 from utils.points_service import apply_penalties_to_ppe, parse_penalty_inputs, recompute_ppe_points
+from utils.role_checks import has_ppe_player_role
 from utils.wizard_components import (
     MinimumRarityContinueButton,
     MinimumRaritySelect,
@@ -512,6 +514,79 @@ class ManagePlayerDeletePpeConfirmView(OwnerBoundView):
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
 
+def _clear_duo_flags_for_ppe(*, options_value: object, current_type: object) -> dict[str, object]:
+    """Return PPE type options with only duo linkage disabled."""
+    options = normalize_ppe_type_options(options_value, current_type=current_type)
+    updated = dict(options)
+    updated["duo_enabled"] = False
+    updated["duo_partner_id"] = None
+    updated["duo_link_id"] = None
+    return normalize_ppe_type_options(updated, current_type=current_type)
+
+
+def _matching_partner_duo_ppe(
+    *,
+    partner_ppes: list[PPEData],
+    owner_user_id: int,
+    expected_link_id: str | None,
+) -> PPEData | None:
+    """Find the partner-side PPE that is linked back to the owner's duo PPE."""
+    fallback: PPEData | None = None
+    for candidate in partner_ppes:
+        candidate_options = normalize_ppe_type_options(
+            getattr(candidate, "ppe_type_options", None),
+            current_type=getattr(candidate, "ppe_type", None),
+        )
+        if not bool(candidate_options.get("duo_enabled", False)):
+            continue
+        if int(candidate_options.get("duo_partner_id") or 0) != int(owner_user_id):
+            continue
+        if fallback is None:
+            fallback = candidate
+        candidate_link_id = str(candidate_options.get("duo_link_id") or "").strip() or None
+        if expected_link_id is not None and candidate_link_id == expected_link_id:
+            return candidate
+    return fallback
+
+
+def _break_duo_for_linked_partner(
+    *,
+    records: dict[int, PlayerData],
+    owner_user_id: int,
+    previous_options: dict[str, object],
+    guild_config: dict,
+) -> tuple[int, int] | None:
+    """Disable duo linkage on the partner's matching PPE while preserving all other tags."""
+    partner_id = int(previous_options.get("duo_partner_id") or 0)
+    if partner_id <= 0:
+        return None
+
+    partner_player = records.get(partner_id)
+    if partner_player is None:
+        return None
+
+    partner_ppes = getattr(partner_player, "ppes", [])
+    if not isinstance(partner_ppes, list) or not partner_ppes:
+        return None
+
+    expected_link_id = str(previous_options.get("duo_link_id") or "").strip() or None
+    partner_ppe = _matching_partner_duo_ppe(
+        partner_ppes=partner_ppes,
+        owner_user_id=owner_user_id,
+        expected_link_id=expected_link_id,
+    )
+    if partner_ppe is None:
+        return None
+
+    partner_ppe.ppe_type_options = _clear_duo_flags_for_ppe(
+        options_value=getattr(partner_ppe, "ppe_type_options", None),
+        current_type=getattr(partner_ppe, "ppe_type", None),
+    )
+    partner_ppe.ppe_type = infer_legacy_ppe_type_from_options(partner_ppe.ppe_type_options)
+    recompute_ppe_points(partner_ppe, guild_config)
+    return partner_id, int(getattr(partner_ppe, "id", 0))
+
+
 class ManagePlayerDuoPartnerIdModal(discord.ui.Modal, title="Set Duo Partner Discord ID"):
     partner_id = discord.ui.TextInput(
         label="Discord User ID",
@@ -545,6 +620,12 @@ class ManagePlayerDuoPartnerIdModal(discord.ui.Modal, title="Set Duo Partner Dis
         if guild_member is None:
             await interaction.response.send_message(
                 f"❌ User <@{partner_id}> is not in this server.",
+                ephemeral=True,
+            )
+            return
+        if not has_ppe_player_role(guild_member, interaction.guild):
+            await interaction.response.send_message(
+                f"❌ <@{partner_id}> is not a PPE Player.",
                 ephemeral=True,
             )
             return
@@ -696,6 +777,10 @@ class ManagePlayerPpeTypeWizardView(discord.ui.View):
             self.state["uses_pet"] = value
         elif self.step == "allows_tiered":
             self.state["allows_tiered"] = value
+            if value:
+                # If tiered items are allowed, shiny-only restrictions are irrelevant.
+                self.state["shiny_only"] = False
+                self.state["enforce_rarity_on_shiny"] = False
         elif self.step == "shiny_only":
             self.state["shiny_only"] = value
         elif self.step == "enforce_shiny":
@@ -711,7 +796,7 @@ class ManagePlayerPpeTypeWizardView(discord.ui.View):
         if self.step == "uses_pet":
             return "allows_tiered"
         if self.step == "allows_tiered":
-            return "shiny_only"
+            return "minimum_rarity" if bool(self.state.get("allows_tiered", True)) else "shiny_only"
         if self.step == "shiny_only":
             return "minimum_rarity"
         if self.step == "minimum_rarity":
@@ -866,16 +951,44 @@ class _ManagePlayerWizardConfirmButton(discord.ui.Button):
             duo_enabled=view.state.get("duo_enabled", False),
             duo_partner_id=view.state.get("duo_partner_id"),
         )
+        previous_options = normalize_ppe_type_options(
+            getattr(ppe, "ppe_type_options", None),
+            current_type=getattr(ppe, "ppe_type", None),
+        )
+        was_duo = bool(previous_options.get("duo_enabled", False))
+        now_duo = bool(options.get("duo_enabled", False))
+
         ppe.ppe_type_options = options
         ppe.ppe_type = infer_legacy_ppe_type_from_options(options)
         points = recompute_ppe_points(ppe, guild_config).get("total", getattr(ppe, "points", 0.0))
+
+        partner_break_result: tuple[int, int] | None = None
+        if was_duo and not now_duo:
+            partner_break_result = _break_duo_for_linked_partner(
+                records=records,
+                owner_user_id=view.target.user_id,
+                previous_options=previous_options,
+                guild_config=guild_config,
+            )
+            try:
+                await clear_duo_partner(interaction, view.target.user_id)
+            except Exception:
+                pass
+
         await save_player_records(interaction=interaction, records=records)
 
         summary = ppe_type_compact_summary(options, fallback_type=ppe.ppe_type, ppe_settings=guild_config.get("ppe_settings", {}))
         await interaction.response.edit_message(content="PPE type updated.", view=None)
+        duo_break_suffix = ""
+        if partner_break_result is not None:
+            partner_user_id, partner_ppe_id = partner_break_result
+            duo_break_suffix = (
+                f" Duo link removed and partner PPE #{partner_ppe_id} for <@{partner_user_id}> "
+                "was converted to an individual PPE."
+            )
         await interaction.followup.send(
             f"✅ Updated PPE #{ppe.id} type for {view.target.display_name} to **{summary}**. "
-            f"New total: {float(points):.2f} points.",
+            f"New total: {float(points):.2f} points.{duo_break_suffix}",
             ephemeral=False,
         )
 

@@ -36,6 +36,7 @@ from utils.points_service import (
     recompute_ppe_points,
 )
 from utils.player_records import ensure_player_exists, load_player_records, save_player_records
+from utils.role_checks import has_ppe_player_role
 from utils.wizard_components import (
     MinimumRarityContinueButton,
     MinimumRaritySelect,
@@ -317,6 +318,8 @@ async def send_duo_handshake_invite(
     guild_member = interaction.guild.get_member(int(partner_user_id))
     if guild_member is None:
         raise ValueError(f"❌ User <@{partner_user_id}> is not in this server.")
+    if not has_ppe_player_role(guild_member, interaction.guild):
+        raise ValueError(f"❌ <@{partner_user_id}> is not a PPE Player.")
 
     previous_partner_id = None
     try:
@@ -1318,6 +1321,10 @@ class NewPpeIterativeWizardView(discord.ui.View):
             self.state["uses_pet"] = value
         elif self.step == "allows_tiered":
             self.state["allows_tiered"] = value
+            if value:
+                # If tiered items are allowed, shiny-only restrictions are irrelevant.
+                self.state["shiny_only"] = False
+                self.state["enforce_rarity_on_shiny"] = False
         elif self.step == "shiny_only":
             self.state["shiny_only"] = value
         elif self.step == "enforce_shiny":
@@ -1335,7 +1342,7 @@ class NewPpeIterativeWizardView(discord.ui.View):
         if self.step == "uses_pet":
             return "allows_tiered"
         if self.step == "allows_tiered":
-            return "shiny_only"
+            return "minimum_rarity" if bool(self.state.get("allows_tiered", True)) else "shiny_only"
         if self.step == "shiny_only":
             return "minimum_rarity"
         if self.step == "minimum_rarity":
