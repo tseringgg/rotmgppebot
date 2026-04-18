@@ -16,6 +16,7 @@ from menus.myinfo.common import (
 )
 from menus.myinfo.entry import open_myinfo_home
 from utils.guild_config import load_guild_config
+from utils.player_records import load_player_records
 
 
 class MyInfoHomeView(OwnerBoundView):
@@ -73,11 +74,13 @@ class MyInfoHomeView(OwnerBoundView):
             return
 
         guild_config = await load_guild_config(interaction)
+        all_player_records = await load_player_records(interaction)
         connected_ids = await realmshark_connected_ppe_ids(interaction, interaction.user.id)
         view = ManageCharactersView(
             owner_id=interaction.user.id,
             player_data=player_data,
             connected_ppe_ids=connected_ids,
+            all_player_records=all_player_records,
             guild_config=guild_config,
         )
         await interaction.response.edit_message(embed=view.current_embed(interaction.user, interaction.guild), view=view)

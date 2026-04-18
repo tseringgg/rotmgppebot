@@ -129,10 +129,12 @@ class ManagePPEPenaltiesModal(discord.ui.Modal, title="Manage PPE Penalties"):
             from menus.myinfo.submenus.character.views import ManageCharactersView
 
             refreshed = await refresh_player_data(interaction, self.owner_id)
+            all_player_records = await load_player_records(interaction)
             refreshed_view = ManageCharactersView(
                 owner_id=self.owner_id,
                 player_data=refreshed,
                 connected_ppe_ids=self.connected_ppe_ids,
+                all_player_records=all_player_records,
                 preferred_ppe_id=self.ppe_id,
                 guild_config=guild_config,
             )
@@ -305,6 +307,7 @@ class ManageCharacterDuoPartnerModal(discord.ui.Modal, title="Set Duo Partner Di
                     owner_id=self.owner_id,
                     player_data=refreshed,
                     connected_ppe_ids=self.connected_ppe_ids,
+                    all_player_records=records,
                     preferred_ppe_id=self.ppe_id,
                     guild_config=guild_config,
                 )
@@ -397,11 +400,13 @@ class NewPPEFromMyInfoModal(discord.ui.Modal, title="Create New PPE"):
             from menus.myinfo.submenus.character.views import ManageCharactersView
 
             refreshed = await refresh_player_data(interaction, self.owner_id)
+            all_player_records = await load_player_records(interaction)
             guild_config = await load_guild_config(interaction)
             refreshed_view = ManageCharactersView(
                 owner_id=self.owner_id,
                 player_data=refreshed,
                 connected_ppe_ids=self.connected_ppe_ids,
+                all_player_records=all_player_records,
                 preferred_ppe_id=int(result["next_id"]),
                 guild_config=guild_config,
             )

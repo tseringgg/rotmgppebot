@@ -107,7 +107,7 @@ DEFAULT_ITERATIVE_OPTION_MULTIPLIERS = {
         "divine": 1.5,
     },
     "shiny_only": 1.5,
-    "enforce_shiny_rarity": 1.0,
+    "enforce_shiny_rarity": 0.9,
     "duo": 0.6,
 }
 

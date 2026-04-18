@@ -22,9 +22,11 @@ async def share_active_ppe_loot_image(
     *,
     include_skins: bool = False,
     include_limited: bool = False,
+    target_user_id: int | None = None,
+    target_display_name: str | None = None,
 ) -> None:
     try:
-        active_ppe = await get_active_ppe_of_user(interaction)
+        active_ppe = await get_active_ppe_of_user(interaction, target_user_id=target_user_id)
     except (ValueError, KeyError) as e:
         await _send_interaction_text(interaction, str(e), ephemeral=True)
         return
@@ -35,6 +37,11 @@ async def share_active_ppe_loot_image(
     ]
     ppe_type = ppe_type_short_label(normalize_ppe_type(getattr(active_ppe, "ppe_type", None)))
 
+    if target_display_name:
+        embed_description = f"**{target_display_name}** - PPE #{active_ppe.id} ({active_ppe.name}) [{ppe_type}]"
+    else:
+        embed_description = f"**{active_ppe.name}** PPE #{active_ppe.id} [{ppe_type}]"
+
     await generate_loot_share_image(
         interaction,
         source_items=source_items,
@@ -43,7 +50,7 @@ async def share_active_ppe_loot_image(
         filename_suffix=f"ppe{active_ppe.id}_loot",
         embed_title="🎒 PPE Loot Share",
         embed_color=0x00FF00,
-        embed_description=f"**{active_ppe.name}** PPE #{active_ppe.id} [{ppe_type}]",
+        embed_description=embed_description,
         total_items_label="Total Loot",
         all_variant_extra_lines=[f"**Points:** {active_ppe.points:.1f}"],
     )

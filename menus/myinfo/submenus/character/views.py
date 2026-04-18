@@ -15,6 +15,7 @@ from menus.myinfo.common import (
     close_myinfo_menu,
     display_class_name,
     duo_link_id_for_ppe,
+    duo_partner_details_for_ppe,
     duo_partner_id_from_options,
     find_ppe_or_raise,
     format_points,
@@ -44,12 +45,14 @@ class ManageCharactersView(OwnerBoundView):
         owner_id: int,
         player_data: PlayerData,
         connected_ppe_ids: set[int],
+        all_player_records: dict[int, PlayerData] | None = None,
         preferred_ppe_id: int | None = None,
         guild_config: dict | None = None,
     ) -> None:
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.player_data = player_data
         self.connected_ppe_ids = connected_ppe_ids
+        self.all_player_records = all_player_records
         self.ppes = sorted(player_data.ppes, key=lambda p: int(p.id))
         self.guild_config = guild_config
         best = max(self.ppes, key=lambda p: float(p.points), default=None)
@@ -94,6 +97,13 @@ class ManageCharactersView(OwnerBoundView):
 
     def current_embed(self, user: discord.abc.User, guild: discord.Guild | None = None) -> discord.Embed:
         ppe = self.current_ppe()
+        duo_partner_details = duo_partner_details_for_ppe(
+            ppe,
+            owner_user_id=self.owner_id,
+            records=self.all_player_records,
+            guild=guild,
+            guild_config=self.guild_config,
+        )
         return build_character_embed(
             user=user,
             player_data=self.player_data,
@@ -103,6 +113,7 @@ class ManageCharactersView(OwnerBoundView):
             is_active=(self.player_data.active_ppe == ppe.id),
             is_best=(self.best_ppe_id is not None and int(ppe.id) == self.best_ppe_id),
             is_realmshark_connected=(int(ppe.id) in self.connected_ppe_ids),
+            duo_partner_details=duo_partner_details,
             guild_config=self.guild_config,
             guild=guild,
         )
@@ -177,10 +188,20 @@ class ManageCharactersView(OwnerBoundView):
 class CharacterLootVariantView(OwnerBoundView):
     """Variant picker view for sharing a PPE's loot image or text exports."""
 
-    def __init__(self, *, owner_id: int, ppe_id: int, preferred_ppe_id: int):
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        ppe_id: int,
+        preferred_ppe_id: int,
+        target_user_id: int | None = None,
+        target_display_name: str | None = None,
+    ):
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
         self.ppe_id = ppe_id
         self.preferred_ppe_id = preferred_ppe_id
+        self.target_user_id = int(target_user_id) if target_user_id is not None else int(owner_id)
+        self.target_display_name = target_display_name
 
     def current_embed(self, ppe: PPEData) -> discord.Embed:
         embed = discord.Embed(
@@ -201,6 +222,8 @@ class CharacterLootVariantView(OwnerBoundView):
             self.ppe_id,
             include_skins=include_skins,
             include_limited=include_limited,
+            target_user_id=self.target_user_id,
+            target_display_name=self.target_display_name,
         )
         await interaction.followup.send(
             f"Generated: **{variant_image_label(include_skins, include_limited)}**",
@@ -257,7 +280,7 @@ class CharacterLootVariantView(OwnerBoundView):
         started_monotonic = time.monotonic()
         snapshot_before = capture_runtime_snapshot()
         await close_myinfo_menu(interaction)
-        refreshed = await refresh_player_data(interaction, interaction.user.id)
+        refreshed = await refresh_player_data(interaction, self.target_user_id)
         selected = find_ppe_or_raise(refreshed, self.ppe_id)
         await send_myloot_markdown_followup(interaction, selected)
         await log_cost_event(
@@ -272,13 +295,13 @@ class CharacterLootVariantView(OwnerBoundView):
     async def show_character_statistics(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         started_monotonic = time.monotonic()
         snapshot_before = capture_runtime_snapshot()
-        refreshed = await refresh_player_data(interaction, interaction.user.id)
+        refreshed = await refresh_player_data(interaction, self.target_user_id)
         selected = find_ppe_or_raise(refreshed, self.ppe_id)
         guild_config = await load_guild_config(interaction)
         embed = build_character_wrapped_embed(
             player_data=refreshed,
             ppe=selected,
-            display_name=interaction.user.display_name,
+            display_name=self.target_display_name or interaction.user.display_name,
             guild_config=guild_config,
         )
         await close_myinfo_menu(interaction)
@@ -295,12 +318,12 @@ class CharacterLootVariantView(OwnerBoundView):
     async def point_graph(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         started_monotonic = time.monotonic()
         snapshot_before = capture_runtime_snapshot()
-        refreshed = await refresh_player_data(interaction, interaction.user.id)
+        refreshed = await refresh_player_data(interaction, self.target_user_id)
         selected = find_ppe_or_raise(refreshed, self.ppe_id)
         guild_config = await load_guild_config(interaction)
         graph_image = build_character_point_graph(
             selected,
-            display_name=interaction.user.display_name,
+            display_name=self.target_display_name or interaction.user.display_name,
             guild_config=guild_config,
         )
         if graph_image is None:
@@ -376,6 +399,12 @@ class _DuosStatsButton(discord.ui.Button):
             owner_id=interaction.user.id,
             ppe_id=int(partner_ppe.id),
             preferred_ppe_id=int(partner_ppe.id),
+            target_user_id=int(partner_id),
+            target_display_name=(
+                interaction.guild.get_member(int(partner_id)).display_name
+                if interaction.guild is not None and interaction.guild.get_member(int(partner_id)) is not None
+                else f"<@{partner_id}>"
+            ),
         )
         await interaction.response.edit_message(embed=ppe_view.current_embed(partner_ppe), view=ppe_view)
 

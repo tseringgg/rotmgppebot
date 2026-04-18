@@ -385,13 +385,13 @@ def get_active_ppe(player_data: PlayerData) -> PPEData:
             return ppe
     raise ValueError("Active PPE ID not found in player's PPE records.")
 
-async def get_active_ppe_of_user(interaction: discord.Interaction) -> PPEData:
-    """Return the active PPE dict of the user, or None."""
+async def get_active_ppe_of_user(interaction: discord.Interaction, target_user_id: int | None = None) -> PPEData:
+    """Return the active PPE dict of the requested user."""
     if interaction.guild is None:
             raise ValueError("Interaction guild is None.")
-    member = interaction.user
+    resolved_user_id = int(target_user_id) if target_user_id is not None else int(interaction.user.id)
     records = await load_player_records(interaction)
-    key = ensure_player_exists(records, member.id)
+    key = ensure_player_exists(records, resolved_user_id)
     if key not in records:
         raise ValueError("Player record not found after ensuring existence.")
     player_data = records[key]

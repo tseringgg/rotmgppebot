@@ -133,7 +133,7 @@ def _build_iterative_defaults_lines(ppe_settings: dict | None) -> list[str]:
         f"- No Tiered: x{float(multipliers.get('no_tiered', 1.3)):.2f}",
         f"- Minimum rarity: Common x{float(rarity.get('common', 1.0)):.2f}, Uncommon x{float(rarity.get('uncommon', 1.1)):.2f}, Rare x{float(rarity.get('rare', 1.2)):.2f}, Legendary x{float(rarity.get('legendary', 1.4)):.2f}, Divine x{float(rarity.get('divine', 1.5)):.2f}",
         f"- Shiny Only: x{float(multipliers.get('shiny_only', 1.5)):.2f}",
-        f"- Enforce Shiny Rarity: x{float(multipliers.get('enforce_shiny_rarity', 1.0)):.2f}",
+        f"- Enforce Shiny Rarity: x{float(multipliers.get('enforce_shiny_rarity', 0.9)):.2f}",
         f"- Duo: x{float(multipliers.get('duo', 0.6)):.2f}",
     ]
 
