@@ -378,12 +378,12 @@ async def command(
         duo_link_id = None
         try:
             duo_partner_id = await get_duo_partner(interaction, interaction.user.id)
-        except ValueError:
+        except Exception:
             duo_partner_id = None
         if duo_partner_id is not None:
             try:
                 duo_link_id = await get_duo_link_id_for_user(interaction, interaction.user.id)
-            except ValueError:
+            except Exception:
                 duo_link_id = None
         wizard = NewPpeIterativeWizardView(
             owner_id=interaction.user.id,

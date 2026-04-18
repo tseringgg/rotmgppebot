@@ -38,7 +38,7 @@ async def _load_group_ppes(guild_id: int) -> Dict[int, int]:
     Returns a dict mapping user_id -> partner_user_id for all active duo partnerships.
     """
     lock = get_lock(guild_id)
-    with lock:
+    async with lock:
         loop = asyncio.get_event_loop()
         path = _group_ppes_path(guild_id)
         data = await loop.run_in_executor(None, _read_json, path)
@@ -64,7 +64,7 @@ async def _save_group_ppes(guild_id: int, mappings: Dict[int, int]) -> None:
         mappings: Dict mapping user_id -> partner_user_id
     """
     lock = get_lock(guild_id)
-    with lock:
+    async with lock:
         loop = asyncio.get_event_loop()
         path = _group_ppes_path(guild_id)
         # Convert int keys to strings for JSON serialization
@@ -149,7 +149,7 @@ async def clear_all_group_ppes(guild_id: int) -> None:
         guild_id: The guild to clear partnerships for
     """
     lock = get_lock(guild_id)
-    with lock:
+    async with lock:
         loop = asyncio.get_event_loop()
         path = _group_ppes_path(guild_id)
         # Write empty dict
