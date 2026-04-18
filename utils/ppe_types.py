@@ -600,6 +600,21 @@ def ppe_type_compact_summary(options_value: Any, *, fallback_type: Any = None, p
     legacy_type = infer_legacy_ppe_type_from_options(options)
 
     base = ppe_type_short_label(legacy_type, ppe_settings=ppe_settings)
+    minimum_effective = minimum_rarity_effective(options.get("minimum_rarity"))
+    show_all_sh_prefix = (
+        (not options["shiny_only"])
+        and (not options["enforce_rarity_on_shiny"])
+        and minimum_effective in {"legendary", "divine"}
+    )
+    if show_all_sh_prefix:
+        # No dedicated preset exists for "minimum rarity + all shinies allowed" variants,
+        # so surface it explicitly in the compact display.
+        base_without_shiny = {
+            PPE_TYPE_LEGENDARY_OR_SHINY: "LPE",
+            PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET: "LNPE",
+        }.get(legacy_type, base)
+        return f"All_SH|{base_without_shiny}"
+
     if legacy_type != DEFAULT_PPE_TYPE:
         return base
 
