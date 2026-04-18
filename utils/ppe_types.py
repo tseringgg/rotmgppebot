@@ -601,6 +601,20 @@ def ppe_type_compact_summary(options_value: Any, *, fallback_type: Any = None, p
 
     base = ppe_type_short_label(legacy_type, ppe_settings=ppe_settings)
     minimum_effective = minimum_rarity_effective(options.get("minimum_rarity"))
+    base_without_shiny = {
+        PPE_TYPE_LEGENDARY_OR_SHINY: "LPE",
+        PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET: "LNPE",
+    }.get(legacy_type, base)
+
+    # For legendary/divine minimums, surface the All_SH prefix only when shiny
+    # items bypass the rarity floor (enforce_rarity_on_shiny = False).
+    if (
+        legacy_type in {PPE_TYPE_LEGENDARY_OR_SHINY, PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET}
+        and minimum_effective in {"legendary", "divine"}
+        and options["enforce_rarity_on_shiny"]
+    ):
+        base = base_without_shiny
+
     show_all_sh_prefix = (
         (not options["shiny_only"])
         and (not options["enforce_rarity_on_shiny"])
@@ -609,10 +623,6 @@ def ppe_type_compact_summary(options_value: Any, *, fallback_type: Any = None, p
     if show_all_sh_prefix:
         # No dedicated preset exists for "minimum rarity + all shinies allowed" variants,
         # so surface it explicitly in the compact display.
-        base_without_shiny = {
-            PPE_TYPE_LEGENDARY_OR_SHINY: "LPE",
-            PPE_TYPE_LEGENDARY_OR_SHINY_NO_PET: "LNPE",
-        }.get(legacy_type, base)
         return f"All_SH|{base_without_shiny}"
 
     if legacy_type != DEFAULT_PPE_TYPE:
