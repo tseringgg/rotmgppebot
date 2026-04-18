@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 import discord
 
 from dataclass import ROTMG_CLASSES
@@ -47,6 +49,9 @@ from utils.wizard_components import (
 from menus.menu_utils import OwnerBoundView
 
 
+logger = logging.getLogger(__name__)
+
+
 class ManagePointSettingsView(OwnerBoundView):
     """Landing view for point modifier workflows."""
 
@@ -78,9 +83,23 @@ class ManagePointSettingsView(OwnerBoundView):
 
     @discord.ui.button(label="Edit PPE Type", style=discord.ButtonStyle.success, row=1)
     async def edit_ppe_type_points(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        character_settings = await load_character_settings_for_menu(interaction)
-        view = ManagePpeTypePointSettingsView(owner_id=self.owner_id, character_settings=character_settings)
-        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+        try:
+            character_settings = await load_character_settings_for_menu(interaction)
+            view = ManagePpeTypePointSettingsView(owner_id=self.owner_id, character_settings=character_settings)
+            await interaction.response.edit_message(embed=view.current_embed(), view=view)
+        except Exception:
+            logger.exception(
+                "Failed to open ManagePpeTypePointSettingsView",
+                extra={
+                    "guild_id": getattr(getattr(interaction, "guild", None), "id", None),
+                    "user_id": getattr(getattr(interaction, "user", None), "id", None),
+                },
+            )
+            error_text = "ERROR: Could not open PPE Type settings. Check logs for details."
+            if interaction.response.is_done():
+                await interaction.followup.send(error_text, ephemeral=True)
+            else:
+                await interaction.response.send_message(error_text, ephemeral=True)
 
     @discord.ui.button(label="Penalty Reduction Modifiers", style=discord.ButtonStyle.success, row=2)
     async def edit_pet_modifiers(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

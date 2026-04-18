@@ -122,7 +122,22 @@ class PPEHelpView(OwnerBoundView):
     def _sync_types_pagination_buttons(self) -> None:
         total_pages = get_types_override_page_count(self.ppe_settings)
         is_types_section = self.current_section == "types"
-        controls_disabled = (not is_types_section) or total_pages <= 1
+        show_controls = is_types_section
+        has_prev = self.prev_types_overrides_page in self.children
+        has_next = self.next_types_overrides_page in self.children
+
+        if show_controls:
+            if not has_prev:
+                self.add_item(self.prev_types_overrides_page)
+            if not has_next:
+                self.add_item(self.next_types_overrides_page)
+        else:
+            if has_prev:
+                self.remove_item(self.prev_types_overrides_page)
+            if has_next:
+                self.remove_item(self.next_types_overrides_page)
+
+        controls_disabled = total_pages <= 1
         self.prev_types_overrides_page.disabled = controls_disabled
         self.next_types_overrides_page.disabled = controls_disabled
         if total_pages > 0 and self.types_overrides_page_index >= total_pages:
