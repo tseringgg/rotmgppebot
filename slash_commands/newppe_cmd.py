@@ -24,7 +24,6 @@ from utils.group_ppes import (
     clear_duo_request,
     get_duo_request,
     duo_request_is_current,
-    get_duo_link_id_for_user,
     get_duo_partner,
     set_duo_partner,
     set_duo_request,
@@ -234,6 +233,48 @@ def _duo_partner_id_from_options(options: dict | None) -> int | None:
     return parsed if parsed > 0 else None
 
 
+def _parse_partner_id_text(raw_value: str | None) -> int | None:
+    """Parse a positive Discord user ID from raw modal input.
+
+    Supports plain numeric IDs and mention-like forms such as <@123> / <@!123>.
+    """
+    raw = str(raw_value or "").strip()
+    if not raw:
+        return None
+
+    if raw.startswith("<@") and raw.endswith(">"):
+        raw = raw[2:-1].lstrip("!").strip()
+
+    if not raw.isdigit():
+        return None
+
+    parsed = int(raw)
+    return parsed if parsed > 0 else None
+
+
+def _validate_duo_partner_id(
+    interaction: discord.Interaction,
+    *,
+    raw_value: str | None,
+    owner_user_id: int,
+) -> tuple[int | None, str | None]:
+    """Validate duo partner input and return (partner_id, error_message)."""
+    partner_id = _parse_partner_id_text(raw_value)
+    if partner_id is None:
+        return None, "Please enter a valid Discord User ID (or mention)."
+
+    if partner_id == int(owner_user_id):
+        return None, "You cannot set yourself as your duo partner."
+
+    if interaction.guild is None:
+        return None, "This command can only be used in a server."
+
+    if interaction.guild.get_member(partner_id) is None:
+        return None, f"❌ User <@{partner_id}> is not in this server."
+
+    return partner_id, None
+
+
 def _is_duo_enabled(options: dict | None) -> bool:
     if not isinstance(options, dict):
         return False
@@ -296,6 +337,79 @@ async def _apply_duo_link_to_existing_ppe(
 
     requester_ppe.ppe_type_options = normalize_ppe_type_options(options, current_type=getattr(requester_ppe, "ppe_type", None))
     requester_ppe.ppe_type = infer_legacy_ppe_type_from_options(requester_ppe.ppe_type_options)
+    await save_player_records(interaction, records)
+    return True
+
+
+async def _find_unbound_legacy_duo_ppes_for_user(
+    interaction: discord.Interaction | SimpleNamespace,
+    *,
+    user_id: int,
+) -> list[dict[str, object]]:
+    """Return selectable unbound duo PPE entries for a player."""
+    records = await load_player_records(interaction)
+    player_data = records.get(int(user_id))
+    if player_data is None:
+        return []
+
+    entries: list[dict[str, object]] = []
+    for ppe in getattr(player_data, "ppes", []):
+        options = normalize_ppe_type_options(
+            getattr(ppe, "ppe_type_options", None),
+            current_type=getattr(ppe, "ppe_type", None),
+        )
+        has_partner = _duo_partner_id_from_options(options) is not None
+        is_duo_candidate = bool(options.get("duo_enabled", False)) or is_duo_ppe_type(getattr(ppe, "ppe_type", None))
+        if not is_duo_candidate or has_partner:
+            continue
+
+        entries.append(
+            {
+                "ppe_id": int(getattr(ppe, "id", 0) or 0),
+                "class_name": str(getattr(getattr(ppe, "name", "?"), "value", getattr(ppe, "name", "?"))),
+                "type_summary": ppe_type_compact_summary(options, fallback_type=getattr(ppe, "ppe_type", None)),
+            }
+        )
+
+    return [entry for entry in entries if int(entry.get("ppe_id", 0) or 0) > 0]
+
+
+async def _apply_duo_link_to_partner_existing_ppe(
+    interaction: discord.Interaction | SimpleNamespace,
+    *,
+    partner_user_id: int,
+    requester_user_id: int,
+    partner_ppe_id: int,
+    duo_link_id: str,
+) -> bool:
+    """Bind a partner's legacy unbound duo PPE to the requester."""
+    records = await load_player_records(interaction)
+    partner_data = records.get(int(partner_user_id))
+    if partner_data is None:
+        return False
+
+    target_ppe = next(
+        (ppe for ppe in getattr(partner_data, "ppes", []) if int(getattr(ppe, "id", 0) or 0) == int(partner_ppe_id)),
+        None,
+    )
+    if target_ppe is None:
+        return False
+
+    options = normalize_ppe_type_options(
+        getattr(target_ppe, "ppe_type_options", None),
+        current_type=getattr(target_ppe, "ppe_type", None),
+    )
+    has_partner = _duo_partner_id_from_options(options) is not None
+    is_duo_candidate = bool(options.get("duo_enabled", False)) or is_duo_ppe_type(getattr(target_ppe, "ppe_type", None))
+    if has_partner or not is_duo_candidate:
+        return False
+
+    options["duo_enabled"] = True
+    options["duo_partner_id"] = int(requester_user_id)
+    options["duo_link_id"] = str(duo_link_id).strip() or uuid4().hex
+
+    target_ppe.ppe_type_options = normalize_ppe_type_options(options, current_type=getattr(target_ppe, "ppe_type", None))
+    target_ppe.ppe_type = infer_legacy_ppe_type_from_options(target_ppe.ppe_type_options)
     await save_player_records(interaction, records)
     return True
 
@@ -689,6 +803,34 @@ class DuoSetupInviteView(discord.ui.View):
             if linked_existing:
                 return
 
+            legacy_entries: list[dict[str, object]] = []
+            if context_ppe_id is not None and context_ppe_id > 0:
+                try:
+                    legacy_entries = await _find_unbound_legacy_duo_ppes_for_user(
+                        proxy_interaction,
+                        user_id=self.partner_user_id,
+                    )
+                except Exception:
+                    legacy_entries = []
+
+            if legacy_entries:
+                picker_view = LegacyDuoPartnerBindingView(
+                    owner_id=self.partner_user_id,
+                    guild_id=self.guild_id,
+                    guild_name=self.guild_name,
+                    requester_user_id=self.requester_user_id,
+                    request_channel_id=self.request_channel_id,
+                    duo_link_id=context_duo_link_id or uuid4().hex,
+                    entries=legacy_entries,
+                    default_class_name=self.class_name,
+                )
+                await interaction.followup.send(
+                    "Choose how you want to complete this duo link.",
+                    embed=picker_view.current_embed(),
+                    view=picker_view,
+                )
+                return
+
             launcher_view = DuoPartnerCreateLauncherView(
                 owner_id=self.partner_user_id,
                 guild_id=self.guild_id,
@@ -696,6 +838,7 @@ class DuoSetupInviteView(discord.ui.View):
                 partner_user_id=self.requester_user_id,
                 default_class_name=self.class_name,
                 request_channel_id=self.request_channel_id,
+                duo_link_id=context_duo_link_id,
             )
             launcher_embed = discord.Embed(
                 title="Create Linked Duo PPE",
@@ -796,6 +939,7 @@ class DuoPartnerCreateLauncherView(discord.ui.View):
         partner_user_id: int,
         default_class_name: str,
         request_channel_id: int | None,
+        duo_link_id: str | None,
         timeout_seconds: int = 86400,
     ) -> None:
         super().__init__(timeout=timeout_seconds)
@@ -805,6 +949,7 @@ class DuoPartnerCreateLauncherView(discord.ui.View):
         self.partner_user_id = int(partner_user_id)
         self.default_class_name = str(default_class_name)
         self.request_channel_id = int(request_channel_id) if isinstance(request_channel_id, int) and request_channel_id > 0 else None
+        self.duo_link_id = str(duo_link_id or "").strip() or None
 
     @discord.ui.button(label="Create Partner PPE", style=discord.ButtonStyle.success, row=0)
     async def create_partner_ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
@@ -820,6 +965,7 @@ class DuoPartnerCreateLauncherView(discord.ui.View):
                 partner_user_id=self.partner_user_id,
                 default_class_name=self.default_class_name,
                 request_channel_id=self.request_channel_id,
+                duo_link_id=self.duo_link_id,
             )
         )
 
@@ -850,6 +996,7 @@ class DuoPartnerCreateStartModal(discord.ui.Modal, title="Create Partner PPE"):
         partner_user_id: int,
         default_class_name: str,
         request_channel_id: int | None,
+        duo_link_id: str | None,
     ) -> None:
         super().__init__(timeout=600)
         self.owner_id = int(owner_id)
@@ -858,6 +1005,7 @@ class DuoPartnerCreateStartModal(discord.ui.Modal, title="Create Partner PPE"):
         self.partner_user_id = int(partner_user_id)
         self.class_name.default = str(default_class_name or "")
         self.request_channel_id = int(request_channel_id) if isinstance(request_channel_id, int) and request_channel_id > 0 else None
+        self.duo_link_id = str(duo_link_id or "").strip() or None
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         if interaction.user.id != self.owner_id:
@@ -898,8 +1046,7 @@ class DuoPartnerCreateStartModal(discord.ui.Modal, title="Create Partner PPE"):
         if not isinstance(ppe_settings, dict):
             ppe_settings = {}
 
-        proxy_interaction = SimpleNamespace(guild=guild, user=interaction.user)
-        duo_link_id = await get_duo_link_id_for_user(proxy_interaction, interaction.user.id)
+        duo_link_id = self.duo_link_id or uuid4().hex
 
         wizard = NewPpeIterativeWizardView(
             owner_id=interaction.user.id,
@@ -928,6 +1075,194 @@ class DuoPartnerCreateStartModal(discord.ui.Modal, title="Create Partner PPE"):
         wizard.message = await interaction.original_response()
 
 
+class _LegacyDuoPpeSelect(discord.ui.Select):
+    def __init__(self, *, entries: list[dict[str, object]], selected_ppe_id: int) -> None:
+        options: list[discord.SelectOption] = []
+        for entry in entries[:25]:
+            ppe_id = int(entry.get("ppe_id", 0) or 0)
+            class_name = str(entry.get("class_name", "?"))
+            type_summary = str(entry.get("type_summary", "Duo"))
+            options.append(
+                discord.SelectOption(
+                    label=f"PPE #{ppe_id} - {class_name}"[:100],
+                    value=str(ppe_id),
+                    description=type_summary[:100],
+                    default=ppe_id == int(selected_ppe_id),
+                )
+            )
+
+        super().__init__(
+            placeholder="Select an unbound legacy duo PPE",
+            min_values=1,
+            max_values=1,
+            options=options,
+            row=0,
+        )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        view = self.view
+        if not isinstance(view, LegacyDuoPartnerBindingView):
+            await interaction.response.send_message("Invalid menu state.", ephemeral=True)
+            return
+        if interaction.user.id != view.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        view.selected_ppe_id = int(self.values[0])
+        for option in self.options:
+            option.default = option.value == str(view.selected_ppe_id)
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+
+class LegacyDuoPartnerBindingView(discord.ui.View):
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        guild_id: int,
+        guild_name: str,
+        requester_user_id: int,
+        request_channel_id: int | None,
+        duo_link_id: str,
+        entries: list[dict[str, object]],
+        default_class_name: str,
+        timeout_seconds: int = 86400,
+    ) -> None:
+        super().__init__(timeout=timeout_seconds)
+        self.owner_id = int(owner_id)
+        self.guild_id = int(guild_id)
+        self.guild_name = str(guild_name)
+        self.requester_user_id = int(requester_user_id)
+        self.request_channel_id = int(request_channel_id) if isinstance(request_channel_id, int) and request_channel_id > 0 else None
+        self.duo_link_id = str(duo_link_id).strip() or uuid4().hex
+        self.entries = [entry for entry in entries if int(entry.get("ppe_id", 0) or 0) > 0]
+        self.default_class_name = str(default_class_name)
+        self.selected_ppe_id = int(self.entries[0]["ppe_id"]) if self.entries else 0
+
+        if self.entries:
+            self.add_item(_LegacyDuoPpeSelect(entries=self.entries, selected_ppe_id=self.selected_ppe_id))
+
+    def current_embed(self) -> discord.Embed:
+        embed = discord.Embed(
+            title="Link Legacy Duo PPE",
+            description=(
+                "You have unbound legacy Duo PPEs available.\n"
+                "Choose one to link with this accepted duo request, or create a new duo PPE instead."
+            ),
+            color=discord.Color.blurple(),
+        )
+        selected = next((entry for entry in self.entries if int(entry.get("ppe_id", 0) or 0) == int(self.selected_ppe_id)), None)
+        if selected is not None:
+            embed.add_field(
+                name="Selected PPE",
+                value=(
+                    f"PPE #{int(selected.get('ppe_id', 0))} - {str(selected.get('class_name', '?'))}\n"
+                    f"Type: {str(selected.get('type_summary', 'Duo'))}"
+                ),
+                inline=False,
+            )
+        embed.add_field(name="Duo Partner", value=f"<@{self.requester_user_id}>", inline=True)
+        embed.add_field(name="Server", value=f"**{self.guild_name}**", inline=True)
+        return embed
+
+    async def _resolve_guild(self, interaction: discord.Interaction) -> discord.Guild | None:
+        guild = interaction.client.get_guild(self.guild_id)
+        if guild is not None:
+            return guild
+        try:
+            fetched = await interaction.client.fetch_guild(self.guild_id)
+        except discord.HTTPException:
+            return None
+        return interaction.client.get_guild(int(fetched.id))
+
+    async def _notify_requester(self, interaction: discord.Interaction, message: str) -> None:
+        requester = interaction.client.get_user(self.requester_user_id)
+        if requester is None:
+            try:
+                requester = await interaction.client.fetch_user(self.requester_user_id)
+            except discord.HTTPException:
+                requester = None
+        if requester is None:
+            return
+        try:
+            await requester.send(message)
+        except discord.HTTPException:
+            return
+
+    @discord.ui.button(label="Link Selected Legacy PPE", style=discord.ButtonStyle.success, row=1)
+    async def link_selected(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+        if self.selected_ppe_id <= 0:
+            await interaction.response.send_message("Please select a valid legacy duo PPE.", ephemeral=True)
+            return
+
+        guild = await self._resolve_guild(interaction)
+        if guild is None:
+            await interaction.response.send_message(
+                f"Unable to access **{self.guild_name}**. Please run `/newppe` in that server instead.",
+                ephemeral=True,
+            )
+            return
+
+        proxy_interaction = SimpleNamespace(guild=guild, user=interaction.user)
+        linked = await _apply_duo_link_to_partner_existing_ppe(
+            proxy_interaction,
+            partner_user_id=self.owner_id,
+            requester_user_id=self.requester_user_id,
+            partner_ppe_id=self.selected_ppe_id,
+            duo_link_id=self.duo_link_id,
+        )
+        if not linked:
+            await interaction.response.send_message(
+                "Could not link that PPE. It may already be bound or no longer exists.",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.edit_message(
+            content=(
+                f"✅ Linked your legacy PPE #{self.selected_ppe_id} with <@{self.requester_user_id}> "
+                f"for **{self.guild_name}**."
+            ),
+            embed=None,
+            view=None,
+        )
+        await self._notify_requester(
+            interaction,
+            (
+                f"✅ <@{self.owner_id}> linked an existing legacy duo PPE "
+                f"(#{self.selected_ppe_id}) with your request in **{self.guild_name}**."
+            ),
+        )
+
+    @discord.ui.button(label="Create New Duo PPE", style=discord.ButtonStyle.primary, row=1)
+    async def create_new(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
+            return
+
+        launcher_view = DuoPartnerCreateLauncherView(
+            owner_id=self.owner_id,
+            guild_id=self.guild_id,
+            guild_name=self.guild_name,
+            partner_user_id=self.requester_user_id,
+            default_class_name=self.default_class_name,
+            request_channel_id=self.request_channel_id,
+            duo_link_id=self.duo_link_id,
+        )
+        await interaction.response.edit_message(
+            content="Proceed with creating a new linked duo PPE.",
+            embed=discord.Embed(
+                title="Create Linked Duo PPE",
+                description="Use the button below to start your guided partner PPE creation.",
+                color=discord.Color.blue(),
+            ),
+            view=launcher_view,
+        )
+
+
 async def command(
     interaction: discord.Interaction,
     class_name: str,
@@ -943,17 +1278,6 @@ async def command(
     if ppe_type is None:
         guild_config = await load_guild_config(interaction)
         ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config.get("ppe_settings", {}), dict) else {}
-        duo_partner_id = None
-        duo_link_id = None
-        try:
-            duo_partner_id = await get_duo_partner(interaction, interaction.user.id)
-        except Exception:
-            duo_partner_id = None
-        if duo_partner_id is not None:
-            try:
-                duo_link_id = await get_duo_link_id_for_user(interaction, interaction.user.id)
-            except Exception:
-                duo_link_id = None
         wizard = NewPpeIterativeWizardView(
             owner_id=interaction.user.id,
             class_name=class_name,
@@ -962,9 +1286,6 @@ async def command(
             percent_loot=percent_loot,
             incombat_reduction=incombat_reduction,
             ppe_settings=ppe_settings,
-            duo_partner_id=duo_partner_id,
-            duo_link_id=duo_link_id,
-            skip_duo_selection=duo_partner_id is not None,
         )
         await interaction.response.send_message(
             wizard.prompt_text(),
@@ -1055,19 +1376,13 @@ class DuoPpeTypePartnerModal(discord.ui.Modal, title="Set Duo Partner Discord ID
             await interaction.response.send_message("❌ This command can only be used in a server.", ephemeral=True)
             return
 
-        partner_text = str(self.partner_id.value or "").strip()
-        if not partner_text.isdigit() or int(partner_text) <= 0:
-            await interaction.response.send_message("Please enter a valid numeric Discord ID.", ephemeral=True)
-            return
-
-        partner_id = int(partner_text)
-        if partner_id == interaction.user.id:
-            await interaction.response.send_message("You cannot set yourself as your duo partner.", ephemeral=True)
-            return
-
-        guild_member = interaction.guild.get_member(partner_id)
-        if guild_member is None:
-            await interaction.response.send_message("❌ That user is not in this server.", ephemeral=True)
+        partner_id, partner_error = _validate_duo_partner_id(
+            interaction,
+            raw_value=self.partner_id.value,
+            owner_user_id=interaction.user.id,
+        )
+        if partner_error is not None or partner_id is None:
+            await interaction.response.send_message(partner_error or "Invalid duo partner.", ephemeral=True)
             return
 
         request_channel_id = interaction.channel.id if interaction.channel is not None else None
@@ -1141,27 +1456,18 @@ class DuoPartnerIdModal(discord.ui.Modal, title="Set Duo Partner Discord ID"):
             await interaction.response.send_message("This menu belongs to another user.", ephemeral=True)
             return
 
-        partner_text = str(self.partner_id.value or "").strip()
-        if not partner_text.isdigit() or int(partner_text) <= 0:
-            await interaction.response.send_message("Please enter a valid numeric Discord ID.", ephemeral=True)
-            return
-
-        partner_id = int(partner_text)
-        
-        # Validate that partner exists in guild
-        if not interaction.guild:
-            await interaction.response.send_message("This command can only be used in a server.", ephemeral=True)
-            return
-        
-        guild_member = interaction.guild.get_member(partner_id)
-        if guild_member is None:
-            await interaction.response.send_message(
-                f"❌ User <@{partner_id}> is not in this server.",
-                ephemeral=True,
-            )
+        partner_id, partner_error = _validate_duo_partner_id(
+            interaction,
+            raw_value=self.partner_id.value,
+            owner_user_id=interaction.user.id,
+        )
+        if partner_error is not None or partner_id is None:
+            await interaction.response.send_message(partner_error or "Invalid duo partner.", ephemeral=True)
             return
 
         request_channel_id = interaction.channel.id if interaction.channel is not None else None
+        duo_link_id = uuid4().hex
+        request_context = {"duo_link_id": duo_link_id}
         try:
             request_token, dm_sent = await send_duo_handshake_invite(
                 interaction,
@@ -1169,12 +1475,14 @@ class DuoPartnerIdModal(discord.ui.Modal, title="Set Duo Partner Discord ID"):
                 partner_user_id=partner_id,
                 class_name=self.wizard.class_name,
                 request_channel_id=request_channel_id,
+                context=request_context,
             )
         except ValueError as exc:
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
 
         self.wizard.state["duo_partner_id"] = partner_id
+        self.wizard.state["duo_link_id"] = duo_link_id
         self.wizard.state["duo_request_token"] = request_token
         await interaction.response.send_message(
             (
@@ -1589,11 +1897,6 @@ class _WizardCreatePpeButton(discord.ui.Button):
                 )
                 return
             duo_link_id = str(view.state.get("duo_link_id") or "").strip() or None
-            if duo_link_id is None:
-                try:
-                    duo_link_id = await get_duo_link_id_for_user(duo_interaction, interaction.user.id)
-                except Exception:
-                    duo_link_id = None
             if duo_link_id is None:
                 duo_link_id = uuid4().hex
             options["duo_link_id"] = duo_link_id

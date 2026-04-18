@@ -75,7 +75,9 @@ class ManageCharactersView(OwnerBoundView):
         """Update duo-related button visibility based on current PPE."""
         ppe = self.current_ppe()
         ppe_type_options = getattr(ppe, "ppe_type_options", None)
-        is_duo = is_duo_ppe_type(normalize_ppe_type(getattr(ppe, "ppe_type", None)))
+        is_duo_type = is_duo_ppe_type(normalize_ppe_type(getattr(ppe, "ppe_type", None)))
+        has_duo_flag = bool(ppe_type_options.get("duo_enabled", False)) if isinstance(ppe_type_options, dict) else False
+        is_duo = is_duo_type or has_duo_flag
         has_partner = duo_partner_id_from_options(ppe_type_options) is not None
 
         # Remove existing duo buttons if they exist
@@ -426,7 +428,9 @@ class _SetDuoPartnerButton(discord.ui.Button):
 
         selected = view.current_ppe()
         selected_type = normalize_ppe_type(getattr(selected, "ppe_type", None))
-        if not is_duo_ppe_type(selected_type):
+        selected_options = getattr(selected, "ppe_type_options", None)
+        selected_has_duo_flag = bool(selected_options.get("duo_enabled", False)) if isinstance(selected_options, dict) else False
+        if not is_duo_ppe_type(selected_type) and not selected_has_duo_flag:
             await interaction.response.send_message(
                 "This character is not a Duo PPE type."
                 " Use Manage PPE if you want to change its type first.",

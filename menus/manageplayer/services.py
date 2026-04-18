@@ -8,6 +8,13 @@ from dataclass import PPEData, PlayerData
 from menus.manageplayer.targets import ManagedPlayerTarget, admin_role, player_role
 from utils.guild_config import get_quest_targets, load_guild_config, save_guild_config
 from utils.pagination import LootPaginationView, chunk_lines_to_pages
+from utils.group_ppes import clear_duo_partner, clear_duo_request
+from utils.ppe_types import (
+    PPE_TYPE_DUO,
+    PPE_TYPE_DUO_NO_PET,
+    infer_legacy_ppe_type_from_options,
+    normalize_ppe_type_options,
+)
 from utils.player_manager import player_manager
 from utils.player_records import ensure_player_exists, load_player_records, load_teams, save_player_records
 from utils.quest_modes import build_global_quests_payload, build_team_quests_context
@@ -155,14 +162,52 @@ async def delete_single_ppe_for_target(interaction: discord.Interaction, target:
 
 async def remove_target_from_contest(interaction: discord.Interaction, target: ManagedPlayerTarget) -> str:
     records = await load_player_records(interaction)
+    removed_user_id = int(target.user_id)
     removed_record = int(target.user_id) in records
+
+    transitioned_ppes = 0
+    for user_id, player_data in records.items():
+        if int(user_id) == removed_user_id:
+            continue
+
+        for ppe in getattr(player_data, "ppes", []):
+            options = normalize_ppe_type_options(
+                getattr(ppe, "ppe_type_options", None),
+                current_type=getattr(ppe, "ppe_type", None),
+            )
+            try:
+                partner_id = int(options.get("duo_partner_id") or 0)
+            except (TypeError, ValueError):
+                partner_id = 0
+            if partner_id != removed_user_id:
+                continue
+
+            uses_pet = bool(options.get("uses_pet", True))
+            options["duo_enabled"] = True
+            options["duo_partner_id"] = None
+            options["duo_link_id"] = None
+            ppe.ppe_type_options = normalize_ppe_type_options(options, current_type=getattr(ppe, "ppe_type", None))
+            ppe.ppe_type = PPE_TYPE_DUO if uses_pet else PPE_TYPE_DUO_NO_PET
+            inferred_type = infer_legacy_ppe_type_from_options(ppe.ppe_type_options)
+            if inferred_type in {PPE_TYPE_DUO, PPE_TYPE_DUO_NO_PET}:
+                ppe.ppe_type = inferred_type
+            transitioned_ppes += 1
 
     team_name = await team_manager.force_remove_player_from_teams(interaction, target.user_id)
 
-    if int(target.user_id) in records:
-        del records[int(target.user_id)]
+    if removed_user_id in records:
+        del records[removed_user_id]
 
     await save_player_records(interaction, records)
+
+    try:
+        await clear_duo_partner(interaction, removed_user_id)
+    except Exception:
+        pass
+    try:
+        await clear_duo_request(interaction, removed_user_id)
+    except Exception:
+        pass
 
     realmshark_cleanup = await clear_member_character_links(interaction, target.user_id)
 
@@ -201,12 +246,25 @@ async def remove_target_from_contest(interaction: discord.Interaction, target: M
         )
 
     if team_name:
+        legacy_note = (
+            f" {transitioned_ppes} linked duo PPE(s) were converted to unbound legacy duo PPEs for remaining players."
+            if transitioned_ppes > 0
+            else ""
+        )
         return (
             f"✅ Removed {target.mention_text} from the PPE contest and removed them from team `{team_name}`. "
-            f"All PPE data has been deleted.{realmshark_note}"
+            f"All PPE data has been deleted.{legacy_note}{realmshark_note}"
         )
 
-    return f"✅ Removed {target.mention_text} from the PPE contest. All PPE data has been deleted.{realmshark_note}"
+    legacy_note = (
+        f" {transitioned_ppes} linked duo PPE(s) were converted to unbound legacy duo PPEs for remaining players."
+        if transitioned_ppes > 0
+        else ""
+    )
+    return (
+        f"✅ Removed {target.mention_text} from the PPE contest. All PPE data has been deleted."
+        f"{legacy_note}{realmshark_note}"
+    )
 
 
 async def add_target_to_contest(interaction: discord.Interaction, target: ManagedPlayerTarget) -> str:
