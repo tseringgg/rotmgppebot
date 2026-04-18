@@ -2,6 +2,7 @@
 
 import discord
 from types import SimpleNamespace
+import traceback
 from uuid import uuid4
 
 from dataclass import PPEData, ROTMGClass
@@ -616,138 +617,173 @@ class DuoSetupInviteView(discord.ui.View):
 
     @discord.ui.button(label="Accept Duo Request", style=discord.ButtonStyle.success)
     async def accept(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if self.completed:
-            await interaction.response.send_message("This duo invite was already handled.", ephemeral=True)
-            return
-        if interaction.user.id != self.partner_user_id:
-            await interaction.response.send_message("This duo invite is for a different user.", ephemeral=True)
-            return
+        try:
+            if self.completed:
+                await interaction.response.send_message("This duo invite was already handled.", ephemeral=True)
+                return
+            if interaction.user.id != self.partner_user_id:
+                await interaction.response.send_message("This duo invite is for a different user.", ephemeral=True)
+                return
 
-        if not await duo_request_is_current(interaction, self.requester_user_id, self.partner_user_id, self.request_token):
+            guild = await self._resolve_guild(interaction)
+            if guild is None:
+                await interaction.response.send_message("Unable to access the original server for this request.", ephemeral=True)
+                return
+
+            proxy_interaction = SimpleNamespace(guild=guild, user=interaction.user)
+            if not await duo_request_is_current(proxy_interaction, self.requester_user_id, self.partner_user_id, self.request_token):
+                await self._finalize(
+                    interaction,
+                    "This duo invite is no longer current. Please ask the requester for the latest invite.",
+                )
+                return
+
+            request_data = await get_duo_request(proxy_interaction, self.requester_user_id)
+            request_context = request_data.get("context") if isinstance(request_data, dict) else None
+            context_ppe_id = None
+            context_duo_link_id = None
+            if isinstance(request_context, dict):
+                try:
+                    context_ppe_id = int(request_context.get("requester_ppe_id"))
+                except (TypeError, ValueError):
+                    context_ppe_id = None
+                context_duo_link_id = str(request_context.get("duo_link_id", "")).strip() or None
+            try:
+                await set_duo_partner(proxy_interaction, self.requester_user_id, self.partner_user_id)
+                await clear_duo_request(proxy_interaction, self.requester_user_id)
+            except ValueError as exc:
+                await interaction.response.send_message(f"Could not accept duo request: {exc}", ephemeral=True)
+                return
+
+            linked_existing = False
+            if context_ppe_id is not None and context_ppe_id > 0:
+                try:
+                    linked_existing = await _apply_duo_link_to_existing_ppe(
+                        proxy_interaction,
+                        requester_user_id=self.requester_user_id,
+                        partner_user_id=self.partner_user_id,
+                        requester_ppe_id=context_ppe_id,
+                        duo_link_id=context_duo_link_id or uuid4().hex,
+                    )
+                except Exception:
+                    linked_existing = False
+
             await self._finalize(
                 interaction,
-                "This duo invite is no longer current. Please ask the requester for the latest invite.",
+                (
+                    f"✅ Accepted duo request for **{self.guild_name}** ({self.class_name}).\n"
+                    "The requester can now finish creating their PPE.\n"
+                ),
             )
-            return
+            await self._notify_requester(
+                interaction,
+                (
+                    f"✅ <@{self.partner_user_id}> accepted your duo request in **{self.guild_name}**. "
+                    + (
+                        "Your selected legacy duo PPE is now linked to this partner."
+                        if linked_existing
+                        else "You can now click **Create PPE** to finish your duo character."
+                    )
+                ),
+            )
+            if linked_existing:
+                return
 
-        guild = await self._resolve_guild(interaction)
-        if guild is None:
-            await interaction.response.send_message("Unable to access the original server for this request.", ephemeral=True)
-            return
-
-        proxy_interaction = SimpleNamespace(guild=guild, user=interaction.user)
-        request_data = await get_duo_request(proxy_interaction, self.requester_user_id)
-        request_context = request_data.get("context") if isinstance(request_data, dict) else None
-        context_ppe_id = None
-        context_duo_link_id = None
-        if isinstance(request_context, dict):
-            try:
-                context_ppe_id = int(request_context.get("requester_ppe_id"))
-            except (TypeError, ValueError):
-                context_ppe_id = None
-            context_duo_link_id = str(request_context.get("duo_link_id", "")).strip() or None
-        try:
-            await set_duo_partner(proxy_interaction, self.requester_user_id, self.partner_user_id)
-            await clear_duo_request(proxy_interaction, self.requester_user_id)
-        except ValueError as exc:
-            await interaction.response.send_message(f"Could not accept duo request: {exc}", ephemeral=True)
-            return
-
-        linked_existing = False
-        if context_ppe_id is not None and context_ppe_id > 0:
-            try:
-                linked_existing = await _apply_duo_link_to_existing_ppe(
-                    proxy_interaction,
-                    requester_user_id=self.requester_user_id,
-                    partner_user_id=self.partner_user_id,
-                    requester_ppe_id=context_ppe_id,
-                    duo_link_id=context_duo_link_id or uuid4().hex,
+            launcher_view = DuoPartnerCreateLauncherView(
+                owner_id=self.partner_user_id,
+                guild_id=self.guild_id,
+                guild_name=self.guild_name,
+                partner_user_id=self.requester_user_id,
+                default_class_name=self.class_name,
+                request_channel_id=self.request_channel_id,
+            )
+            launcher_embed = discord.Embed(
+                title="Create Linked Duo PPE",
+                description="Use the button below to start your guided partner PPE creation.",
+                color=discord.Color.blue(),
+            )
+            launcher_embed.add_field(name="This Creates In", value=f"**{self.guild_name}**", inline=True)
+            launcher_embed.add_field(name="Duo Partner", value=f"<@{self.requester_user_id}>", inline=True)
+            launcher_embed.add_field(name="Suggested Class", value=f"**{self.class_name}**", inline=True)
+            await interaction.followup.send(
+                "Ready when you are.",
+                embed=launcher_embed,
+                view=launcher_view,
+            )
+        except Exception as exc:
+            print(
+                f"[DUO_DM][ERROR] accept failed guild_id={self.guild_id} requester={self.requester_user_id} "
+                f"partner={self.partner_user_id}: {exc}"
+            )
+            print(traceback.format_exc())
+            if not interaction.response.is_done():
+                await interaction.response.send_message(
+                    "Could not process this duo invite. Please try again or ask for a new invite.",
+                    ephemeral=True,
                 )
-            except Exception:
-                linked_existing = False
-
-        await self._finalize(
-            interaction,
-            (
-                f"✅ Accepted duo request for **{self.guild_name}** ({self.class_name}).\n"
-                "The requester can now finish creating their PPE.\n"
-            ),
-        )
-        await self._notify_requester(
-            interaction,
-            (
-                f"✅ <@{self.partner_user_id}> accepted your duo request in **{self.guild_name}**. "
-                + (
-                    "Your selected legacy duo PPE is now linked to this partner."
-                    if linked_existing
-                    else "You can now click **Create PPE** to finish your duo character."
+            else:
+                await interaction.followup.send(
+                    "Could not process this duo invite. Please try again or ask for a new invite.",
+                    ephemeral=True,
                 )
-            ),
-        )
-        if linked_existing:
-            return
-
-        launcher_view = DuoPartnerCreateLauncherView(
-            owner_id=self.partner_user_id,
-            guild_id=self.guild_id,
-            guild_name=self.guild_name,
-            partner_user_id=self.requester_user_id,
-            default_class_name=self.class_name,
-            request_channel_id=self.request_channel_id,
-        )
-        launcher_embed = discord.Embed(
-            title="Create Linked Duo PPE",
-            description="Use the button below to start your guided partner PPE creation.",
-            color=discord.Color.blue(),
-        )
-        launcher_embed.add_field(name="This Creates In", value=f"**{self.guild_name}**", inline=True)
-        launcher_embed.add_field(name="Duo Partner", value=f"<@{self.requester_user_id}>", inline=True)
-        launcher_embed.add_field(name="Suggested Class", value=f"**{self.class_name}**", inline=True)
-        await interaction.followup.send(
-            "Ready when you are.",
-            embed=launcher_embed,
-            view=launcher_view,
-        )
 
     @discord.ui.button(label="Reject Duo Request", style=discord.ButtonStyle.danger)
     async def reject(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        if self.completed:
-            await interaction.response.send_message("This duo invite was already handled.", ephemeral=True)
-            return
-        if interaction.user.id != self.partner_user_id:
-            await interaction.response.send_message("This duo invite is for a different user.", ephemeral=True)
-            return
+        try:
+            if self.completed:
+                await interaction.response.send_message("This duo invite was already handled.", ephemeral=True)
+                return
+            if interaction.user.id != self.partner_user_id:
+                await interaction.response.send_message("This duo invite is for a different user.", ephemeral=True)
+                return
 
-        if not await duo_request_is_current(interaction, self.requester_user_id, self.partner_user_id, self.request_token):
+            guild = await self._resolve_guild(interaction)
+            proxy_interaction = SimpleNamespace(guild=guild, user=interaction.user) if guild is not None else None
+            if proxy_interaction is not None:
+                if not await duo_request_is_current(proxy_interaction, self.requester_user_id, self.partner_user_id, self.request_token):
+                    await self._finalize(
+                        interaction,
+                        "This duo invite is no longer current. Please ask the requester for the latest invite.",
+                    )
+                    return
+
+            if proxy_interaction is not None:
+                try:
+                    await clear_duo_partner(proxy_interaction, self.partner_user_id)
+                    await clear_duo_request(proxy_interaction, self.requester_user_id)
+                except Exception:
+                    pass
+
             await self._finalize(
                 interaction,
-                "This duo invite is no longer current. Please ask the requester for the latest invite.",
+                (
+                    f"❌ Rejected duo request for **{self.guild_name}** ({self.class_name}).\n"
+                    "No duo link was created."
+                ),
             )
-            return
-
-        guild = await self._resolve_guild(interaction)
-        if guild is not None:
-            proxy_interaction = SimpleNamespace(guild=guild, user=interaction.user)
-            try:
-                await clear_duo_partner(proxy_interaction, self.partner_user_id)
-                await clear_duo_request(proxy_interaction, self.requester_user_id)
-            except Exception:
-                pass
-
-        await self._finalize(
-            interaction,
-            (
-                f"❌ Rejected duo request for **{self.guild_name}** ({self.class_name}).\n"
-                "No duo link was created."
-            ),
-        )
-        await self._notify_requester(
-            interaction,
-            (
-                f"❌ <@{self.partner_user_id}> rejected your duo request in **{self.guild_name}**. "
-                "You can pick a different partner or create a non-duo PPE."
-            ),
-        )
+            await self._notify_requester(
+                interaction,
+                (
+                    f"❌ <@{self.partner_user_id}> rejected your duo request in **{self.guild_name}**. "
+                    "You can pick a different partner or create a non-duo PPE."
+                ),
+            )
+        except Exception as exc:
+            print(
+                f"[DUO_DM][ERROR] reject failed guild_id={self.guild_id} requester={self.requester_user_id} "
+                f"partner={self.partner_user_id}: {exc}"
+            )
+            print(traceback.format_exc())
+            if not interaction.response.is_done():
+                await interaction.response.send_message(
+                    "Could not process this duo invite. Please try again or ask for a new invite.",
+                    ephemeral=True,
+                )
+            else:
+                await interaction.followup.send(
+                    "Could not process this duo invite. Please try again or ask for a new invite.",
+                    ephemeral=True,
+                )
 
 
 class DuoPartnerCreateLauncherView(discord.ui.View):
