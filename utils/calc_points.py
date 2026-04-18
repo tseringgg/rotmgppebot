@@ -88,7 +88,7 @@ def calc_points(item: str, shiny: bool, rarity: str = "common", guild_config: di
     effective_rarity = normalize_rarity(rarity)
     rarity_multipliers = get_rarity_multipliers(guild_config or {})
     rarity_multiplier = float(rarity_multipliers.get(effective_rarity, 1.0))
-    shiny_multiplier = float(rarity_multipliers.get("shiny", 2.0)) if shiny else 1.0
+    shiny_multiplier = float(rarity_multipliers.get("shiny", 1.0)) if shiny else 1.0
     final_points = base_points * rarity_multiplier * shiny_multiplier
 
     # Round down to nearest 0.5

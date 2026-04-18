@@ -85,7 +85,7 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
             "rare": 1.0,
             "legendary": 1.0,
             "divine": 2.0,
-            "shiny": 2.0,
+            "shiny": 1.0,
         },
         "starting_penalty_modifiers": {
             "pet_level_percent_reduction": 0.0,

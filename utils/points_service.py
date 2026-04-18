@@ -86,7 +86,7 @@ def _shiny_multiplier_for(shiny: bool, guild_config: Dict[str, Any] | None = Non
     if not shiny:
         return 1.0
     multipliers = get_rarity_multipliers(guild_config or {})
-    return float(multipliers.get("shiny", 2.0))
+    return float(multipliers.get("shiny", 1.0))
 
 
 def _item_multiplier_for(rarity: str, shiny: bool, guild_config: Dict[str, Any] | None = None) -> float:
