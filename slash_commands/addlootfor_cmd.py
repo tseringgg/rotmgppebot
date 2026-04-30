@@ -76,11 +76,6 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
             ephemeral=True
         )
 
-        # Send set completion messages
-        if result.newly_completed_sets:
-            set_lines = [f"🎉 **Set Completed!** {set_name} ({set_type})" for set_name, set_type in result.newly_completed_sets]
-            await interaction.followup.send("\n".join(set_lines), ephemeral=False)
-
         if overlay_path and image_path and overlay_path != image_path:
             if os.path.exists(overlay_path):
                 os.remove(overlay_path)

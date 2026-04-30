@@ -6,7 +6,7 @@ import discord
 import cv2
 import numpy as np
 from utils.autocomplete import get_dungeons
-from utils.loot_ops import add_ppe_loot
+from utils.loot_ops import add_ppe_loot, format_ppe_add_message
 from utils.find_items import find_items_in_image
 from utils.player_records import get_active_ppe_of_user, load_player_records
 
@@ -120,7 +120,8 @@ async def command(
                     shiny=detected_loot["shiny"],
                     rarity=detected_loot.get("rarity", "common"),
                 )
-                message += f"• **{result.item_name}** (+{result.points_delta} points)\n"
+                # Use the standardized message for each detected addition
+                message += format_ppe_add_message(result) + "\n\n"
             except (ValueError, KeyError, LookupError) as e:
                 return await interaction.followup.send(str(e), ephemeral=True)
 

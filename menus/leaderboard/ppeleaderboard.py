@@ -109,9 +109,12 @@ async def command(interaction: discord.Interaction):
                 if require_active_ppe_items_for_quests:
                     active_ppe_id = getattr(data, "active_ppe", None)
                     active_ppe = next((ppe for ppe in ppes if ppe.id == active_ppe_id), None)
+                    # If the configured active PPE has no loot (or is missing), fall back to the player's best PPE
+                    # so quest points reflect the PPE that actually holds the completed items.
+                    ppe_for_quest = active_ppe or get_best_ppe(data, guild_config=guild_config)
                     quest_points = compute_quest_points_from_quests_and_active_ppe(
                         getattr(data, "quests", None),
-                        active_ppe,
+                        ppe_for_quest,
                         scoring=ppe_quest_scoring,
                     )
                 elif team_mode_effective and isinstance(getattr(data, "team_name", None), str) and data.team_name:

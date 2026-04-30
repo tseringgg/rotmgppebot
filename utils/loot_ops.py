@@ -18,6 +18,7 @@ from utils.points_service import has_item_variant
 from utils.quest_modes import build_global_quests_payload, build_team_quests_context
 from utils.quest_manager import refresh_player_quests, remove_item_from_completed_quests, update_quests_for_item
 from utils.season_loot_history import add_season_item_log, normalize_rarity, remove_season_item_log, unique_season_item_count
+from datetime import datetime
 
 
 @dataclass(frozen=True)
@@ -90,48 +91,103 @@ def _possessive(name: str) -> str:
 
 def format_ppe_add_message(result: PPELootOperationResult) -> str:
     display_name = build_item_display_name(result.item_name, shiny=result.shiny, rarity=result.rarity)
-    return (
-        f"✅ {display_name} Successfully Added to {_possessive(result.username)} {result.char_info}. "
-        f"Points: {result.old_points} -> {result.new_points}."
+    delta = result.points_delta
+    delta_sign = f"+{delta}" if delta >= 0 else f"{delta}"
+    lines: list[str] = []
+    lines.append(
+        f"✅ {display_name} added to {_possessive(result.username)} {result.char_info}."
     )
+    lines.append(f"Points: {result.old_points} -> {result.new_points} ({delta_sign}).")
+
+    # Quest completions
+    quest_update = result.quest_update or {}
+    completed_items = quest_update.get("completed_items", [])
+    completed_shinies = quest_update.get("completed_shinies", [])
+    completed_skins = quest_update.get("completed_skins", [])
+    quest_lines: list[str] = []
+    for i in completed_items:
+        quest_lines.append(f"✅ Item quest completed: **{i}**")
+    for s in completed_shinies:
+        quest_lines.append(f"✨ Shiny quest completed: **{s}**")
+    for k in completed_skins:
+        quest_lines.append(f"✅ Skin quest completed: **{k}**")
+
+    # Set completions
+    set_lines: list[str] = []
+    if result.newly_completed_sets:
+        for set_name, set_type in result.newly_completed_sets:
+            set_lines.append(f"🎉 Set Completed: **{set_name}** ({set_type})")
+
+    # Only include quest/set section if there is something to show
+    if quest_lines or set_lines:
+        lines.append("")
+        if set_lines:
+            lines.extend(set_lines)
+        if quest_lines:
+            lines.extend(quest_lines)
+
+    # Timestamp
+    lines.append(f"Completed: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
+    return "\n".join(lines)
 
 
 def format_ppe_remove_message(result: PPELootOperationResult) -> str:
     display_name = build_item_display_name(result.item_name, shiny=result.shiny, rarity=result.rarity)
-    base_message = (
-        f"✅ {display_name} Successfully Removed from {_possessive(result.username)} {result.char_info}. "
-        f"Points: {result.old_points} -> {result.new_points}."
-    )
-    
-    # Add set removal messages if applicable
+    delta = result.points_delta
+    delta_sign = f"-{delta}" if delta >= 0 else f"{delta}"
+    lines: list[str] = []
+    lines.append(f"✅ {display_name} removed from {_possessive(result.username)} {result.char_info}.")
+    lines.append(f"Points: {result.old_points} -> {result.new_points} ({delta_sign}).")
+
+    # Removed sets
     if result.removed_sets:
-        set_messages = []
+        lines.append("")
+        lines.append("🔔 Sets No Longer Completed:")
         for set_name, set_type in result.removed_sets:
-            set_messages.append(f"- **{set_name}** ({set_type}) is no longer logged")
-        base_message += "\n\n🔔 Sets No Longer Completed:\n" + "\n".join(set_messages)
-    
-    return base_message
+            lines.append(f"- **{set_name}** ({set_type}) is no longer logged")
+
+    # Timestamp
+    lines.append(f"Completed: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
+    return "\n".join(lines)
 
 
 def format_season_add_message(result: SeasonLootOperationResult) -> str:
     display_name = build_item_display_name(result.item_name, shiny=result.shiny, rarity=result.rarity)
+    lines: list[str] = []
     if result.already_present:
-        return (
-            f"✅ {display_name} already existed in {result.username}'s seasonal loot; timestamp logged. "
-            f"Unique items: {result.old_unique_total} -> {result.new_unique_total}."
-        )
-    return (
-        f"✅ {display_name} is a new seasonal item for {result.username}. "
-        f"Unique items: {result.old_unique_total} -> {result.new_unique_total}."
-    )
+        lines.append(f"✅ {display_name} already existed in {result.username}'s seasonal loot; timestamp logged.")
+    else:
+        lines.append(f"✅ {display_name} is a new seasonal item for {result.username}.")
+    lines.append(f"Unique items: {result.old_unique_total} -> {result.new_unique_total}.")
+
+    # Quest completions when adding seasonal loot
+    quest_update = result.quest_update or {}
+    completed_items = quest_update.get("completed_items", [])
+    completed_shinies = quest_update.get("completed_shinies", [])
+    completed_skins = quest_update.get("completed_skins", [])
+    quest_lines: list[str] = []
+    for i in completed_items:
+        quest_lines.append(f"✅ Item quest completed: **{i}**")
+    for s in completed_shinies:
+        quest_lines.append(f"✨ Shiny quest completed: **{s}**")
+    for k in completed_skins:
+        quest_lines.append(f"✅ Skin quest completed: **{k}**")
+
+    if quest_lines:
+        lines.append("")
+        lines.extend(quest_lines)
+
+    lines.append(f"Completed: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
+    return "\n".join(lines)
 
 
 def format_season_remove_message(result: SeasonLootOperationResult) -> str:
     display_name = build_item_display_name(result.item_name, shiny=result.shiny, rarity=result.rarity)
-    return (
-        f"✅ {display_name} removed from {result.username}'s seasonal loot. "
-        f"Unique items: {result.old_unique_total} -> {result.new_unique_total}."
-    )
+    lines: list[str] = []
+    lines.append(f"✅ {display_name} removed from {result.username}'s seasonal loot.")
+    lines.append(f"Unique items: {result.old_unique_total} -> {result.new_unique_total}.")
+    lines.append(f"Completed: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
+    return "\n".join(lines)
 
 
 async def add_ppe_loot(

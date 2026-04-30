@@ -14,7 +14,7 @@ from typing import Optional
 import discord
 
 from utils.loot_helpers.loot_table_message import LootTableMessage
-from utils.loot_ops import add_ppe_loot
+from utils.loot_ops import add_ppe_loot, format_ppe_add_message
 from utils.loot_constants import normalize_rarity
 
 
@@ -209,9 +209,10 @@ class ItemSuggestionView(discord.ui.View):
                 tags += " (shiny)"
             if self.rarity and self.rarity != "common":
                 tags += f" ({self.rarity})"
+            # Use standardized message format (includes points, quests/sets, timestamp)
             await self._finish(
                 interaction,
-                f"> ✅ Added **{result.item_name}**{tags} to your active PPE for {result.points_delta} points.",
+                format_ppe_add_message(result),
             )
 
             loot_message = LootTableMessage(

@@ -261,10 +261,11 @@ def _quest_set_progress_suffix(result: Dict[str, Any]) -> str:
     if quest_text and set_text:
         return f" Quest/Set: completed quests: {quest_text}; completed sets: {set_text}."
     if quest_text:
-        return f" Quest/Set: completed quests: {quest_text}; no new sets completed."
+        return f" Quest/Set: completed quests: {quest_text}."
     if set_text:
-        return f" Quest/Set: no new quests completed; completed sets: {set_text}."
-    return " Quest/Set: no new quest or set completed."
+        return f" Quest/Set: completed sets: {set_text}."
+    # No quests or sets completed: don't append any placeholder text
+    return ""
 
 
 def _append_missing_utst_log(guild_id: int, item_name: str, payload: Dict[str, Any]) -> None:
