@@ -14,12 +14,11 @@ from utils.ppe_types import (
     normalize_iterative_combo_overrides,
     normalize_ppe_combo_label_overrides,
     options_from_signature,
-    ppe_type_compact_summary,
-    ppe_type_display_from_options,
-    ppe_type_label,
     ppe_type_option_signature,
+    ppe_type_label,
     ppe_type_short_label,
 )
+from utils.ppe_display import format_ppe_label_from_options, format_ppe_label
 from utils.group_ppes import get_duo_partner
 from menus.manageseason.services import (
     backfill_legacy_ppe_type_options,
@@ -1115,16 +1114,10 @@ class ComboShortcutModal(discord.ui.Modal, title="Edit Combo Multiplier"):
                 signature_options = options_from_signature(signature)
                 if not isinstance(signature_options, dict):
                     continue
-                display_name = ppe_type_display_from_options(
-                    signature_options,
-                    ppe_settings=settings,
-                    compact=False,
-                ).strip().casefold()
-                display_short = ppe_type_display_from_options(
-                    signature_options,
-                    ppe_settings=settings,
-                    compact=True,
-                ).strip().casefold()
+                from utils.ppe_display import format_ppe_label_from_options
+
+                display_name = format_ppe_label_from_options(signature_options, compact=False, guild_config={"ppe_settings": settings}).strip().casefold()
+                display_short = format_ppe_label_from_options(signature_options, compact=True, guild_config={"ppe_settings": settings}).strip().casefold()
                 if needle in {display_name, display_short}:
                     resolved_signature_by_display = signature
                     break
@@ -1156,16 +1149,10 @@ class ComboShortcutModal(discord.ui.Modal, title="Edit Combo Multiplier"):
                         ephemeral=True,
                     )
                     return
-                display_name = ppe_type_display_from_options(
-                    preset_options,
-                    ppe_settings=self.character_settings,
-                    compact=False,
-                )
-                short_name = ppe_type_display_from_options(
-                    preset_options,
-                    ppe_settings=self.character_settings,
-                    compact=True,
-                )
+                from utils.ppe_display import format_ppe_label_from_options
+
+                display_name = format_ppe_label_from_options(preset_options, compact=False, guild_config={"ppe_settings": self.character_settings})
+                short_name = format_ppe_label_from_options(preset_options, compact=True, guild_config={"ppe_settings": self.character_settings})
             else:
                 preset_options = options
                 signature = ppe_type_option_signature(options)
@@ -1267,7 +1254,7 @@ class ComboOverrideSettingsModal(discord.ui.Modal):
         computed_multiplier: float | None = None
         if isinstance(options, dict):
             fallback_full = self.signature
-            fallback_short = ppe_type_compact_summary(options, ppe_settings=settings)
+            fallback_short = format_ppe_label_from_options(options, compact=True, guild_config={"ppe_settings": settings})
             details = get_ppe_type_multiplier_details_from_options(options, settings)
             computed_multiplier = float(details.get("multiplier", 1.0))
 

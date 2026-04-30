@@ -106,8 +106,10 @@ def _build_ppe_type_multiplier_lines(*, ppe_settings: dict | None = None) -> lis
             source_suffix = " (combo override)"
         elif source == "preset":
             source_suffix = " (default override)"
-        full_label = ppe_type_display_from_options(options, ppe_settings=settings, compact=False)
-        short_label = ppe_type_display_from_options(options, ppe_settings=settings, compact=True)
+        from utils.ppe_display import format_ppe_label_from_options
+
+        full_label = format_ppe_label_from_options(options, compact=False, guild_config={"ppe_settings": settings})
+        short_label = format_ppe_label_from_options(options, compact=True, guild_config={"ppe_settings": settings})
         lines.append(f"• {full_label} [{short_label}]: {value:.2f}x{source_suffix}")
     return lines
 

@@ -36,10 +36,9 @@ from utils.ppe_types import (
     build_ppe_type_options,
     get_ppe_type_multiplier_details_from_options,
     options_from_signature,
-    ppe_type_compact_summary,
-    ppe_type_display_from_options,
     ppe_type_option_signature,
 )
+from utils.ppe_display import format_ppe_label_from_options, format_ppe_label
 from utils.wizard_components import (
     MinimumRarityContinueButton,
     MinimumRaritySelect,
@@ -675,9 +674,11 @@ class ManageComboMultiplierWizardView(OwnerBoundView):
         components = breakdown.get("components", []) if isinstance(breakdown.get("components", []), list) else []
         self.signature = str(breakdown.get("signature", self.signature or "")).strip().lower()
         combo_name = self.combo_name or self.signature
-        combo_short = self.combo_short or ppe_type_compact_summary(options, ppe_settings=self.character_settings)
-        display_name = ppe_type_display_from_options(options, ppe_settings=self.character_settings, compact=False)
-        display_short = ppe_type_display_from_options(options, ppe_settings=self.character_settings, compact=True)
+        combo_short = self.combo_short or format_ppe_label_from_options(options, compact=True, guild_config={"ppe_settings": self.character_settings})
+        from utils.ppe_display import format_ppe_label_from_options
+
+        display_name = format_ppe_label_from_options(options, compact=False, guild_config={"ppe_settings": self.character_settings})
+        display_short = format_ppe_label_from_options(options, compact=True, guild_config={"ppe_settings": self.character_settings})
         source = str(breakdown.get("source", "base")).strip().lower()
         current_override_multiplier = float(breakdown.get("multiplier", 1.0))
         override_source = "Combo override" if source == "override" else "Iterative base"

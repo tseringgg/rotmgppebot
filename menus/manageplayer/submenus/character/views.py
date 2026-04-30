@@ -15,7 +15,7 @@ from utils.ppe_types import (
     normalize_ppe_type,
     normalize_ppe_type_options,
     options_from_signature,
-    ppe_type_compact_summary,
+    ppe_type_option_signature,
     ppe_type_option_signature,
     ppe_type_short_label,
     resolve_edit_ppe_type,
@@ -29,6 +29,7 @@ from menus.manageplayer.common import (
     send_followup_text,
     send_target_loot_markdown_followup,
 )
+from utils.ppe_display import format_ppe_label_from_options
 from menus.manageplayer.entry import open_manageplayer_home
 from menus.manageplayer.services import delete_single_ppe_for_target, find_ppe_or_raise, load_target_player_data
 from menus.manageplayer.targets import ManagedPlayerTarget
@@ -166,7 +167,7 @@ class ManagePlayerPenaltiesModal(discord.ui.Modal, title="Set PPE Penalties"):
         from menus.manageplayer.common import display_class_name, format_points
 
         await interaction.response.send_message(
-            f"✅ Updated PPE #{ppe.id} ({display_class_name(ppe)}, {ppe_type_text(ppe, compact=True)}). "
+                f"✅ Updated PPE #{ppe.id} ({display_class_name(ppe)}, {ppe_type_text(ppe, compact=True)}). "
             f"New total: {format_points(points_breakdown['total'])} points.",
             embed=embed,
             ephemeral=False,
@@ -787,7 +788,11 @@ class ManagePlayerPpeTypeWizardView(discord.ui.View):
                 duo_partner_id=self.state.get("duo_partner_id"),
             )
             signature = ppe_type_option_signature(options)
-            summary = ppe_type_compact_summary(options, ppe_settings=self.ppe_settings)
+            summary = format_ppe_label_from_options(
+                options,
+                compact=True,
+                guild_config={"ppe_settings": self.ppe_settings},
+            )
             partner_line = "None"
             if options.get("duo_enabled"):
                 partner_id = options.get("duo_partner_id")
@@ -1011,7 +1016,12 @@ class _ManagePlayerWizardConfirmButton(discord.ui.Button):
 
         await save_player_records(interaction=interaction, records=records)
 
-        summary = ppe_type_compact_summary(options, fallback_type=ppe.ppe_type, ppe_settings=guild_config.get("ppe_settings", {}))
+        summary = format_ppe_label_from_options(
+            options,
+            compact=True,
+            guild_config={"ppe_settings": guild_config.get("ppe_settings", {}) if isinstance(guild_config, dict) else {}},
+            fallback_type=ppe.ppe_type,
+        )
         await interaction.response.edit_message(content="PPE type updated.", view=None)
         duo_break_suffix = ""
         if partner_break_result is not None:

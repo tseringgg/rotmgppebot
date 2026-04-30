@@ -12,7 +12,8 @@ from utils.calc_points import normalize_item_name
 from utils.guild_config import get_quest_points, load_guild_config
 from utils.points_service import compute_effective_ppe_points
 from utils.player_records import load_player_records
-from utils.ppe_types import normalize_ppe_type, ppe_type_compact_summary
+from utils.ppe_types import normalize_ppe_type
+from utils.ppe_display import format_ppe_label_from_options
 from utils.season_loot_history import season_unique_items
 
 _LOOT_CSV_PATH = Path("rotmg_loot_drops_updated.csv")
@@ -114,10 +115,11 @@ async def command(interaction: discord.Interaction) -> None:
                 player_classes[class_name] += 1
 
                 ppe_type_counts[
-                    ppe_type_compact_summary(
+                    format_ppe_label_from_options(
                         getattr(ppe, "ppe_type_options", None),
+                        compact=True,
+                        guild_config={"ppe_settings": ppe_settings},
                         fallback_type=normalize_ppe_type(getattr(ppe, "ppe_type", None)),
-                        ppe_settings=ppe_settings,
                     )
                 ] += 1
 

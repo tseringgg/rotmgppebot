@@ -4,7 +4,8 @@ from menus.leaderboard.common import build_ranked_entry_lines, send_error_respon
 from menus.leaderboard.services import member_display_name, require_guild
 from utils.guild_config import load_guild_config
 from utils.points_service import compute_effective_ppe_points
-from utils.ppe_types import normalize_ppe_type, ppe_type_compact_summary
+from utils.ppe_types import normalize_ppe_type
+from utils.ppe_display import format_ppe_label_from_options
 from utils.player_records import load_player_records
 
 
@@ -30,10 +31,11 @@ async def command(interaction: discord.Interaction, class_name: str):
                 if str(ppe.name).lower() == class_name.lower():
                     player = member_display_name(guild, pid)
                     is_inactive = data.active_ppe != ppe.id
-                    ppe_type = ppe_type_compact_summary(
+                    ppe_type = format_ppe_label_from_options(
                         getattr(ppe, "ppe_type_options", None),
+                        compact=True,
+                        guild_config={"ppe_settings": ppe_settings},
                         fallback_type=normalize_ppe_type(getattr(ppe, "ppe_type", None)),
-                        ppe_settings=ppe_settings,
                     )
                     effective_points = compute_effective_ppe_points(ppe, guild_config=guild_config)
                     character_data.append((player, ppe.id, effective_points, ppe_type, pid, is_inactive))

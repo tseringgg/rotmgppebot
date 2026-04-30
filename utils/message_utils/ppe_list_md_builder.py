@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from dataclass import PlayerData
-from utils.ppe_types import normalize_ppe_type, ppe_type_compact_summary
+from utils.ppe_types import normalize_ppe_type
+from utils.ppe_display import format_ppe_label_from_options
 from utils.message_utils.markdown_message_builder import MarkdownMessageBuilder
 from utils.points_service import compute_effective_ppe_points
 from utils.points_service import non_default_points_adjustment_lines
@@ -28,7 +29,12 @@ def _display_ppe_type(ppe, *, guild_config: dict | None = None) -> str:
         raw_settings = guild_config.get("ppe_settings", {})
         if isinstance(raw_settings, dict):
             ppe_settings = raw_settings
-    summary = ppe_type_compact_summary(options, fallback_type=normalized, ppe_settings=ppe_settings)
+    summary = format_ppe_label_from_options(
+        options,
+        compact=True,
+        guild_config={"ppe_settings": ppe_settings},
+        fallback_type=normalized,
+    )
     return _inline_code(summary)
 
 

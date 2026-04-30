@@ -298,8 +298,9 @@ def _build_types_override_lines(ppe_settings: dict | None) -> list[str]:
             source_suffix = " (combo override)"
         elif source == "preset":
             source_suffix = " (default override)"
+        from utils.ppe_display import format_ppe_label_from_options
         lines.append(
-            f"- {ppe_type_display_from_options(options, ppe_settings=settings, compact=False)} [{ppe_type_display_from_options(options, ppe_settings=settings, compact=True)}]: x{value:.2f}{source_suffix}"
+            f"- {format_ppe_label_from_options(options, compact=False, guild_config={'ppe_settings': settings})} [{format_ppe_label_from_options(options, compact=True, guild_config={'ppe_settings': settings})}]: x{value:.2f}{source_suffix}"
         )
 
     return lines

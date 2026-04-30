@@ -11,9 +11,11 @@ from utils.ppe_types import (
     options_from_signature,
     normalize_ppe_type,
     normalize_ppe_type_multipliers,
-    ppe_type_compact_summary,
+    # compact summary formatting moved to display facade
+    # keep normalize_ppe_type usage here
 )
 from utils.calc_points import load_loot_points, load_loot_types, normalize_item_name
+from utils.ppe_display import format_ppe_label_from_options
 from utils.guild_config import get_rarity_multipliers
 from utils.loot_constants import normalize_rarity
 
@@ -485,7 +487,7 @@ def loot_adjustment_detail_lines(loot_adjustments: Dict[str, Any]) -> list[str]:
     if type_signature and type_signature != "legacy":
         options = options_from_signature(type_signature)
         if options is not None:
-            type_summary = ppe_type_compact_summary(options)
+            type_summary = format_ppe_label_from_options(options, compact=True)
 
     if type_summary:
         if type_source == "preset":

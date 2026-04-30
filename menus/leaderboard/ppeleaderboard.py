@@ -4,7 +4,8 @@ from typing import Any
 
 from menus.leaderboard.common import build_ranked_entry_lines, send_error_response, send_leaderboard
 from menus.leaderboard.services import member_display_name, require_guild
-from utils.ppe_types import normalize_ppe_type, ppe_type_compact_summary
+from utils.ppe_types import normalize_ppe_type
+from utils.ppe_display import format_ppe_label_from_options
 from utils.team_contest_scoring import (
     TeamContestScoring,
     compute_ppe_points,
@@ -173,10 +174,11 @@ async def command(interaction: discord.Interaction):
 
                 is_inactive = active_ppe_id != best_ppe.id
                 marker = " • (inactive)" if is_inactive else ""
-                ppe_type = ppe_type_compact_summary(
+                ppe_type = format_ppe_label_from_options(
                     getattr(best_ppe, "ppe_type_options", None),
+                    compact=True,
+                    guild_config={"ppe_settings": ppe_settings},
                     fallback_type=normalize_ppe_type(getattr(best_ppe, "ppe_type", None)),
-                    ppe_settings=ppe_settings,
                 )
                 class_label = f"{best_ppe.name} [{ppe_type}]"
                 options = _duo_options(best_ppe)
@@ -215,10 +217,11 @@ async def command(interaction: discord.Interaction):
                         else:
                             processed_duo_keys.add(pair_key)
                             display_player = f"{player.title()} + {partner_name}"
-                            partner_ppe_type = ppe_type_compact_summary(
+                            partner_ppe_type = format_ppe_label_from_options(
                                 getattr(partner_ppe, "ppe_type_options", None),
+                                compact=True,
+                                guild_config={"ppe_settings": ppe_settings},
                                 fallback_type=normalize_ppe_type(getattr(partner_ppe, "ppe_type", None)),
-                                ppe_settings=ppe_settings,
                             )
                             partner_class_name = getattr(partner_ppe, "name", "?")
                             if partner_ppe_type == ppe_type:

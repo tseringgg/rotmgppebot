@@ -12,11 +12,11 @@ from utils.ppe_types import (
     infer_legacy_ppe_type_from_options,
     is_duo_ppe_type,
     normalize_ppe_type_options,
-    ppe_type_compact_summary,
     ppe_type_label,
     ppe_type_option_signature,
     resolve_creation_ppe_type,
 )
+from utils.ppe_display import format_ppe_label_from_options
 from utils.penalty_embed import build_penalty_infographic_embed
 from utils.guild_config import get_max_ppes, load_guild_config, load_guild_config_by_id
 from utils.group_ppes import (
@@ -188,10 +188,11 @@ async def create_new_ppe_for_user(
         "class_name": class_enum.value,
         "ppe_type": new_ppe.ppe_type,
         "ppe_type_label": ppe_type_label(new_ppe.ppe_type),
-        "ppe_type_summary": ppe_type_compact_summary(
+        "ppe_type_summary": format_ppe_label_from_options(
             new_ppe.ppe_type_options,
+            compact=True,
+            guild_config={"ppe_settings": ppe_settings},
             fallback_type=new_ppe.ppe_type,
-            ppe_settings=ppe_settings,
         ),
         "ppe_count": ppe_count + 1,
         "max_ppes": max_ppes,
@@ -369,7 +370,7 @@ async def _find_unbound_legacy_duo_ppes_for_user(
             {
                 "ppe_id": int(getattr(ppe, "id", 0) or 0),
                 "class_name": str(getattr(getattr(ppe, "name", "?"), "value", getattr(ppe, "name", "?"))),
-                "type_summary": ppe_type_compact_summary(options, fallback_type=getattr(ppe, "ppe_type", None)),
+                "type_summary": format_ppe_label_from_options(options, compact=True, fallback_type=getattr(ppe, "ppe_type", None)),
             }
         )
 
@@ -1650,7 +1651,7 @@ class NewPpeIterativeWizardView(discord.ui.View):
                 partner_line = f"<@{partner_id}>" if partner_id else "Missing"
             summary_lines = [
                 f"Review new PPE setup for {self.class_name}.",
-                f"Selected: {ppe_type_compact_summary(options, ppe_settings=self.ppe_settings)}",
+                f"Selected: {format_ppe_label_from_options(options, compact=True, guild_config={"ppe_settings": self.ppe_settings})}",
                 f"Signature: `{breakdown.get('signature', ppe_type_option_signature(options))}`",
                 f"Duo Partner: {partner_line}",
                 "",

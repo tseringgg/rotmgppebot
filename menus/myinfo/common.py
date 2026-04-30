@@ -9,7 +9,8 @@ import discord
 from dataclass import PPEData, PlayerData
 from menus.menu_utils import SafeResponse
 from utils.group_ppes import duo_partner_id_from_options, duo_link_id_from_options
-from utils.ppe_types import is_duo_ppe_type, normalize_ppe_type, ppe_type_compact_summary, ppe_type_display_from_options
+from utils.ppe_types import is_duo_ppe_type, normalize_ppe_type
+from utils.ppe_display import format_ppe_label, format_ppe_label_from_options
 from utils.guild_config import get_realmshark_settings, load_guild_config
 from utils.loot_helpers.loot_share_commands import share_active_ppe_loot_image
 from utils.message_utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
@@ -52,17 +53,7 @@ def get_best_ppe(player_data: PlayerData) -> PPEData | None:
 
 
 def ppe_type_text(ppe: PPEData, *, compact: bool = False, guild_config: dict | None = None) -> str:
-    normalized = normalize_ppe_type(getattr(ppe, "ppe_type", None))
-    options = getattr(ppe, "ppe_type_options", None)
-    ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config, dict) and isinstance(guild_config.get("ppe_settings", {}), dict) else None
-    if compact:
-        return ppe_type_compact_summary(options, fallback_type=normalized, ppe_settings=ppe_settings)
-    return ppe_type_display_from_options(
-        options,
-        fallback_type=normalized,
-        ppe_settings=ppe_settings,
-        compact=False,
-    )
+    return format_ppe_label(ppe, compact=compact, guild_config=guild_config)
 
 
 def duo_partner_label_for_ppe(ppe: PPEData, guild: discord.Guild | None = None) -> str | None:
