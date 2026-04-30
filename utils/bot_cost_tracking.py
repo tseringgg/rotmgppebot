@@ -48,6 +48,21 @@ _ACTIVE_COMMANDS: dict[int, dict[str, Any]] = {}
 _ACTIVE_LOCK = asyncio.Lock()
 
 
+async def is_cost_logging_enabled_for_guild(guild_id: int) -> bool:
+    """Check if cost logging is enabled globally AND for this specific guild."""
+    if not _COST_LOG_ENABLED:
+        return False
+    
+    # Guild-specific check: only import when needed to avoid circular deps
+    try:
+        from utils.guild_config import load_guild_config_by_id
+        config = await load_guild_config_by_id(guild_id)
+        return bool(config.get("cost_logging_enabled", True))
+    except Exception:
+        # If guild config can't be loaded, fall back to global setting
+        return _COST_LOG_ENABLED
+
+
 def get_cost_rate_per_gb_minute() -> float:
     return _COST_RATE_PER_GB_MINUTE
 
@@ -296,7 +311,7 @@ async def log_cost_event(
     snapshot_before: dict[str, Any] | None = None,
     source: str = "ui_action",
 ) -> bool:
-    if not _COST_LOG_ENABLED:
+    if not await is_cost_logging_enabled_for_guild(int(interaction.guild_id or 0)):
         return False
 
     if interaction.guild_id is None:
@@ -327,7 +342,7 @@ async def log_cost_event(
 
 
 async def start_command_tracking(interaction: discord.Interaction) -> bool:
-    if not _COST_LOG_ENABLED:
+    if not await is_cost_logging_enabled_for_guild(int(interaction.guild_id or 0)):
         return False
 
     if interaction.guild_id is None:
@@ -364,7 +379,7 @@ async def finish_command_tracking(
     command_name: str | None = None,
     error_message: str | None = None,
 ) -> bool:
-    if not _COST_LOG_ENABLED:
+    if not await is_cost_logging_enabled_for_guild(int(interaction.guild_id or 0)):
         return False
 
     if interaction.guild_id is None:
@@ -586,6 +601,110 @@ def _summarize_log_sync(path: str, *, cutoff_unix: float, top_n: int) -> dict[st
     return summary
 
 
+async def log_background_cost_event(
+    guild_id: int,
+    *,
+    operation_name: str,
+    status: str = "ok",
+    error_message: str | None = None,
+    started_monotonic: float | None = None,
+    started_unix: float | None = None,
+    snapshot_before: dict[str, Any] | None = None,
+    source: str = "background",
+) -> bool:
+    """Log cost event for background operations (RealmShark, picture suggestions, leaderboards, etc.)."""
+    if not await is_cost_logging_enabled_for_guild(guild_id):
+        return False
+
+    if guild_id is None or guild_id <= 0:
+        return False
+
+    guild_id = int(guild_id)
+    interaction_id = int(time.time() * 1000000) % (2**63)  # Use nanosecond timestamp as pseudo-ID
+    started_monotonic = float(started_monotonic if started_monotonic is not None else time.monotonic())
+    started_unix = float(started_unix if started_unix is not None else time.time())
+    snapshot_before = dict(snapshot_before or _capture_runtime_snapshot())
+
+    await ensure_guild_cost_log_file(guild_id)
+    payload = _build_cost_payload(
+        interaction_id=interaction_id,
+        guild_id=guild_id,
+        user_id=0,  # Background operations have no user
+        command_name=operation_name,
+        status=status,
+        error_message=error_message,
+        started_monotonic=started_monotonic,
+        started_unix=started_unix,
+        snapshot_before=snapshot_before,
+        source=source,
+    )
+    await _write_cost_entry(guild_id, payload)
+    return True
+
+
+def _calculate_30day_projection(summary: dict[str, Any]) -> dict[str, Any]:
+    """Calculate 30-day cost projection based on current window's usage rate."""
+    window_hours = int(summary.get("window_hours", 24) or 24)
+    if window_hours <= 0:
+        window_hours = 24
+
+    # Calculate daily rate from the window
+    daily_hours = 24.0
+    window_multiplier = daily_hours / window_hours
+    
+    total_cost_current_window = float(summary.get("total_estimated_cost_usd", 0.0) or 0.0)
+    total_gb_minutes_current_window = float(summary.get("total_estimated_gb_minutes", 0.0) or 0.0)
+    total_duration_current_window = float(summary.get("total_duration_seconds", 0.0) or 0.0)
+    entry_count_current_window = int(summary.get("entry_count", 0) or 0)
+
+    # 30 days = 30 * 24 = 720 hours
+    days_multiplier = 30.0 / window_hours
+    
+    return {
+        "daily_cost_usd": total_cost_current_window * window_multiplier,
+        "total_30day_cost_usd": total_cost_current_window * days_multiplier,
+        "daily_gb_minutes": total_gb_minutes_current_window * window_multiplier,
+        "total_30day_gb_minutes": total_gb_minutes_current_window * days_multiplier,
+        "daily_duration_seconds": total_duration_current_window * window_multiplier,
+        "total_30day_duration_seconds": total_duration_current_window * days_multiplier,
+        "estimated_daily_commands": int(entry_count_current_window * window_multiplier),
+        "estimated_30day_commands": int(entry_count_current_window * days_multiplier),
+    }
+
+
+def _build_source_summary(command_stats: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Build summary of costs grouped by tracking source."""
+    source_summary: dict[str, dict[str, Any]] = {}
+    
+    for command_stats_row in command_stats.values():
+        source = str(command_stats_row.get("tracking_source", "unknown")).strip() or "unknown"
+        
+        if source not in source_summary:
+            source_summary[source] = {
+                "source": source,
+                "call_count": 0,
+                "command_count": 0,
+                "error_count": 0,
+                "total_cost_usd": 0.0,
+                "total_gb_minutes": 0.0,
+                "total_duration_seconds": 0.0,
+                "total_rss_growth_mb": 0.0,
+                "total_cache_growth": 0,
+            }
+        
+        source_stats = source_summary[source]
+        source_stats["call_count"] += int(command_stats_row.get("call_count", 0) or 0)
+        source_stats["command_count"] += 1
+        source_stats["error_count"] += int(command_stats_row.get("error_count", 0) or 0)
+        source_stats["total_cost_usd"] += float(command_stats_row.get("total_estimated_cost_usd", 0.0) or 0.0)
+        source_stats["total_gb_minutes"] += float(command_stats_row.get("total_estimated_gb_minutes", 0.0) or 0.0)
+        source_stats["total_duration_seconds"] += float(command_stats_row.get("total_duration_seconds", 0.0) or 0.0)
+        source_stats["total_rss_growth_mb"] += float(command_stats_row.get("total_rss_growth_mb", 0.0) or 0.0)
+        source_stats["total_cache_growth"] += int(command_stats_row.get("total_cache_growth", 0) or 0)
+    
+    return source_summary
+
+
 async def summarize_guild_cost_log(
     guild_id: int,
     *,
@@ -607,4 +726,8 @@ async def summarize_guild_cost_log(
     summary["top_n"] = safe_top_n
     summary["log_path"] = path
     summary["cost_rate_per_gb_minute"] = _COST_RATE_PER_GB_MINUTE
+    
+    # Add 30-day projection
+    summary["projection_30day"] = _calculate_30day_projection(summary)
+    
     return summary

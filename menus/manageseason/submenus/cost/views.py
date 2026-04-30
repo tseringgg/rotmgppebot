@@ -60,7 +60,20 @@ class ManageBotCostView(OwnerBoundView):
     async def refresh(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._reload(interaction)
 
-    @discord.ui.button(label="Export Summary", style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(label="Toggle Logging", style=discord.ButtonStyle.blurple, row=1)
+    async def toggle_logging(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        from menus.manageseason.services import toggle_bot_cost_logging_for_menu
+        
+        new_state = await toggle_bot_cost_logging_for_menu(interaction)
+        await self._reload(interaction)
+        
+        status = "**enabled**" if new_state else "**disabled**"
+        await interaction.followup.send(
+            f"Cost logging is now {status}.",
+            ephemeral=True,
+        )
+
+    @discord.ui.button(label="Export Summary", style=discord.ButtonStyle.success, row=2)
     async def export_summary(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         summary_markdown = await build_bot_cost_summary_markdown_for_menu(
             interaction,
@@ -77,7 +90,7 @@ class ManageBotCostView(OwnerBoundView):
             ephemeral=True,
         )
 
-    @discord.ui.button(label="Export Raw Log", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Export Raw Log", style=discord.ButtonStyle.secondary, row=2)
     async def export_raw_log(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         log_path = str(self.summary.get("log_path", "")).strip()
         if not log_path or not os.path.exists(log_path):
@@ -93,7 +106,7 @@ class ManageBotCostView(OwnerBoundView):
             ephemeral=True,
         )
 
-    @discord.ui.button(label="Clear Log", style=discord.ButtonStyle.danger, row=1)
+    @discord.ui.button(label="Clear Log", style=discord.ButtonStyle.danger, row=2)
     async def clear_log(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         confirm_view = ConfirmCancelView(
             owner_id=self.owner_id,
@@ -140,7 +153,7 @@ class ManageBotCostView(OwnerBoundView):
             view=None,
         )
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=3)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         from menus.manageseason.submenus.home.views import ManageSeasonHomeView
 

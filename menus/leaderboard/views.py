@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import time
 import discord
 
 from menus.menu_utils import OwnerBoundView
 from menus.leaderboard.submenus.character.views import CharacterLeaderboardClassView
 from utils.contest_leaderboards import contest_leaderboard_label
+from utils.bot_cost_tracking import capture_runtime_snapshot, log_background_cost_event
 
 from . import (
     conteststats,
@@ -14,6 +16,29 @@ from . import (
     seasonleaderboard,
     teamleaderboard,
 )
+
+
+async def _log_leaderboard_cost(
+    interaction: discord.Interaction,
+    operation_name: str,
+    started_monotonic: float,
+    started_unix: float,
+    snapshot_before: dict,
+) -> None:
+    """Helper to log leaderboard query costs."""
+    try:
+        if interaction.guild_id:
+            await log_background_cost_event(
+                int(interaction.guild_id),
+                operation_name=operation_name,
+                status="ok",
+                started_monotonic=started_monotonic,
+                started_unix=started_unix,
+                snapshot_before=snapshot_before,
+                source="leaderboard_query",
+            )
+    except Exception:
+        pass  # Non-blocking: don't let cost logging failures affect user experience
 
 
 def leaderboard_home_embed(contest_settings: dict | None = None) -> discord.Embed:
@@ -46,32 +71,60 @@ class LeaderboardHomeView(OwnerBoundView):
 
     @discord.ui.button(label="Contest Leaderboard", style=discord.ButtonStyle.primary, row=0)
     async def contest(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        started_monotonic = time.monotonic()
+        started_unix = time.time()
+        snapshot_before = capture_runtime_snapshot()
         await contestleaderboard.run_default_contest_leaderboard(interaction)
+        await _log_leaderboard_cost(interaction, "contest_leaderboard", started_monotonic, started_unix, snapshot_before)
 
     @discord.ui.button(label="PPE Leaderboard", style=discord.ButtonStyle.primary, row=0)
     async def ppe(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        started_monotonic = time.monotonic()
+        started_unix = time.time()
+        snapshot_before = capture_runtime_snapshot()
         await ppeleaderboard.command(interaction)
+        await _log_leaderboard_cost(interaction, "ppe_leaderboard", started_monotonic, started_unix, snapshot_before)
 
     @discord.ui.button(label="Quest Leaderboard", style=discord.ButtonStyle.primary, row=0)
     async def quest(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        started_monotonic = time.monotonic()
+        started_unix = time.time()
+        snapshot_before = capture_runtime_snapshot()
         await questleaderboard.command(interaction)
+        await _log_leaderboard_cost(interaction, "quest_leaderboard", started_monotonic, started_unix, snapshot_before)
 
     @discord.ui.button(label="Character Leaderboard", style=discord.ButtonStyle.primary, row=1)
     async def character(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        started_monotonic = time.monotonic()
+        started_unix = time.time()
+        snapshot_before = capture_runtime_snapshot()
         class_view = CharacterLeaderboardClassView(owner_id=interaction.user.id, contest_settings=self.contest_settings)
         await interaction.response.edit_message(embed=class_view.current_embed(), view=class_view)
+        await _log_leaderboard_cost(interaction, "character_leaderboard_selector", started_monotonic, started_unix, snapshot_before)
 
     @discord.ui.button(label="Season Loot Leaderboard", style=discord.ButtonStyle.primary, row=1)
     async def season(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        started_monotonic = time.monotonic()
+        started_unix = time.time()
+        snapshot_before = capture_runtime_snapshot()
         await seasonleaderboard.command(interaction)
+        await _log_leaderboard_cost(interaction, "season_loot_leaderboard", started_monotonic, started_unix, snapshot_before)
 
     @discord.ui.button(label="Team Leaderboard", style=discord.ButtonStyle.primary, row=2)
     async def team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        started_monotonic = time.monotonic()
+        started_unix = time.time()
+        snapshot_before = capture_runtime_snapshot()
         await teamleaderboard.command(interaction)
+        await _log_leaderboard_cost(interaction, "team_leaderboard", started_monotonic, started_unix, snapshot_before)
 
     @discord.ui.button(label="Contest Stats", style=discord.ButtonStyle.success, row=2)
     async def contest_stats(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        started_monotonic = time.monotonic()
+        started_unix = time.time()
+        snapshot_before = capture_runtime_snapshot()
         await conteststats.command(interaction)
+        await _log_leaderboard_cost(interaction, "contest_stats", started_monotonic, started_unix, snapshot_before)
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=3)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

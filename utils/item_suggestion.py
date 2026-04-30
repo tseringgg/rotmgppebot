@@ -281,9 +281,15 @@ async def handle_item_suggestion(
     concurrently, and (for each detected item) prompt the uploader with
     a Yes / No confirmation.
     """
+    import time
+    from utils.bot_cost_tracking import capture_runtime_snapshot, log_background_cost_event
+    
     guild_id = message.guild.id if message.guild else "?"
     channel_id = message.channel.id
     user_id = message.author.id
+    started_monotonic = time.monotonic()
+    started_unix = time.time()
+    snapshot_before = capture_runtime_snapshot()
 
     _debug_log(
         f"detection started guild={guild_id} channel={channel_id} user={user_id} "
@@ -313,3 +319,18 @@ async def handle_item_suggestion(
         view.message = sent
 
     await asyncio.gather(*(_process_one(a) for a in attachments))
+    
+    # Log picture suggestion cost event
+    try:
+        if isinstance(guild_id, int) or (isinstance(guild_id, str) and guild_id != "?"):
+            await log_background_cost_event(
+                int(guild_id) if guild_id != "?" else 0,
+                operation_name="picture_suggestion_detection",
+                status="ok",
+                started_monotonic=started_monotonic,
+                started_unix=started_unix,
+                snapshot_before=snapshot_before,
+                source="picture_suggestion",
+            )
+    except Exception as e:
+        _warn_log(f"failed to log picture suggestion cost: {e}")

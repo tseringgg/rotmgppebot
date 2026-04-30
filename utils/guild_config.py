@@ -26,6 +26,7 @@ from utils.contest_leaderboards import normalize_contest_leaderboard_id
 DEFAULT_MAX_PPE_CHARACTERS = 10
 
 _DEFAULT_CONFIG: Dict[str, Any] = {
+    "cost_logging_enabled": True,
     "ppe_settings": {
         "max_ppes": DEFAULT_MAX_PPE_CHARACTERS,
         "enable_ppe_types": True,
@@ -892,3 +893,17 @@ async def update_class_points_modifiers(
 
     settings["class_overrides"] = class_overrides
     return await set_points_settings(interaction, settings)
+
+
+async def get_cost_logging_enabled(interaction: discord.Interaction) -> bool:
+    """Get whether bot cost logging is enabled for this guild."""
+    config = await load_guild_config(interaction)
+    return bool(config.get("cost_logging_enabled", True))
+
+
+async def set_cost_logging_enabled(interaction: discord.Interaction, enabled: bool) -> bool:
+    """Set whether bot cost logging is enabled for this guild."""
+    config = await load_guild_config(interaction)
+    config["cost_logging_enabled"] = bool(enabled)
+    saved = await save_guild_config(interaction, config)
+    return bool(saved.get("cost_logging_enabled", True))

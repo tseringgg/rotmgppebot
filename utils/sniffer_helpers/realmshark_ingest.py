@@ -442,6 +442,13 @@ async def _addseasonloot_with_duplicate_ok(
 
 
 async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None = None) -> Dict[str, Any]:
+    import time
+    from utils.bot_cost_tracking import capture_runtime_snapshot, log_background_cost_event
+    
+    started_monotonic = time.monotonic()
+    started_unix = time.time()
+    snapshot_before = capture_runtime_snapshot()
+    
     try:
         guild_id = int(payload.get("guild_id"))
     except (TypeError, ValueError):
@@ -847,4 +854,19 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
         "Completed ingest "
         f"guild_id={guild_id} user_id={linked_user_id} reason={result.get('mode', '')} item={result.get('item', '')}"
     )
+    
+    # Log cost event for RealmShark ingest
+    try:
+        await log_background_cost_event(
+            guild_id,
+            operation_name=f"realmshark_ingest_{result.get('mode', 'unknown')}",
+            status="ok",
+            started_monotonic=started_monotonic,
+            started_unix=started_unix,
+            snapshot_before=snapshot_before,
+            source="realmshark_ingest",
+        )
+    except Exception as e:
+        _debug_log(f"Failed to log RealmShark ingest cost: {e}")
+    
     return result

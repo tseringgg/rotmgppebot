@@ -417,6 +417,15 @@ def build_manage_bot_cost_embed(summary: dict[str, object]) -> discord.Embed:
     max_rss_after_mb = float(summary.get("max_rss_after_mb", 0.0) or 0.0)
     cost_rate = float(summary.get("cost_rate_per_gb_minute", 0.0) or 0.0)
     log_path = str(summary.get("log_path", "N/A") or "N/A")
+    
+    # Extract 30-day projection
+    projection = summary.get("projection_30day", {}) if isinstance(summary.get("projection_30day"), dict) else {}
+    daily_cost = float(projection.get("daily_cost_usd", 0.0) or 0.0)
+    cost_30day = float(projection.get("total_30day_cost_usd", 0.0) or 0.0)
+    
+    # Logging status will be added by the view when loading the summary
+    logging_enabled = summary.get("logging_enabled", True)
+    logging_status = "✅ Enabled" if logging_enabled else "❌ Disabled"
 
     top_by_cost = summary.get("top_by_cost", []) if isinstance(summary.get("top_by_cost", []), list) else []
     cost_lines: list[str] = []
@@ -496,6 +505,14 @@ def build_manage_bot_cost_embed(summary: dict[str, object]) -> discord.Embed:
         inline=False,
     )
     embed.add_field(
+        name="30-Day Projection",
+        value=(
+            f"Daily average cost: **${daily_cost:.6f}**\n"
+            f"Projected 30-day cost: **${cost_30day:.6f}**"
+        ),
+        inline=False,
+    )
+    embed.add_field(
         name="Top Cost Contributors",
         value=_truncate_field_value("\n".join(cost_lines)),
         inline=False,
@@ -514,6 +531,7 @@ def build_manage_bot_cost_embed(summary: dict[str, object]) -> discord.Embed:
         name="Telemetry",
         value=(
             f"Cost rate: **${cost_rate:.6f} / GB-minute**\n"
+            f"Logging: {logging_status}\n"
             f"Log file: `{log_path}`"
         ),
         inline=False,

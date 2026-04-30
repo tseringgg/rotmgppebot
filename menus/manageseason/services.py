@@ -1769,11 +1769,14 @@ async def load_bot_cost_summary_for_menu(
     if interaction.guild is None:
         raise ValueError("This action can only be used in a server.")
 
+    from utils.guild_config import get_cost_logging_enabled
+    
     guild_id = int(interaction.guild.id)
     await ensure_guild_cost_log_file(guild_id)
     summary = await summarize_guild_cost_log(guild_id, window_hours=window_hours, top_n=top_n)
     summary["log_path"] = get_guild_cost_log_path(guild_id)
     summary["cost_rate_per_gb_minute"] = get_cost_rate_per_gb_minute()
+    summary["logging_enabled"] = await get_cost_logging_enabled(interaction)
     return summary
 
 
@@ -1783,6 +1786,19 @@ async def clear_bot_cost_log_for_menu(interaction: discord.Interaction) -> bool:
         raise ValueError("This action can only be used in a server.")
 
     return await clear_guild_cost_log(int(interaction.guild.id))
+
+
+async def toggle_bot_cost_logging_for_menu(interaction: discord.Interaction) -> bool:
+    """Toggle cost logging on/off for this guild."""
+    if interaction.guild is None:
+        raise ValueError("This action can only be used in a server.")
+    
+    from utils.guild_config import get_cost_logging_enabled, set_cost_logging_enabled
+    
+    current_state = await get_cost_logging_enabled(interaction)
+    new_state = not current_state
+    await set_cost_logging_enabled(interaction, new_state)
+    return new_state
 
 
 def _format_command_cost_row(index: int, row: dict[str, Any]) -> str:
