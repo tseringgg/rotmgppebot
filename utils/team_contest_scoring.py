@@ -11,6 +11,7 @@ from utils.calc_points import normalize_item_name
 from utils.guild_config import get_contest_settings, get_quest_points
 from utils.points_service import compute_effective_ppe_points
 from utils.quest_modes import normalize_team_key
+from utils.ppe_types import DEFAULT_ITERATIVE_OPTION_MULTIPLIERS
 
 
 @dataclass(slots=True)
@@ -263,3 +264,18 @@ def total_points_label(*, include_quest_points: bool) -> str:
     if include_quest_points:
         return "Total: PPE + Quest"
     return "Total: PPE Only"
+
+
+def compute_duo_scaled_quest_points(player_quest_points: float, partner_quest_points: float, *, ppe_settings: dict | None = None) -> float:
+    """Compute duo PPE quest contribution by applying the duo iterative multiplier.
+
+    Both players' quest points are summed then multiplied by the configured duo multiplier.
+    The `ppe_settings` dict should be the normalized `ppe_settings` from guild config
+    (it contains `iterative_base_multipliers`). If missing, falls back to the default.
+    """
+    multipliers = {}
+    if isinstance(ppe_settings, dict):
+        multipliers = ppe_settings.get("iterative_base_multipliers", {}) if isinstance(ppe_settings.get("iterative_base_multipliers", {}), dict) else {}
+
+    duo_multiplier = float(multipliers.get("duo", DEFAULT_ITERATIVE_OPTION_MULTIPLIERS["duo"]))
+    return (float(player_quest_points) + float(partner_quest_points)) * duo_multiplier

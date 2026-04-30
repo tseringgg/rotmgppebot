@@ -13,6 +13,7 @@ from utils.team_contest_scoring import (
     compute_team_shared_quest_points,
     get_best_ppe,
     load_team_contest_scoring,
+    compute_duo_scaled_quest_points,
 )
 from utils.guild_config import get_contest_settings, get_quest_points
 from utils.guild_config import load_guild_config
@@ -230,7 +231,9 @@ async def command(interaction: discord.Interaction):
                             player_duo_ppe_points = float(compute_effective_ppe_points(best_ppe, guild_config=guild_config))
                             partner_duo_ppe_points = float(compute_effective_ppe_points(partner_ppe, guild_config=guild_config))
                             ppe_points = player_duo_ppe_points + partner_duo_ppe_points
-                            quest_points += float(partner_total.get("quest_points", 0.0))
+                            # Scale both players' quest points by the duo PPE multiplier
+                            partner_q = float(partner_total.get("quest_points", 0.0))
+                            quest_points = compute_duo_scaled_quest_points(float(quest_points), partner_q, ppe_settings=ppe_settings)
                             points = ppe_points + quest_points
                             marker = ""
                 else:
