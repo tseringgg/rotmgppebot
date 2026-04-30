@@ -7,6 +7,7 @@ from uuid import uuid4
 
 from dataclass import PPEData, ROTMGClass
 from utils.ppe_types import (
+    DEFAULT_PPE_TYPE,
     build_ppe_type_options,
     get_ppe_type_multiplier_details_from_options,
     infer_legacy_ppe_type_from_options,
@@ -1276,9 +1277,11 @@ async def command(
     if not interaction.guild:
         return await interaction.response.send_message("❌ This command can only be used in a server.")
 
-    if ppe_type is None:
-        guild_config = await load_guild_config(interaction)
-        ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config.get("ppe_settings", {}), dict) else {}
+    guild_config = await load_guild_config(interaction)
+    ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config.get("ppe_settings", {}), dict) else {}
+    menu_character_creation_enabled = bool(ppe_settings.get("menu_character_creation", True))
+
+    if ppe_type is None and menu_character_creation_enabled:
         wizard = NewPpeIterativeWizardView(
             owner_id=interaction.user.id,
             class_name=class_name,
@@ -1296,8 +1299,9 @@ async def command(
         wizard.message = await interaction.original_response()
         return
 
-    guild_config = await load_guild_config(interaction)
-    ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config.get("ppe_settings", {}), dict) else {}
+    if ppe_type is None:
+        ppe_type = DEFAULT_PPE_TYPE
+
     resolved_type, type_error = resolve_creation_ppe_type(
         ppe_type,
         enabled=bool(ppe_settings.get("enable_ppe_types", True)),

@@ -17,8 +17,8 @@ from menus.menu_utils.sniffer_core.panel_common import (
 )
 from menus.menu_utils.sniffer_core.common import token_preview as _token_preview
 from utils.guild_config import get_realmshark_settings, set_realmshark_settings
-from utils.loot_constants import normalize_rarity
 from utils.player_records import ensure_player_exists, load_player_records
+from utils.sniffer_helpers.event_rarity import resolve_event_rarity
 from utils.sniffer_helpers.realmshark_ingest import _addloot_for_user_with_ppe
 from utils.sniffer_helpers.realmshark_pending_store import (
     clear_all_pending_for_guild,
@@ -223,10 +223,7 @@ async def configure(
                 if not item_name:
                     continue
                 item_shiny = bool(event.get("shiny", False))
-                item_divine = bool(event.get("divine", False))
-                item_rarity = normalize_rarity(event.get("item_rarity", "common"))
-                if item_divine and item_rarity == "common":
-                    item_rarity = "divine"
+                item_rarity = resolve_event_rarity(event.get("item_rarity"), event.get("divine", False))
                 await _addloot_for_user_with_ppe(
                     interaction.guild.id,
                     managed_user_id,

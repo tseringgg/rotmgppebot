@@ -534,6 +534,17 @@ async def update_ppe_type_feature_enabled(
     return dict(saved)
 
 
+async def update_menu_character_creation(
+    interaction: discord.Interaction,
+    *,
+    enabled: bool,
+) -> dict[str, Any]:
+    settings = await get_ppe_settings(interaction)
+    settings["menu_character_creation"] = bool(enabled)
+    saved = await set_ppe_settings(interaction, settings)
+    return dict(saved)
+
+
 async def update_allowed_ppe_types(
     interaction: discord.Interaction,
     *,

@@ -30,6 +30,7 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
     "ppe_settings": {
         "max_ppes": DEFAULT_MAX_PPE_CHARACTERS,
         "enable_ppe_types": True,
+        "menu_character_creation": True,
         "allowed_ppe_types": all_ppe_types(),
         "ppe_type_multipliers": normalize_ppe_type_multipliers({}),
         "iterative_base_multipliers": normalize_iterative_option_multipliers({}),
@@ -215,6 +216,7 @@ def _normalized_ppe_settings(config: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "max_ppes": parsed_max,
         "enable_ppe_types": bool(settings.get("enable_ppe_types", True)),
+        "menu_character_creation": bool(settings.get("menu_character_creation", True)),
         "allowed_ppe_types": allowed_types,
         "ppe_type_multipliers": multipliers,
         "iterative_base_multipliers": iterative_base_multipliers,

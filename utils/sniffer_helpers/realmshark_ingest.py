@@ -19,6 +19,7 @@ from utils.player_records import ensure_player_exists, load_player_records, high
 from utils.sniffer_helpers.realmshark_pending_store import append_pending_event, migrate_legacy_pending_map
 from utils.item_log_timestamps import seasonal_item_key
 from utils.season_loot_history import normalize_rarity, unique_season_item_count
+from utils.sniffer_helpers.event_rarity import resolve_event_rarity
 
 
 class IngestValidationError(Exception):
@@ -469,9 +470,7 @@ async def ingest_loot_event(payload: Dict[str, Any], notifier: Notifier | None =
     raw_item_name = str(payload.get("item_name", "")).strip()
     divine = _as_bool(payload.get("divine", False))
     shiny = _as_bool(payload.get("shiny", False))
-    item_rarity = normalize_rarity(payload.get("item_rarity", "common"))
-    if divine and item_rarity == "common":
-        item_rarity = "divine"
+    item_rarity = resolve_event_rarity(payload.get("item_rarity"), divine)
 
     normalized_item_name, suffix_shiny = _strip_shiny_suffix(raw_item_name)
     if suffix_shiny and not shiny:

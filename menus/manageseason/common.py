@@ -603,6 +603,7 @@ def build_character_settings_home_embed(
     current_max_characters: int,
     ppe_types_enabled: bool,
     allowed_ppe_types: list[str],
+    menu_character_creation: bool,
 ) -> discord.Embed:
     """Build character settings embed for /manageseason character controls."""
     embed = discord.Embed(
@@ -615,6 +616,16 @@ def build_character_settings_home_embed(
         value=(
             f"Current max characters per player: **{current_max_characters}**\n"
             "If reduced, excess characters are removed starting from the lowest-point inactive characters."
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="Menu Character Creation",
+        value=(
+            f"Status: **{'Enabled' if menu_character_creation else 'Disabled'}**\n"
+            "When enabled, `/newppe` opens the character creation menu.\n"
+            "When disabled, `/newppe` creates a regular PPE immediately and still accepts `ppe_type` for explicitly allowed types.\n"
+            "Allowed PPE types still control what players can create with `ppe_type`."
         ),
         inline=False,
     )
@@ -851,6 +862,15 @@ def build_ppe_type_points_embed(character_settings: dict, *, types_page_index: i
         description="Configure how PPE type rules translate into final point multipliers and labels.",
         color=discord.Color.dark_teal(),
     )
+    if not bool(character_settings.get("menu_character_creation", True)):
+        embed.add_field(
+            name="⚠️ Menu Character Creation Is Off",
+            value=(
+                "Players will not see the creation menu in `/newppe`; they will get a regular PPE by default.\n"
+                "Only the server's currently allowed PPE types can be created with an explicit `ppe_type` argument."
+            ),
+            inline=False,
+        )
     page_suffix = f" (Page {page_index + 1}/{total_pages})" if total_pages > 1 else ""
     embed.add_field(name=f"Current PPE Types{page_suffix}", value="\n".join(lines), inline=False)
     embed.add_field(name="Iterative Base Multipliers", value="\n".join(iterative_base_lines), inline=False)

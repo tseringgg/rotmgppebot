@@ -688,7 +688,7 @@ def iterative_multiplier_breakdown(
         multiplier *= value
         components.append({"key": "no_pet", "label": "No Pet", "multiplier": value})
 
-    if not options["allows_tiered"]:
+    if not options["allows_tiered"] and not options["shiny_only"]:
         value = float(multipliers["no_tiered"])
         multiplier *= value
         components.append({"key": "no_tiered", "label": "No Tiered", "multiplier": value})

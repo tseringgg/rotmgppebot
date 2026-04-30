@@ -78,6 +78,7 @@ class ManageSeasonHomeView(OwnerBoundView):
             current_max_characters=max_characters,
             ppe_types_enabled=bool(settings.get("enable_ppe_types", True)),
             allowed_ppe_types=normalize_allowed_ppe_types(settings.get("allowed_ppe_types")),
+            menu_character_creation=bool(settings.get("menu_character_creation", True)),
         )
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 

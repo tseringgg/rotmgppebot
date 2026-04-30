@@ -9,6 +9,7 @@ from menus.manageseason.services import (
     load_character_settings_for_menu,
     update_allowed_ppe_types,
     update_max_characters_limit,
+    update_menu_character_creation,
     update_ppe_type_feature_enabled,
 )
 from menus.menu_utils import ConfirmCancelView, OwnerBoundView
@@ -35,6 +36,7 @@ class ChangeMaxCharactersModal(discord.ui.Modal, title="Change Max Characters"):
         source_message: discord.Message | None,
         ppe_types_enabled: bool,
         allowed_ppe_types: list[str],
+        menu_character_creation: bool,
     ) -> None:
         super().__init__(timeout=300)
         self.owner_id = owner_id
@@ -42,6 +44,7 @@ class ChangeMaxCharactersModal(discord.ui.Modal, title="Change Max Characters"):
         self.source_message = source_message
         self.ppe_types_enabled = bool(ppe_types_enabled)
         self.allowed_ppe_types = normalize_allowed_ppe_types(allowed_ppe_types)
+        self.menu_character_creation = bool(menu_character_creation)
         self.new_limit.default = str(int(current_limit))
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
@@ -125,6 +128,7 @@ class ChangeMaxCharactersModal(discord.ui.Modal, title="Change Max Characters"):
                 current_max_characters=refreshed_limit,
                 ppe_types_enabled=self.ppe_types_enabled,
                 allowed_ppe_types=self.allowed_ppe_types,
+                menu_character_creation=self.menu_character_creation,
             )
             try:
                 await self.source_message.edit(embed=refreshed_view.current_embed(), view=refreshed_view)
@@ -142,6 +146,7 @@ class ManageCharacterSettingsHomeView(OwnerBoundView):
         current_max_characters: int,
         ppe_types_enabled: bool,
         allowed_ppe_types: list[str],
+        menu_character_creation: bool,
         ppe_settings: dict | None = None,
     ) -> None:
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
@@ -149,6 +154,7 @@ class ManageCharacterSettingsHomeView(OwnerBoundView):
         self.current_max_characters = int(current_max_characters)
         self.ppe_types_enabled = bool(ppe_types_enabled)
         self.allowed_ppe_types = normalize_allowed_ppe_types(allowed_ppe_types)
+        self.menu_character_creation = bool(menu_character_creation)
         self.ppe_settings = ppe_settings if isinstance(ppe_settings, dict) else {}
 
     def current_embed(self) -> discord.Embed:
@@ -156,6 +162,7 @@ class ManageCharacterSettingsHomeView(OwnerBoundView):
             current_max_characters=self.current_max_characters,
             ppe_types_enabled=self.ppe_types_enabled,
             allowed_ppe_types=self.allowed_ppe_types,
+            menu_character_creation=self.menu_character_creation,
         )
 
     @discord.ui.button(label="Change Max Characters", style=discord.ButtonStyle.success, row=0)
@@ -166,6 +173,7 @@ class ManageCharacterSettingsHomeView(OwnerBoundView):
             source_message=interaction.message,
             ppe_types_enabled=self.ppe_types_enabled,
             allowed_ppe_types=self.allowed_ppe_types,
+            menu_character_creation=self.menu_character_creation,
         )
         await interaction.response.send_modal(modal)
 
@@ -173,6 +181,15 @@ class ManageCharacterSettingsHomeView(OwnerBoundView):
     async def toggle_ppe_types(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         settings = await update_ppe_type_feature_enabled(interaction, enabled=not self.ppe_types_enabled)
         self.ppe_types_enabled = bool(settings.get("enable_ppe_types", True))
+        self.allowed_ppe_types = normalize_allowed_ppe_types(settings.get("allowed_ppe_types"))
+        self.menu_character_creation = bool(settings.get("menu_character_creation", self.menu_character_creation))
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+    @discord.ui.button(label="Toggle Menu Character Creation", style=discord.ButtonStyle.primary, row=0)
+    async def toggle_menu_character_creation(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        settings = await update_menu_character_creation(interaction, enabled=not self.menu_character_creation)
+        self.menu_character_creation = bool(settings.get("menu_character_creation", True))
+        self.ppe_types_enabled = bool(settings.get("enable_ppe_types", self.ppe_types_enabled))
         self.allowed_ppe_types = normalize_allowed_ppe_types(settings.get("allowed_ppe_types"))
         await interaction.response.edit_message(embed=self.current_embed(), view=self)
 
@@ -183,6 +200,7 @@ class ManageCharacterSettingsHomeView(OwnerBoundView):
             current_max_characters=self.current_max_characters,
             ppe_types_enabled=self.ppe_types_enabled,
             allowed_ppe_types=self.allowed_ppe_types,
+            menu_character_creation=self.menu_character_creation,
             ppe_settings=self.ppe_settings,
         )
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
@@ -239,6 +257,7 @@ class ManageAllowedPpeTypesView(OwnerBoundView):
         current_max_characters: int,
         ppe_types_enabled: bool,
         allowed_ppe_types: list[str],
+        menu_character_creation: bool,
         ppe_settings: dict | None = None,
     ) -> None:
         super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
@@ -246,6 +265,7 @@ class ManageAllowedPpeTypesView(OwnerBoundView):
         self.current_max_characters = int(current_max_characters)
         self.ppe_types_enabled = bool(ppe_types_enabled)
         self.selected_types = normalize_allowed_ppe_types(allowed_ppe_types)
+        self.menu_character_creation = bool(menu_character_creation)
         self.ppe_settings = ppe_settings if isinstance(ppe_settings, dict) else {}
         self.add_item(_AllowedPpeTypesSelect(selected_types=self.selected_types, ppe_settings=self.ppe_settings))
 
@@ -254,6 +274,7 @@ class ManageAllowedPpeTypesView(OwnerBoundView):
             current_max_characters=self.current_max_characters,
             ppe_types_enabled=self.ppe_types_enabled,
             allowed_ppe_types=self.selected_types,
+            menu_character_creation=self.menu_character_creation,
         )
 
     @discord.ui.button(label="Save Allowed Types", style=discord.ButtonStyle.success, row=1)
@@ -264,6 +285,7 @@ class ManageAllowedPpeTypesView(OwnerBoundView):
             current_max_characters=self.current_max_characters,
             ppe_types_enabled=bool(saved.get("enable_ppe_types", True)),
             allowed_ppe_types=normalize_allowed_ppe_types(saved.get("allowed_ppe_types")),
+            menu_character_creation=bool(saved.get("menu_character_creation", True)),
             ppe_settings=saved,
         )
         await interaction.response.edit_message(embed=refreshed.current_embed(), view=refreshed)
@@ -276,6 +298,7 @@ class ManageAllowedPpeTypesView(OwnerBoundView):
             current_max_characters=self.current_max_characters,
             ppe_types_enabled=bool(settings.get("enable_ppe_types", True)),
             allowed_ppe_types=normalize_allowed_ppe_types(settings.get("allowed_ppe_types")),
+            menu_character_creation=bool(settings.get("menu_character_creation", True)),
         )
         await interaction.response.edit_message(embed=refreshed.current_embed(), view=refreshed)
 
