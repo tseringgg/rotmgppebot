@@ -26,6 +26,9 @@ from utils.player_records import highest_rarity
 from utils.guild_config import get_set_bonuses
 
 
+from functools import lru_cache
+
+@lru_cache(maxsize=1)
 def load_dungeon_data():
     """Load the loot CSV and create item-to-dungeon mapping from the Dungeon column."""
     try:

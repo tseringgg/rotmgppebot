@@ -52,6 +52,9 @@ def _pick_phrase(options: list[str], *seed_values: float | int) -> str:
     return options[seed % len(options)]
 
 
+from functools import lru_cache
+
+@lru_cache(maxsize=1)
 def _load_item_to_dungeon() -> dict[str, str]:
     mapping: dict[str, str] = {}
 

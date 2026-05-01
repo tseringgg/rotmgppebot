@@ -7,7 +7,7 @@ import os
 
 import discord
 
-from menus.manageseason.common import build_manage_bot_cost_embed
+from menus.manageseason.common import build_manage_bot_cost_embeds
 from menus.manageseason.services import (
     build_bot_cost_summary_markdown_for_menu,
     clear_bot_cost_log_for_menu,
@@ -24,6 +24,8 @@ class ManageBotCostView(OwnerBoundView):
         self.owner_id = owner_id
         self.summary = dict(summary)
         self.window_hours = max(1, int(window_hours))
+        self.page_index = 0
+        self.embeds = build_manage_bot_cost_embeds(self.summary)
         self._sync_window_buttons()
         self._sync_logging_button()
 
@@ -34,9 +36,13 @@ class ManageBotCostView(OwnerBoundView):
         self.window_7d.style = (
             discord.ButtonStyle.primary if self.window_hours == 168 else discord.ButtonStyle.secondary
         )
+        self.prev_page.disabled = self.page_index == 0
+        self.next_page.disabled = self.page_index >= len(self.embeds) - 1
 
     def current_embed(self) -> discord.Embed:
-        return build_manage_bot_cost_embed(self.summary)
+        if not self.embeds:
+            return discord.Embed(title="Manage Bot Cost", description="No telemetry data.")
+        return self.embeds[self.page_index]
 
     async def _reload(self, interaction: discord.Interaction, *, window_hours: int | None = None) -> None:
         if window_hours is not None:
@@ -44,8 +50,10 @@ class ManageBotCostView(OwnerBoundView):
         self.summary = await load_bot_cost_summary_for_menu(
             interaction,
             window_hours=self.window_hours,
-            top_n=10,
+            top_n=50,
         )
+        self.embeds = build_manage_bot_cost_embeds(self.summary)
+        self.page_index = 0
         self._sync_window_buttons()
         self._sync_logging_button()
         await interaction.response.edit_message(embed=self.current_embed(), view=self)
@@ -62,6 +70,12 @@ class ManageBotCostView(OwnerBoundView):
     async def refresh(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._reload(interaction)
 
+    @discord.ui.button(label="⬅️ Prev", style=discord.ButtonStyle.secondary, row=1)
+    async def prev_page(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.page_index = max(0, self.page_index - 1)
+        self._sync_window_buttons()
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
     @discord.ui.button(label="Enable/Disable Logging", style=discord.ButtonStyle.blurple, row=1)
     async def toggle_logging(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         from menus.manageseason.services import toggle_bot_cost_logging_for_menu
@@ -74,6 +88,12 @@ class ManageBotCostView(OwnerBoundView):
             f"Cost logging is now {status}.",
             ephemeral=True,
         )
+
+    @discord.ui.button(label="Next ➡️", style=discord.ButtonStyle.secondary, row=1)
+    async def next_page(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        self.page_index = min(len(self.embeds) - 1, self.page_index + 1)
+        self._sync_window_buttons()
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
 
     def _sync_logging_button(self) -> None:
         """Update the logging button label/style to reflect current state."""

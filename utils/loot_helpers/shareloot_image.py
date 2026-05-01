@@ -11,7 +11,7 @@ from PIL import Image
 
 from create_loot_table import create_loot_background_and_mapping
 from utils.calc_points import normalize_item_name
-from utils.image_utils import overlay_rarity_badge_on_image
+from utils.image_utils import overlay_rarity_badge_on_image, resolve_item_image_path
 from utils.loot_constants import rarity_rank
 
 
@@ -130,6 +130,9 @@ def _lookup_key(name: str) -> str:
     return normalize_item_name(name).casefold()
 
 
+from functools import lru_cache
+
+@lru_cache(maxsize=16)
 def _load_sprite_positions(sprite_csv: str) -> dict[str, dict[str, int]]:
     sprite_positions: dict[str, dict[str, int]] = {}
     with open(sprite_csv, "r", encoding="utf-8") as csvfile:
@@ -142,7 +145,7 @@ def _load_sprite_positions(sprite_csv: str) -> dict[str, dict[str, int]]:
             }
     return sprite_positions
 
-
+@lru_cache(maxsize=1)
 def _load_item_type_lookup() -> dict[str, str]:
     item_type_lookup: dict[str, str] = {}
     with open("rotmg_loot_drops_updated.csv", "r", encoding="utf-8") as csvfile:
@@ -153,36 +156,7 @@ def _load_item_type_lookup() -> dict[str, str]:
     return item_type_lookup
 
 
-def _load_sprite_images() -> dict[str, Image.Image]:
-    sprite_images: dict[str, Image.Image] = {}
 
-    dungeons_path = _DUNGEONS_PATH
-    ignored_folders = {"Forging", "Tiered Garbage", "_misc"}
-
-    pattern = os.path.join(dungeons_path, "**", "*.png")
-    all_png_files = glob.glob(pattern, recursive=True)
-
-    for png_file in all_png_files:
-        rel_path = os.path.relpath(png_file, dungeons_path)
-        folder_parts = rel_path.split(os.sep)
-        if any(part in ignored_folders for part in folder_parts):
-            continue
-
-        item_name = _lookup_key(os.path.splitext(os.path.basename(png_file))[0])
-        try:
-            img = Image.open(png_file)
-            if img.mode != "RGBA":
-                img = img.convert("RGBA")
-            if img.size != (40, 40):
-                img = img.resize((40, 40), Image.Resampling.LANCZOS)
-            sprite_images[item_name] = img
-        except Exception as e:
-            print(f"Error loading sprite {png_file}: {e}")
-
-    return sprite_images
-
-
-def _safe_username(display_name: str) -> str:
     username = display_name.replace(" ", "_")
     return "".join(c for c in username if c.isalnum() or c in "_-")
 
@@ -275,7 +249,6 @@ async def generate_loot_share_image(
         with Image.open(background_file) as base:
             background = base.copy()
 
-        sprite_images = _load_sprite_images()
         await _defer_if_needed(interaction)
 
         items_placed = 0
@@ -294,14 +267,26 @@ async def generate_loot_share_image(
         for sprite_key, (raw_name, normalized_name, shiny, rarity) in render_candidates.items():
             display_name = f"{raw_name} (shiny)" if shiny else raw_name
 
-            if sprite_key in sprite_positions and sprite_key in sprite_images:
-                pos = sprite_positions[sprite_key]
-                sprite = sprite_images[sprite_key]
-                sprite = overlay_rarity_badge_on_image(sprite, rarity) or sprite
-                background.paste(sprite, (pos["pixel_x"], pos["pixel_y"]), sprite)
-                items_placed += 1
-            else:
-                items_not_found.append(display_name)
+            if sprite_key in sprite_positions:
+                sprite_path = resolve_item_image_path(raw_name, shiny)
+                if sprite_path:
+                    try:
+                        with Image.open(sprite_path) as img:
+                            if img.mode != "RGBA":
+                                img = img.convert("RGBA")
+                            if img.size != (40, 40):
+                                img = img.resize((40, 40), Image.Resampling.LANCZOS)
+                            sprite = img.copy()
+                        
+                        sprite = overlay_rarity_badge_on_image(sprite, rarity) or sprite
+                        pos = sprite_positions[sprite_key]
+                        background.paste(sprite, (pos["pixel_x"], pos["pixel_y"]), sprite)
+                        items_placed += 1
+                        continue
+                    except Exception as e:
+                        print(f"Error loading sprite for {sprite_key}: {e}")
+            
+            items_not_found.append(display_name)
 
         safe_username = _safe_username(interaction.user.display_name)
         filename = f"{safe_username}_{filename_suffix}.png"

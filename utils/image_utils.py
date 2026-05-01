@@ -49,7 +49,8 @@ def overlay_rarity_badge_on_image(
     if not os.path.exists(rarity_image_path):
         return None
 
-    rarity_img = Image.open(rarity_image_path).convert("RGBA")
+    with Image.open(rarity_image_path) as src_rarity:
+        rarity_img = src_rarity.convert("RGBA")
     item_rgba = item_img.convert("RGBA")
 
     if output_size:
@@ -98,7 +99,8 @@ def overlay_rarity_badge(
         if not os.path.exists(item_image_path):
             return None
         
-        item_img = Image.open(item_image_path)
+        with Image.open(item_image_path) as src_item:
+            item_img = src_item.copy()
         result_img = overlay_rarity_badge_on_image(item_img, rarity, output_size=output_size)
         if result_img is None:
             return None

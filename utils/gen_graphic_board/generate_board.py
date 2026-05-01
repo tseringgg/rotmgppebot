@@ -161,7 +161,8 @@ def generate_quest_board(
     fallback_icon = None
     if missing_image_path:
         try:
-            fallback_icon = Image.open(missing_image_path).convert("RGBA").resize((scaled_icon_size, scaled_icon_size), Image.NEAREST)
+            with Image.open(missing_image_path) as src_fallback:
+                fallback_icon = src_fallback.convert("RGBA").resize((scaled_icon_size, scaled_icon_size), Image.NEAREST)
         except OSError:
             fallback_icon = None
 
@@ -176,12 +177,14 @@ def generate_quest_board(
         resolved_path = image_path_resolver(item)
         if resolved_path:
             try:
-                icon = Image.open(resolved_path).convert("RGBA")
+                with Image.open(resolved_path) as src_icon:
+                    icon = src_icon.convert("RGBA")
             except OSError:
                 icon = None
 
         if icon is None:
-            icon = fallback_icon
+            if fallback_icon is not None:
+                icon = fallback_icon.copy()
 
         if icon is None:
             draw.rectangle(
