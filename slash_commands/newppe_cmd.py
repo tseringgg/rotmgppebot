@@ -1665,9 +1665,21 @@ class NewPpeIterativeWizardView(discord.ui.View):
             if options.get("duo_enabled"):
                 partner_id = options.get("duo_partner_id")
                 partner_line = f"<@{partner_id}>" if partner_id else "Missing"
+            try:
+                selected_label = format_ppe_label_from_options(
+                    options, compact=True, guild_config={"ppe_settings": self.ppe_settings}
+                )
+            except Exception:
+                logger.exception(
+                    "Failed to format PPE label in wizard summary for guild=%s user=%s",
+                    getattr(self, "guild_id", None),
+                    getattr(self, "owner_id", None),
+                )
+                selected_label = f"(Signature: {breakdown.get('signature', ppe_type_option_signature(options))})"
+
             summary_lines = [
                 f"Review new PPE setup for {self.class_name}.",
-                f"Selected: {format_ppe_label_from_options(options, compact=True, guild_config={{'ppe_settings': self.ppe_settings}})}",
+                f"Selected: {selected_label}",
                 f"Signature: `{breakdown.get('signature', ppe_type_option_signature(options))}`",
                 f"Duo Partner: {partner_line}",
                 "",
