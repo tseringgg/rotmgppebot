@@ -156,6 +156,7 @@ class ManageCharacterSettingsHomeView(OwnerBoundView):
         self.allowed_ppe_types = normalize_allowed_ppe_types(allowed_ppe_types)
         self.menu_character_creation = bool(menu_character_creation)
         self.ppe_settings = ppe_settings if isinstance(ppe_settings, dict) else {}
+        self._sync_menu_creation_button()
 
     def current_embed(self) -> discord.Embed:
         return build_character_settings_home_embed(
@@ -185,13 +186,27 @@ class ManageCharacterSettingsHomeView(OwnerBoundView):
         self.menu_character_creation = bool(settings.get("menu_character_creation", self.menu_character_creation))
         await interaction.response.edit_message(embed=self.current_embed(), view=self)
 
-    @discord.ui.button(label="Toggle Menu Character Creation", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label="Enable/Disable Menu Character Creation", style=discord.ButtonStyle.primary, row=0)
     async def toggle_menu_character_creation(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         settings = await update_menu_character_creation(interaction, enabled=not self.menu_character_creation)
         self.menu_character_creation = bool(settings.get("menu_character_creation", True))
         self.ppe_types_enabled = bool(settings.get("enable_ppe_types", self.ppe_types_enabled))
         self.allowed_ppe_types = normalize_allowed_ppe_types(settings.get("allowed_ppe_types"))
+        self._sync_menu_creation_button()
         await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+    def _sync_menu_creation_button(self) -> None:
+        """Set the menu-creation toggle button label/style to reflect current state."""
+        enabled = bool(self.menu_character_creation)
+        label = "Disable Menu Creation" if enabled else "Enable Menu Creation"
+        style = discord.ButtonStyle.danger if enabled else discord.ButtonStyle.success
+        try:
+            btn = getattr(self, "toggle_menu_character_creation", None)
+            if btn is not None:
+                btn.label = label
+                btn.style = style
+        except Exception:
+            pass
 
     @discord.ui.button(label="Choose Allowed Character Types", style=discord.ButtonStyle.primary, row=1)
     async def choose_allowed_types(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

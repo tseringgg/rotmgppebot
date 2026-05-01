@@ -25,6 +25,7 @@ class ManageBotCostView(OwnerBoundView):
         self.summary = dict(summary)
         self.window_hours = max(1, int(window_hours))
         self._sync_window_buttons()
+        self._sync_logging_button()
 
     def _sync_window_buttons(self) -> None:
         self.window_24h.style = (
@@ -46,6 +47,7 @@ class ManageBotCostView(OwnerBoundView):
             top_n=10,
         )
         self._sync_window_buttons()
+        self._sync_logging_button()
         await interaction.response.edit_message(embed=self.current_embed(), view=self)
 
     @discord.ui.button(label="Last 24h", style=discord.ButtonStyle.primary, row=0)
@@ -60,7 +62,7 @@ class ManageBotCostView(OwnerBoundView):
     async def refresh(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._reload(interaction)
 
-    @discord.ui.button(label="Toggle Logging", style=discord.ButtonStyle.blurple, row=1)
+    @discord.ui.button(label="Enable/Disable Logging", style=discord.ButtonStyle.blurple, row=1)
     async def toggle_logging(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         from menus.manageseason.services import toggle_bot_cost_logging_for_menu
         
@@ -72,6 +74,25 @@ class ManageBotCostView(OwnerBoundView):
             f"Cost logging is now {status}.",
             ephemeral=True,
         )
+
+    def _sync_logging_button(self) -> None:
+        """Update the logging button label/style to reflect current state."""
+        try:
+            enabled = bool(self.summary.get("logging_enabled", True))
+        except Exception:
+            enabled = True
+
+        label = "Disable Logging" if enabled else "Enable Logging"
+        style = discord.ButtonStyle.danger if enabled else discord.ButtonStyle.success
+
+        # The button attribute is named after the callback function: `toggle_logging`
+        try:
+            btn = getattr(self, "toggle_logging", None)
+            if btn is not None:
+                btn.label = label
+                btn.style = style
+        except Exception:
+            pass
 
     @discord.ui.button(label="Export Summary", style=discord.ButtonStyle.success, row=2)
     async def export_summary(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
