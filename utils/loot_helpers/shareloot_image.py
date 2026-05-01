@@ -288,7 +288,8 @@ async def generate_loot_share_image(
             
             items_not_found.append(display_name)
 
-        safe_username = _safe_username(interaction.user.display_name)
+        display_name = getattr(getattr(interaction, "user", None), "display_name", None) or "user"
+        safe_username = "".join(c for c in display_name.replace(" ", "_") if c.isalnum() or c in "_-")safe_username = _safe_username(interaction.user.display_name)
         filename = f"{safe_username}_{filename_suffix}.png"
         background.save(filename, "PNG")
 
