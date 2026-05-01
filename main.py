@@ -69,6 +69,7 @@ from utils.guild_config import load_guild_config
 from utils.sniffer_helpers.realmshark_ingest_server import start_realmshark_ingest_server
 from utils.sniffer_helpers.realmshark_notifier import build_realmshark_notifier, clear_cached_announce_channel
 from utils.sniffer_helpers.realmshark_notifier import get_channel_cache_size as get_realmshark_channel_cache_size
+from utils.memory_hygiene import run_memory_hygiene
 
 from utils.autocomplete import class_autocomplete, item_name_autocomplete, bonus_autocomplete, user_bonus_autocomplete, target_user_bonus_autocomplete, team_name_autocomplete, rarity_autocomplete
 
@@ -111,6 +112,10 @@ SYNC_COOLDOWN_SECONDS = _env_int("PPE_SYNC_COOLDOWN_SECONDS", default=300, minim
 SYNC_STATE_PATH = os.getenv("PPE_SYNC_STATE_PATH", "/data/ppe_command_sync_state.json")
 MEMORY_LOG_ENABLED = _env_flag("PPE_MEMORY_LOG_ENABLED", default=True)
 MEMORY_LOG_INTERVAL_SECONDS = _env_int("PPE_MEMORY_LOG_INTERVAL_SECONDS", default=900, minimum=60)
+MEMORY_HYGIENE_ENABLED = _env_flag("PPE_MEMORY_HYGIENE_ENABLED", default=True)
+MEMORY_HYGIENE_RSS_THRESHOLD_MB = _env_int("PPE_MEMORY_HYGIENE_RSS_THRESHOLD_MB", default=500, minimum=128)
+MEMORY_HYGIENE_CLEAR_CACHES = _env_flag("PPE_MEMORY_HYGIENE_CLEAR_CACHES", default=True)
+MEMORY_HYGIENE_TRIM_ALLOCATOR = _env_flag("PPE_MEMORY_HYGIENE_TRIM_ALLOCATOR", default=True)
 
 
 def _read_process_rss_mb() -> float | None:
@@ -157,6 +162,43 @@ class PPEBot(commands.Bot):
         while True:
             await asyncio.sleep(MEMORY_LOG_INTERVAL_SECONDS)
             self._log_memory_snapshot("periodic")
+            await self._maybe_run_memory_hygiene("periodic")
+
+    async def _maybe_run_memory_hygiene(self, reason: str) -> None:
+        if not MEMORY_HYGIENE_ENABLED:
+            return
+
+        rss_mb = _read_process_rss_mb()
+        if rss_mb is None:
+            return
+        if rss_mb < float(MEMORY_HYGIENE_RSS_THRESHOLD_MB):
+            return
+
+        result = await asyncio.to_thread(
+            run_memory_hygiene,
+            clear_caches=MEMORY_HYGIENE_CLEAR_CACHES,
+            collect_garbage=True,
+            trim_allocator=MEMORY_HYGIENE_TRIM_ALLOCATOR,
+        )
+
+        rss_before = result.get("rss_before_mb")
+        rss_after = result.get("rss_after_mb")
+        rss_delta = result.get("rss_delta_mb")
+        cleared_cache_count = int(result.get("cleared_cache_count", 0) or 0)
+        gc_collected = int(result.get("gc_collected", 0) or 0)
+        trim_called = bool(result.get("malloc_trim_called", False))
+        trim_succeeded = bool(result.get("malloc_trim_succeeded", False))
+
+        before_text = f"{float(rss_before):.1f}" if rss_before is not None else "?"
+        after_text = f"{float(rss_after):.1f}" if rss_after is not None else "?"
+        delta_text = f"{float(rss_delta):+.1f}" if rss_delta is not None else "?"
+
+        print(
+            f"[MEMORY] hygiene reason={reason} threshold_mb={MEMORY_HYGIENE_RSS_THRESHOLD_MB} "
+            f"rss_before_mb={before_text} rss_after_mb={after_text} rss_delta_mb={delta_text} "
+            f"cleared_caches={cleared_cache_count} gc_collected={gc_collected} "
+            f"malloc_trim_called={trim_called} malloc_trim_succeeded={trim_succeeded}"
+        )
 
     async def _sync_app_commands_to_guilds(self) -> None:
         if self._startup_sync_attempted:

@@ -156,6 +156,12 @@ def _load_item_type_lookup() -> dict[str, str]:
     return item_type_lookup
 
 
+def clear_shareloot_image_caches() -> None:
+    """Clear process-local shareloot metadata caches."""
+    _load_sprite_positions.cache_clear()
+    _load_item_type_lookup.cache_clear()
+
+
 
     username = display_name.replace(" ", "_")
     return "".join(c for c in username if c.isalnum() or c in "_-")
