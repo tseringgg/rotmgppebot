@@ -2,6 +2,10 @@
 
 A comprehensive Discord bot for managing competitions and more in Realm of the Mad God. You can track loot, complete quests, set points for items, and maintain a variety of leaderboards.
 
+**Having issues or confused? Check out our [FAQ](FAQ.md) for common questions!**
+
+**An admin guide can be found here, at the [Administrator Guide](ADMIN_GUIDE.md)!**
+
 ## Features
 
 ### Player Features
@@ -183,7 +187,8 @@ Now that the bot is in your server, you need to set up its basic functions:
 
 2. **Enable in Discord:** Go to your Discord server, type `/managesniffer`, and select `Enable Sniffer`.
 3. **Set the Endpoint:** Select `Set Endpoint` / `Edit Endpoint` and paste your ingest URL: `https://<your-railway-domain>/realmshark/ingest`. *(Again, remember to replace the placeholder with your actual Railway domain).*
-4. **Download Required Files:** Download the Sniffer File and the Loot CSV file [here](https://drive.google.com/drive/folders/1d8pT1B3D73gULcJQkVT9WoArDMIzFulG?usp=sharing). **Keep both of these files in the exact same folder on your computer.** 
+4. **Download Required Files:** Download the Sniffer File and the Loot CSV file [here](https://drive.google.com/drive/folders/1d8pT1B3D73gULcJQkVT9WoArDMIzFulG?usp=sharing). **Keep both of these files in the exact same folder on your computer.**
+* The latest version of Sniffer can also be found in the RealmShark releases here: https://github.com/LastEternity/RealmShark/releases. The Google Drive link above is still useful because it includes both required files, which the releases page does not.
 * You can review and generate your own version of this extended Sniffer File by going to this link: https://github.com/LastEternity/RealmShark/tree/tomato_integration.
 * *Note: If you rename `rotmg_loot_drops_updated.csv` to something else, you will have to update the filename field in the Bridge Review.*
 5. Use /mysniffer to see instructions on how to link your sniffer to the bot. Once you save the settings, you should be pinged by the bot!
