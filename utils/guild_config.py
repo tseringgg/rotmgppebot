@@ -336,6 +336,8 @@ def _normalized_realmshark_settings(config: Dict[str, Any]) -> Dict[str, Any]:
 
 def _merge_defaults(raw: Dict[str, Any]) -> Dict[str, Any]:
     merged = dict(_DEFAULT_CONFIG)
+    # Preserve explicit top-level flags from raw config (e.g., cost logging)
+    merged["cost_logging_enabled"] = bool(raw.get("cost_logging_enabled", merged.get("cost_logging_enabled", True)))
     merged["ppe_settings"] = _normalized_ppe_settings(raw)
     merged["quest_settings"] = _normalized_targets(raw)
     merged["realmshark_settings"] = _normalized_realmshark_settings(raw)
