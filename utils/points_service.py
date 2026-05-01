@@ -831,14 +831,20 @@ def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = Non
     penalty_breakdown = starting_penalty_breakdown_from_bonuses(ppe.bonuses, guild_config=guild_config)
     loot_adjustments = loot_adjustments_for_ppe(ppe, guild_config)
 
-    adjusted_loot = _apply_percent(loot_total, float(modifier_bucket["loot_percent"]))
-    adjusted_bonus = _apply_percent(bonus_total, float(modifier_bucket["bonus_percent"]))
-    adjusted_penalty = sum(float(details["signed_adjusted_points"]) for details in penalty_breakdown.values())
-    adjusted_penalty = _apply_percent(adjusted_penalty, float(modifier_bucket["penalty_percent"]))
-    adjusted_loot = _apply_percent(adjusted_loot, float(modifier_bucket["total_percent"]))
+    # Coerce modifier bucket values defensively to avoid TypeError on bad config
+    loot_percent_val = _as_float(modifier_bucket.get("loot_percent"), 0.0)
+    bonus_percent_val = _as_float(modifier_bucket.get("bonus_percent"), 0.0)
+    penalty_percent_val = _as_float(modifier_bucket.get("penalty_percent"), 0.0)
+    total_percent_val = _as_float(modifier_bucket.get("total_percent"), 0.0)
 
-    loot_after_item_multipliers = adjusted_loot * float(loot_adjustments["reduction_multiplier"])
-    loot_after_item_multipliers *= float(loot_adjustments["type_multiplier"])
+    adjusted_loot = _apply_percent(loot_total, loot_percent_val)
+    adjusted_bonus = _apply_percent(bonus_total, bonus_percent_val)
+    adjusted_penalty = sum(_as_float(details.get("signed_adjusted_points"), 0.0) for details in penalty_breakdown.values())
+    adjusted_penalty = _apply_percent(adjusted_penalty, penalty_percent_val)
+    adjusted_loot = _apply_percent(adjusted_loot, total_percent_val)
+
+    loot_after_item_multipliers = adjusted_loot * _as_float(loot_adjustments.get("reduction_multiplier"), 1.0)
+    loot_after_item_multipliers *= _as_float(loot_adjustments.get("type_multiplier"), 1.0)
 
     subtotal_before_item_multipliers = adjusted_loot + adjusted_bonus + adjusted_penalty
     # Set points are added directly without any modifiers
@@ -860,9 +866,9 @@ def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = Non
         "penalty_after_modifiers": round(adjusted_penalty, 2),
         "set_bonus_raw": round(set_bonus_points, 2),
         "subtotal_before_item_reduction": round(subtotal_before_item_multipliers, 2),
-        "item_reduction_multiplier": round(float(loot_adjustments["reduction_multiplier"]), 4),
-        "type_multiplier": round(float(loot_adjustments["type_multiplier"]), 4),
-        "combined_item_multiplier": round(float(loot_adjustments["combined_item_multiplier"]), 4),
+        "item_reduction_multiplier": round(_as_float(loot_adjustments.get("reduction_multiplier"), 1.0), 4),
+        "type_multiplier": round(_as_float(loot_adjustments.get("type_multiplier"), 1.0), 4),
+        "combined_item_multiplier": round(_as_float(loot_adjustments.get("combined_item_multiplier"), 1.0), 4),
         "total": ppe.points,
     }
 

@@ -1,6 +1,7 @@
 
 
 import discord
+import logging
 from types import SimpleNamespace
 import traceback
 from uuid import uuid4
@@ -46,6 +47,8 @@ from utils.wizard_components import (
     get_minimum_rarity_options,
     requires_enforce_shiny_rarity_choice,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def create_new_ppe_for_user(
@@ -495,6 +498,7 @@ async def send_duo_handshake_invite(
         dm_sent = True
     except discord.HTTPException:
         dm_sent = False
+        logger.info("Failed to DM user %s for duo invite in guild %s (user may have DMs closed)", partner_user_id, interaction.guild.id if interaction.guild is not None else None)
 
     return request_token, dm_sent
 
@@ -856,11 +860,12 @@ class DuoSetupInviteView(discord.ui.View):
                 view=launcher_view,
             )
         except Exception as exc:
-            print(
-                f"[DUO_DM][ERROR] accept failed guild_id={self.guild_id} requester={self.requester_user_id} "
-                f"partner={self.partner_user_id}: {exc}"
+            logger.exception(
+                "[DUO_DM][ERROR] accept failed guild_id=%s requester=%s partner=%s",
+                self.guild_id,
+                self.requester_user_id,
+                self.partner_user_id,
             )
-            print(traceback.format_exc())
             if not interaction.response.is_done():
                 await interaction.response.send_message(
                     "Could not process this duo invite. Please try again or ask for a new invite.",
@@ -914,11 +919,12 @@ class DuoSetupInviteView(discord.ui.View):
                 ),
             )
         except Exception as exc:
-            print(
-                f"[DUO_DM][ERROR] reject failed guild_id={self.guild_id} requester={self.requester_user_id} "
-                f"partner={self.partner_user_id}: {exc}"
+            logger.exception(
+                "[DUO_DM][ERROR] reject failed guild_id=%s requester=%s partner=%s",
+                self.guild_id,
+                self.requester_user_id,
+                self.partner_user_id,
             )
-            print(traceback.format_exc())
             if not interaction.response.is_done():
                 await interaction.response.send_message(
                     "Could not process this duo invite. Please try again or ask for a new invite.",
@@ -1334,6 +1340,8 @@ async def command(
             ppe_type=resolved_type,
         )
     except ValueError as exc:
+        logger.warning("create_new_ppe_for_user failed for user=%s in guild=%s: %s", interaction.user.id if interaction.user else None, interaction.guild.id if interaction.guild else None, exc)
+        logger.debug("Traceback for create_new_ppe_for_user:", exc_info=True)
         return await interaction.response.send_message(str(exc), ephemeral=True)
 
     loot_adjustment_lines = "\n".join(loot_adjustment_detail_lines(result["loot_adjustments"]))
@@ -1405,6 +1413,8 @@ class DuoPpeTypePartnerModal(discord.ui.Modal, title="Set Duo Partner Discord ID
                 context=request_context,
             )
         except ValueError as exc:
+            logger.warning("send_duo_handshake_invite failed for requester=%s partner=%s guild=%s: %s", interaction.user.id if interaction.user else None, partner_id, interaction.guild.id if interaction.guild else None, exc)
+            logger.debug("Traceback for send_duo_handshake_invite:", exc_info=True)
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
         wizard = NewPpeIterativeWizardView(
@@ -1483,6 +1493,8 @@ class DuoPartnerIdModal(discord.ui.Modal, title="Set Duo Partner Discord ID"):
                 context=request_context,
             )
         except ValueError as exc:
+            logger.warning("send_duo_handshake_invite failed for requester=%s partner=%s guild=%s: %s", interaction.user.id if interaction.user else None, partner_id, interaction.guild.id if interaction.guild else None, exc)
+            logger.debug("Traceback for send_duo_handshake_invite:", exc_info=True)
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
 
@@ -1923,6 +1935,8 @@ class _WizardCreatePpeButton(discord.ui.Button):
                 guild_override=view.guild_override,
             )
         except ValueError as exc:
+            logger.warning("create_new_ppe_for_user (wizard) failed for user=%s guild=%s: %s", interaction.user.id if interaction.user else None, interaction.guild.id if interaction.guild else None, exc)
+            logger.debug("Traceback for create_new_ppe_for_user (wizard):", exc_info=True)
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
 

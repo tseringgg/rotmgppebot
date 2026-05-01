@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import traceback
+import logging
 
 import discord
+
+logger = logging.getLogger(__name__)
 
 
 class OwnerBoundView(discord.ui.View):
@@ -33,11 +36,15 @@ class OwnerBoundView(discord.ui.View):
 
     async def on_error(self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item) -> None:
         item_label = getattr(item, "label", None) or getattr(item, "placeholder", None) or item.__class__.__name__
-        print(
-            f"[VIEW_ERROR] view={self.__class__.__name__} item={item_label} "
-            f"owner_id={self.owner_id} user_id={getattr(interaction.user, 'id', None)} error={error}"
+        logger.error(
+            "[VIEW_ERROR] view=%s item=%s owner_id=%s user_id=%s error=%s",
+            self.__class__.__name__,
+            item_label,
+            self.owner_id,
+            getattr(interaction.user, "id", None),
+            error,
         )
-        print(traceback.format_exc())
+        logger.debug(traceback.format_exc())
 
         try:
             if not interaction.response.is_done():

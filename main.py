@@ -47,6 +47,7 @@ import asyncio
 import random
 import json
 import time
+import logging
 from utils.role_checks import require_ppe_roles, require_server_owner
 from utils.loot_data import init_loot_data
 from utils.settings.channel_settings import clear_guild_cache as clear_item_suggestion_cache
@@ -79,6 +80,9 @@ guilds = [discord.Object(id=SERVER1_ID), discord.Object(id=SERVER2_ID), discord.
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+
+# Configure basic logging so stdout/stderr capture works on Railway
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 
 def _env_flag(name: str, default: bool) -> bool:
