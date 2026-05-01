@@ -1655,7 +1655,7 @@ class NewPpeIterativeWizardView(discord.ui.View):
                 partner_line = f"<@{partner_id}>" if partner_id else "Missing"
             summary_lines = [
                 f"Review new PPE setup for {self.class_name}.",
-                f"Selected: {format_ppe_label_from_options(options, compact=True, guild_config={"ppe_settings": self.ppe_settings})}",
+                f"Selected: {format_ppe_label_from_options(options, compact=True, guild_config={{'ppe_settings': self.ppe_settings}})}",
                 f"Signature: `{breakdown.get('signature', ppe_type_option_signature(options))}`",
                 f"Duo Partner: {partner_line}",
                 "",
