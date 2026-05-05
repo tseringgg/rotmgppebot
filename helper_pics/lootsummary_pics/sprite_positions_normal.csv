@@ -756,47 +756,49 @@ Deadly Keg,28,25,1120,1000
 Greaterhosen,0,26,0,1040
 Crystal Sword,1,26,40,1040
 Crystal Wand,2,26,80,1040
-Crystal Sword (shiny),3,26,120,1040
-Quiver of Thunder (shiny),4,26,160,1040
-Orb of Conflict (shiny),5,26,200,1040
-Dirk of Cronus (shiny),6,26,240,1040
-Trap of the Vile Spirit (shiny),7,26,280,1040
-Greaterhosen (shiny),8,26,320,1040
-Helm of the Juggernaut (shiny),9,26,360,1040
-Ray Katana (shiny),10,26,400,1040
-Seal of Blasphemous Prayer (shiny),11,26,440,1040
-Shield of Ogmur (shiny),12,26,480,1040
-Deadly Keg (shiny),13,26,520,1040
-Mighty Stein (shiny),14,26,560,1040
-Barnacle Basher (shiny),15,26,600,1040
-Jailer's Scythe (shiny),16,26,640,1040
-Cloak of Bloody Surprises (shiny),17,26,680,1040
-Yellow Beehemoth Quiver (shiny),18,26,720,1040
-Red Beehemoth Quiver (shiny),19,26,760,1040
-Blue Beehemoth Quiver (shiny),20,26,800,1040
-Crystal Wand (shiny),21,26,840,1040
-Adventurer's Scarf,22,26,880,1040
-Torrential Staff,23,26,920,1040
-Celestial Recurve,24,26,960,1040
-Mace of the Pumpkin Effigy,25,26,1000,1040
-Pirate's Artillery,26,26,1040,1040
-Skull of Restless Souls,27,26,1080,1040
-Doom's Emblem,28,26,1120,1040
-Cavalry Lance,0,27,0,1080
-Cloak of the Deep,1,27,40,1080
-Evolutionary Records,2,27,80,1080
-Pollen Incendiary,3,27,120,1080
-Bloodbath Blade,4,27,160,1080
-Runes of Knowledge,5,27,200,1080
-Kendo Stick (shiny),6,27,240,1080
-Jewel Eye Katana (shiny),7,27,280,1080
-Watarimono,8,27,320,1080
-Kiritsukeru,9,27,360,1080
-Reinforced Root Armor,10,27,400,1080
-Traveler's Trinket,11,27,440,1080
-The Phylactery,12,27,480,1080
-Soul of the Bearer,13,27,520,1080
-Soulless Robe,14,27,560,1080
-Ring of the Covetous Heart,15,27,600,1080
-Piper's Pan Flute,16,27,640,1080
-Mouse Trap,17,27,680,1080
+Crystal Mace,3,26,120,1040
+Crystal Sword (shiny),4,26,160,1040
+Quiver of Thunder (shiny),5,26,200,1040
+Orb of Conflict (shiny),6,26,240,1040
+Dirk of Cronus (shiny),7,26,280,1040
+Trap of the Vile Spirit (shiny),8,26,320,1040
+Greaterhosen (shiny),9,26,360,1040
+Helm of the Juggernaut (shiny),10,26,400,1040
+Ray Katana (shiny),11,26,440,1040
+Seal of Blasphemous Prayer (shiny),12,26,480,1040
+Shield of Ogmur (shiny),13,26,520,1040
+Deadly Keg (shiny),14,26,560,1040
+Mighty Stein (shiny),15,26,600,1040
+Barnacle Basher (shiny),16,26,640,1040
+Jailer's Scythe (shiny),17,26,680,1040
+Cloak of Bloody Surprises (shiny),18,26,720,1040
+Yellow Beehemoth Quiver (shiny),19,26,760,1040
+Red Beehemoth Quiver (shiny),20,26,800,1040
+Blue Beehemoth Quiver (shiny),21,26,840,1040
+Crystal Wand (shiny),22,26,880,1040
+Crystal Mace (shiny),23,26,920,1040
+Adventurer's Scarf,24,26,960,1040
+Torrential Staff,25,26,1000,1040
+Celestial Recurve,26,26,1040,1040
+Mace of the Pumpkin Effigy,27,26,1080,1040
+Pirate's Artillery,28,26,1120,1040
+Skull of Restless Souls,0,27,0,1080
+Doom's Emblem,1,27,40,1080
+Cavalry Lance,2,27,80,1080
+Cloak of the Deep,3,27,120,1080
+Evolutionary Records,4,27,160,1080
+Pollen Incendiary,5,27,200,1080
+Bloodbath Blade,6,27,240,1080
+Runes of Knowledge,7,27,280,1080
+Kendo Stick (shiny),8,27,320,1080
+Jewel Eye Katana (shiny),9,27,360,1080
+Watarimono,10,27,400,1080
+Kiritsukeru,11,27,440,1080
+Reinforced Root Armor,12,27,480,1080
+Traveler's Trinket,13,27,520,1080
+The Phylactery,14,27,560,1080
+Soul of the Bearer,15,27,600,1080
+Soulless Robe,16,27,640,1080
+Ring of the Covetous Heart,17,27,680,1080
+Piper's Pan Flute,18,27,720,1080
+Mouse Trap,19,27,760,1080

@@ -756,103 +756,105 @@ Deadly Keg,3,25,120,1000
 Greaterhosen,4,25,160,1000
 Crystal Sword,5,25,200,1000
 Crystal Wand,6,25,240,1000
-Crystal Sword (shiny),7,25,280,1000
-Quiver of Thunder (shiny),8,25,320,1000
-Orb of Conflict (shiny),9,25,360,1000
-Dirk of Cronus (shiny),10,25,400,1000
-Trap of the Vile Spirit (shiny),11,25,440,1000
-Greaterhosen (shiny),12,25,480,1000
-Helm of the Juggernaut (shiny),13,25,520,1000
-Ray Katana (shiny),14,25,560,1000
-Seal of Blasphemous Prayer (shiny),15,25,600,1000
-Shield of Ogmur (shiny),16,25,640,1000
-Deadly Keg (shiny),17,25,680,1000
-Mighty Stein (shiny),18,25,720,1000
-Barnacle Basher (shiny),19,25,760,1000
-Jailer's Scythe (shiny),20,25,800,1000
-Cloak of Bloody Surprises (shiny),21,25,840,1000
-Yellow Beehemoth Quiver (shiny),22,25,880,1000
-Red Beehemoth Quiver (shiny),23,25,920,1000
-Blue Beehemoth Quiver (shiny),24,25,960,1000
-Crystal Wand (shiny),25,25,1000,1000
-Adventurer's Scarf,26,25,1040,1000
-Torrential Staff,27,25,1080,1000
-Celestial Recurve,28,25,1120,1000
-Mace of the Pumpkin Effigy,29,25,1160,1000
-Pirate's Artillery,0,26,0,1040
-Skull of Restless Souls,1,26,40,1040
-Doom's Emblem,2,26,80,1040
-Cavalry Lance,3,26,120,1040
-Cloak of the Deep,4,26,160,1040
-Evolutionary Records,5,26,200,1040
-Pollen Incendiary,6,26,240,1040
-Bloodbath Blade,7,26,280,1040
-Runes of Knowledge,8,26,320,1040
-Kendo Stick (shiny),9,26,360,1040
-Jewel Eye Katana (shiny),10,26,400,1040
-Watarimono,11,26,440,1040
-Kiritsukeru,12,26,480,1040
-Reinforced Root Armor,13,26,520,1040
-Traveler's Trinket,14,26,560,1040
-The Phylactery,15,26,600,1040
-Soul of the Bearer,16,26,640,1040
-Soulless Robe,17,26,680,1040
-Ring of the Covetous Heart,18,26,720,1040
-Piper's Pan Flute,19,26,760,1040
-Mouse Trap,20,26,800,1040
-Scallywag Slurp Pet Skin,21,26,840,1040
-Sapling Buddy Pet Skin,22,26,880,1040
-Eggshell Spider Pet Skin,23,26,920,1040
-Baby Basilisk Pet Skin,24,26,960,1040
-Mini Stheno Skin,25,26,1000,1040
-Mini Flying Stheno Pet Skin,26,26,1040,1040
-Mini Limon Pet Skin,27,26,1080,1040
-Sprite Star Pet Skin,28,26,1120,1040
-Sand Wanderer Trickster Skin,29,26,1160,1040
-Fountain Child Pet Skin,0,27,0,1080
-Mini Desire Troll Pet Skin,1,27,40,1080
-Peppermint Snail Pet Skin,2,27,80,1080
-Possessed Staff Pet Skin,3,27,120,1080
-Puppet Master Skin,4,27,160,1080
-Jester Skin,5,27,200,1080
-Slurp Knight Skin,6,27,240,1080
-Turtle Pet Skin,7,27,280,1080
-Cultured Bookwyrm Pet Skin,8,27,320,1080
-Enlightened Bookwyrm Pet Skin,9,27,360,1080
-Robobuddy Pet Skin,10,27,400,1080
-Horned Wyrm Pet Skin,11,27,440,1080
-Demon Frog Pet Skin,12,27,480,1080
-Vampire Lord Skin,13,27,520,1080
-Werewolf Cub Pet Skin,14,27,560,1080
-Toaster Pet Skin,15,27,600,1080
-Spirit Pet Skin,16,27,640,1080
-Lil' Davy Pet Skin,17,27,680,1080
-Sea Slurp Skin Unlocker,18,27,720,1080
-Woodland Huntress Skin,19,27,760,1080
-Blessed Blade Pet Skin,20,27,800,1080
-Calamity Crab Pet Skin,21,27,840,1080
-Jaco Pet Skin,22,27,880,1080
-Jellyhead Trickster Skin,23,27,920,1080
-Swamped Panda Pet Skin,24,27,960,1080
-Bogged Panda Pet Skin,25,27,1000,1080
-Possessed Lantern Pet Skin,26,27,1040,1080
-Mini Nikao Pet Skin,27,27,1080,1080
-Mini Nut Archer Skin,28,27,1120,1080
-Mini Geb Skin,29,27,1160,1080
-Bes' Artifact,0,28,0,1120
-Nut's Artifact,1,28,40,1120
-Geb's Artifact,2,28,80,1120
-Tomb Snake Skin Unlocker,3,28,120,1120
-Good Mask Spirit Pet Skin,4,28,160,1120
-Evil Mask Spirit Pet Skin,5,28,200,1120
-Blizzard Pet Skin,6,28,240,1120
-Killer Bee Queen Pet Skin,7,28,280,1120
-Mini Malus Sorcerer Skin,8,28,320,1120
-Crystal Cobra Pet Skin,9,28,360,1120
-Penitent Frog Pet Skin,10,28,400,1120
-Kogbold Maid Pet Skin,11,28,440,1120
-Festival Enjoyer Kensei,12,28,480,1120
-Festival Enjoyer Bard,13,28,520,1120
-Sentinel Watchdog Skin,14,28,560,1120
-Shadow Stormbird Pet Skin,15,28,600,1120
-Royal Void Cat Pet Skin,16,28,640,1120
+Crystal Mace,7,25,280,1000
+Crystal Sword (shiny),8,25,320,1000
+Quiver of Thunder (shiny),9,25,360,1000
+Orb of Conflict (shiny),10,25,400,1000
+Dirk of Cronus (shiny),11,25,440,1000
+Trap of the Vile Spirit (shiny),12,25,480,1000
+Greaterhosen (shiny),13,25,520,1000
+Helm of the Juggernaut (shiny),14,25,560,1000
+Ray Katana (shiny),15,25,600,1000
+Seal of Blasphemous Prayer (shiny),16,25,640,1000
+Shield of Ogmur (shiny),17,25,680,1000
+Deadly Keg (shiny),18,25,720,1000
+Mighty Stein (shiny),19,25,760,1000
+Barnacle Basher (shiny),20,25,800,1000
+Jailer's Scythe (shiny),21,25,840,1000
+Cloak of Bloody Surprises (shiny),22,25,880,1000
+Yellow Beehemoth Quiver (shiny),23,25,920,1000
+Red Beehemoth Quiver (shiny),24,25,960,1000
+Blue Beehemoth Quiver (shiny),25,25,1000,1000
+Crystal Wand (shiny),26,25,1040,1000
+Crystal Mace (shiny),27,25,1080,1000
+Adventurer's Scarf,28,25,1120,1000
+Torrential Staff,29,25,1160,1000
+Celestial Recurve,0,26,0,1040
+Mace of the Pumpkin Effigy,1,26,40,1040
+Pirate's Artillery,2,26,80,1040
+Skull of Restless Souls,3,26,120,1040
+Doom's Emblem,4,26,160,1040
+Cavalry Lance,5,26,200,1040
+Cloak of the Deep,6,26,240,1040
+Evolutionary Records,7,26,280,1040
+Pollen Incendiary,8,26,320,1040
+Bloodbath Blade,9,26,360,1040
+Runes of Knowledge,10,26,400,1040
+Kendo Stick (shiny),11,26,440,1040
+Jewel Eye Katana (shiny),12,26,480,1040
+Watarimono,13,26,520,1040
+Kiritsukeru,14,26,560,1040
+Reinforced Root Armor,15,26,600,1040
+Traveler's Trinket,16,26,640,1040
+The Phylactery,17,26,680,1040
+Soul of the Bearer,18,26,720,1040
+Soulless Robe,19,26,760,1040
+Ring of the Covetous Heart,20,26,800,1040
+Piper's Pan Flute,21,26,840,1040
+Mouse Trap,22,26,880,1040
+Scallywag Slurp Pet Skin,23,26,920,1040
+Sapling Buddy Pet Skin,24,26,960,1040
+Eggshell Spider Pet Skin,25,26,1000,1040
+Baby Basilisk Pet Skin,26,26,1040,1040
+Mini Stheno Skin,27,26,1080,1040
+Mini Flying Stheno Pet Skin,28,26,1120,1040
+Mini Limon Pet Skin,29,26,1160,1040
+Sprite Star Pet Skin,0,27,0,1080
+Sand Wanderer Trickster Skin,1,27,40,1080
+Fountain Child Pet Skin,2,27,80,1080
+Mini Desire Troll Pet Skin,3,27,120,1080
+Peppermint Snail Pet Skin,4,27,160,1080
+Possessed Staff Pet Skin,5,27,200,1080
+Puppet Master Skin,6,27,240,1080
+Jester Skin,7,27,280,1080
+Slurp Knight Skin,8,27,320,1080
+Turtle Pet Skin,9,27,360,1080
+Cultured Bookwyrm Pet Skin,10,27,400,1080
+Enlightened Bookwyrm Pet Skin,11,27,440,1080
+Robobuddy Pet Skin,12,27,480,1080
+Horned Wyrm Pet Skin,13,27,520,1080
+Demon Frog Pet Skin,14,27,560,1080
+Vampire Lord Skin,15,27,600,1080
+Werewolf Cub Pet Skin,16,27,640,1080
+Toaster Pet Skin,17,27,680,1080
+Spirit Pet Skin,18,27,720,1080
+Lil' Davy Pet Skin,19,27,760,1080
+Sea Slurp Skin Unlocker,20,27,800,1080
+Woodland Huntress Skin,21,27,840,1080
+Blessed Blade Pet Skin,22,27,880,1080
+Calamity Crab Pet Skin,23,27,920,1080
+Jaco Pet Skin,24,27,960,1080
+Jellyhead Trickster Skin,25,27,1000,1080
+Swamped Panda Pet Skin,26,27,1040,1080
+Bogged Panda Pet Skin,27,27,1080,1080
+Possessed Lantern Pet Skin,28,27,1120,1080
+Mini Nikao Pet Skin,29,27,1160,1080
+Mini Nut Archer Skin,0,28,0,1120
+Mini Geb Skin,1,28,40,1120
+Bes' Artifact,2,28,80,1120
+Nut's Artifact,3,28,120,1120
+Geb's Artifact,4,28,160,1120
+Tomb Snake Skin Unlocker,5,28,200,1120
+Good Mask Spirit Pet Skin,6,28,240,1120
+Evil Mask Spirit Pet Skin,7,28,280,1120
+Blizzard Pet Skin,8,28,320,1120
+Killer Bee Queen Pet Skin,9,28,360,1120
+Mini Malus Sorcerer Skin,10,28,400,1120
+Crystal Cobra Pet Skin,11,28,440,1120
+Penitent Frog Pet Skin,12,28,480,1120
+Kogbold Maid Pet Skin,13,28,520,1120
+Festival Enjoyer Kensei,14,28,560,1120
+Festival Enjoyer Bard,15,28,600,1120
+Sentinel Watchdog Skin,16,28,640,1120
+Shadow Stormbird Pet Skin,17,28,680,1120
+Royal Void Cat Pet Skin,18,28,720,1120
