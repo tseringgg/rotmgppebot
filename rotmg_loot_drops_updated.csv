@@ -334,6 +334,7 @@ White or ST,Coral Bow (shiny),10,Ocean Trench
 White or ST,Coral Venom Trap (shiny),10,Ocean Trench
 White or ST,Coral Silk Armor (shiny),10,Ocean Trench
 White or ST,Coral Ring (shiny),10.0,Ocean Trench
+White or ST,Sharktooth Sigil (shiny),10,Ocean Trench
 White or ST,Tideturner Trident,5.0,Ocean Trench
 White or ST,Slurpian Sea Scroll,5.0,Ocean Trench
 White or ST,Oceanic Apparel,5.0,Ocean Trench
@@ -409,6 +410,7 @@ White or ST,Maw of Malignance,5.5,Parasite Chambers
 White or ST,Recurring Terror Spell,5.5,Parasite Chambers
 White or ST,Scepter of Devastation,5.5,Parasite Chambers
 White or ST,Tome of Pain,5.5,Parasite Chambers
+White or ST,Maw of Malignance (shiny),11,Parasite Chambers
 White or ST,Recurring Terror Spell (shiny),11,Parasite Chambers
 White or ST,Scepter of Devastation (shiny),11,Parasite Chambers
 White or ST,Tome of Pain (shiny),11,Parasite Chambers
@@ -520,10 +522,12 @@ White or ST,Morning Square,6.0,The Third Dimension
 White or ST,The Triangle,6.0,The Third Dimension
 White or ST,Ring of Cubed Wisdom,6.0,The Third Dimension
 White or ST,Shadow Serpent Sidearm (shiny),12,The Third Dimension
+White or ST,Ring of Cubed Wisdom (shiny),12.0,The Third Dimension
 ""
 White or ST,Wakizashi of Crossing Fires,6.0,Lair of Shaitan
 White or ST,Skull of Endless Torment,6.0,Lair of Shaitan
 White or ST,Igneous Starblossom,6.0,Lair of Shaitan
+White or ST,Wakizashi of Crossing Fires (shiny),12,Lair of Shaitan
 White or ST,Skull of Endless Torment (shiny),12,Lair of Shaitan
 White or ST,Igneous Starblossom (shiny),12.0,Lair of Shaitan
 White or ST,Fiery Katana,6.0,Lair of Shaitan
@@ -696,6 +700,7 @@ White or ST,Damnation,8.0,Spectral Penitentiary
 White or ST,Vial of Soul Extract,8,Spectral Penitentiary
 White or ST,Wretched Rags (shiny),16,Spectral Penitentiary
 White or ST,Tools of the Tarnished (shiny),16.0,Spectral Penitentiary
+White or ST,Cackling Straitjacket (shiny),16,Spectral Penitentiary
 White or ST,Ocular Entrapment (shiny),16,Spectral Penitentiary
 White or ST,Motivational Megaphone (shiny),16,Spectral Penitentiary
 White or ST,Damnation (shiny),16.0,Spectral Penitentiary
@@ -741,6 +746,8 @@ White or ST,Omnipotence Ring,8.5,The Void
 White or ST,Bow of the Void (shiny),17,The Void
 White or ST,Quiver of Shadows (shiny),17,The Void
 White or ST,Armor of Nil (shiny),17,The Void
+White or ST,Omnipotence Ring (shiny),17,The Void
+
 ""
 UT,Green Beehemoth Armor,0,Plagued Nest
 White or ST,Green Beehemoth Quiver,8.5,Plagued Nest
