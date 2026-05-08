@@ -996,17 +996,35 @@ def _format_discord_rate_limit_details(
     return lines
 
 
-async def _cleanup_bot_after_failed_login() -> None:
-    # Ensure every partially opened Discord/aiohttp resource gets closed before retrying.
-    try:
-        await bot.close()
-    except Exception:
-        pass
+async def _cleanup_bot_after_failed_login(*, hard_close: bool) -> None:
+    # On transient startup failures (e.g., 429), keep the HTTP client alive for retry.
+    if hard_close:
+        try:
+            await bot.close()
+        except Exception:
+            pass
 
     try:
         bot.clear()
     except Exception:
         pass
+
+
+def _reset_closed_http_session_if_needed() -> None:
+    # discord.py keeps a private aiohttp session on HTTPClient.
+    # If it was closed by a previous startup attempt, force recreation on next login.
+    http_client = getattr(bot, "http", None)
+    if http_client is None:
+        return
+
+    session = getattr(http_client, "_HTTPClient__session", None)
+    if session is not None and getattr(session, "closed", False):
+        try:
+            setattr(http_client, "_HTTPClient__session", None)
+            print("[WARN] Detected closed Discord HTTP session before login; resetting session handle.")
+        except Exception:
+            # Best-effort safeguard; if this fails, normal startup error handling still applies.
+            pass
 
 
 async def run_bot_with_backoff(token: str, max_retries: int = 3):
@@ -1025,17 +1043,18 @@ async def run_bot_with_backoff(token: str, max_retries: int = 3):
     while True:
         attempt += 1
         try:
+            _reset_closed_http_session_if_needed()
             print(f"\n[Attempt {attempt}] Logging in to Discord...")
             await bot.start(token)
             return  # Successful connection; run indefinitely
         except discord.errors.LoginFailure:
-            await _cleanup_bot_after_failed_login()
+            await _cleanup_bot_after_failed_login(hard_close=True)
             print("[FATAL] Invalid Discord token. Check DISCORD_TOKEN and restart.")
             raise
         except discord.errors.HTTPException as e:
             if _is_global_rate_limit_error(e):
                 # Global rate limit hit
-                await _cleanup_bot_after_failed_login()
+                await _cleanup_bot_after_failed_login(hard_close=False)
 
                 retry_after = _extract_retry_after_seconds(e)
                 delay = min(max_backoff_seconds, base_delay * (2 ** min(8, attempt - 1)))
@@ -1056,12 +1075,12 @@ async def run_bot_with_backoff(token: str, max_retries: int = 3):
                 await asyncio.sleep(wait_time)
             else:
                 # Some other HTTP error; re-raise immediately
-                await _cleanup_bot_after_failed_login()
+                await _cleanup_bot_after_failed_login(hard_close=True)
                 print(f"[FATAL] Discord HTTP error during startup: {e}")
                 raise
         except Exception as e:
             # Non-HTTP errors; don't retry
-            await _cleanup_bot_after_failed_login()
+            await _cleanup_bot_after_failed_login(hard_close=True)
             print(f"[FATAL] Unexpected startup error: {e}")
             raise
 
