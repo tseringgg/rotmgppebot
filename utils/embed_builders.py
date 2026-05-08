@@ -5,6 +5,7 @@ import discord
 from typing import List
 from dataclass import Loot, PPEData
 from utils.points_service import calculate_item_points as calculate_item_points_service
+from utils.points_service import manual_points_adjustment_detail_lines
 from utils.loot_constants import normalize_rarity
 from utils.pagination import chunk_lines_to_pages, LootPaginationView
 from utils.player_records import get_active_ppe_of_user
@@ -145,6 +146,10 @@ def build_loot_embeds(active_ppe: PPEData, recently_added: str = "") -> List[dis
 
     # Combine loot and bonuses
     all_lines = loot_lines + bonus_lines
+    manual_adjustment_lines = manual_points_adjustment_detail_lines(active_ppe)
+    if manual_adjustment_lines:
+        all_lines.extend(["\n** Point Adjustments:**"])
+        all_lines.extend([f"• *{line}*" for line in manual_adjustment_lines])
     
     # Calculate total items count
     total_loot_items = len(loot_dict) if loot_dict else 0

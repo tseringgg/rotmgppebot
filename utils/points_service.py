@@ -520,6 +520,32 @@ def _format_points(value: float) -> str:
     return f"{rounded:.2f}".rstrip("0").rstrip(".")
 
 
+def _manual_points_adjustment_for_ppe(
+    ppe: PPEData,
+    computed_total_without_manual: float,
+) -> float:
+    raw_adjustment = getattr(ppe, "manual_points_adjustment", None)
+    if raw_adjustment is None:
+        inferred_adjustment = round(
+            _as_float(getattr(ppe, "points", 0.0), 0.0) - float(computed_total_without_manual),
+            2,
+        )
+        ppe.manual_points_adjustment = inferred_adjustment
+        return inferred_adjustment
+    return round(_as_float(raw_adjustment, 0.0), 2)
+
+
+def manual_points_adjustment_value(ppe: PPEData) -> float:
+    return round(_as_float(getattr(ppe, "manual_points_adjustment", 0.0), 0.0), 2)
+
+
+def manual_points_adjustment_detail_lines(ppe: PPEData) -> list[str]:
+    adjustment = manual_points_adjustment_value(ppe)
+    if abs(adjustment) <= 1e-9:
+        return []
+    return [f"Manual Score Adjustment: {_format_points(adjustment)} pts"]
+
+
 def format_starting_penalty_line(
     label: str,
     value_text: str,
@@ -848,12 +874,15 @@ def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = Non
 
     subtotal_before_item_multipliers = adjusted_loot + adjusted_bonus + adjusted_penalty
     # Set points are added directly without any modifiers
-    total = loot_after_item_multipliers + adjusted_bonus + adjusted_penalty + set_bonus_points
+    total_without_manual = loot_after_item_multipliers + adjusted_bonus + adjusted_penalty + set_bonus_points
 
     minimum_total = modifier_bucket.get("minimum_total")
     if minimum_total is not None:
         min_points = _as_float(minimum_total, fallback=0.0)
-        total = max(total, min_points)
+        total_without_manual = max(total_without_manual, min_points)
+
+    manual_points_adjustment = _manual_points_adjustment_for_ppe(ppe, total_without_manual)
+    total = total_without_manual + manual_points_adjustment
 
     ppe.points = round(total, 2)
     return {
@@ -866,6 +895,7 @@ def recompute_ppe_points(ppe: PPEData, guild_config: Dict[str, Any] | None = Non
         "penalty_after_modifiers": round(adjusted_penalty, 2),
         "set_bonus_raw": round(set_bonus_points, 2),
         "subtotal_before_item_reduction": round(subtotal_before_item_multipliers, 2),
+        "manual_points_adjustment": round(manual_points_adjustment, 2),
         "item_reduction_multiplier": round(_as_float(loot_adjustments.get("reduction_multiplier"), 1.0), 4),
         "type_multiplier": round(_as_float(loot_adjustments.get("type_multiplier"), 1.0), 4),
         "combined_item_multiplier": round(_as_float(loot_adjustments.get("combined_item_multiplier"), 1.0), 4),

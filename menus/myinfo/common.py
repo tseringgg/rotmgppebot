@@ -19,6 +19,7 @@ from utils.points_service import (
     format_starting_penalty_line,
     loot_adjustment_detail_lines,
     loot_adjustments_for_ppe,
+    manual_points_adjustment_detail_lines,
     penalty_inputs_from_bonuses,
     recompute_ppe_points,
     starting_penalty_breakdown_from_inputs,
@@ -167,7 +168,9 @@ def penalty_input_defaults(ppe: PPEData, guild_config: dict | None = None) -> di
 
 def loot_adjustments_text(ppe: PPEData, guild_config: dict | None = None) -> str:
     adjustments = loot_adjustments_for_ppe(ppe, guild_config)
-    return "\n".join(loot_adjustment_detail_lines(adjustments))
+    lines = loot_adjustment_detail_lines(adjustments)
+    lines.extend(manual_points_adjustment_detail_lines(ppe))
+    return "\n".join(lines)
 
 
 def build_home_embed(
@@ -259,7 +262,7 @@ def build_character_embed(
     embed.add_field(name="RealmShark Connected", value="Yes" if is_realmshark_connected else "No", inline=True)
     embed.add_field(name="Different Loot Items", value=str(distinct_loot_items), inline=True)
     embed.add_field(name="Starting Penalty Stats", value=penalty_stats_text(ppe, guild_config), inline=False)
-    embed.add_field(name="Loot Adjustments", value=loot_adjustments_text(ppe, guild_config), inline=False)
+    embed.add_field(name="Point Adjustments", value=loot_adjustments_text(ppe, guild_config), inline=False)
     embed.add_field(name="Character Type", value=character_type, inline=True)
     duo_partner_label = duo_partner_label_for_ppe(ppe, guild)
     if duo_partner_details is not None:

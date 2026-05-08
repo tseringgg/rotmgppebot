@@ -53,6 +53,7 @@ class PPEData:
     id: int
     name: ROTMGClass
     points: float = 0.0
+    manual_points_adjustment: Optional[float] = None
     loot: List[Loot] = field(default_factory=list)
     bonuses: List[Bonus] = field(default_factory=list)
     ppe_type: str = DEFAULT_PPE_TYPE
@@ -98,4 +99,3 @@ class PlayerData:
             }
             return len(unique_base_items)
         return 0
-

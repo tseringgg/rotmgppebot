@@ -300,7 +300,9 @@ class PlayerManager:
             
             import math
             amount_rounded = math.floor(amount * 2) / 2
-            active_ppe.points += amount_rounded
+            current_adjustment = getattr(active_ppe, "manual_points_adjustment", None)
+            active_ppe.manual_points_adjustment = float(current_adjustment or 0.0) + amount_rounded
+            active_ppe.points = round(float(getattr(active_ppe, "points", 0.0) or 0.0) + amount_rounded, 2)
             
             return amount_rounded
         
@@ -322,7 +324,7 @@ class PlayerManager:
             
             # Create new PPE
             next_id = max((ppe.id for ppe in player_data.ppes), default=0) + 1
-            new_ppe = PPEData(id=next_id, name=class_enum, points=0, loot=[])
+            new_ppe = PPEData(id=next_id, name=class_enum, points=0, manual_points_adjustment=0.0, loot=[])
             
             player_data.ppes.append(new_ppe)
             player_data.active_ppe = next_id
@@ -350,7 +352,9 @@ class PlayerManager:
             
             import math
             amount_rounded = math.floor(amount * 2) / 2
-            active_ppe.points += amount_rounded
+            current_adjustment = getattr(active_ppe, "manual_points_adjustment", None)
+            active_ppe.manual_points_adjustment = float(current_adjustment or 0.0) + amount_rounded
+            active_ppe.points = round(float(getattr(active_ppe, "points", 0.0) or 0.0) + amount_rounded, 2)
             
             return amount_rounded, active_ppe.id, active_ppe.points
         

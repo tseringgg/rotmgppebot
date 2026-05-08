@@ -130,6 +130,7 @@ async def create_new_ppe_for_user(
         id=next_id,
         name=class_enum,
         points=0.0,
+        manual_points_adjustment=0.0,
         loot=[],
         bonuses=[],
     )

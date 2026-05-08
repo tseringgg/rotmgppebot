@@ -159,10 +159,17 @@ def normalize_ppe(ppe: dict) -> PPEData:
         current_type=normalized_type,
     )
 
+    raw_manual_points_adjustment = ppe.get("manual_points_adjustment")
+    try:
+        manual_points_adjustment = float(raw_manual_points_adjustment) if raw_manual_points_adjustment is not None else None
+    except (TypeError, ValueError):
+        manual_points_adjustment = None
+
     return PPEData(
         id=ppe.get("id", 0),
         name=ppe.get("name", "Unknown"),
         points=float(ppe.get("points", 0)),
+        manual_points_adjustment=manual_points_adjustment,
         loot=loot_objects,
         bonuses=bonus_objects,
         ppe_type=normalized_type,
@@ -308,6 +315,7 @@ def _serialize_player_data(data: PlayerData) -> Dict[str, Any]:
                 "id": p.id,
                 "name": p.name,
                 "points": p.points,
+                "manual_points_adjustment": getattr(p, "manual_points_adjustment", None),
                 "loot": [
                     {
                         "item_name": l.item_name,

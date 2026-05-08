@@ -17,6 +17,7 @@ from utils.points_service import (
     format_starting_penalty_line,
     loot_adjustment_detail_lines,
     loot_adjustments_for_ppe,
+    manual_points_adjustment_detail_lines,
     non_default_points_adjustment_lines,
     recompute_ppe_points,
     penalty_inputs_from_bonuses,
@@ -163,6 +164,7 @@ def create_loot_markdown_file(
         lines=[
             f"Total Unweighted Points: {_format_points(unweighted_total)}",
             f"Total Points: {_format_points(scaled_total)}",
+            *manual_points_adjustment_detail_lines(ppe_data),
         ]
     )
 
@@ -324,6 +326,7 @@ def create_loot_markdown_file(
     ]
     summary_lines = [line for line in summary_lines if line != ""]
     summary_lines.extend(loot_adjustment_detail_lines(loot_adjustments))
+    summary_lines.extend(manual_points_adjustment_detail_lines(ppe_data))
     summary_lines.append("")
     summary_lines.append(f"All items are worth {total_item_multiplier:.2f}x for this character.")
 
