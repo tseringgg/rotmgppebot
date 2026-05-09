@@ -77,6 +77,12 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     # Update the loot list with only valid items
     target_ppe.loot = valid_loot
     
+    # Track manual adjustment before reset
+    old_manual_adjustment = getattr(target_ppe, "manual_points_adjustment", 0.0) or 0.0
+    
+    # Reset manual adjustment during refresh to clear any phantom adjustments
+    target_ppe.manual_points_adjustment = 0.0
+    
     guild_config = await load_guild_config(interaction)
     points_summary = recompute_ppe_points(target_ppe, guild_config)
 
@@ -115,7 +121,22 @@ async def command(interaction: discord.Interaction, user: discord.Member, id: in
     response_lines.append(f"**From Loot:** {points_summary['loot_raw']:.1f} points")
     response_lines.append(f"**From Bonuses:** {points_summary['bonus_raw']:.1f} points")
     response_lines.append(f"**From Penalties:** {points_summary['penalty_raw']:.1f} points")
+    
+    # Track adjustments made during refresh
+    adjustments_made = []
+    if abs(old_manual_adjustment) > 1e-9:
+        adjustments_made.append(f"Manual adjustment reset: {old_manual_adjustment:+.2f} pts")
+    if removed_items_by_item:
+        adjustments_made.append(f"Removed {sum(item_data['total_quantity'] for item_data in removed_items_by_item.values())} invalid items")
+    if removed_unique_items:
+        adjustments_made.append(f"Removed {len(removed_unique_items)} invalid season items")
+    
     response_lines.append(f"**Correction:** {difference_text}")
+    if adjustments_made:
+        response_lines.append("")
+        response_lines.append("**Adjustments Made:**")
+        for adjustment in adjustments_made:
+            response_lines.append(f"• {adjustment}")
     
     if removed_items_by_item:
         response_lines.append("")

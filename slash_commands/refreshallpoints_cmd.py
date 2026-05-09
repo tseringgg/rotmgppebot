@@ -96,12 +96,26 @@ async def command(interaction: discord.Interaction):
             # Update the loot list with only valid items
             ppe.loot = valid_loot
             
+            # Track manual adjustment before reset
+            old_manual_adjustment = getattr(ppe, "manual_points_adjustment", 0.0) or 0.0
+            
+            # Reset manual adjustment during refresh to clear any phantom adjustments
+            ppe.manual_points_adjustment = 0.0
+            
             points_summary = recompute_ppe_points(ppe, guild_config)
             corrected_total = points_summary["total"]
             
             # Track corrections
             point_difference = corrected_total - old_points
+            
+            # Build adjustment summary for this PPE
+            adjustment_details = []
+            if abs(old_manual_adjustment) > 1e-9:
+                adjustment_details.append(f"manual {old_manual_adjustment:+.2f}")
             if abs(point_difference) > 0.01:  # Only count meaningful differences
+                adjustment_details.append(f"recalc {point_difference:+.2f}")
+            
+            if abs(point_difference) > 0.01 or abs(old_manual_adjustment) > 1e-9:  # Only count meaningful corrections
                 total_corrections += 1
                 # Try to get player name from Discord
                 try:
@@ -110,10 +124,11 @@ async def command(interaction: discord.Interaction):
                 except:
                     player_name = f"User {player_key}"
                 
+                adjustments_str = ", ".join(adjustment_details)
                 correction_summary.append(
                     f"• {player_name} - PPE #{ppe.id} ({ppe.name}): "
                     f"{old_points:.1f} → {corrected_total:.1f} "
-                    f"({point_difference:+.1f})"
+                    f"[{adjustments_str}]"
                 )
 
         # Clean invalid season cache entries for this player as well.

@@ -526,12 +526,7 @@ def _manual_points_adjustment_for_ppe(
 ) -> float:
     raw_adjustment = getattr(ppe, "manual_points_adjustment", None)
     if raw_adjustment is None:
-        inferred_adjustment = round(
-            _as_float(getattr(ppe, "points", 0.0), 0.0) - float(computed_total_without_manual),
-            2,
-        )
-        ppe.manual_points_adjustment = inferred_adjustment
-        return inferred_adjustment
+        return 0.0
     return round(_as_float(raw_adjustment, 0.0), 2)
 
 

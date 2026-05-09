@@ -161,9 +161,9 @@ def normalize_ppe(ppe: dict) -> PPEData:
 
     raw_manual_points_adjustment = ppe.get("manual_points_adjustment")
     try:
-        manual_points_adjustment = float(raw_manual_points_adjustment) if raw_manual_points_adjustment is not None else None
+        manual_points_adjustment = float(raw_manual_points_adjustment) if raw_manual_points_adjustment is not None else 0.0
     except (TypeError, ValueError):
-        manual_points_adjustment = None
+        manual_points_adjustment = 0.0
 
     return PPEData(
         id=ppe.get("id", 0),
