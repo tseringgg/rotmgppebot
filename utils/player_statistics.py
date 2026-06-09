@@ -639,13 +639,7 @@ def build_season_wrapped_embed(
     ppes = list(player_data.ppes)
     all_loot = [loot for ppe in ppes for loot in ppe.loot]
     item_to_dungeon = _load_item_to_dungeon()
-    contest_settings = (
-        guild_config.get("contest_settings", {})
-        if isinstance(guild_config, dict) and isinstance(guild_config.get("contest_settings", {}), dict)
-        else {}
-    )
-    exclude_limited_from_counts = bool(contest_settings.get("contest_leaderboard_ignore_limited_items", False))
-    season_variants = iter_season_variants(player_data, exclude_limited=exclude_limited_from_counts)
+    season_variants = iter_season_variants(player_data)
     season_items = {(item_name, shiny) for item_name, shiny, _rarity, _timestamps in season_variants}
     season_start, season_end = _season_time_span(season_variants)
     rarity_breakdown = _rarity_breakdown(season_variants)

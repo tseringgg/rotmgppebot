@@ -36,7 +36,6 @@ def target_home_embed(
     active_ppe: PPEData | None,
     max_ppes: int,
     target_is_admin: bool,
-    guild_config: dict | None = None,
 ) -> discord.Embed:
     best_ppe = max(player_data.ppes, key=lambda p: float(p.points), default=None)
 
@@ -77,17 +76,7 @@ def target_home_embed(
     embed.add_field(name="Team", value=player_data.team_name or "N/A", inline=True)
     embed.add_field(name="Best PPE", value=best_line, inline=False)
     embed.add_field(name="Active PPE", value=active_line, inline=False)
-    contest_settings = (
-        guild_config.get("contest_settings", {})
-        if isinstance(guild_config, dict) and isinstance(guild_config.get("contest_settings", {}), dict)
-        else {}
-    )
-    exclude_limited_from_counts = bool(contest_settings.get("contest_leaderboard_ignore_limited_items", False))
-    embed.add_field(
-        name="Season Items",
-        value=str(unique_season_item_count(player_data, exclude_limited=exclude_limited_from_counts)),
-        inline=True,
-    )
+    embed.add_field(name="Season Items", value=str(unique_season_item_count(player_data)), inline=True)
     embed.set_footer(text="Use buttons below to manage player data, roles, and loot views.")
     return embed
 
@@ -140,13 +129,6 @@ async def send_target_season_loot_markdown_followup(
     target: ManagedPlayerTarget,
     player_data: PlayerData,
 ) -> None:
-    guild_config = await load_guild_config(interaction)
-    contest_settings = (
-        guild_config.get("contest_settings", {})
-        if isinstance(guild_config, dict) and isinstance(guild_config.get("contest_settings", {}), dict)
-        else {}
-    )
-    exclude_limited_from_counts = bool(contest_settings.get("contest_leaderboard_ignore_limited_items", False))
     season_variants = iter_season_variants(player_data)
 
     if not season_variants:
@@ -156,7 +138,6 @@ async def send_target_season_loot_markdown_followup(
     temp_file_path = create_season_loot_markdown_file(
         player_data.season_item_history,
         display_name=target.display_name,
-        exclude_limited_from_counts=exclude_limited_from_counts,
     )
     try:
         await interaction.followup.send(file=discord.File(temp_file_path), ephemeral=True)
