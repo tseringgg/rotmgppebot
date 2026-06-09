@@ -69,6 +69,7 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
         "ppe_contest_require_active_ppe_quest_items": True,
         "team_aggregate_points_enabled": False,
         "team_contest_include_quest_points": False,
+        "count_limited_items": True,
         "join_contest_channel_id": 0,
         "join_contest_message_id": 0,
         "join_contest_emoji": "✅",
@@ -392,6 +393,12 @@ def _normalized_contest_settings(config: Dict[str, Any]) -> Dict[str, Any]:
             settings.get(
                 "team_contest_include_quest_points",
                 _DEFAULT_CONFIG["contest_settings"]["team_contest_include_quest_points"],
+            )
+        ),
+        "count_limited_items": bool(
+            settings.get(
+                "count_limited_items",
+                _DEFAULT_CONFIG["contest_settings"]["count_limited_items"],
             )
         ),
         "join_contest_channel_id": _as_non_negative_int(settings.get("join_contest_channel_id", 0), 0),

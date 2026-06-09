@@ -19,6 +19,7 @@ from menus.manageseason.services import (
     update_ppe_contest_quest_points_setting,
     update_team_aggregate_points_setting,
     update_team_contest_quest_points_setting,
+    update_count_limited_items_setting,
 )
 from menus.menu_utils import OwnerBoundView
 from menus.menu_utils.lookup_parsing import parse_channel_id
@@ -250,6 +251,12 @@ class LeaderboardManagerView(OwnerBoundView):
             enable_label="Enable Team Aggregate Points",
             disable_label="Disable Team Aggregate Points",
         )
+        self._sync_toggle_button(
+            self.toggle_count_limited_items,
+            enabled=bool(self.settings.get("count_limited_items", True)),
+            enable_label="Enable Count Limited Items",
+            disable_label="Disable Count Limited Items",
+        )
 
     def current_embed(self) -> discord.Embed:
         return build_leaderboard_manager_embed(self.settings)
@@ -298,6 +305,16 @@ class LeaderboardManagerView(OwnerBoundView):
     async def toggle_team_aggregate_points(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         currently_enabled = bool(self.settings.get("team_aggregate_points_enabled", False))
         self.settings = await update_team_aggregate_points_setting(
+            interaction,
+            enabled=not currently_enabled,
+        )
+        self._sync_toggle_buttons()
+        await interaction.response.edit_message(embed=self.current_embed(), view=self)
+
+    @discord.ui.button(label="Enable Count Limited Items", style=discord.ButtonStyle.success, row=2)
+    async def toggle_count_limited_items(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        currently_enabled = bool(self.settings.get("count_limited_items", True))
+        self.settings = await update_count_limited_items_setting(
             interaction,
             enabled=not currently_enabled,
         )

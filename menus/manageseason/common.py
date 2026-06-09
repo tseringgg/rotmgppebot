@@ -557,6 +557,7 @@ def build_manage_contests_embed(settings: dict) -> discord.Embed:
     ppe_quest_enabled = bool(settings.get("ppe_contest_include_quest_points", False))
     ppe_active_filter_enabled = bool(settings.get("ppe_contest_require_active_ppe_quest_items", True))
     team_quest_enabled = bool(settings.get("team_contest_include_quest_points", False))
+    count_limited_items_enabled = bool(settings.get("count_limited_items", True))
     join_channel_id = int(settings.get("join_contest_channel_id", 0) or 0)
     join_message_id = int(settings.get("join_contest_message_id", 0) or 0)
     if join_channel_id > 0 and join_message_id > 0:
@@ -588,7 +589,8 @@ def build_manage_contests_embed(settings: dict) -> discord.Embed:
             f"Team aggregate points: **{'Enabled' if team_aggregate_enabled else 'Disabled'}**\n"
             f"PPE contest quest scoring: **{'Enabled' if ppe_quest_enabled else 'Disabled'}**\n"
             f"PPE quest/PPE item match required: **{'Enabled' if ppe_active_filter_enabled else 'Disabled'}**\n"
-            f"Team contest quest scoring: **{'Enabled' if team_quest_enabled else 'Disabled'}**"
+            f"Team contest quest scoring: **{'Enabled' if team_quest_enabled else 'Disabled'}**\n"
+            f"Count limited items: **{'Enabled' if count_limited_items_enabled else 'Disabled'}**"
         ),
         inline=False,
     )
@@ -681,6 +683,7 @@ def build_leaderboard_manager_embed(settings: dict) -> discord.Embed:
     ppe_active_filter_enabled = bool(settings.get("ppe_contest_require_active_ppe_quest_items", True))
     team_aggregate_enabled = bool(settings.get("team_aggregate_points_enabled", False))
     team_quest_enabled = bool(settings.get("team_contest_include_quest_points", False))
+    count_limited_items_enabled = bool(settings.get("count_limited_items", True))
 
     embed = discord.Embed(
         title="Leaderboard Manager",
@@ -731,6 +734,15 @@ def build_leaderboard_manager_embed(settings: dict) -> discord.Embed:
             "When enabled, completed quests add points to team totals.\n"
             "If team shared quests are enabled, shared quest points are counted once per team.\n"
             "When disabled, team totals use PPE points only."
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="Count Limited Items",
+        value=(
+            f"Current status: **{'Enabled' if count_limited_items_enabled else 'Disabled'}**\n"
+            "When enabled, the season leaderboard counts limited items in each player's season collection.\n"
+            "When disabled, limited items are ignored for the season leaderboard only."
         ),
         inline=False,
     )

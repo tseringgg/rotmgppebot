@@ -338,6 +338,19 @@ async def update_team_aggregate_points_setting(
     )
 
 
+async def update_count_limited_items_setting(
+    interaction: discord.Interaction,
+    *,
+    enabled: bool,
+) -> dict[str, Any]:
+    """Toggle whether season leaderboard counts limited items."""
+    return await _update_contest_bool_setting(
+        interaction,
+        setting_key="count_limited_items",
+        enabled=enabled,
+    )
+
+
 def _build_join_contest_embed(*, role: discord.Role, emoji: str) -> discord.Embed:
     embed = discord.Embed(
         title="Join the PPE Contest",
