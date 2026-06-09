@@ -4,6 +4,7 @@ import asyncio
 import csv
 import glob
 import os
+from dataclasses import dataclass
 from collections.abc import Sequence
 
 import discord
@@ -43,6 +44,16 @@ VARIANT_IMAGE_LABELS = {
 _REQUIRED_ASSET_VARIANTS = ("normal", "normal_skins", "normal_limited", "all")
 _ASSET_BUILD_LOCK = asyncio.Lock()
 _ASSETS_READY = False
+
+
+@dataclass(frozen=True)
+class LootShareImageRenderResult:
+    filename: str
+    variant: str
+    items_placed: int
+    total_variant_items: int
+    items_excluded_from_variant: list[str]
+    items_not_found: list[str]
 
 
 def _variant_asset_paths(variant: str) -> tuple[str, str]:
@@ -192,19 +203,14 @@ def _collapse_to_highest_rarity(source_items: LootSourceItems) -> list[tuple[str
     return list(collapsed.values())
 
 
-async def generate_loot_share_image(
+async def render_loot_share_image(
     interaction: discord.Interaction,
     *,
     source_items: LootSourceItems,
     include_skins: bool,
     include_limited: bool,
     filename_suffix: str,
-    embed_title: str,
-    embed_color: int,
-    embed_description: str,
-    total_items_label: str,
-    all_variant_extra_lines: Sequence[str] | None = None,
-) -> None:
+) -> LootShareImageRenderResult | None:
     assets_ready = await _ensure_loot_assets_ready()
     if not assets_ready:
         await _send_interaction_text(
@@ -212,25 +218,25 @@ async def generate_loot_share_image(
             "❌ Loot summary assets are unavailable right now. Please try again shortly.",
             ephemeral=True,
         )
-        return
+        return None
 
     variant = variant_from_flags(include_skins, include_limited)
     sprite_csv, background_file = _variant_asset_paths(variant)
 
     if not os.path.exists(sprite_csv):
         await _send_interaction_text(interaction, f"❌ Sprite mapping not found! ({sprite_csv})", ephemeral=True)
-        return
+        return None
 
     if not os.path.exists(background_file):
         await _send_interaction_text(interaction, f"❌ Loot background not found! ({background_file})", ephemeral=True)
-        return
+        return None
 
     try:
         sprite_positions = _load_sprite_positions(sprite_csv)
         item_type_lookup = _load_item_type_lookup()
     except Exception as e:
         await _send_interaction_text(interaction, f"❌ Failed loading loot metadata: {e}", ephemeral=True)
-        return
+        return None
 
     total_variant_items = 0
     items_excluded_from_variant: list[str] = []
@@ -248,7 +254,6 @@ async def generate_loot_share_image(
             items_excluded_from_variant.append(display_name)
 
     background = None
-    sprite_images: dict[str, Image.Image] = {}
     filename = ""
 
     try:
@@ -283,7 +288,7 @@ async def generate_loot_share_image(
                             if img.size != (40, 40):
                                 img = img.resize((40, 40), Image.Resampling.LANCZOS)
                             sprite = img.copy()
-                        
+
                         sprite = overlay_rarity_badge_on_image(sprite, rarity) or sprite
                         pos = sprite_positions[sprite_key]
                         background.paste(sprite, (pos["pixel_x"], pos["pixel_y"]), sprite)
@@ -291,16 +296,65 @@ async def generate_loot_share_image(
                         continue
                     except Exception as e:
                         print(f"Error loading sprite for {sprite_key}: {e}")
-            
+
             items_not_found.append(display_name)
 
-        # safe_username = _safe_username(interaction.user.display_name)
         display_name = getattr(getattr(interaction, "user", None), "display_name", None) or "user"
         safe_username = "".join(c for c in display_name.replace(" ", "_") if c.isalnum() or c in "_-")
         filename = f"{safe_username}_{filename_suffix}.png"
         background.save(filename, "PNG")
 
-        embed = discord.Embed(title=embed_title, color=embed_color, description=embed_description)
+        return LootShareImageRenderResult(
+            filename=filename,
+            variant=variant,
+            items_placed=items_placed,
+            total_variant_items=total_variant_items,
+            items_excluded_from_variant=items_excluded_from_variant,
+            items_not_found=items_not_found,
+        )
+    except Exception as e:
+        print(f"Error generating loot share image: {e}")
+        await _send_interaction_text(interaction, f"❌ An error occurred: {str(e)}", ephemeral=True)
+        return None
+    finally:
+        if background is not None:
+            try:
+                background.close()
+            except Exception:
+                pass
+
+
+async def generate_loot_share_image(
+    interaction: discord.Interaction,
+    *,
+    source_items: LootSourceItems,
+    include_skins: bool,
+    include_limited: bool,
+    filename_suffix: str,
+    embed_title: str,
+    embed_color: int,
+    embed_description: str,
+    total_items_label: str,
+    all_variant_extra_lines: Sequence[str] | None = None,
+) -> None:
+    result = await render_loot_share_image(
+        interaction,
+        source_items=source_items,
+        include_skins=include_skins,
+        include_limited=include_limited,
+        filename_suffix=filename_suffix,
+    )
+    if result is None:
+        return
+
+    embed = discord.Embed(title=embed_title, color=embed_color, description=embed_description)
+    variant = result.variant
+    items_placed = result.items_placed
+    total_variant_items = result.total_variant_items
+    items_excluded_from_variant = result.items_excluded_from_variant
+    items_not_found = result.items_not_found
+
+    try:
         embed.add_field(
             name="🖼️ Picture",
             value=f"**Showing:** {VARIANT_DISPLAY_NAMES.get(variant, variant)}",
@@ -346,27 +400,15 @@ async def generate_loot_share_image(
 
         embed.set_footer(text=f"Generated for {interaction.user.display_name}")
 
-        with open(filename, "rb") as f:
-            file = discord.File(f, filename=filename)
+        with open(result.filename, "rb") as f:
+            file = discord.File(f, filename=result.filename)
             await interaction.followup.send(embed=embed, file=file)
     except Exception as e:
         print(f"Error generating loot share image: {e}")
         await _send_interaction_text(interaction, f"❌ An error occurred: {str(e)}", ephemeral=True)
     finally:
-        if filename and os.path.exists(filename):
+        if result.filename and os.path.exists(result.filename):
             try:
-                os.remove(filename)
+                os.remove(result.filename)
             except OSError:
-                pass
-
-        for img in sprite_images.values():
-            try:
-                img.close()
-            except Exception:
-                pass
-
-        if background is not None:
-            try:
-                background.close()
-            except Exception:
                 pass

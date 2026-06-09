@@ -45,6 +45,20 @@ def _normalize_history_map(raw_history: Any) -> Dict[str, list[int]]:
             result[key] = timestamps
 
     return result
+
+
+def collect_season_variants(player_data_iterable: Any) -> list[tuple[str, bool, str, list[int]]]:
+    variants: list[tuple[str, bool, str, list[int]]] = []
+    if player_data_iterable is None:
+        return variants
+
+    for player_data in player_data_iterable:
+        variants.extend(iter_season_variants(player_data))
+
+    variants.sort(key=lambda row: (row[0].lower(), row[1], row[2]))
+    return variants
+
+
 def add_season_item_log(
     player_data: Any,
     *,

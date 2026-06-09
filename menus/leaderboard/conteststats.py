@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 from collections import Counter
+import os
 from pathlib import Path
 
 import discord
@@ -10,11 +11,12 @@ from menus.leaderboard.common import send_error_response
 from menus.leaderboard.services import member_display_name, require_guild
 from utils.calc_points import normalize_item_name
 from utils.guild_config import get_quest_points, load_guild_config
+from utils.loot_helpers.shareloot_image import render_loot_share_image
 from utils.points_service import compute_effective_ppe_points
 from utils.player_records import load_player_records
 from utils.ppe_types import normalize_ppe_type
 from utils.ppe_display import format_ppe_label_from_options
-from utils.season_loot_history import season_unique_items
+from utils.season_loot_history import collect_season_variants, season_unique_items
 
 _LOOT_CSV_PATH = Path("rotmg_loot_drops_updated.csv")
 _ITEM_TO_DUNGEON: dict[str, str] | None = None
@@ -54,6 +56,9 @@ async def command(interaction: discord.Interaction) -> None:
     if guild is None:
         return
 
+    if not interaction.response.is_done():
+        await interaction.response.defer()
+
     try:
         records = await load_player_records(interaction)
         guild_config = await load_guild_config(interaction)
@@ -73,7 +78,7 @@ async def command(interaction: discord.Interaction) -> None:
                 description="No contest members found yet.",
                 color=discord.Color.green(),
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
         player_totals: list[dict[str, object]] = []
@@ -297,6 +302,28 @@ async def command(interaction: discord.Interaction) -> None:
         )
 
         embed.set_footer(text="PPE Wrapped: Contest Edition")
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
+
+        season_variants = collect_season_variants(data for _user_id, data in members)
+        season_image_result = await render_loot_share_image(
+            interaction,
+            source_items=[(item_name, shiny, rarity) for item_name, shiny, rarity, _timestamps in season_variants],
+            include_skins=True,
+            include_limited=True,
+            filename_suffix="contest_stats_all_loot",
+        )
+
+        if season_image_result is None:
+            return
+
+        try:
+            with open(season_image_result.filename, "rb") as file_handle:
+                await interaction.followup.send(file=discord.File(file_handle, filename="contest_stats_all_loot.png"))
+        finally:
+            if season_image_result.filename and os.path.exists(season_image_result.filename):
+                try:
+                    os.remove(season_image_result.filename)
+                except OSError:
+                    pass
     except Exception as exc:
         await send_error_response(interaction, str(exc))
