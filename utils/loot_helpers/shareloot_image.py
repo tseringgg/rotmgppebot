@@ -52,6 +52,7 @@ class LootShareImageRenderResult:
     variant: str
     items_placed: int
     total_variant_items: int
+    total_unique_items: int
     items_excluded_from_variant: list[str]
     items_not_found: list[str]
 
@@ -309,6 +310,7 @@ async def render_loot_share_image(
             variant=variant,
             items_placed=items_placed,
             total_variant_items=total_variant_items,
+            total_unique_items=len(normalized_items),
             items_excluded_from_variant=items_excluded_from_variant,
             items_not_found=items_not_found,
         )
@@ -351,6 +353,7 @@ async def generate_loot_share_image(
     variant = result.variant
     items_placed = result.items_placed
     total_variant_items = result.total_variant_items
+    total_unique_items = result.total_unique_items
     items_excluded_from_variant = result.items_excluded_from_variant
     items_not_found = result.items_not_found
 
@@ -364,7 +367,7 @@ async def generate_loot_share_image(
         if variant == "all":
             summary_lines = [
                 f"**Items Placed:** {items_placed}",
-                f"**{total_items_label}:** {len(normalized_items)}",
+                f"**{total_items_label}:** {total_unique_items}",
             ]
             if all_variant_extra_lines:
                 summary_lines.extend(all_variant_extra_lines)
