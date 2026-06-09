@@ -314,7 +314,7 @@ async def command(interaction: discord.Interaction) -> None:
             source_items=[(item_name, shiny, rarity) for item_name, shiny, rarity, _timestamps in season_variants],
             include_skins=True,
             include_limited=True,
-            exclude_limited_from_counts=exclude_limited_from_counts,
+            exclude_limited_from_counts=False,
             filename_suffix="contest_stats_all_loot",
         )
 
