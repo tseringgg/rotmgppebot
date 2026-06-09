@@ -209,7 +209,6 @@ async def render_loot_share_image(
     source_items: LootSourceItems,
     include_skins: bool,
     include_limited: bool,
-    exclude_limited_from_counts: bool = False,
     filename_suffix: str,
 ) -> LootShareImageRenderResult | None:
     assets_ready = await _ensure_loot_assets_ready()
@@ -331,7 +330,6 @@ async def generate_loot_share_image(
     source_items: LootSourceItems,
     include_skins: bool,
     include_limited: bool,
-    exclude_limited_from_counts: bool = False,
     filename_suffix: str,
     embed_title: str,
     embed_color: int,
@@ -344,7 +342,6 @@ async def generate_loot_share_image(
         source_items=source_items,
         include_skins=include_skins,
         include_limited=include_limited,
-        exclude_limited_from_counts=exclude_limited_from_counts,
         filename_suffix=filename_suffix,
     )
     if result is None:
@@ -367,7 +364,7 @@ async def generate_loot_share_image(
         if variant == "all":
             summary_lines = [
                 f"**Items Placed:** {items_placed}",
-                f"**{total_items_label}:** {total_variant_items}",
+                f"**{total_items_label}:** {len(normalized_items)}",
             ]
             if all_variant_extra_lines:
                 summary_lines.extend(all_variant_extra_lines)

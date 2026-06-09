@@ -5,14 +5,13 @@ from __future__ import annotations
 import discord
 
 from menus.myinfo.common import build_home_embed, refresh_player_data
-from utils.guild_config import get_max_ppes, load_guild_config
+from utils.guild_config import get_max_ppes
 
 
 async def open_myinfo_home(interaction: discord.Interaction, *, max_ppes: int) -> None:
     from menus.myinfo.submenus.home.views import MyInfoHomeView
 
     player_data = await refresh_player_data(interaction, interaction.user.id)
-    guild_config = await load_guild_config(interaction)
 
     active_ppe = None
     for ppe in player_data.ppes:
@@ -20,7 +19,7 @@ async def open_myinfo_home(interaction: discord.Interaction, *, max_ppes: int) -
             active_ppe = ppe
             break
 
-    embed = build_home_embed(interaction.user, player_data, active_ppe, max_ppes=max_ppes, guild_config=guild_config)
+    embed = build_home_embed(interaction.user, player_data, active_ppe, max_ppes=max_ppes)
     view = MyInfoHomeView(interaction.user.id, max_ppes=max_ppes)
     await interaction.response.edit_message(embed=embed, view=view)
 
@@ -36,7 +35,6 @@ async def open_myinfo_menu(interaction: discord.Interaction) -> None:
 
     player_data = await refresh_player_data(interaction, interaction.user.id)
     max_ppes = await get_max_ppes(interaction)
-    guild_config = await load_guild_config(interaction)
 
     active_ppe = None
     for ppe in player_data.ppes:
@@ -44,7 +42,7 @@ async def open_myinfo_menu(interaction: discord.Interaction) -> None:
             active_ppe = ppe
             break
 
-    embed = build_home_embed(interaction.user, player_data, active_ppe, max_ppes=max_ppes, guild_config=guild_config)
+    embed = build_home_embed(interaction.user, player_data, active_ppe, max_ppes=max_ppes)
     view = MyInfoHomeView(interaction.user.id, max_ppes=max_ppes)
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 

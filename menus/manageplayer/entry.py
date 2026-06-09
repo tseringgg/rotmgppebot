@@ -11,7 +11,7 @@ from menus.manageplayer.common import (
 )
 from menus.manageplayer.services import load_target_player_data, target_has_admin_role
 from menus.manageplayer.targets import ManagedPlayerTarget, resolve_target
-from utils.guild_config import get_max_ppes, load_guild_config
+from utils.guild_config import get_max_ppes
 
 
 async def _refresh_target_member(target: ManagedPlayerTarget, interaction: discord.Interaction) -> None:
@@ -37,7 +37,6 @@ async def open_manageplayer_home(
         await _refresh_target_member(target, interaction)
 
     player_data = await load_target_player_data(interaction, target.user_id)
-    guild_config = await load_guild_config(interaction)
     active_ppe = active_ppe_for_player(player_data)
     is_target_admin = target_has_admin_role(interaction, target)
     owner_can_manage_admin = bool(interaction.guild and int(owner_id) == int(interaction.guild.owner_id))
@@ -57,7 +56,6 @@ async def open_manageplayer_home(
         active_ppe=active_ppe,
         max_ppes=max_ppes,
         target_is_admin=is_target_admin,
-        guild_config=guild_config,
     )
     view = ManagePlayerHomeView(
         owner_id=owner_id,
@@ -89,7 +87,6 @@ async def open_manageplayer_menu(
 
     assert target is not None
     player_data = await load_target_player_data(interaction, target.user_id)
-    guild_config = await load_guild_config(interaction)
     active_ppe = active_ppe_for_player(player_data)
     max_ppes = await get_max_ppes(interaction)
     is_target_admin = target_has_admin_role(interaction, target)
@@ -107,7 +104,6 @@ async def open_manageplayer_menu(
         active_ppe=active_ppe,
         max_ppes=max_ppes,
         target_is_admin=is_target_admin,
-        guild_config=guild_config,
     )
     view = ManagePlayerHomeView(
         owner_id=interaction.user.id,

@@ -63,12 +63,6 @@ async def command(interaction: discord.Interaction) -> None:
         records = await load_player_records(interaction)
         guild_config = await load_guild_config(interaction)
         ppe_settings = guild_config.get("ppe_settings", {}) if isinstance(guild_config.get("ppe_settings", {}), dict) else {}
-        contest_settings = (
-            guild_config.get("contest_settings", {})
-            if isinstance(guild_config, dict) and isinstance(guild_config.get("contest_settings", {}), dict)
-            else {}
-        )
-        exclude_limited_from_counts = bool(contest_settings.get("contest_leaderboard_ignore_limited_items", False))
         regular_points, shiny_points, skin_points = await get_quest_points(interaction)
         item_to_dungeon = _load_item_to_dungeon()
 
@@ -94,6 +88,7 @@ async def command(interaction: discord.Interaction) -> None:
 
         total_characters = 0
         total_points = 0.0
+        total_unique_season = 0
         total_completed_quests = 0
 
         for user_id, data in members:
@@ -103,7 +98,7 @@ async def command(interaction: discord.Interaction) -> None:
             display_name = member_display_name(guild, user_id)
             player_points = sum(compute_effective_ppe_points(ppe, guild_config=guild_config) for ppe in ppes)
             player_character_count = len(ppes)
-            player_unique_season = len(season_unique_items(data, exclude_limited=exclude_limited_from_counts))
+            player_unique_season = len(season_unique_items(data))
 
             completed_regular = len(getattr(quest_data, "completed_items", []) or [])
             completed_shiny = len(getattr(quest_data, "completed_shinies", []) or [])
@@ -171,6 +166,7 @@ async def command(interaction: discord.Interaction) -> None:
             )
 
             total_characters += player_character_count
+            total_points += player_points
             total_unique_season += player_unique_season
             total_completed_quests += completed_total
 
@@ -314,7 +310,6 @@ async def command(interaction: discord.Interaction) -> None:
             source_items=[(item_name, shiny, rarity) for item_name, shiny, rarity, _timestamps in season_variants],
             include_skins=True,
             include_limited=True,
-            exclude_limited_from_counts=False,
             filename_suffix="contest_stats_all_loot",
         )
 

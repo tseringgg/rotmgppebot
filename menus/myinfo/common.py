@@ -179,7 +179,6 @@ def build_home_embed(
     active_ppe: PPEData | None,
     *,
     max_ppes: int,
-    guild_config: dict | None = None,
 ) -> discord.Embed:
     best_ppe = get_best_ppe(player_data)
 
@@ -204,20 +203,10 @@ def build_home_embed(
         description="Everything for your PPE tracking in one place.",
         color=discord.Color.blurple(),
     )
-    contest_settings = (
-        guild_config.get("contest_settings", {})
-        if isinstance(guild_config, dict) and isinstance(guild_config.get("contest_settings", {}), dict)
-        else {}
-    )
-    exclude_limited_from_counts = bool(contest_settings.get("contest_leaderboard_ignore_limited_items", False))
     team_name = player_data.team_name or "N/A"
     embed.add_field(name="Number of PPEs", value=f"**{len(player_data.ppes)}/{max_ppes}**", inline=True)
     embed.add_field(name="Best PPE", value=best_line, inline=True)
-    embed.add_field(
-        name="Number of Season Items",
-        value=f"**{unique_season_item_count(player_data, exclude_limited=exclude_limited_from_counts)}**",
-        inline=True,
-    )
+    embed.add_field(name="Number of Season Items", value=f"**{unique_season_item_count(player_data)}**", inline=True)
     embed.add_field(name="Team", value=f"**{team_name}**", inline=True)
     embed.add_field(name="Current Active PPE", value=active_line, inline=False)
 
@@ -322,13 +311,6 @@ async def realmshark_connected_ppe_ids(interaction: discord.Interaction, user_id
 
 
 async def send_season_loot_markdown_followup(interaction: discord.Interaction) -> None:
-    guild_config = await load_guild_config(interaction)
-    contest_settings = (
-        guild_config.get("contest_settings", {})
-        if isinstance(guild_config, dict) and isinstance(guild_config.get("contest_settings", {}), dict)
-        else {}
-    )
-    exclude_limited_from_counts = bool(contest_settings.get("contest_leaderboard_ignore_limited_items", False))
     records = await load_player_records(interaction)
     key = ensure_player_exists(records, interaction.user.id)
 
@@ -349,7 +331,6 @@ async def send_season_loot_markdown_followup(interaction: discord.Interaction) -
     temp_file_path = create_season_loot_markdown_file(
         player_data.season_item_history,
         display_name=interaction.user.display_name,
-        exclude_limited_from_counts=exclude_limited_from_counts,
     )
 
     try:

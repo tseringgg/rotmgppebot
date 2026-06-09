@@ -679,7 +679,6 @@ def build_leaderboard_manager_embed(settings: dict) -> discord.Embed:
     ppe_aggregate_enabled = bool(settings.get("ppe_aggregate_points_enabled", False))
     ppe_quest_enabled = bool(settings.get("ppe_contest_include_quest_points", False))
     ppe_active_filter_enabled = bool(settings.get("ppe_contest_require_active_ppe_quest_items", True))
-    contest_ignore_limited_enabled = bool(settings.get("contest_leaderboard_ignore_limited_items", False))
     team_aggregate_enabled = bool(settings.get("team_aggregate_points_enabled", False))
     team_quest_enabled = bool(settings.get("team_contest_include_quest_points", False))
 
@@ -713,15 +712,6 @@ def build_leaderboard_manager_embed(settings: dict) -> discord.Embed:
             f"Current status: **{'Enabled' if ppe_active_filter_enabled else 'Disabled'}**\n"
             "When enabled, PPE quest points only count completed quests where the item exists on that player's active PPE loot.\n"
             "When disabled, all completed quests count for PPE quest points (legacy behavior)."
-        ),
-        inline=False,
-    )
-    embed.add_field(
-        name="Ignore Limited Items in Leaderboards",
-        value=(
-            f"Current status: **{'Enabled' if contest_ignore_limited_enabled else 'Disabled'}**\n"
-            "When enabled, season leaderboard scores skip Limited items from the CSV.\n"
-            "Limited items still appear in loot images and seasonal item summaries."
         ),
         inline=False,
     )
