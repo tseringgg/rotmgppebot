@@ -37,7 +37,9 @@ def _normalize_item_name(name: str) -> str:
 @lru_cache(maxsize=1)
 def _load_limited_item_names() -> set[str]:
     limited_items: set[str] = set()
-    with _LOOT_CSV_PATH.open("r", encoding="utf-8", newline="") as fp:
+    
+    # FIX 1: Changed encoding to "utf-8-sig" to strip invisible BOM characters
+    with _LOOT_CSV_PATH.open("r", encoding="utf-8-sig", newline="") as fp:
         reader = csv.DictReader(fp)
         for row in reader:
             if str(row.get("Loot Type", "")).strip().casefold() != "limited":
@@ -51,7 +53,9 @@ def _load_limited_item_names() -> set[str]:
 def _is_csv_limited_item(item_name: str, *, shiny: bool) -> bool:
     try:
         limited_items = _load_limited_item_names()
-    except OSError:
+    except OSError as e:
+        # FIX 2: Print the error so you know if the file path is wrong!
+        print(f"[Leaderboard Warning] Failed to load limited items CSV: {e}")
         return False
 
     normalized_name = _normalize_item_name(item_name).casefold()
@@ -92,6 +96,7 @@ async def command(interaction: discord.Interaction):
         exclude_limited_from_counts = _setting_enabled(
             contest_settings.get("contest_leaderboard_ignore_limited_items", False)
         )
+        print(f"[Leaderboard] Exclude limited items from counts: {exclude_limited_from_counts}")
 
         leaderboard_data = []
         for pid, data in records.items():
