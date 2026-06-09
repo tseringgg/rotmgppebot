@@ -68,6 +68,13 @@ async def share_season_loot_image(
 ) -> None:
     try:
         records = await load_player_records(interaction)
+        guild_config = await load_guild_config(interaction)
+        contest_settings = (
+            guild_config.get("contest_settings", {})
+            if isinstance(guild_config, dict) and isinstance(guild_config.get("contest_settings", {}), dict)
+            else {}
+        )
+        exclude_limited_from_counts = bool(contest_settings.get("contest_leaderboard_ignore_limited_items", False))
         resolved_target_user_id = int(target_user_id) if target_user_id is not None else int(interaction.user.id)
         resolved_target_display_name = target_display_name or interaction.user.display_name
         key = ensure_player_exists(records, resolved_target_user_id)
@@ -102,6 +109,7 @@ async def share_season_loot_image(
         source_items=[(item_name, shiny, rarity) for item_name, shiny, rarity, _timestamps in season_variants],
         include_skins=include_skins,
         include_limited=include_limited,
+        exclude_limited_from_counts=exclude_limited_from_counts,
         filename_suffix="season_loot",
         embed_title="🎒 Season Loot Share",
         embed_color=0xFFD700,

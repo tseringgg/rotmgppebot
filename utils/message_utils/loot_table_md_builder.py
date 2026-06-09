@@ -342,6 +342,7 @@ def create_season_loot_markdown_file(
     season_item_history: dict[str, list[int]] | None,
     *,
     display_name: str,
+    exclude_limited_from_counts: bool = False,
 ) -> str:
     """Create a markdown file for season loot variants, grouped by dungeon when possible."""
     class _SeasonHistoryProxy:
@@ -350,8 +351,13 @@ def create_season_loot_markdown_file(
 
     variant_rows = iter_season_variants(_SeasonHistoryProxy(season_item_history))
     builder = MarkdownMessageBuilder(f"Season Loot for {display_name}")
-    unique_items = {(item_name, shiny) for item_name, shiny, _rarity, _timestamps in variant_rows}
-    total_logs = sum(len(timestamps) for _item_name, _shiny, _rarity, timestamps in variant_rows)
+    countable_rows = [
+        row
+        for row in variant_rows
+        if not (exclude_limited_from_counts and str(row[2]).strip().lower() == "limited")
+    ]
+    unique_items = {(item_name, shiny) for item_name, shiny, _rarity, _timestamps in countable_rows}
+    total_logs = sum(len(timestamps) for _item_name, _shiny, _rarity, timestamps in countable_rows)
     builder.add_paragraph(f"Total unique items: {len(unique_items)}")
     builder.add_paragraph(f"Total variant entries: {len(variant_rows)}")
     builder.add_paragraph(f"Total logged pickups: {total_logs}")
