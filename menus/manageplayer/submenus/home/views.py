@@ -28,7 +28,7 @@ from menus.manageplayer.targets import ManagedPlayerTarget
 from menus.menu_utils import OwnerBoundView
 from menus.menu_utils.embed_pager_view import OwnerBoundEmbedPagerView
 from menus.myquests import open_myquests_menu_for_player
-from utils.guild_config import load_guild_config, get_max_ppes
+from utils.guild_config import get_max_ppes, load_guild_config
 from utils.player_records import load_teams
 from dataclass import ROTMGClass
 from utils.points_service import loot_adjustment_detail_lines
@@ -489,6 +489,7 @@ class ManagePlayerHomeView(OwnerBoundView):
 
     async def refresh_embed(self, interaction: discord.Interaction) -> discord.Embed:
         player_data = await load_target_player_data(interaction, self.target.user_id)
+        guild_config = await load_guild_config(interaction)
         active_ppe = None
         for ppe in player_data.ppes:
             if ppe.id == player_data.active_ppe:
@@ -500,6 +501,7 @@ class ManagePlayerHomeView(OwnerBoundView):
             active_ppe=active_ppe,
             max_ppes=self.max_ppes,
             target_is_admin=target_has_admin_role(interaction, self.target),
+            guild_config=guild_config,
         )
 
     @discord.ui.button(label="Show Season Stats", style=discord.ButtonStyle.primary, row=0)

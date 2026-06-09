@@ -2,6 +2,7 @@ import discord
 
 from menus.leaderboard.common import build_ranked_entry_lines, send_error_response, send_leaderboard
 from menus.leaderboard.services import member_display_name, require_guild
+from utils.guild_config import load_guild_config
 from utils.player_records import load_player_records
 from utils.season_loot_history import unique_season_item_count
 
@@ -13,13 +14,20 @@ async def command(interaction: discord.Interaction):
 
     try:
         records = await load_player_records(interaction)
+        guild_config = await load_guild_config(interaction)
+        contest_settings = (
+            guild_config.get("contest_settings", {})
+            if isinstance(guild_config, dict) and isinstance(guild_config.get("contest_settings", {}), dict)
+            else {}
+        )
+        exclude_limited_from_counts = bool(contest_settings.get("contest_leaderboard_ignore_limited_items", False))
 
         leaderboard_data = []
         for pid, data in records.items():
             if not data.is_member:
                 continue
 
-            unique_count = int(unique_season_item_count(data))
+            unique_count = int(unique_season_item_count(data, exclude_limited=exclude_limited_from_counts))
             if unique_count == 0:
                 continue
 

@@ -312,6 +312,19 @@ async def update_ppe_contest_active_ppe_quest_filter_setting(
     )
 
 
+async def update_contest_leaderboard_ignore_limited_items_setting(
+    interaction: discord.Interaction,
+    *,
+    enabled: bool,
+) -> dict[str, Any]:
+    """Toggle whether contest leaderboard season-item counts ignore limited items."""
+    return await _update_contest_bool_setting(
+        interaction,
+        setting_key="contest_leaderboard_ignore_limited_items",
+        enabled=enabled,
+    )
+
+
 async def update_ppe_aggregate_points_setting(
     interaction: discord.Interaction,
     *,

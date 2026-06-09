@@ -59,6 +59,10 @@ def collect_season_variants(player_data_iterable: Any) -> list[tuple[str, bool, 
     return variants
 
 
+def _is_limited_variant(rarity: str) -> bool:
+    return str(rarity).strip().lower() == "limited"
+
+
 def add_season_item_log(
     player_data: Any,
     *,
@@ -110,7 +114,7 @@ def remove_season_item_log(
     return removed_count
 
 
-def iter_season_variants(player_data: Any) -> list[tuple[str, bool, str, list[int]]]:
+def iter_season_variants(player_data: Any, *, exclude_limited: bool = False) -> list[tuple[str, bool, str, list[int]]]:
     history = _normalize_history_map(getattr(player_data, "season_item_history", {}))
     variants: list[tuple[str, bool, str, list[int]]] = []
 
@@ -119,6 +123,8 @@ def iter_season_variants(player_data: Any) -> list[tuple[str, bool, str, list[in
         if parsed is None:
             continue
         item_name, shiny, rarity = parsed
+        if exclude_limited and _is_limited_variant(rarity):
+            continue
         variants.append((item_name, shiny, rarity, list(timestamps)))
 
     variants.sort(key=lambda row: (row[0].lower(), row[1], row[2]))
@@ -129,14 +135,20 @@ def total_season_logs(player_data: Any) -> int:
     return sum(len(ts) for _, _, _, ts in iter_season_variants(player_data))
 
 
-def unique_season_item_count(player_data: Any) -> int:
-    seen = {(item_name, shiny) for item_name, shiny, _rarity, _ts in iter_season_variants(player_data)}
+def unique_season_item_count(player_data: Any, *, exclude_limited: bool = False) -> int:
+    seen = {
+        (item_name, shiny)
+        for item_name, shiny, _rarity, _ts in iter_season_variants(player_data, exclude_limited=exclude_limited)
+    }
     return len(seen)
 
 
-def season_unique_items(player_data: Any) -> set[tuple[str, bool]]:
+def season_unique_items(player_data: Any, *, exclude_limited: bool = False) -> set[tuple[str, bool]]:
     """Return the set of unique seasonal item/base-shiny pairs for a player."""
-    return {(item_name, shiny) for item_name, shiny, _rarity, _ts in iter_season_variants(player_data)}
+    return {
+        (item_name, shiny)
+        for item_name, shiny, _rarity, _ts in iter_season_variants(player_data, exclude_limited=exclude_limited)
+    }
 
 
 def season_variant_count(player_data: Any) -> int:
