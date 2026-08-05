@@ -100,6 +100,7 @@ Skin,Mini Limon Pet Skin,0,Sprite World
 Skin,Sprite Star Pet Skin,0,Sprite World
 ""
 White or ST,Arcane Rapier,3.0,Ancient Ruins
+White or ST,Titan's Heart,3.0,Ancient Ruins
 UT,Amber Encrusted Helmet,0,Ancient Ruins
 UT,Sandstone Seal,0,Ancient Ruins
 White or ST,Arcane Rapier (shiny),6,Ancient Ruins
@@ -372,12 +373,38 @@ White or ST,Alien Core Corrosion,10.0,Forax
 White or ST,Neo Essence,10.0,Calbrik
 White or ST,Miniature Alien Generator,10.0,Calbrik
 White or ST,Laser Rifle,10.0,Calbrik
+White or ST,Neo Laser Rifle,10.0,Calbrik
 White or ST,Fitted Protective Matrix,10.0,Calbrik
 White or ST,Magic Protective Matrix,10.0,Calbrik
 White or ST,Heavy Protective Matrix,10.0,Calbrik
+White or ST,Neo Essence,10.0,Calbrik
 White or ST,Fitted Protective Matrix (shiny),20,Calbrik
 White or ST,Magic Protective Matrix (shiny),20,Calbrik
 White or ST,Heavy Protective Matrix (shiny),20,Calbrik
+""
+White or ST,Neo Sun's Judgement,8.0,Neo Malogia
+White or ST,Neo Fire Blade,8.0,Neo Malogia
+White or ST,Neo Comet of Calamity,8.0,Neo Malogia
+""
+White or ST,Neo Moonbeam Blade,8.0,Neo Untaris
+White or ST,Neo Dueling Daggers,8.0,Neo Untaris
+White or ST,Neo Snowblind Wand,8.0,Neo Untaris
+""
+White or ST,Neo Warlord Wand,8.0,Neo Katalund
+White or ST,Neo Gaseous Glaive,8.0,Neo Katalund
+White or ST,Neo Blazon Bow,8.0,Neo Katalund
+""
+White or ST,Neo Foramite Staff,8.0,Neo Forax
+White or ST,Neo Acidic Slasher,8.0,Neo Forax
+White or ST,Corrosion Cutter,8.0,Neo Forax
+""
+White or ST,Neo Alien Core Warp,10.0,Katalund
+White or ST,Neo Alien Core Dark Matter,10.0,Untaris
+White or ST,Neo Alien Core Power,10.0,Malogia
+White or ST,Neo Alien Core Corrosion,10.0,Forax
+White or ST,Neo Fitted Protective Matrix,10.0,Calbrik
+White or ST,Neo Magic Protective Matrix,10.0,Calbrik
+White or ST,Neo Heavy Protective Matrix,10.0,Calbrik
 ""
 White or ST,Silken Sigil,5.5,The Crawling Depths
 White or ST,Spider Silk Bow,5.5,The Crawling Depths
@@ -392,6 +419,7 @@ White or ST,Elder Heartwood Staff,5.5,Woodland Labyrinth
 White or ST,Wakizashi of Eastern Winds,5.5,Woodland Labyrinth
 White or ST,Labyrinth Dweller's Sheath,5.5,Woodland Labyrinth
 White or ST,Leaf Bow (shiny),11,Woodland Labyrinth
+White or ST,Elder Heartwood Staff (shiny),11,Woodland Labyrinth
 White or ST,Wakizashi of Eastern Winds (shiny),11,Woodland Labyrinth
 White or ST,Labyrinth Dweller's Sheath (shiny),11,Woodland Labyrinth
 Skin,Woodland Huntress Skin,0,Woodland Labyrinth
@@ -599,6 +627,7 @@ White or ST,Ase's Echo,7.0,Ice Citadel
 White or ST,Esben's Wedding Ring,7.0,Ice Citadel
 White or ST,Esben's Twisted Heart,7.0,Ice Citadel
 White or ST,Esben's Shaman Attire,7.0,Ice Citadel
+White or ST,Esben's Vows (shiny),14,Ice Citadel
 White or ST,Ase's Echo (shiny),14,Ice Citadel
 White or ST,Esben's Twisted Heart (shiny),14,Ice Citadel
 White or ST,Esben's Shaman Attire (shiny),14,Ice Citadel
@@ -675,14 +704,16 @@ White or ST,Crystal Shield,7.5,Fungal Cavern
 White or ST,Sporous Spray Spell,7.5,Fungal Cavern
 White or ST,Tome of the Mushroom Tribes,7.5,Fungal Cavern
 White or ST,Cave Dweller Trap,7.5,Fungal Cavern
+White or ST,Crystalline Sigil,7.5,Fungal Cavern
 White or ST,Ring of Decades,7.5,Fungal Cavern
 White or ST,Fungal Breastplate (shiny),15,Fungal Cavern
+White or ST,Crystallized Worm Spellblade (shiny),15,Fungal Cavern
 White or ST,Crystal Shield (shiny),15,Fungal Cavern
 White or ST,Sporous Spray Spell (shiny),15,Fungal Cavern
 White or ST,Tome of the Mushroom Tribes (shiny),15,Fungal Cavern
 White or ST,Cave Dweller Trap (shiny),15,Fungal Cavern
+White or ST,Crystalline Sigil (shiny),15,Fungal Cavern
 White or ST,Ring of Decades (shiny),15,Fungal Cavern
-White or ST,Crystalline Sigil,7.5,Fungal Cavern
 White or ST,Quartz Cutter,7.5,Fungal Cavern
 White or ST,Crystalline Kunai,7.5,Fungal Cavern
 White or ST,Luminous Armor,7.5,Fungal Cavern
@@ -860,6 +891,7 @@ White or ST,Warmonger (shiny),20,The Shatters
 White or ST,Peacekeeper (shiny),20,The Shatters
 White or ST,Noble Mandolin (shiny),20,The Shatters
 White or ST,The Forgotten Crown (shiny),20,The Shatters
+White or ST,The Forgotten Ring (shiny),20.0,The Shatters
 White or ST,Corruption Tether,10.0,The Shatters
 White or ST,Ancient Eminence,10.0,The Shatters
 White or ST,Twilight Shroud,10.0,The Shatters
@@ -907,6 +939,7 @@ Event White,Crystal Sword (shiny),20,The Realm
 Event White,Quiver of Thunder (shiny),20,The Realm
 Event White,Orb of Conflict (shiny),20,The Realm
 Event White,Dirk of Cronus (shiny),20,The Realm
+Event White,Hama Yumi (shiny),20,The Realm
 Event White,Trap of the Vile Spirit (shiny),20,The Realm
 Event White,Greaterhosen (shiny),20,The Realm
 Event White,Helm of the Juggernaut (shiny),20,The Realm
@@ -1162,7 +1195,7 @@ Limited,Diving Weights,5,Slurp Reskin
 Limited,Ornaments of Unity,10.0,The Tinkerer (Oryxmas)
 Limited,Eternal Echo,10,The Tinkerer (Oryxmas)
 Limited,Eden's Embrace,15,Snake Invasion 3
-
+""
 Limited,Legion Elite Cloak,0,Stromwell
 Limited,Legion Elite Quiver,0,Stromwell
 Limited,Legion Elite Spell,0,Stromwell
@@ -1221,3 +1254,13 @@ Limited,Legion Elite Plate Armor,0,Stromwell
 Limited,Legion Elite Robe,0,Stromwell
 Limited,Legion Elite Leather Armor,0,Stromwell
 Limited,Nightmatter Circlet,15.0,Stromwell 3
+""
+Limited,Retrowinds Dagger,0,Retrowinds
+Limited,Retrowinds Bow,0,Retrowinds
+Limited,Retrowinds Staff,0,Retrowinds
+Limited,Retrowinds Wand,0,Retrowinds
+Limited,Retrowinds Sword,0,Retrowinds
+Limited,Retrowinds Katana,0,Retrowinds
+Limited,Retrowinds Robe,0,Retrowinds
+Limited,Retrowinds Leather Armor,0,Retrowinds
+Limited,Retrowinds Heavy Armor,0,Retrowinds
