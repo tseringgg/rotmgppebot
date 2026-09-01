@@ -934,6 +934,19 @@ Event White,Greaterhosen,10,The Realm
 Event White,Crystal Sword,10,The Realm
 Event White,Crystal Wand,10,The Realm
 Event White,Crystal Mace,10,The Realm
+Event White,Shifting Shroud,10,The Realm
+Event White,Cold Front,10,The Realm
+Event White,Babel Blocks,10,The Realm
+Event White,Barnacle Shell,10,The Realm
+Event White,Obsidian Lyre,10,The Realm
+Event White,Rectangular Prism,10,The Realm
+Event White,Wrathful Conduit,10,The Realm
+Event White,Rift Rippers,10,The Realm
+Event White,Scary Stories,10,The Realm
+Event White,General's Arsenal,10,The Realm
+Event White,Fossilized Skull,10,The Realm
+Event White,Skeletal Sigilpede,10,The Realm
+Event White,Ravenous Wand,10,The Realm
 ""
 Event White,Crystal Sword (shiny),20,The Realm
 Event White,Quiver of Thunder (shiny),20,The Realm
@@ -970,6 +983,20 @@ Biome White,Evolutionary Records,10,The Realm
 Biome White,Pollen Incendiary,10,The Realm
 Biome White,Bloodbath Blade,10,The Realm
 Biome White,Runes of Knowledge,10,The Realm
+""
+Biome White,Adventurer's Scarf (shiny),20,The Realm
+Biome White,Torrential Staff (shiny),20,The Realm
+Biome White,Celestial Recurve (shiny),20,The Realm
+Biome White,Mace of the Pumpkin Effigy (shiny),20,The Realm
+Biome White,Pirate's Artillery (shiny),20,The Realm
+Biome White,Skull of Restless Souls (shiny),20,The Realm
+Biome White,Doom's Emblem (shiny),20,The Realm
+Biome White,Cavalry Lance (shiny),20,The Realm
+Biome White,Cloak of the Deep (shiny),20,The Realm
+Biome White,Evolutionary Records (shiny),20,The Realm
+Biome White,Pollen Incendiary (shiny),20,The Realm
+Biome White,Bloodbath Blade (shiny),20,The Realm
+Biome White,Runes of Knowledge (shiny),20,The Realm
 ""
 Item,Kendo Stick,0,The Realm
 Event White,Kendo Stick (shiny),100,The Realm
@@ -1264,3 +1291,21 @@ Limited,Retrowinds Katana,0,Retrowinds
 Limited,Retrowinds Robe,0,Retrowinds
 Limited,Retrowinds Leather Armor,0,Retrowinds
 Limited,Retrowinds Heavy Armor,0,Retrowinds
+""
+Limited,Venerable Ancient Stone Sword,5,Echoes of the Past
+Limited,Venerable Spirit Dagger,5,Echoes of the Past
+Limited,Venerable Doom Bow,5,Echoes of the Past
+Limited,Venerable Staff of the Crystal Serpent,5,Echoes of the Past
+Limited,Venerable Crystal Wand,5,Echoes of the Past
+Limited,Venerable Doku No Ken,5,Echoes of the Past
+Limited,Venerable Resurrected Warriors Armor,5,Echoes of the Past
+Limited,Venerable Coral Silk Armor,5,Echoes of the Past
+Limited,Venerable Robe of the Mad Scientist,5,Echoes of the Past
+Limited,Venerable Ring of the Pyramid,5,Echoes of the Past
+Limited,Venerable Ring of the Nile,5,Echoes of the Past
+Limited,Venerable Ring of the Sphinx,5,Echoes of the Past
+""
+Limited,Staff of Rich History,5,Echoes of the Past
+Limited,Entrancing Hourglass,5,Echoes of the Past
+Limited,Traditional Blouse,5,Echoes of the Past
+Limited,Bronze Pocketwatch,5,Echoes of the Past
