@@ -927,6 +927,16 @@ def _extract_retry_after_seconds(exc: discord.errors.HTTPException) -> float | N
     return None
 
 
+def _is_cloudflare_block_page(exc: discord.errors.HTTPException) -> bool:
+    """Return whether Discord sent an HTML Cloudflare block page, not an API response."""
+    text = str(exc).lower()
+    return (
+        "access denied | discord.com used cloudflare" in text
+        or "cloudflare to restrict access" in text
+        or "you are being blocked from accessing our api" in text
+    )
+
+
 def _format_discord_rate_limit_details(
     exc: discord.errors.HTTPException,
     *,
@@ -1040,6 +1050,14 @@ async def run_bot_with_backoff(token: str, max_retries: int = 3):
     max_backoff_seconds = 300.0
     attempt = 0
 
+    # Keep the public ingest/health endpoint available even if Discord is
+    # temporarily rate-limiting or blocking authentication.  setup_hook()
+    # will see this runner and will not start a duplicate listener.
+    if bot.realmshark_ingest_runner is None:
+        bot.realmshark_ingest_runner = await start_realmshark_ingest_server(
+            notifier=build_realmshark_notifier(bot)
+        )
+
     while True:
         attempt += 1
         try:
@@ -1060,7 +1078,11 @@ async def run_bot_with_backoff(token: str, max_retries: int = 3):
                 delay = min(max_backoff_seconds, base_delay * (2 ** min(8, attempt - 1)))
                 jitter = delay * 0.2 * (2 * random.random() - 1)  # ±20% jitter
                 fallback_wait_time = max(1.0, delay + jitter)
-                wait_time = max(retry_after or 0.0, fallback_wait_time)
+                # Cloudflare block pages can carry a long Retry-After header,
+                # but that is not a Discord API rate-limit response.
+                if _is_cloudflare_block_page(e):
+                    retry_after = None
+                wait_time = min(max_backoff_seconds, max(retry_after or 0.0, fallback_wait_time))
 
                 diagnostic_lines = _format_discord_rate_limit_details(
                     e,
