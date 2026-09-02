@@ -42,6 +42,8 @@ Tier 7 Ring,Ring of Transcendent Dexterity,1.0,Tops
 Tier 7 Ring,Ring of Transcendent Vitality,1.0,Tops
 Tier 7 Ring,Ring of Transcendent Wisdom,1.0,Tops
 ""
+Skin,Beach Party Necromancer Skin,0,Beachzone
+""
 UT,Corsair Ring,0,Pirate Cave
 UT,Corsair Ring (shiny),0,Pirate Cave
 Skin,Scallywag Slurp Pet Skin,0,Pirate Cave
@@ -371,6 +373,10 @@ White or ST,Alien Core Dark Matter,10.0,Untaris
 White or ST,Alien Core Power,10.0,Malogia
 White or ST,Alien Core Corrosion,10.0,Forax
 White or ST,Neo Essence,10.0,Calbrik
+White or ST,Katalund Essence,8,Neo Katalund
+White or ST,Untaris Essence,8,Neo Untaris
+White or ST,Malogia Essence,8,Neo Malogia
+White or ST,Forax Essence,8,Neo Forax
 White or ST,Miniature Alien Generator,10.0,Calbrik
 White or ST,Laser Rifle,10.0,Calbrik
 White or ST,Neo Laser Rifle,10.0,Calbrik
@@ -427,6 +433,7 @@ Skin,Blessed Blade Pet Skin,0,Woodland Labyrinth
 ""
 White or ST,Pirate King's Cutlass,5.5,Deadwater Docks
 White or ST,Wavecrest Concertina,5.5,Deadwater Docks
+White or ST,Big Berdtha,5.5,Deadwater Docks
 White or ST,Pirate King's Cutlass (shiny),11,Deadwater Docks
 White or ST,Wavecrest Concertina (shiny),11,Deadwater Docks
 White or ST,Swashbuckler's Sickle,5.5,Deadwater Docks
@@ -697,6 +704,7 @@ White or ST,Obsidian Macuahuitl,7,Hidden Interregnum
 White or ST,Mystic Syndicate Attire (shiny),14,Hidden Interregnum
 White or ST,Heavy Syndicate Attire (shiny),14,Hidden Interregnum
 White or ST,Light Syndicate Attire (shiny),14,Hidden Interregnum
+Skin,Wandering Slurp Pet Skin,0,Hidden Interregnum
 ""
 White or ST,Fungal Breastplate,7.5,Fungal Cavern
 White or ST,Crystallized Worm Spellblade,7.5,Fungal Cavern
@@ -970,6 +978,14 @@ Event White,Blue Beehemoth Quiver (shiny),20,The Realm
 Event White,Crystal Wand (shiny),20,The Realm
 Event White,Crystal Mace (shiny),20,The Realm
 ""
+Skin,Mini Lord Pet Skin,0,The Realm
+Skin,Mini Crystal Steed Pet Skin,0,The Realm
+Skin,Mini Sphinx Pet Skin,0,The Realm
+Skin,Space Smuggler Rogue Skin,0,The Realm
+Skin,Headless Rider Skin,0,The Realm
+Skin,Hermit Wizard Skin,0,The Realm
+Skin,Fiery Phylactery Pet Skin,0,The Realm
+""
 Biome White,Adventurer's Scarf,10,The Realm
 Biome White,Torrential Staff,10,The Realm
 Biome White,Celestial Recurve,10,The Realm
@@ -1017,6 +1033,14 @@ White or ST,Mouse Trap,10,The Realm (Rat Extermination)
 Limited,Perennial Cranium,5.5,Belladonna's Garden
 Limited,Hanagasaku,5.5,Belladonna's Garden
 Limited,Perennial Cranium (shiny),11,Belladonna's Garden
+Limited,Bashing Bride Skin,0,Belladonna's Garden
+Limited,Eligible Bachelor Skin,0,Belladonna's Garden
+Limited,Heartseeker Huntress Skin,0,Belladonna's Garden
+Limited,Little Prince Rogue Skin,0,Belladonna's Garden
+Limited,Sunflower Archer Skin,0,Belladonna's Garden
+Limited,Little Fox Pet Skin,0,Belladonna's Garden
+Limited,Sprout Slime Pet Skin,0,Belladonna's Garden
+Limited,Mini 'Odonna Pet Skin,0,Belladonna's Garden
 ""
 Limited,Arctic Bow,6.0,Ice Tomb
 Limited,Freezing Quiver,6.0,Ice Tomb
@@ -1048,6 +1072,7 @@ Limited,Random Spell Extraction Device,6,Mad God Mayhem
 Limited,Krathana,6,Mad God Mayhem
 Limited,Silex's Hammer,6,Mad God Mayhem
 Limited,Mimicry Trap,10,Mad God Mayhem
+Limited,Prismimic,10,Mad God Mayhem
 ""
 Limited,Candy Katana,5,The Realm (Jack Frost)
 Limited,Sleigh Bell Staff,5,The Realm (Jack Frost)
@@ -1213,6 +1238,8 @@ Limited,Inferior,9.5,Oryx's Sanctuary
 ""
 Limited,Crystal Key,5,The Realm (The Keyper)
 Limited,Keychain Cutlass,10,The Realm (The Keyper)
+Limited,Lil' Keyper Pet Skin,0,The Realm (The Keyper)
+Limited,Keyper Paladin Skin,0,The Realm (The Keyper)
 ""
 Limited,Cursed Harpoon,5,Slurp Reskin
 Limited,Depth Charge,5,Slurp Reskin
