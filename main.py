@@ -84,6 +84,7 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
 # Configure basic logging so stdout/stderr capture works on Railway
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logger = logging.getLogger(__name__)
 
 
 def _env_flag(name: str, default: bool) -> bool:
@@ -495,6 +496,15 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
     except Exception as exc:
         print(f"[WARN] Failed to finalize errored command cost tracking: {exc}")
 
+    root_error = getattr(error, "original", error)
+    logger.error(
+        "Application command failed: command=%s guild_id=%s user_id=%s",
+        command_name or "unknown",
+        getattr(interaction, "guild_id", None),
+        getattr(getattr(interaction, "user", None), "id", None),
+        exc_info=(type(root_error), root_error, root_error.__traceback__),
+    )
+
     # Role/permission checks already provide user-facing feedback in the predicate.
     if isinstance(error, app_commands.CheckFailure):
         if not interaction.response.is_done():
@@ -502,6 +512,13 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
                 "🚫 You do not have permission to use this command.",
                 ephemeral=True,
             )
+        return
+
+    if not interaction.response.is_done():
+        await interaction.response.send_message(
+            "❌ The command encountered an unexpected error. The details have been logged.",
+            ephemeral=True,
+        )
 
 @bot.event
 async def on_message(message: discord.Message):
