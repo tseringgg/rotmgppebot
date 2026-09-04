@@ -10,6 +10,7 @@ import discord
 
 from dataclass import PPEData, PlayerData
 from utils.guild_config import get_quest_targets, load_guild_config, save_guild_config
+from utils.calc_points import normalize_item_name
 from utils.item_log_timestamps import seasonal_item_variant_key
 from utils.message_utils.loot_table_md_builder import create_loot_markdown_file, create_season_loot_markdown_file
 from utils.player_manager import player_manager
@@ -56,13 +57,34 @@ def validate_item_variant(item_name: str, shiny: bool) -> None:
         raise ValueError(f"❌ Shiny variant of `{item_name}` is not currently in bot.")
 
 
-def validate_loot_input(item_name: str, *, shiny: bool, known_items: set[str] | list[str] | tuple[str, ...]) -> None:
-    if item_name not in known_items:
+def validate_loot_input(
+    item_name: str,
+    *,
+    shiny: bool,
+    known_items: set[str] | list[str] | tuple[str, ...],
+) -> str:
+    """Return the canonical item name after validating a user-supplied value.
+
+    Discord command values can differ from the autocomplete value in casing,
+    spacing, or typographic punctuation.  Store the canonical catalog value so
+    point lookups and duplicate detection use one consistent key.
+    """
+    normalized_input = normalize_item_name(item_name).casefold()
+    canonical_item = next(
+        (
+            known_item
+            for known_item in known_items
+            if normalize_item_name(known_item).casefold() == normalized_input
+        ),
+        None,
+    )
+    if canonical_item is None:
         raise ValueError(
             f"❌ `{item_name}` is not a recognized item name.\n"
             "Use the autocomplete suggestions to select a valid item."
         )
-    validate_item_variant(item_name, shiny)
+    validate_item_variant(canonical_item, shiny)
+    return canonical_item
 
 
 def build_item_display_name(item_name: str, *, shiny: bool, rarity: str) -> str:

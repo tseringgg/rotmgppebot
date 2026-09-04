@@ -23,7 +23,7 @@ async def command(
         return await interaction.response.send_message("❌ This command can only be used in a server.", ephemeral=True)
     
     try:
-        validate_loot_input(item_name, shiny=shiny, known_items=LOOT)
+        item_name = validate_loot_input(item_name, shiny=shiny, known_items=LOOT)
     except ValueError as e:
         return await interaction.response.send_message(str(e), ephemeral=True)
     
