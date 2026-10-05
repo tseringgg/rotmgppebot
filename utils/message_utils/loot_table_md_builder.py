@@ -401,7 +401,13 @@ def create_season_loot_markdown_file(
         missing_dungeons = sorted(list(all_dungeons - completed_dungeons))
         completed_dungeons_sorted = sorted(list(completed_dungeons))
         
-        builder.add_section(heading="Completed Dungeons", lines=completed_dungeons_sorted if completed_dungeons_sorted else ["None"])
-        builder.add_section(heading="Missing Dungeons", lines=missing_dungeons if missing_dungeons else ["None"])
+        builder.add_section(
+            heading="Completed Dungeons",
+            lines=[", ".join(completed_dungeons_sorted)] if completed_dungeons_sorted else ["None"],
+        )
+        builder.add_section(
+            heading="Missing Dungeons",
+            lines=[", ".join(missing_dungeons)] if missing_dungeons else ["None"],
+        )
 
     return builder.write_temp_file(prefix="season_loot", username=display_name, temp_dir="temp")

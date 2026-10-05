@@ -4,6 +4,7 @@ from typing import Optional
 
 import discord
 
+from menus.menu_utils import OwnerBoundView
 from menus.menu_utils.embed_pager_view import OwnerBoundEmbedPagerView
 from menus.menu_utils.team_loot_image import add_team_loot_image_buttons
 from utils.guild_config import load_guild_config
@@ -200,9 +201,11 @@ async def build_team_embeds_for(
         include_quest_points=scoring.include_quest_points,
     )
 
+    embed_title = f"{title} - {team_name_result}" if title and title != "My Team" else f"Team Info - {team_name_result}"
+
     if not members_info_sorted:
         embed = discord.Embed(
-            title=f"Team: {team_name_result}",
+            title=embed_title,
             description=f"Leader: <@{leader_id}>",
             color=discord.Color.blurple(),
         )
@@ -237,7 +240,7 @@ async def build_team_embeds_for(
     page_total = len(line_pages)
     for page_number, page_lines in enumerate(line_pages, start=1):
         embed = discord.Embed(
-            title=f"Team: {team_name_result}",
+            title=embed_title,
             description=f"Leader: <@{leader_id}>",
             color=discord.Color.blurple(),
         )
@@ -251,13 +254,116 @@ async def build_team_embeds_for(
     return embeds
 
 
-class MyTeamView(OwnerBoundEmbedPagerView):
-    """Paginated /myteam view with team loot image buttons."""
+def _scoring_mode_label(scoring: TeamContestScoring) -> str:
+    base = "Aggregate PPE" if scoring.team_aggregate_points else "Best PPE"
+    if scoring.include_quest_points:
+        return f"{base} + Quest"
+    return base
 
-    def __init__(self, *, owner_id: int, embeds: list[discord.Embed], team_name: str) -> None:
+
+def build_team_overview_embed(
+    *,
+    team_name: str,
+    leader_id: int | None,
+    members_info_sorted: list[tuple[int, str, float, float, float, str]],
+    scoring: TeamContestScoring,
+) -> discord.Embed:
+    leader_label = f"<@{leader_id}>" if leader_id else "Unassigned"
+    scoring_mode = _scoring_mode_label(scoring)
+    total_ppe = sum(x[2] for x in members_info_sorted)
+    total_quest = sum(x[3] for x in members_info_sorted)
+    total_points = total_ppe + total_quest
+
+    embed = discord.Embed(
+        title=f"Team Overview - {team_name}",
+        description=(
+            f"Leader: {leader_label}\n"
+            f"Members: **{len(members_info_sorted)}**\n"
+            f"Scoring Mode: **{scoring_mode}**\n"
+            f"Team Total Contribution: **{total_points:.1f}** pts"
+        ),
+        color=discord.Color.blurple(),
+    )
+
+    if not members_info_sorted:
+        embed.add_field(name="Members", value="This team has no active members with PPE characters.", inline=False)
+        return embed
+
+    lines: list[str] = []
+    for rank, (_member_id, member_name, ppe_points, quest_points, contribution, ppe_class) in enumerate(
+        members_info_sorted,
+        start=1,
+    ):
+        breakdown = format_points_breakdown(
+            ppe_points=ppe_points,
+            quest_points=quest_points,
+            total_points=contribution,
+            include_quest_points=scoring.include_quest_points,
+        )
+        lines.append(f"{rank}. **{member_name}** ({ppe_class}): {breakdown}")
+
+    text = "\n".join(lines)
+    if len(text) > 1024:
+        text = text[:1000].rstrip() + "\n..."
+    embed.add_field(name="Member Contributions", value=text, inline=False)
+    return embed
+
+
+class MyTeamOverviewView(OwnerBoundView):
+    """Team overview view with button to open detailed Team Info."""
+
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        team_name: str,
+        overview_embed: discord.Embed,
+    ) -> None:
+        super().__init__(owner_id=owner_id, timeout=600, owner_error="This menu belongs to another user.")
+        self.owner_id = owner_id
+        self.team_name = team_name
+        self.overview_embed = overview_embed
+
+    @discord.ui.button(label="Team Info", style=discord.ButtonStyle.primary, row=0)
+    async def team_info(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        embeds = await build_team_embeds_for(interaction, team_name=self.team_name)
+        view = MyTeamInfoView(
+            owner_id=self.owner_id,
+            embeds=embeds,
+            team_name=self.team_name,
+            overview_embed=self.overview_embed,
+        )
+        await interaction.response.edit_message(embed=view.current_embed(), view=view)
+
+
+class MyTeamInfoView(OwnerBoundEmbedPagerView):
+    """Paginated /myteam view with team rankings, back button, and team loot image buttons."""
+
+    def __init__(
+        self,
+        *,
+        owner_id: int,
+        embeds: list[discord.Embed],
+        team_name: str,
+        overview_embed: discord.Embed,
+    ) -> None:
         super().__init__(owner_id=owner_id, embeds=embeds, timeout=600)
         self.team_name = team_name
-        add_team_loot_image_buttons(self, team_name=team_name, row=1, command_name="/myteam")
+        self.overview_embed = overview_embed
+        add_team_loot_image_buttons(self, team_name=team_name, row=2, command_name="/myteam")
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
+    async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        view = MyTeamOverviewView(
+            owner_id=self.owner_id,
+            team_name=self.team_name,
+            overview_embed=self.overview_embed,
+        )
+        await interaction.response.edit_message(embed=self.overview_embed, view=view)
+
+
+# Alias for backward compatibility
+MyTeamView = MyTeamOverviewView
 
 
 async def command(interaction: discord.Interaction, team_name: Optional[str] = None):
@@ -273,8 +379,36 @@ async def command(interaction: discord.Interaction, team_name: Optional[str] = N
         if target_team is None:
             return await interaction.response.send_message(embed=error_embed)
 
-        embeds = await build_team_embeds_for(interaction, team_name=target_team)
-        view = MyTeamView(owner_id=interaction.user.id, embeds=embeds, team_name=target_team)
-        await interaction.response.send_message(embed=view.current_embed(), view=view)
+        team_info = await team_manager.get_team_members_info(interaction, target_team)
+        if not team_info:
+            return await interaction.response.send_message(
+                embed=_team_state_embed("My Team", f"❌ Team `{target_team}` not found.", color=discord.Color.red())
+            )
+
+        team_name_result, leader_id, members_info = team_info
+        records = await load_player_records(interaction)
+        scoring = await load_team_contest_scoring(interaction)
+        guild_config = await load_guild_config(interaction)
+
+        members_info_sorted = _build_members_with_scoring(
+            records=records,
+            members_info=members_info,
+            include_quest_points=scoring.include_quest_points,
+            scoring=scoring,
+            guild_config=guild_config,
+        )
+
+        overview_embed = build_team_overview_embed(
+            team_name=team_name_result,
+            leader_id=leader_id,
+            members_info_sorted=members_info_sorted,
+            scoring=scoring,
+        )
+        view = MyTeamOverviewView(
+            owner_id=interaction.user.id,
+            team_name=team_name_result,
+            overview_embed=overview_embed,
+        )
+        await interaction.response.send_message(embed=overview_embed, view=view)
     except Exception as e:
         return await interaction.response.send_message(str(e), ephemeral=True)

@@ -39,7 +39,6 @@ class ManageSingleTeamView(OwnerBoundView):
         self.member_rows = member_rows
         self.include_quest_points = include_quest_points
         self.team_aggregate_points = team_aggregate_points
-        add_team_loot_image_buttons(self, team_name=team_name, row=2, command_name="/manageteams")
 
     def _scoring_mode_label(self) -> str:
         base = "Aggregate PPE" if self.team_aggregate_points else "Best PPE"
