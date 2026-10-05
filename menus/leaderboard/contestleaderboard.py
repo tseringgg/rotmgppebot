@@ -11,7 +11,13 @@ from menus.leaderboard.submenus.character.views import CharacterLeaderboardClass
 from utils.contest_leaderboards import normalize_contest_leaderboard_id
 from utils.guild_config import get_contest_settings
 
-from . import ppeleaderboard, questleaderboard, seasonleaderboard, teamleaderboard
+from . import (
+    additionalteamleaderboard,
+    ppeleaderboard,
+    questleaderboard,
+    seasonleaderboard,
+    teamleaderboard,
+)
 
 
 _ContestHandler = Callable[[discord.Interaction], Awaitable[None]]
@@ -21,6 +27,7 @@ _CONTEST_HANDLERS: dict[str, _ContestHandler] = {
     "quest": questleaderboard.command,
     "season": seasonleaderboard.command,
     "team": teamleaderboard.command,
+    "additional_team": additionalteamleaderboard.command,
 }
 
 

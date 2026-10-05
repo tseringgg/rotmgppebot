@@ -152,6 +152,7 @@ class SetContestTypeView(OwnerBoundView):
             "season": self.set_season,
             "team": self.set_team,
             "character": self.set_character,
+            "additional_team": self.set_additional_team,
         }
 
         for option_id, button in option_map.items():
@@ -192,11 +193,15 @@ class SetContestTypeView(OwnerBoundView):
     async def set_character(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._set_default(interaction, default_leaderboard="character")
 
-    @discord.ui.button(label="Clear Default", style=discord.ButtonStyle.danger, row=1)
+    @discord.ui.button(label="Additional Team Leaderboards", style=discord.ButtonStyle.success, row=1)
+    async def set_additional_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        await self._set_default(interaction, default_leaderboard="additional_team")
+
+    @discord.ui.button(label="Clear Default", style=discord.ButtonStyle.danger, row=2)
     async def clear_default(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await self._set_default(interaction, default_leaderboard=None)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=2)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         settings = await load_contest_settings_for_menu(interaction)
         view = ManageContestsHomeView(owner_id=self.owner_id, settings=settings)
