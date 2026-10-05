@@ -54,7 +54,7 @@ def _load_loot_entries():
             points = float(points_str)
             loot_entries[name] = {
                 "points": points,
-                "loot_type": str(loot_type_raw).strip().lower(),
+                "loot_type": str(loot_type_raw).strip().lower(), "dungeon": row.get("Dungeon", "").strip(),
             }
     return loot_entries
 
@@ -96,3 +96,6 @@ def calc_points(item: str, shiny: bool, rarity: str = "common", guild_config: di
     final_points = math.floor(final_points * 2) / 2
 
     return final_points
+@lru_cache(maxsize=1)
+def load_loot_dungeons():
+    return {name: str(entry.get("dungeon", "")) for name, entry in _load_loot_entries().items()}

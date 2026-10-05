@@ -174,9 +174,11 @@ def clear_shareloot_image_caches() -> None:
     _load_item_type_lookup.cache_clear()
 
 
-
+def safe_filename_component(display_name: str) -> str:
+    """Convert arbitrary text into a filesystem-safe filename fragment."""
     username = display_name.replace(" ", "_")
-    return "".join(c for c in username if c.isalnum() or c in "_-")
+    cleaned = "".join(c for c in username if c.isalnum() or c in "_-")
+    return cleaned or "named"
 
 
 def _collapse_to_highest_rarity(source_items: LootSourceItems) -> list[tuple[str, str, bool, str]]:
@@ -301,7 +303,7 @@ async def render_loot_share_image(
             items_not_found.append(display_name)
 
         display_name = getattr(getattr(interaction, "user", None), "display_name", None) or "user"
-        safe_username = "".join(c for c in display_name.replace(" ", "_") if c.isalnum() or c in "_-")
+        safe_username = safe_filename_component(display_name)
         filename = f"{safe_username}_{filename_suffix}.png"
         background.save(filename, "PNG")
 

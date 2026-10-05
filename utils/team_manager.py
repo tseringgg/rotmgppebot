@@ -338,6 +338,116 @@ class TeamManager:
         return await self.execute_transaction(interaction, operation)
 
 
+
+    async def get_additional_team_leaderboards_data(self, interaction: discord.Interaction) -> dict:
+        """Get data for the additional team leaderboards.
+        
+        Returns a dict containing top 3 teams for:
+        - "regular_points": (team_name, points)
+        - "most_different_items": (team_name, unique_item_count)
+        - "most_items_total": (team_name, total_item_count)
+        - "most_of_one_item": (team_name, max_of_one_item, item_name)
+        - "most_dungeons": (team_name, unique_dungeon_count)
+        """
+        async def operation(teams, records, interaction):
+            from utils.calc_points import load_loot_dungeons, normalize_item_name
+            scoring = await load_team_contest_scoring(interaction)
+            guild_config = await load_guild_config(interaction)
+            quest_settings = guild_config.get("quest_settings", {}) if isinstance(guild_config.get("quest_settings", {}), dict) else {}
+            team_mode_effective = bool(quest_settings.get("enable_team_quests", False)) and not bool(
+                quest_settings.get("use_global_quests", False)
+            )
+            dungeons_map = load_loot_dungeons()
+
+            regular_points_data = []
+            most_different_items_data = []
+            most_items_total_data = []
+            most_of_one_item_data = []
+            most_dungeons_data = []
+
+            for team_name, team in teams.items():
+                ppe_points = 0.0
+                quest_points = 0.0
+
+                team_items_counts = {}
+                team_unique_dungeons = set()
+                
+                # We need to collect items across all members
+                for member_id in team.members:
+                    if member_id in records:
+                        player_data = records[member_id]
+                        # 1. Regular points
+                        member_ppe_points, member_quest_points, _member_total = compute_team_member_points(
+                            player_data,
+                            scoring=scoring,
+                            aggregate=scoring.team_aggregate_points,
+                            guild_config=guild_config,
+                        )
+                        ppe_points += member_ppe_points
+                        if not team_mode_effective:
+                            quest_points += member_quest_points
+                            
+                        # 2,3,4,5. Loot metrics
+                        if isinstance(player_data.season_item_history, dict):
+                            for variant_key, timestamps in player_data.season_item_history.items():
+                                if not isinstance(variant_key, str) or not timestamps:
+                                    continue
+                                parts = variant_key.split("|")
+                                if not parts:
+                                    continue
+                                item_name = parts[0]
+                                count = len(timestamps)
+                                team_items_counts[item_name] = team_items_counts.get(item_name, 0) + count
+
+                if scoring.include_quest_points and team_mode_effective:
+                    quest_points = compute_team_shared_quest_points(
+                        team_name=team_name,
+                        quest_settings=quest_settings,
+                        scoring=scoring,
+                    )
+
+                total_points = ppe_points + quest_points
+                regular_points_data.append((team_name, total_points))
+                
+                # Stats calculation
+                unique_item_count = len(team_items_counts)
+                total_item_count = sum(team_items_counts.values())
+                
+                max_of_one_item = 0
+                max_item_name = ""
+                for it_name, count in team_items_counts.items():
+                    if count > max_of_one_item:
+                        max_of_one_item = count
+                        max_item_name = it_name
+                        
+                    norm_name = normalize_item_name(it_name)
+                    dungeon = dungeons_map.get(norm_name)
+                    if dungeon:
+                        team_unique_dungeons.add(dungeon)
+                        
+                most_different_items_data.append((team_name, unique_item_count))
+                most_items_total_data.append((team_name, total_item_count))
+                most_of_one_item_data.append((team_name, max_of_one_item, max_item_name))
+                most_dungeons_data.append((team_name, len(team_unique_dungeons)))
+
+            # Sort and take top 3
+            regular_points_data.sort(key=lambda x: x[1], reverse=True)
+            most_different_items_data.sort(key=lambda x: x[1], reverse=True)
+            most_items_total_data.sort(key=lambda x: x[1], reverse=True)
+            most_of_one_item_data.sort(key=lambda x: x[1], reverse=True)
+            most_dungeons_data.sort(key=lambda x: x[1], reverse=True)
+
+            return {
+                "regular_points": regular_points_data[:3],
+                "most_different_items": most_different_items_data[:3],
+                "most_items_total": most_items_total_data[:3],
+                "most_of_one_item": most_of_one_item_data[:3],
+                "most_dungeons": most_dungeons_data[:3],
+            }
+
+        return await self.execute_transaction(interaction, operation)
+
+
 # Global instance
 team_manager = TeamManager()
 

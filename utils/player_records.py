@@ -5,7 +5,7 @@ import json
 import asyncio
 import re
 import glob
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Mapping
 
 from dataclasses import asdict
 
@@ -40,8 +40,11 @@ def highest_rarity(first: str, second: str) -> str:
     return first if _rarity_rank(first) >= _rarity_rank(second) else second
 
 # Persistent data directory (Railway Volume)
-DATA_DIR = "/data"
-os.makedirs(DATA_DIR, exist_ok=True)
+DATA_DIR = os.getenv("DATA_DIR", "/data")
+try:
+    os.makedirs(DATA_DIR, exist_ok=True)
+except OSError:
+    pass
 
 # Per-guild asyncio locks
 _locks: Dict[int, asyncio.Lock] = {}
@@ -422,20 +425,25 @@ def get_item_from_ppe(active_ppe: PPEData, item_name: str, shiny: bool, rarity: 
     return None
 
 
+def resolve_team_name(teams: Mapping[str, Any], requested_name: str | None) -> str | None:
+    """Return the stored team key matching ``requested_name`` case-insensitively, or None."""
+    if not requested_name:
+        return None
+    requested_lower = str(requested_name).lower()
+    for team_name in teams:
+        if team_name.lower() == requested_lower:
+            return team_name
+    return None
+
+
 async def is_team_leader(interaction: discord.Interaction, member_id: int, team_name: str) -> bool:
     """Check if a member is the leader of a specific team."""
     try:
         teams = await load_teams(interaction)
-        # Find team (case-insensitive)
-        actual_team_name = None
-        for team_key in teams:
-            if team_key.lower() == team_name.lower():
-                actual_team_name = team_key
-                break
-        
+        actual_team_name = resolve_team_name(teams, team_name)
         if not actual_team_name:
             return False
-        
+
         team = teams[actual_team_name]
         return team.leader_id == member_id
     except Exception:

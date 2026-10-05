@@ -4,8 +4,10 @@ from typing import Optional
 
 import discord
 
+from menus.menu_utils.embed_pager_view import OwnerBoundEmbedPagerView
+from menus.menu_utils.team_loot_image import add_team_loot_image_buttons
 from utils.guild_config import load_guild_config
-from utils.player_records import ensure_player_exists, load_player_records, load_teams
+from utils.player_records import ensure_player_exists, load_player_records, load_teams, resolve_team_name
 from utils.team_contest_scoring import (
     TeamContestScoring,
     compute_team_member_points,
@@ -47,7 +49,7 @@ def _build_members_with_scoring(
     members_info: list[tuple[int, str, float, str]],
     include_quest_points: bool,
     scoring: TeamContestScoring,
-    guild_config: dict,
+    guild_config: dict | None = None,
 ) -> list[tuple[int, str, float, float, float, str]]:
     members_with_scoring: list[tuple[int, str, float, float, float, str]] = []
     for member_id, member_name, _legacy_ppe_points, _legacy_ppe_class in members_info:
@@ -104,38 +106,79 @@ def _build_ranking_line(
     return f"{rank}. {member_name}: {breakdown} pts ({ppe_class})"
 
 
+DEFAULT_NO_TEAM_MESSAGE = "Uh oh, you haven't been added to a team yet."
+
+
+async def resolve_team_target(
+    interaction: discord.Interaction,
+    *,
+    user_id: int,
+    team_name: str | None = None,
+    title: str = "My Team",
+    no_team_message: str = DEFAULT_NO_TEAM_MESSAGE,
+) -> tuple[str | None, discord.Embed | None]:
+    """Resolve which team to show: the explicit ``team_name`` or the user's own team.
+
+    Returns ``(canonical_team_name, None)`` on success, or ``(None, state_embed)`` explaining why not.
+    """
+    if not interaction.guild:
+        return None, _team_state_embed(title, "❌ This command can only be used in a server.", color=discord.Color.red())
+
+    teams = await load_teams(interaction)
+    if not teams:
+        return None, _team_state_embed(title, "❌ No teams currently exist.")
+
+    requested_team = team_name
+    if not requested_team:
+        records = await load_player_records(interaction)
+        user_key = ensure_player_exists(records, user_id)
+        requested_team = records[user_key].team_name if user_key in records else None
+        if not requested_team:
+            return None, _team_state_embed(title, no_team_message)
+
+    actual_team = resolve_team_name(teams, requested_team)
+    if actual_team is None:
+        return None, _team_state_embed(title, f"❌ Team `{requested_team}` not found.", color=discord.Color.red())
+    return actual_team, None
+
+
 async def build_team_embeds(
     interaction: discord.Interaction,
     *,
     user_id: int,
     team_name: str | None = None,
     title: str = "My Team",
-    no_team_message: str = "Uh oh, you haven't been added to a team yet.",
+    no_team_message: str = DEFAULT_NO_TEAM_MESSAGE,
     page_size: int = 15,
 ) -> list[discord.Embed]:
-    if not interaction.guild:
-        return [_team_state_embed(title, "❌ This command can only be used in a server.", color=discord.Color.red())]
+    """Resolve the target team and build its paginated ranking embeds (or a single state embed)."""
+    target_team, error_embed = await resolve_team_target(
+        interaction,
+        user_id=user_id,
+        team_name=team_name,
+        title=title,
+        no_team_message=no_team_message,
+    )
+    if target_team is None:
+        return [error_embed]
+    return await build_team_embeds_for(interaction, team_name=target_team, title=title, page_size=page_size)
 
-    teams = await load_teams(interaction)
-    if not teams:
-        return [_team_state_embed(title, "❌ No teams currently exist.")]
 
-    target_team = team_name
-    if not target_team:
-        records = await load_player_records(interaction)
-        user_key = ensure_player_exists(records, user_id)
-        user_team = records[user_key].team_name if user_key in records else None
-        if not user_team:
-            return [_team_state_embed(title, no_team_message)]
-        target_team = user_team
-
+async def build_team_embeds_for(
+    interaction: discord.Interaction,
+    *,
+    team_name: str,
+    title: str = "My Team",
+    page_size: int = 15,
+) -> list[discord.Embed]:
+    """Build paginated ranking embeds for an already-resolved team name."""
     records = await load_player_records(interaction)
     scoring = await load_team_contest_scoring(interaction)
     guild_config = await load_guild_config(interaction)
 
-    team_info = await team_manager.get_team_members_info(interaction, target_team)
+    team_info = await team_manager.get_team_members_info(interaction, team_name)
     if not team_info:
-        return [_team_state_embed(title, f"❌ Team `{target_team}` not found.", color=discord.Color.red())]
+        return [_team_state_embed(title, f"❌ Team `{team_name}` not found.", color=discord.Color.red())]
 
     team_name_result, leader_id, members_info = team_info
     members_info_sorted = _build_members_with_scoring(
@@ -208,97 +251,13 @@ async def build_team_embeds(
     return embeds
 
 
-async def build_team_embed(
-    interaction: discord.Interaction,
-    *,
-    user_id: int,
-    team_name: str | None = None,
-    title: str = "My Team",
-    no_team_message: str = "Uh oh, you haven't been added to a team yet.",
-) -> discord.Embed:
-    if not interaction.guild:
-        return _team_state_embed(title, "❌ This command can only be used in a server.", color=discord.Color.red())
+class MyTeamView(OwnerBoundEmbedPagerView):
+    """Paginated /myteam view with team loot image buttons."""
 
-    teams = await load_teams(interaction)
-    if not teams:
-        return _team_state_embed(title, "❌ No teams currently exist.")
-
-    target_team = team_name
-    if not target_team:
-        records = await load_player_records(interaction)
-        user_key = ensure_player_exists(records, user_id)
-        user_team = records[user_key].team_name if user_key in records else None
-        if not user_team:
-            return _team_state_embed(title, no_team_message)
-        target_team = user_team
-
-    records = await load_player_records(interaction)
-    scoring = await load_team_contest_scoring(interaction)
-
-    team_info = await team_manager.get_team_members_info(interaction, target_team)
-    if not team_info:
-        return _team_state_embed(title, f"❌ Team `{target_team}` not found.", color=discord.Color.red())
-
-    team_name_result, leader_id, members_info = team_info
-    members_info_sorted = _build_members_with_scoring(
-        records=records,
-        members_info=members_info,
-        include_quest_points=scoring.include_quest_points,
-        scoring=scoring,
-    )
-
-    total_ppe = sum(x[2] for x in members_info_sorted)
-    total_quest = sum(x[3] for x in members_info_sorted)
-    total_points = total_ppe + total_quest
-
-    leader_text = f"<@{leader_id}>"
-    embed = discord.Embed(
-        title=f"Team: {team_name_result}",
-        description=f"Leader: {leader_text}",
-        color=discord.Color.blurple(),
-    )
-    embed.add_field(name="Members", value=str(len(members_info_sorted)), inline=True)
-    embed.add_field(
-        name=total_points_label(include_quest_points=scoring.include_quest_points),
-        value=format_points_breakdown(
-            ppe_points=total_ppe,
-            quest_points=total_quest,
-            total_points=total_points,
-            include_quest_points=scoring.include_quest_points,
-        ),
-        inline=True,
-    )
-
-    if members_info_sorted:
-        lines: list[str] = []
-        for rank, (_member_id, member_name, ppe_points, quest_points, contribution, ppe_class) in enumerate(
-            members_info_sorted,
-            start=1,
-        ):
-            lines.append(
-                _build_ranking_line(
-                    rank=rank,
-                    member_name=member_name,
-                    ppe_points=ppe_points,
-                    quest_points=quest_points,
-                    contribution=contribution,
-                    ppe_class=ppe_class,
-                    include_quest_points=scoring.include_quest_points,
-                )
-            )
-
-        members_text = "\n".join(lines)
-        if len(members_text) > 1024:
-            members_text = members_text[:1000].rstrip() + "\n..."
-        embed.add_field(name="Rankings", value=members_text, inline=False)
-    else:
-        embed.add_field(
-            name="Rankings",
-            value="This team has no active members with PPE characters.",
-            inline=False,
-        )
-
-    return embed
+    def __init__(self, *, owner_id: int, embeds: list[discord.Embed], team_name: str) -> None:
+        super().__init__(owner_id=owner_id, embeds=embeds, timeout=600)
+        self.team_name = team_name
+        add_team_loot_image_buttons(self, team_name=team_name, row=1, command_name="/myteam")
 
 
 async def command(interaction: discord.Interaction, team_name: Optional[str] = None):
@@ -306,12 +265,16 @@ async def command(interaction: discord.Interaction, team_name: Optional[str] = N
         return await interaction.response.send_message("❌ This command can only be used in a server.")
 
     try:
-        embed = await build_team_embed(
+        target_team, error_embed = await resolve_team_target(
             interaction,
             user_id=interaction.user.id,
             team_name=team_name,
-            title="My Team",
         )
-        await interaction.response.send_message(embed=embed)
+        if target_team is None:
+            return await interaction.response.send_message(embed=error_embed)
+
+        embeds = await build_team_embeds_for(interaction, team_name=target_team)
+        view = MyTeamView(owner_id=interaction.user.id, embeds=embeds, team_name=target_team)
+        await interaction.response.send_message(embed=view.current_embed(), view=view)
     except Exception as e:
         return await interaction.response.send_message(str(e), ephemeral=True)

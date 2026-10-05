@@ -4,16 +4,9 @@ import re
 
 import discord
 
-from dataclass import TeamData
+from utils.player_records import resolve_team_name  # noqa: F401  (re-exported for menu modules)
 
 TEAM_LIST_PAGE_SIZE = 12
-
-
-def resolve_team_name(teams: dict[str, TeamData], requested_name: str) -> str | None:
-    for team_name in teams:
-        if team_name.lower() == requested_name.lower():
-            return team_name
-    return None
 
 
 def display_name(guild: discord.Guild, user_id: int) -> str:

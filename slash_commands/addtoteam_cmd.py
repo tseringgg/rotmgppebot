@@ -1,10 +1,7 @@
 """Command to add a player to a team."""
 import discord
-from discord import app_commands
-from dataclass import TeamData
-from utils.player_records import load_player_records, load_teams, ensure_player_exists
-from utils.team_manager import team_manager
-from utils.autocomplete import team_name_autocomplete, target_user_ppe_id_autocomplete
+from utils.player_records import load_player_records, ensure_player_exists
+from utils.team_membership import add_player_to_team_with_role
 
 
 async def command(
@@ -53,18 +50,8 @@ async def command(
                 ephemeral=True,
             )
 
-        # Add player to team
-        team = await team_manager.add_player_to_team(interaction, target_id, team_name)
-        
-        # Assign team role if possible
-        if interaction.guild:
-            member = interaction.guild.get_member(target_id)
-            role = discord.utils.get(interaction.guild.roles, name=team.name)
-            if member and role and role not in member.roles:
-                try:
-                    await member.add_roles(role)
-                except discord.Forbidden:
-                    pass  # Continue even if role assignment fails
+        # Add player to team and assign the team role if possible
+        team, _role_ok = await add_player_to_team_with_role(interaction, target_id, team_name)
 
         await interaction.response.send_message(
             f"✅ Added <@{target_id}> to team **{team.name}**.",

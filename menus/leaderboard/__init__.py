@@ -6,6 +6,7 @@ from menus.leaderboard.ppeleaderboard import command as ppeleaderboard_command
 from menus.leaderboard.questleaderboard import command as questleaderboard_command
 from menus.leaderboard.seasonleaderboard import command as seasonleaderboard_command
 from menus.leaderboard.teamleaderboard import command as teamleaderboard_command
+from menus.leaderboard.additionalteamleaderboard import command as additionalteamleaderboard_command
 
 __all__ = [
     "open_leaderboard_menu",
@@ -14,4 +15,5 @@ __all__ = [
     "characterleaderboard_command",
     "seasonleaderboard_command",
     "teamleaderboard_command",
+    "additionalteamleaderboard_command",
 ]

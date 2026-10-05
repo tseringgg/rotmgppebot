@@ -52,14 +52,24 @@ class MyInfoHomeView(OwnerBoundView):
 
     @discord.ui.button(label="My Team", style=discord.ButtonStyle.primary, row=0)
     async def my_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        from slash_commands.myteam_cmd import build_team_embeds
+        from slash_commands.myteam_cmd import build_team_embeds_for, resolve_team_target
 
-        embeds = await build_team_embeds(
+        target_team, error_embed = await resolve_team_target(
             interaction,
             user_id=interaction.user.id,
             title="My Team",
         )
-        view = MyInfoTeamView(owner_id=interaction.user.id, max_ppes=self.max_ppes, embeds=embeds)
+        if target_team is None:
+            embeds = [error_embed]
+        else:
+            embeds = await build_team_embeds_for(interaction, team_name=target_team)
+
+        view = MyInfoTeamView(
+            owner_id=interaction.user.id,
+            max_ppes=self.max_ppes,
+            embeds=embeds,
+            team_name=target_team,
+        )
         await interaction.response.edit_message(embed=view.current_embed(), view=view)
 
     @discord.ui.button(label="Manage Characters", style=discord.ButtonStyle.success, row=1)
@@ -93,9 +103,21 @@ class MyInfoHomeView(OwnerBoundView):
 class MyInfoTeamView(OwnerBoundEmbedPagerView):
     """Team ranking view opened from /myinfo with overflow pagination controls."""
 
-    def __init__(self, owner_id: int, *, max_ppes: int, embeds: list[discord.Embed]) -> None:
+    def __init__(
+        self,
+        owner_id: int,
+        *,
+        max_ppes: int,
+        embeds: list[discord.Embed],
+        team_name: str | None = None,
+    ) -> None:
         super().__init__(owner_id=owner_id, embeds=embeds, timeout=600)
         self.max_ppes = max_ppes
+        self.team_name = team_name
+        if team_name:
+            from menus.menu_utils.team_loot_image import add_team_loot_image_buttons
+
+            add_team_loot_image_buttons(self, team_name=team_name, row=2, command_name="/myinfo")
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
     async def back(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

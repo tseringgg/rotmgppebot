@@ -5,6 +5,13 @@ from __future__ import annotations
 import discord
 
 from menus.menu_utils.base_views import OwnerBoundView
+from menus.menu_utils.loot_image_variants import (
+    ALL_LOOT,
+    NORMAL_LIMITED,
+    NORMAL_ONLY,
+    NORMAL_SKINS,
+    LootImageVariant,
+)
 
 
 class SeasonLootVariantActionsView(OwnerBoundView):
@@ -39,21 +46,28 @@ class SeasonLootVariantActionsView(OwnerBoundView):
     async def _show_item_graph(self, interaction: discord.Interaction) -> None:
         raise NotImplementedError
 
-    @discord.ui.button(label="Show Image: Normal Only", style=discord.ButtonStyle.primary, row=0)
+    async def _share_variant(self, interaction: discord.Interaction, variant: LootImageVariant) -> None:
+        await self._close_and_share(
+            interaction,
+            include_skins=variant.include_skins,
+            include_limited=variant.include_limited,
+        )
+
+    @discord.ui.button(label=NORMAL_ONLY.label, style=discord.ButtonStyle.primary, row=0)
     async def normal_only(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await self._close_and_share(interaction, include_skins=False, include_limited=False)
+        await self._share_variant(interaction, NORMAL_ONLY)
 
-    @discord.ui.button(label="Show Image: Normal + Limited", style=discord.ButtonStyle.primary, row=0)
+    @discord.ui.button(label=NORMAL_LIMITED.label, style=discord.ButtonStyle.primary, row=0)
     async def normal_limited(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await self._close_and_share(interaction, include_skins=False, include_limited=True)
+        await self._share_variant(interaction, NORMAL_LIMITED)
 
-    @discord.ui.button(label="Show Image: Normal + Skins", style=discord.ButtonStyle.primary, row=1)
+    @discord.ui.button(label=NORMAL_SKINS.label, style=discord.ButtonStyle.primary, row=1)
     async def normal_skins(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await self._close_and_share(interaction, include_skins=True, include_limited=False)
+        await self._share_variant(interaction, NORMAL_SKINS)
 
-    @discord.ui.button(label="Show Image: All Loot", style=discord.ButtonStyle.primary, row=1)
+    @discord.ui.button(label=ALL_LOOT.label, style=discord.ButtonStyle.primary, row=1)
     async def all_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
-        await self._close_and_share(interaction, include_skins=True, include_limited=True)
+        await self._share_variant(interaction, ALL_LOOT)
 
     @discord.ui.button(label="List Loot", style=discord.ButtonStyle.primary, row=1)
     async def list_season_loot(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:

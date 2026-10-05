@@ -729,9 +729,14 @@ async def manageplayer(interaction: discord.Interaction, member: discord.Member 
     await manageplayer_cmd.command(interaction, member=member, user_id=user_id)
 
 @bot.tree.command(name="addplayer", description="Add a player to the PPE contest.", guilds=guilds)
+@app_commands.describe(
+    member="The member to add to the PPE contest",
+    team="Optional: team to add the player to",
+)
+@app_commands.autocomplete(team=team_name_autocomplete)
 @require_ppe_roles(admin_required=True)
-async def addplayer(interaction: discord.Interaction, member: discord.Member):
-    await addplayer_cmd.command(interaction, member)
+async def addplayer(interaction: discord.Interaction, member: discord.Member, team: str | None = None):
+    await addplayer_cmd.command(interaction, member, team)
 
 
 @bot.tree.command(name="addadmin", description="Add PPE Admin role to a member.", guilds=guilds)

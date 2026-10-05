@@ -15,6 +15,7 @@ from . import (
     questleaderboard,
     seasonleaderboard,
     teamleaderboard,
+    additionalteamleaderboard,
 )
 
 
@@ -56,6 +57,7 @@ def leaderboard_home_embed(contest_settings: dict | None = None) -> discord.Embe
     embed.add_field(name="Character Leaderboard", value="Highest scoring characters by class.", inline=False)
     embed.add_field(name="Season Loot Leaderboard", value="Unique seasonal item counts.", inline=False)
     embed.add_field(name="Team Leaderboard", value="Combined team standings.", inline=False)
+    embed.add_field(name="Additional Team Leaderboard", value="Top 3 teams across multiple categories.", inline=False)
     embed.add_field(name="Contest Leaderboard", value=f"Configured default: **{default_contest_label}**", inline=False)
     embed.add_field(name="Contest Stats", value="Contest-wide wrapped stats across all players.", inline=False)
     return embed
@@ -118,7 +120,15 @@ class LeaderboardHomeView(OwnerBoundView):
         await teamleaderboard.command(interaction)
         await _log_leaderboard_cost(interaction, "team_leaderboard", started_monotonic, started_unix, snapshot_before)
 
-    @discord.ui.button(label="Contest Stats", style=discord.ButtonStyle.success, row=2)
+    @discord.ui.button(label="Additional Team Leaderboard", style=discord.ButtonStyle.primary, row=2)
+    async def addl_team(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
+        started_monotonic = time.monotonic()
+        started_unix = time.time()
+        snapshot_before = capture_runtime_snapshot()
+        await additionalteamleaderboard.command(interaction)
+        await _log_leaderboard_cost(interaction, "additional_team_leaderboard", started_monotonic, started_unix, snapshot_before)
+
+    @discord.ui.button(label="Contest Stats", style=discord.ButtonStyle.success, row=3)
     async def contest_stats(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         started_monotonic = time.monotonic()
         started_unix = time.time()
@@ -126,6 +136,6 @@ class LeaderboardHomeView(OwnerBoundView):
         await conteststats.command(interaction)
         await _log_leaderboard_cost(interaction, "contest_stats", started_monotonic, started_unix, snapshot_before)
 
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=3)
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=4)
     async def cancel(self, interaction: discord.Interaction, _button: discord.ui.Button) -> None:
         await interaction.response.edit_message(content="Closed `/leaderboard` menu.", embed=None, view=None)

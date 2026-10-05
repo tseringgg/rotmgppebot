@@ -9,6 +9,7 @@ from menus.manageteams.services import (
     set_team_leader,
 )
 from utils.team_manager import team_manager
+from utils.team_membership import add_player_to_team_with_role
 
 
 class CreateTeamModal(discord.ui.Modal, title="Create New Team"):
@@ -261,23 +262,16 @@ class AddMemberModal(discord.ui.Modal, title="Add Team Member"):
 
         assert member_id is not None
         try:
-            team = await team_manager.add_player_to_team(interaction, member_id, self.team_name)
-            if interaction.guild:
-                member = interaction.guild.get_member(member_id)
-                role = discord.utils.get(interaction.guild.roles, name=team.name)
-                if member and role and role not in member.roles:
-                    await member.add_roles(role)
-        except ValueError as exc:
+            _team, role_ok = await add_player_to_team_with_role(interaction, member_id, self.team_name)
+        except Exception as exc:  # ValueError carries user-facing validation messages
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
-        except discord.Forbidden:
+
+        if not role_ok:
             await interaction.response.send_message(
                 "⚠️ Player added, but I could not update role assignments.",
                 ephemeral=True,
             )
-            return
-        except Exception as exc:
-            await interaction.response.send_message(str(exc), ephemeral=True)
             return
 
         from menus.manageteams.entry import open_team_manage_view

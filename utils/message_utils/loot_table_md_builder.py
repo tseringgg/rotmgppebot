@@ -342,6 +342,7 @@ def create_season_loot_markdown_file(
     season_item_history: dict[str, list[int]] | None,
     *,
     display_name: str,
+    include_dungeon_completion: bool = False,
 ) -> str:
     """Create a markdown file for season loot variants, grouped by dungeon when possible."""
     class _SeasonHistoryProxy:
@@ -392,5 +393,15 @@ def create_season_loot_markdown_file(
                     line += f" (times: {', '.join(cleaned)})"
             lines.append(line)
         builder.add_numbered_list(lines, heading="Unassigned Items")
+
+    if include_dungeon_completion:
+        _, item_to_dungeon = load_dungeon_data()
+        all_dungeons = {d for d in item_to_dungeon.values() if d}
+        completed_dungeons = set(sorted_dungeons)
+        missing_dungeons = sorted(list(all_dungeons - completed_dungeons))
+        completed_dungeons_sorted = sorted(list(completed_dungeons))
+        
+        builder.add_section(heading="Completed Dungeons", lines=completed_dungeons_sorted if completed_dungeons_sorted else ["None"])
+        builder.add_section(heading="Missing Dungeons", lines=missing_dungeons if missing_dungeons else ["None"])
 
     return builder.write_temp_file(prefix="season_loot", username=display_name, temp_dir="temp")
