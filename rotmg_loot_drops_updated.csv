@@ -519,6 +519,7 @@ White or ST,Water Dragon Silk Robe (shiny),12,Lair of Draconis
 White or ST,Fire Dragon Battle Armor (shiny),12,Lair of Draconis
 White or ST,Midnight Star (shiny),12,Lair of Draconis
 White or ST,Vision of Draconis (shiny),12,Lair of Draconis
+White or ST,Draconic Insignia (shiny),12,Lair of Draconis
 White or ST,Hailstorm,6.0,Lair of Draconis
 White or ST,Thundering Chorus,6.0,Lair of Draconis
 White or ST,Wind Dancer Robe,6.0,Lair of Draconis
@@ -735,6 +736,7 @@ White or ST,Echoes Prism,7.5,Crystal Cavern
 White or ST,Fractured Gemstone Wakizashi,7.5,Crystal Cavern
 White or ST,Star of Enlightenment,7.5,Crystal Cavern
 White or ST,Crystallised Mist,7.5,Crystal Cavern
+White or ST,Irradiance Sheath (shiny),15,Crystal Cavern
 White or ST,Fractal Blades (shiny),15,Crystal Cavern
 White or ST,Cloak of Refraction (shiny),15,Crystal Cavern
 White or ST,Fractured Gemstone Wakizashi (shiny),15,Crystal Cavern
@@ -755,6 +757,7 @@ White or ST,Wretched Rags (shiny),16,Spectral Penitentiary
 White or ST,Tools of the Tarnished (shiny),16.0,Spectral Penitentiary
 White or ST,Cackling Straitjacket (shiny),16,Spectral Penitentiary
 White or ST,Ocular Entrapment (shiny),16,Spectral Penitentiary
+White or ST,Overwhelming Axehead (shiny),16,Spectral Penitentiary
 White or ST,Motivational Megaphone (shiny),16,Spectral Penitentiary
 White or ST,Damnation (shiny),16.0,Spectral Penitentiary
 White or ST,Vial of Soul Extract (shiny),16,Spectral Penitentiary
@@ -816,6 +819,9 @@ White or ST,Makakoyumi,9.0,Moonlight Village
 White or ST,Tezutsu Hanabi,9.0,Moonlight Village
 White or ST,Kagenohikari,9.0,Moonlight Village
 White or ST,Concentrated Soul Fire,9,Moonlight Village
+White or ST,Sage's Wakibiki (shiny),18,Moonlight Village
+White or ST,Ethereal Happi (shiny),18,Moonlight Village
+White or ST,Flowering Kimono (shiny),18,Moonlight Village
 White or ST,Makakoyumi (shiny),18,Moonlight Village
 White or ST,Master Fishing Rod,9,Moonlight Village
 UT,Expert Fishing Rod,0,Moonlight Village
@@ -1117,7 +1123,34 @@ Limited,Polarity Poison (Rehearsal),5.0,The Shatters (Rehearsal)
 Limited,Primal Arcana (Rehearsal),5.0,The Shatters (Rehearsal)
 Limited,Dusky Catalyst (Rehearsal),5.0,The Shatters (Rehearsal)
 ""
-Limited,Esoteric Buckler,4.5,Janus (Halloween)
+Limited,Esoteric Buckler,5,Halloween
+Limited,The Crimson Blade,5,Halloween
+Limited,Blood Coated Dirk,5,Halloween
+Limited,Ceremonial Wand,5,Halloween
+Limited,Blood Siphoning Katana,5,Halloween
+Limited,Scarlet Etched Branch,5,Halloween
+Limited,Occult Bow,5,Halloween
+Limited,Sacramental Crossbow,5,Halloween
+Limited,Scepter of the Transgressor,5,Halloween
+Limited,Blood Ritual Tools,5,Halloween
+Limited,The Hemomancer's Ring,5,Halloween
+Limited,Sweettreats Sword,5,Halloween
+Limited,Sweettreats Dagger,5,Halloween
+Limited,Sweettreats Bow,5,Halloween
+Limited,Sweettreats Wand,5,Halloween
+Limited,Sweettreats Katana,5,Halloween
+Limited,Sweettreats Staff,5,Halloween
+Limited,Red Riding Dress,5,Halloween
+Limited,Holy Order's Habit,5,Halloween
+Limited,Bachelor's Tuxedo,5,Halloween
+Limited,Haori of the Wind,5,Halloween
+Limited,Platinum Segmentata,5,Halloween
+Limited,Big Bad Fursuit,5,Halloween
+Limited,Sweettreats Ring,10,Halloween
+Limited,Pulsating Wand,5,Halloween
+Limited,Swampy Sigil,5,Halloween
+Limited,Mossy Guard,5,Halloween
+Limited,Willow Sprout,5,Halloween
 ""
 Limited,Corrupted Cleaver,0,Halloween T11 Reskins
 Limited,Bow of Nightmares,0,Halloween T11 Reskins
