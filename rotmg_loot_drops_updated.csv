@@ -334,6 +334,8 @@ White or ST,Coral Venom Trap,5.0,Ocean Trench
 White or ST,Coral Silk Armor,5.0,Ocean Trench
 White or ST,Coral Ring,5.0,Ocean Trench
 White or ST,Sharktooth Sigil,5,Ocean Trench
+White or ST,Squidver,5,Ocean Trench
+White or ST,Coral Juice Refinery,5,Ocean Trench
 White or ST,Coral Bow (shiny),10,Ocean Trench
 White or ST,Coral Venom Trap (shiny),10,Ocean Trench
 White or ST,Coral Silk Armor (shiny),10,Ocean Trench
@@ -356,6 +358,7 @@ White or ST,Dueling Daggers,5.0,Untaris
 White or ST,Snowblind Wand,5.0,Untaris
 White or ST,Moonbeam Blade (shiny),10,Untaris
 White or ST,Dueling Daggers (shiny),10,Untaris
+White or ST,Snowblind Wand (shiny),10,Untaris
 ""
 White or ST,Warlord Wand,5.0,Katalund
 White or ST,Gaseous Glaive,5.0,Katalund
@@ -772,6 +775,10 @@ White or ST,Laser Pointer,8.0,Kogbold Steamworks
 White or ST,Scepter of Rust,8.0,Kogbold Steamworks
 White or ST,Brain Cube,8.0,Kogbold Steamworks
 White or ST,Kogbold Enhancement Core,8,Kogbold Steamworks
+White or ST,Gearhawk Morning Star,8,Kogbold Steamworks
+White or ST,Mechraptor Sigil,8,Kogbold Steamworks
+White or ST,Mechpilot's Jerkin,8,Kogbold Steamworks
+White or ST,Pressure Guage Band,8,Kogbold Steamworks
 White or ST,Overclocking Amulet (shiny),16,Kogbold Steamworks
 White or ST,Steam Pipe (shiny),16,Kogbold Steamworks
 White or ST,Chain Dagger (shiny),16,Kogbold Steamworks
@@ -1200,6 +1207,34 @@ Limited,Stygian Torch,5,Halloween
 Limited,Orb of the Sabbath,5,Halloween
 Limited,Robe of the Enchantress,5,Halloween
 Limited,Witch's Brooch,5,Halloween
+Limited,Maize Machete,5,Halloween
+Limited,Pumpkin Prism,5,Halloween
+Limited,Withered Poncho,5,Halloween
+Limited,Burlap Hat,5,Halloween
+Limited,Bone Bow,5,Halloween
+Limited,Spinal Quiver,5,Halloween
+Limited,Torso Tunic,5,Halloween
+Limited,Collarbone Collar,5,Halloween
+Limited,Supernatural Staff,5,Halloween
+Limited,Spectral Spell,5,Halloween
+Limited,Immortal Mantle,5,Halloween
+Limited,Phantom Pendant,5,Halloween
+Limited,Savage Claws,5,Halloween
+Limited,Beastly Mane,5,Halloween
+Limited,Ragetorn Armor,5,Halloween
+Limited,Moonstone Ring,5,Halloween
+Limited,Silver Revolvers,5,Halloween
+Limited,Consecrated Trap,5,Halloween
+Limited,Metal-plated Corset,5,Halloween
+Limited,Vial of Sustenance,5,Halloween
+Limited,Electric Guitar,5,Halloween
+Limited,Inferno Pick,5,Halloween
+Limited,Wings of the Fallen,5,Halloween
+Limited,Pointy Tail,5,Halloween
+Limited,Bloody Pitch Fork Staff,5,Halloween
+Limited,Blood Essence,5,Halloween
+Limited,Curse Binding Robes,5,Halloween
+Limited,Spike Headband,5,Halloween
 ""
 Limited,Corrupted Cleaver,0,Halloween T11 Reskins
 Limited,Bow of Nightmares,0,Halloween T11 Reskins
